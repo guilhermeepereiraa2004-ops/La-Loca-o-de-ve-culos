@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react';
 
-const AdminBI = ({ stats, alerts }) => {
+const AdminBI = ({ stats, alerts, operationalData }) => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Stats Grid */}
@@ -58,23 +58,39 @@ const AdminBI = ({ stats, alerts }) => {
 
         {/* Quick Actions / Summary */}
         <div className="bg-neutral-900 rounded-3xl p-8 text-white relative overflow-hidden">
-          <div className="relative z-10">
+          <div className="relative z-10 h-full flex flex-col">
             <h3 className="text-sm font-black uppercase tracking-widest mb-8 text-[#C5A059]">Resumo Operacional</h3>
-            <div className="space-y-6">
+            <div className="space-y-6 flex-1">
               <div className="flex justify-between items-end border-b border-white/10 pb-4">
                 <p className="text-neutral-400 text-xs uppercase tracking-widest">Utilização da Frota</p>
-                <p className="text-2xl font-black">75%</p>
+                <p className="text-2xl font-black">{operationalData.utilizationRate}%</p>
               </div>
               <div className="flex justify-between items-end border-b border-white/10 pb-4">
                 <p className="text-neutral-400 text-xs uppercase tracking-widest">Margem Líquida</p>
-                <p className="text-2xl font-black text-emerald-400">22%</p>
+                <p className={`text-2xl font-black ${operationalData.netProfitRaw >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {operationalData.profitMargin}%
+                </p>
+              </div>
+              <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                <p className="text-neutral-400 text-xs uppercase tracking-widest">Lucro Líquido</p>
+                <p className={`text-2xl font-black ${operationalData.netProfitRaw >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  R$ {operationalData.netProfit}
+                </p>
+              </div>
+              <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                <p className="text-neutral-400 text-xs uppercase tracking-widest">Parceiros Investidores</p>
+                <p className="text-2xl font-black">{operationalData.investorsCount}</p>
+              </div>
+              <div className="flex justify-between items-end border-b border-white/10 pb-4">
+                <p className="text-neutral-400 text-xs uppercase tracking-widest">Novos Leads</p>
+                <p className="text-2xl font-black text-[#C5A059]">{operationalData.newLeads}</p>
               </div>
             </div>
-            <button className="w-full mt-12 py-4 bg-[#C5A059] text-neutral-900 font-black uppercase tracking-widest text-[10px] hover:bg-white transition-all">
-              Gerar Relatório Completo
+            <button className="w-full mt-8 py-4 bg-[#C5A059] text-neutral-900 font-black uppercase tracking-widest text-[10px] hover:bg-white transition-all rounded-xl">
+              Gerar Relatório Detalhado
             </button>
           </div>
-          <div className="absolute -bottom-10 -right-10 opacity-10 transform rotate-12">
+          <div className="absolute -bottom-10 -right-10 opacity-10 transform rotate-12 pointer-events-none">
             <TrendingUp size={200} />
           </div>
         </div>

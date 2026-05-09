@@ -77,7 +77,7 @@ const AdminLeads = ({
               <div className="flex flex-col lg:flex-row">
                 {/* Vehicle Image (if rental) */}
                 {lead.type === 'locacao' && lead.vehicleImage && (
-                  <div className="lg:w-48 h-48 lg:h-auto relative shrink-0">
+                  <div className="lg:w-48 h-48 lg:h-auto relative shrink-0 animate-in fade-in slide-in-from-left duration-700">
                     <img src={lead.vehicleImage} alt={lead.vehicleModel} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent to-white hidden lg:block" />
                     <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent lg:hidden" />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, Pencil, Power, PowerOff, Trash2, Car } from 'lucide-react';
+import { Plus, Search, Pencil, Power, PowerOff, Trash2, Car, Star } from 'lucide-react';
 
 const AdminFrota = ({
   vehicles,
@@ -80,6 +80,27 @@ const AdminFrota = ({
             <div key={car.id} className="group bg-white rounded-[2.5rem] border border-neutral-100 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#C5A059]/10 transition-all duration-500 hover:-translate-y-2">
               <div className="aspect-[16/9] relative overflow-hidden">
                 <img src={car.image} alt={car.model} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                
+                {/* Favorite Toggle */}
+                <button
+                  onClick={() => {
+                    const favoritesCount = vehicles.filter(v => v.isFavorite).length;
+                    if (!car.isFavorite && favoritesCount >= 4) {
+                      alert('Você só pode definir até 4 veículos como favoritos.');
+                      return;
+                    }
+                    onUpdateVehicle({ ...car, isFavorite: !car.isFavorite });
+                  }}
+                  className={`absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
+                    car.isFavorite 
+                      ? 'bg-[#C5A059] text-white shadow-lg' 
+                      : 'bg-white/20 backdrop-blur-md text-white hover:bg-white/40'
+                  }`}
+                  title={car.isFavorite ? 'Remover dos Favoritos' : 'Definir como Favorito'}
+                >
+                  <Star size={18} fill={car.isFavorite ? 'currentColor' : 'none'} />
+                </button>
+
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                 <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -178,14 +199,22 @@ const AdminFrota = ({
                   </div>
                   <div className="text-right">
                     <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Valor FIPE</p>
-                    <p className="text-sm font-black text-neutral-900">{car.fipeValue ? `R$ ${car.fipeValue}` : 'Sob Consulta'}</p>
+                    <p className="text-sm font-black text-neutral-900">
+                      {car.fipeValue ? 
+                        (typeof car.fipeValue === 'string' ? parseFloat(car.fipeValue.replace(/\./g, '').replace(',', '.')) : car.fipeValue)
+                          .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
+                        : 'Sob Consulta'}
+                    </p>
                   </div>
                 </div>
 
                 {car.investmentValue && (
                   <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center">
                     <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black">Investimento Motorista</p>
-                    <p className="text-xs font-black text-emerald-700">R$ {car.investmentValue}</p>
+                    <p className="text-xs font-black text-emerald-700">
+                      {(typeof car.investmentValue === 'string' ? parseFloat(car.investmentValue.replace(/\./g, '').replace(',', '.')) : car.investmentValue)
+                        .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                    </p>
                   </div>
                 )}
 

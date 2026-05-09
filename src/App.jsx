@@ -13,7 +13,20 @@ import AdminDashboard from './components/admin/AdminDashboard';
 
 const App = () => {
   const [view, setView] = useState('home');
-  const [leads, setLeads] = useState([]);
+  const [leads, setLeads] = useState([
+    {
+      id: 1,
+      name: 'João Silva',
+      contact: '(79) 99999-0000',
+      type: 'locacao',
+      vehicleModel: 'Porsche 911 Carrera',
+      vehiclePlate: 'LA-9110',
+      vehicleImage: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80',
+      status: 'novo',
+      date: '09/05/2026',
+      message: 'Tenho interesse em alugar para o próximo final de semana.'
+    }
+  ]);
   const [rentals, setRentals] = useState([]);
   const [investors, setInvestors] = useState([
     {
@@ -48,21 +61,26 @@ const App = () => {
       id: 1, model: 'Porsche 911 Carrera', plate: 'LA-9110', year: '2023/2023', renavam: '12345678901',
       initialKm: '5000', km: '15000', fipeValue: '850000', investor: 'Ricardo Santana', adminTax: '15',
       protectionPaidByAdmin: true, protectionValue: '120', franchiseInsurance: true, hasSpareKey: true,
-      lastBeltChangeKm: '10000', beltChangeIntervalKm: '80000', image: '', dividend: '3500',
+      lastBeltChangeKm: '10000', beltChangeIntervalKm: '80000', image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80', dividend: '3500',
       weeklyRental: '2500', investmentValue: '850000', preventiveMaintenance: true, status: 'Alugado',
-      entryDate: '2024-01-15', crlvFile: null
+      entryDate: '2024-01-15', crlvFile: null, isFavorite: true
     },
     {
       id: 2, model: 'Audi RS6 Avant', plate: 'LA-0066', year: '2022/2023', renavam: '98765432100',
       initialKm: '12000', km: '28000', fipeValue: '720000', investor: 'Guilherme Pereira', adminTax: '12',
       protectionPaidByAdmin: false, protectionValue: '150', franchiseInsurance: true, hasSpareKey: false,
-      lastBeltChangeKm: '20000', beltChangeIntervalKm: '60000', image: '', dividend: '4200',
+      lastBeltChangeKm: '20000', beltChangeIntervalKm: '60000', image: 'https://images.unsplash.com/photo-1600712242805-5f5666b0b4e9?auto=format&fit=crop&q=80', dividend: '4200',
       weeklyRental: '2000', investmentValue: '720000', preventiveMaintenance: false, status: 'Disponível',
-      entryDate: '2024-03-10', crlvFile: null
+      entryDate: '2024-03-10', crlvFile: null, isFavorite: true
     }
   ]);
   const [transactions, setTransactions] = useState([]);
+  const [maintenances, setMaintenances] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [showInterestModal, setShowInterestModal] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [selectedVehicleForInterest, setSelectedVehicleForInterest] = useState(null);
+  const [interestForm, setInterestForm] = useState({ name: '', phone: '', email: '', observation: '' });
 
   const handleAddLead = (lead) => {
     setLeads(prev => [{ ...lead, id: Date.now(), status: 'novo', date: new Date().toLocaleDateString('pt-BR') }, ...prev]);
@@ -117,6 +135,18 @@ const App = () => {
     setTransactions(prev => [{ ...transaction, id: Date.now() }, ...prev]);
   };
 
+  const handleAddMaintenance = (maintenance) => {
+    setMaintenances(prev => [{ ...maintenance, id: Date.now() }, ...prev]);
+  };
+
+  const handleUpdateMaintenance = (updatedMaintenance) => {
+    setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? updatedMaintenance : m));
+  };
+
+  const handleDeleteMaintenance = (id) => {
+    setMaintenances(prev => prev.filter(m => m.id !== id));
+  };
+
   if (view === 'admin') {
     return (
       <AdminDashboard
@@ -136,6 +166,10 @@ const App = () => {
         onAddVehicle={handleAddVehicle}
         onUpdateVehicle={handleUpdateVehicle}
         onDeleteVehicle={handleDeleteVehicle}
+        maintenances={maintenances}
+        onAddMaintenance={handleAddMaintenance}
+        onUpdateMaintenance={handleUpdateMaintenance}
+        onDeleteMaintenance={handleDeleteMaintenance}
         onLogout={() => {
           localStorage.removeItem('la_admin_auth');
           setView('home');
@@ -262,6 +296,11 @@ const App = () => {
                     alt={car.model}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  {car.status === 'Alugado' && (
+                    <div className="absolute top-6 right-6 bg-neutral-900/80 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20">
+                      Locado
+                    </div>
+                  )}
                 </div>
                 <div className="p-10">
                   <div className="flex justify-between items-start mb-6">
@@ -270,27 +309,30 @@ const App = () => {
                       <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-900">{car.model}</h3>
                     </div>
                   </div>
-                  <div className="pt-6 border-t border-neutral-200 flex justify-between items-center">
-                    <div>
-                      <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Valor Semanal</p>
-                      <p className="text-xl font-black text-neutral-900">R$ {car.weeklyRental}</p>
+                  <div className="pt-6 border-t border-neutral-200 flex flex-col gap-6">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Valor Semanal</p>
+                        <p className="text-xl font-black text-neutral-900">R$ {car.weeklyRental || '550,00'}</p>
+                      </div>
                     </div>
-                    <a href="#contato" className="w-12 h-12 rounded-full bg-neutral-900 text-white flex items-center justify-center hover:bg-[#C5A059] transition-colors">
-                      <ArrowUpRight size={20} />
-                    </a>
+                    <button 
+                      onClick={() => {
+                        setSelectedVehicleForInterest(car);
+                        setShowInterestModal(true);
+                      }}
+                      className="w-full py-4 bg-neutral-100 text-neutral-900 text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:bg-neutral-900 hover:text-white transition-all"
+                    >
+                      Tenho Interesse
+                    </button>
                   </div>
                 </div>
               </div>
             ))}
-            {vehicles.filter(v => v.status === 'Disponível').length === 0 && (
-              <div className="col-span-full py-20 text-center bg-neutral-50 rounded-[3rem] border border-neutral-100">
-                <Car size={48} className="mx-auto text-neutral-300 mb-6" />
-                <p className="text-neutral-500 text-[10px] uppercase tracking-[0.3em] font-bold">Nenhum veículo disponível no momento.</p>
-              </div>
-            )}
           </div>
         </div>
       </section>
+
 
       {/* Investidores */}
       <section id="investidores" className="py-32 bg-neutral-950 relative overflow-hidden">
@@ -399,6 +441,120 @@ const App = () => {
           </div>
         </div>
       </footer>
+      {/* Interest Lead Modal */}
+      {showInterestModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setShowInterestModal(false)} />
+          <div className="relative bg-white w-full max-w-lg rounded-[3rem] p-10 md:p-12 shadow-2xl animate-in zoom-in duration-300">
+            <button 
+              onClick={() => setShowInterestModal(false)}
+              className="absolute top-8 right-8 text-neutral-400 hover:text-neutral-900 transition-colors"
+            >
+              <X size={24} />
+            </button>
+            
+            <EditorialLabel className="text-[#C5A059] mb-4">Tenho Interesse</EditorialLabel>
+            <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900 mb-2">
+              {selectedVehicleForInterest?.model}
+            </h3>
+            <p className="text-neutral-500 font-light mb-10">
+              Preencha seus dados abaixo e nossa equipe entrará em contato em breve.
+            </p>
+
+            <form className="space-y-6" onSubmit={(e) => {
+              e.preventDefault();
+              handleAddLead({
+                name: interestForm.name,
+                contact: interestForm.phone,
+                email: interestForm.email,
+                type: 'locacao',
+                vehicleModel: selectedVehicleForInterest?.model,
+                vehiclePlate: selectedVehicleForInterest?.plate,
+                vehicleImage: selectedVehicleForInterest?.image,
+                message: `Obs: ${interestForm.observation || 'Sem observações'}`
+              });
+              setShowInterestModal(false);
+              setInterestForm({ name: '', phone: '', email: '', observation: '' });
+              setShowSuccessPopup(true);
+            }}>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Seu Nome</label>
+                <input 
+                  type="text" 
+                  required
+                  value={interestForm.name}
+                  onChange={e => setInterestForm({...interestForm, name: e.target.value})}
+                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                  placeholder="Nome completo"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Seu Telefone / WhatsApp</label>
+                <input 
+                  type="text" 
+                  required
+                  value={interestForm.phone}
+                  onChange={e => setInterestForm({...interestForm, phone: e.target.value})}
+                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                  placeholder="(79) 99999-9999"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Seu E-mail</label>
+                <input 
+                  type="email" 
+                  required
+                  value={interestForm.email}
+                  onChange={e => setInterestForm({...interestForm, email: e.target.value})}
+                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                  placeholder="exemplo@email.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Observação (Opcional)</label>
+                <textarea 
+                  value={interestForm.observation}
+                  onChange={e => setInterestForm({...interestForm, observation: e.target.value})}
+                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm resize-none"
+                  rows="3"
+                  placeholder="Alguma dúvida ou horário de preferência?"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                className="w-full py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl mt-4"
+              >
+                Enviar Interesse
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Success Popup */}
+      {showSuccessPopup && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center px-6">
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-xl animate-in fade-in duration-500" onClick={() => setShowSuccessPopup(false)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl animate-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8">
+              <Check size={40} />
+            </div>
+            <h3 className="text-2xl font-black uppercase tracking-tighter text-neutral-900 mb-4">Sucesso!</h3>
+            <p className="text-neutral-500 font-light mb-10 leading-relaxed">
+              Sua solicitação foi enviada com sucesso. Nossa equipe entrará em contato em breve.
+            </p>
+            <button 
+              onClick={() => setShowSuccessPopup(false)}
+              className="w-full py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
