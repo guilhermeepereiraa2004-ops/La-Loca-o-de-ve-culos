@@ -9,7 +9,8 @@ const AdminLeads = ({
   leadStatusFilter, 
   setLeadStatusFilter, 
   onUpdateStatus, 
-  exportLeadsToExcel 
+  exportLeadsToExcel,
+  currentUser
 }) => {
   const filteredLeads = leads.filter(lead => {
     const name = lead.name || '';
@@ -94,13 +95,20 @@ const AdminLeads = ({
                         <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tight">{lead.name}</h4>
                         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{lead.date}</p>
                       </div>
-                      <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full ${lead.status === 'novo' ? 'bg-emerald-50 text-emerald-600' :
-                        lead.status === 'contatado' ? 'bg-blue-50 text-blue-600' :
-                          lead.status === 'convertido' ? 'bg-amber-50 text-amber-600' :
-                            'bg-neutral-100 text-neutral-500'
-                        }`}>
-                        {lead.status}
-                      </span>
+                      <div className="flex flex-col gap-1">
+                        <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full w-fit ${lead.status === 'novo' ? 'bg-emerald-50 text-emerald-600' :
+                          lead.status === 'contatado' ? 'bg-blue-50 text-blue-600' :
+                            lead.status === 'convertido' ? 'bg-amber-50 text-amber-600' :
+                              'bg-neutral-100 text-neutral-500'
+                          }`}>
+                          {lead.status}
+                        </span>
+                        {lead.updatedBy && lead.status !== 'novo' && (
+                          <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest ml-1">
+                            por: <span className="text-neutral-900">{lead.updatedBy}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
 
                     <div className="flex gap-2">
@@ -108,7 +116,7 @@ const AdminLeads = ({
                         lead.status !== s && (
                           <button
                             key={s}
-                            onClick={() => onUpdateStatus(lead.id, s)}
+                            onClick={() => onUpdateStatus(lead.id, s, currentUser?.name || 'Admin Principal')}
                             className="px-4 py-2 border border-neutral-100 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all text-neutral-400 hover:text-neutral-900"
                           >
                             {s}

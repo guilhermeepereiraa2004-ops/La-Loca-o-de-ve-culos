@@ -121,10 +121,9 @@ const TerminationTermModal = ({ inspection, rental, closureData, onClose }) => {
                 <h3 className="text-[10px] font-black uppercase tracking-widest text-neutral-900">Cláusula de Responsabilidade Futura</h3>
               </div>
               <p className="text-[11px] text-neutral-600 leading-relaxed text-justify font-serif">
-                O Locatário declara plena ciência de que poderão ser incluídos e cobrados débitos adicionais retroativos referentes a: 
+                O motorista declara ciência de que poderão ser incluídos débitos adicionais referentes a: 
                 <strong> (a) multas de trânsito</strong> não liquidadas ou notificadas após a devolução, cuja infração tenha ocorrido durante o período de locação; 
-                <strong> (b) danos ocultos</strong> não identificados na vistoria visual mas decorrentes do uso indevido; 
-                <strong> (c) eventuais encargos financeiros</strong> pendentes. O Locatário autoriza, desde já, a cobrança destes valores via cartão de crédito ou boleto bancário.
+                <strong> (b) aluguéis vencidos</strong> e não pagos até a presente data.
               </p>
             </section>
 

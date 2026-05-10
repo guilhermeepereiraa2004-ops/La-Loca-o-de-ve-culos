@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
-import { Camera, Plus, Search, ClipboardCheck, Trash2, Eye, Calendar, Fuel, Gauge, Car, Check, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Camera, Plus, Search, ClipboardCheck, Trash2, Eye, Calendar, Fuel, Gauge, Car, Check, AlertTriangle, X, Loader2, ShieldCheck } from 'lucide-react';
+import { compressImage } from '../../../utils/imageCompression';
 
-const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDeleteInspection, onViewDetail }) => {
+const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection }) => {
   const [showForm, setShowForm] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [inspectionSearch, setInspectionSearch] = useState('');
+  const [filterType, setFilterType] = useState('Todos');
+  const [dateStart, setDateStart] = useState('');
+  const [dateEnd, setDateEnd] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [targetDeleteId, setTargetDeleteId] = useState(null);
   const [inspectionForm, setInspectionForm] = useState({
     type: 'Entrega',
     vehiclePlate: '',
@@ -15,13 +23,44 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
     photos: {}, // Object for named slots
     video: null,
     observations: '',
+    hasDamages: false,
+    damages: [], // [{ id, photo, description }]
     deductions: [] // [{ category, description, value, isProportional }]
   });
 
-  const filteredInspections = inspections.filter(ins => 
-    ins.vehiclePlate.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
-    ins.type.toLowerCase().includes(inspectionSearch.toLowerCase())
-  );
+  useEffect(() => {
+    if (pendingInspection) {
+      setInspectionForm(prev => ({
+        ...prev,
+        ...pendingInspection,
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      }));
+      setShowForm(true);
+      onClearPendingInspection();
+    }
+  }, [pendingInspection, onClearPendingInspection]);
+
+  const filteredInspections = inspections.filter(ins => {
+    const matchesSearch = ins.vehiclePlate.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
+                         ins.type.toLowerCase().includes(inspectionSearch.toLowerCase());
+    const matchesType = filterType === 'Todos' || ins.type === filterType;
+    
+    let matchesDate = true;
+    if (dateStart || dateEnd) {
+      const insDate = new Date(ins.date);
+      if (dateStart) {
+        const start = new Date(dateStart);
+        if (insDate < start) matchesDate = false;
+      }
+      if (dateEnd) {
+        const end = new Date(dateEnd);
+        if (insDate > end) matchesDate = false;
+      }
+    }
+    
+    return matchesSearch && matchesType && matchesDate;
+  });
 
   const getOperationalAlerts = () => {
     const now = new Date();
@@ -68,6 +107,8 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
       photos: {},
       video: null,
       observations: '',
+      hasDamages: false,
+      damages: [],
       deductions: []
     });
   };
@@ -90,6 +131,38 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
       ...prev,
       deductions: prev.deductions.filter((_, i) => i !== index)
     }));
+  };
+
+  const handleAddDamage = () => {
+    setInspectionForm(prev => ({
+      ...prev,
+      damages: [...prev.damages, { id: Date.now(), photo: null, description: '' }]
+    }));
+  };
+
+  const handleUpdateDamage = (id, field, value) => {
+    setInspectionForm(prev => ({
+      ...prev,
+      damages: prev.damages.map(d => d.id === id ? { ...d, [field]: value } : d)
+    }));
+  };
+
+  const handleRemoveDamage = (id) => {
+    setInspectionForm(prev => ({
+      ...prev,
+      damages: prev.damages.filter(d => d.id !== id)
+    }));
+  };
+
+  const handleConfirmDelete = () => {
+    if (passwordInput === 'Lareferencia') {
+      onDeleteInspection(targetDeleteId);
+      setShowPasswordModal(false);
+      setPasswordInput('');
+      setTargetDeleteId(null);
+    } else {
+      alert('Senha incorreta!');
+    }
   };
 
   const totalDeductions = inspectionForm.deductions.reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
@@ -134,15 +207,58 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
           )}
 
           {/* Search */}
-          <div className="relative mb-12 max-w-xl">
-            <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-            <input
-              type="text"
-              value={inspectionSearch}
-              onChange={(e) => setInspectionSearch(e.target.value)}
-              placeholder="Pesquisar por placa ou tipo..."
-              className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light shadow-sm"
-            />
+          <div className="flex flex-col md:flex-row items-center gap-4">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Buscar por placa ou tipo..."
+                value={inspectionSearch}
+                onChange={(e) => setInspectionSearch(e.target.value)}
+                className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-3 rounded-2xl text-sm focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-medium"
+              />
+            </div>
+            
+            <div className="flex items-center gap-3 w-full md:w-auto">
+              <select 
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="bg-white border border-neutral-100 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#C5A059]/20 outline-none"
+              >
+                <option value="Todos">Todos os Tipos</option>
+                <option value="Entrega">Entrega</option>
+                <option value="Coleta">Coleta</option>
+                <option value="Periódica">Periódica</option>
+                <option value="Devolução">Devolução</option>
+              </select>
+
+              <div className="flex items-center gap-2 bg-white border border-neutral-100 px-3 py-2 rounded-2xl">
+                <Calendar size={14} className="text-neutral-400" />
+                <input 
+                  type="date" 
+                  value={dateStart}
+                  onChange={(e) => setDateStart(e.target.value)}
+                  className="bg-transparent border-none text-[9px] font-bold outline-none uppercase"
+                />
+                <span className="text-neutral-300 text-[10px]">até</span>
+                <input 
+                  type="date" 
+                  value={dateEnd}
+                  onChange={(e) => setDateEnd(e.target.value)}
+                  className="bg-transparent border-none text-[9px] font-bold outline-none uppercase"
+                />
+              </div>
+
+              {(filterType !== 'Todos' || dateStart || dateEnd) && (
+                <button 
+                  onClick={() => { setFilterType('Todos'); setDateStart(''); setDateEnd(''); }}
+                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  title="Limpar Filtros"
+                >
+                  <X size={18} />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -156,7 +272,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                   }`}>
                     {ins.type}
                   </div>
-                  <button onClick={() => onDeleteInspection(ins.id)} className="text-neutral-300 hover:text-red-500 transition-colors">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setTargetDeleteId(ins.id);
+                      setShowPasswordModal(true);
+                    }} 
+                    className="text-neutral-300 hover:text-red-500 transition-colors"
+                  >
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -314,13 +437,16 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                 {[
                   { id: 'front', label: 'Frente Completa' },
                   { id: 'rear', label: 'Traseira Completa' },
-                  { id: 'sideRight', label: 'Lateral Direita' },
-                  { id: 'sideLeft', label: 'Lateral Esquerda' },
-                  { id: 'angleFront', label: 'Frente em Ângulo' },
-                  { id: 'angleRear', label: 'Traseira em Ângulo' },
+                  { id: 'sideRightFront', label: 'Lat. Dir. Dianteira' },
+                  { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
+                  { id: 'sideRightRear', label: 'Lat. Dir. Traseira' },
+                  { id: 'sideLeftRear', label: 'Lat. Esq. Traseira' },
                   { id: 'plate', label: 'Placa do Veículo' },
                   { id: 'odometer', label: 'Hodômetro (KM)' },
                   { id: 'dashboard', label: 'Painel Ligado' },
+                  { id: 'interior1', label: 'Interior 1' },
+                  { id: 'interior2', label: 'Interior 2' },
+                  { id: 'tools', label: 'Triang/Mac/Chave' },
                 ].map((slot) => (
                   <div key={slot.id} className="space-y-2">
                     <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">{slot.label}</p>
@@ -341,20 +467,43 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                       <input 
                         type="file" 
                         accept="image/*" 
+                        capture="environment"
                         className="hidden" 
-                        onChange={(e) => {
+                        onChange={async (e) => {
                           const file = e.target.files[0];
                           if (file) {
-                            setInspectionForm(prev => ({
-                              ...prev,
-                              photos: {
-                                ...prev.photos,
-                                [slot.id]: { file, preview: URL.createObjectURL(file) }
-                              }
-                            }));
+                            try {
+                              setIsCompressing(true);
+                              const compressed = await compressImage(file);
+                              setInspectionForm(prev => ({
+                                ...prev,
+                                photos: {
+                                  ...prev.photos,
+                                  [slot.id]: { file: compressed, preview: URL.createObjectURL(compressed) }
+                                }
+                              }));
+                            } catch (err) {
+                              console.error("Compression failed:", err);
+                              // Fallback to original
+                              setInspectionForm(prev => ({
+                                ...prev,
+                                photos: {
+                                  ...prev.photos,
+                                  [slot.id]: { file, preview: URL.createObjectURL(file) }
+                                }
+                              }));
+                            } finally {
+                              setIsCompressing(false);
+                            }
                           }
                         }} 
                       />
+                      {isCompressing && (
+                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 z-10">
+                          <Loader2 size={16} className="text-[#C5A059] animate-spin" />
+                          <span className="text-[6px] font-black uppercase tracking-widest text-[#C5A059]">Otimizando...</span>
+                        </div>
+                      )}
                     </label>
                   </div>
                 ))}
@@ -377,6 +526,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                     <input 
                       type="file" 
                       accept="video/*" 
+                      capture="environment"
                       className="hidden" 
                       onChange={(e) => {
                         const file = e.target.files[0];
@@ -474,7 +624,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                       </div>
 
                       <div className="md:col-span-1 flex justify-end pb-3">
-                        <button
+                        <button 
                           type="button"
                           onClick={() => handleRemoveDeduction(index)}
                           className="text-red-500/50 hover:text-red-500 transition-colors"
@@ -508,6 +658,76 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
               </div>
             )}
 
+            <div className="space-y-8 p-10 bg-neutral-50 rounded-[3rem] border border-neutral-100">
+               <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]">
+                      <AlertTriangle size={24} />
+                    </div>
+                    <div>
+                      <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">Existem Avarias?</h4>
+                      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">Registre danos específicos no veículo</p>
+                    </div>
+                  </div>
+                  <div className="flex bg-white p-1 rounded-xl border border-neutral-100">
+                    <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: true})} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${inspectionForm.hasDamages ? 'bg-red-500 text-white shadow-lg' : 'text-neutral-400'}`}>Sim</button>
+                    <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: false, damages: []})} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${!inspectionForm.hasDamages ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400'}`}>Não</button>
+                  </div>
+               </div>
+
+               {inspectionForm.hasDamages && (
+                 <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {inspectionForm.damages.map((dmg) => (
+                        <div key={dmg.id} className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm space-y-4">
+                           <div className="flex justify-between items-start">
+                              <label className={`w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative ${dmg.photo ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 hover:border-[#C5A059]/30'}`}>
+                                {dmg.photo ? (
+                                  <img src={dmg.photo.preview} className="w-full h-full object-cover" />
+                                ) : (
+                                  <Camera size={20} className="text-neutral-300" />
+                                )}
+                                <input 
+                                  type="file" 
+                                  accept="image/*" 
+                                  capture="environment"
+                                  className="hidden" 
+                                  onChange={async (e) => {
+                                    const file = e.target.files[0];
+                                    if (file) {
+                                      setIsCompressing(true);
+                                      const compressed = await compressImage(file);
+                                      handleUpdateDamage(dmg.id, 'photo', { file: compressed, preview: URL.createObjectURL(compressed) });
+                                      setIsCompressing(false);
+                                    }
+                                  }} 
+                                />
+                              </label>
+                              <button type="button" onClick={() => handleRemoveDamage(dmg.id)} className="text-neutral-300 hover:text-red-500 transition-colors">
+                                <X size={18} />
+                              </button>
+                           </div>
+                           <textarea 
+                             placeholder="Descreva a avaria..."
+                             value={dmg.description}
+                             onChange={(e) => handleUpdateDamage(dmg.id, 'description', e.target.value)}
+                             className="w-full bg-neutral-50 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#C5A059] transition-all font-bold text-xs min-h-[80px]"
+                           />
+                        </div>
+                      ))}
+                      <button 
+                        type="button" 
+                        onClick={handleAddDamage}
+                        className="border-2 border-dashed border-neutral-200 rounded-[2rem] flex flex-col items-center justify-center gap-3 text-neutral-400 hover:border-[#C5A059] hover:text-[#C5A059] transition-all p-8"
+                      >
+                        <Plus size={24} />
+                        <span className="text-[10px] font-black uppercase tracking-widest">Adicionar Foto de Avaria</span>
+                      </button>
+                    </div>
+                 </div>
+               )}
+            </div>
+
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Observações Técnicas</label>
               <textarea
@@ -536,10 +756,53 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
           </form>
         </div>
       )}
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center gap-4 mb-8">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center">
+                <ShieldCheck size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Segurança Exigida</h3>
+                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira a senha mestre para excluir esta vistoria</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <input 
+                type="password"
+                placeholder="Senha Mestre"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-black text-center tracking-widest"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmDelete()}
+              />
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordInput('');
+                  }}
+                  className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-4 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg"
+                >
+                  Confirmar Exclusão
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-
-const X = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
 
 export default AdminVistoria;

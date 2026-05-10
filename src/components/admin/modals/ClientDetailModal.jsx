@@ -1,0 +1,208 @@
+import React, { useState } from 'react';
+import { 
+  X, User, Phone, Mail, FileText, 
+  MapPin, CreditCard, ImageIcon, Download, 
+  AlertTriangle, Calendar, ShieldCheck, Camera
+} from 'lucide-react';
+
+const ClientDetailModal = ({ client, onClose }) => {
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  if (!client) return null;
+
+  const getFileUrl = (file) => {
+    if (!file) return null;
+    if (typeof file === 'string') return file;
+    try {
+      return URL.createObjectURL(file);
+    } catch (e) {
+      return null;
+    }
+  };
+
+  const isExpired = (dateStr) => {
+    if (!dateStr) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const expDate = new Date(dateStr);
+    return expDate < today;
+  };
+
+  return (
+    <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+      <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-md" onClick={onClose} />
+      
+      <div className="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+        
+        {/* Image Preview Overlay */}
+        {selectedImage && (
+          <div className="fixed inset-0 z-[600] flex items-center justify-center p-10">
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedImage(null)} />
+            <div className="relative z-10 max-w-full max-h-full">
+              <img src={selectedImage} className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" alt="Preview" />
+              <button onClick={() => setSelectedImage(null)} className="absolute -top-12 right-0 text-white flex items-center gap-2 font-black uppercase text-[10px] tracking-widest hover:text-[#C5A059] transition-colors">
+                <X size={20} /> Fechar Preview
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="p-8 md:p-12 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 bg-neutral-900 rounded-[2rem] flex items-center justify-center text-[#C5A059] shadow-2xl shadow-[#C5A059]/20 transform -rotate-3">
+              <User size={28} />
+            </div>
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <span className="text-[#C5A059] text-[10px] uppercase font-black tracking-widest">Dossiê do Cliente</span>
+                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${!isExpired(client.cnhValidity) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                  {isExpired(client.cnhValidity) ? 'Cadastro Irregular' : 'Cadastro Regular'}
+                </span>
+              </div>
+              <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">{client.name}</h4>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
+            <X size={24} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12">
+          
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-12">
+            
+            {/* Left Col: Info */}
+            <div className="md:col-span-7 space-y-8">
+              
+              {/* Personal Info */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <ShieldCheck size={18} className="text-[#C5A059]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Dados Pessoais</h5>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">CPF</p>
+                    <p className="text-sm font-black text-neutral-900">{client.cpf || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">WhatsApp</p>
+                    <p className="text-sm font-black text-neutral-900">{client.phone || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">E-mail</p>
+                    <p className="text-sm font-black text-neutral-900 truncate">{client.email || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Endereço</p>
+                    <p className="text-sm font-black text-neutral-900 leading-tight">{client.address || '---'}</p>
+                  </div>
+                </div>
+              </section>
+
+              {/* Document Info */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <CreditCard size={18} className="text-[#C5A059]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Habilitação (CNH)</h5>
+                </div>
+                <div className="grid grid-cols-3 gap-6 bg-neutral-900 text-white p-8 rounded-[2.5rem] shadow-xl">
+                  <div>
+                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº Registro</p>
+                    <p className="text-sm font-black">{client.cnh || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Validade</p>
+                    <p className={`text-sm font-black ${isExpired(client.cnhValidity) ? 'text-red-400' : 'text-white'}`}>
+                      {client.cnhValidity || '---'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Cód. Seg.</p>
+                    <p className="text-sm font-black">{client.cnhSecurityCode || '---'}</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            {/* Right Col: Documents */}
+            <div className="md:col-span-5 space-y-8">
+              <div className="flex items-center gap-3 mb-2">
+                <Camera size={18} className="text-[#C5A059]" />
+                <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Anexos Digitais</h5>
+              </div>
+              <div className="grid grid-cols-2 gap-6">
+                
+                {/* CNH Photo */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">CNH</p>
+                  <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
+                    {client.docs?.cnh ? (
+                      <>
+                        <img src={getFileUrl(client.docs.cnh)} className="w-full h-full object-cover" alt="CNH" />
+                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
+                          <a href={getFileUrl(client.docs.cnh)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-neutral-300">
+                        <AlertTriangle size={20} />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">Não Anexada</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Residence Proof */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">Residência</p>
+                  <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
+                    {client.docs?.residence ? (
+                      <>
+                        <img src={getFileUrl(client.docs.residence)} className="w-full h-full object-cover" alt="Residência" />
+                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
+                          <a href={getFileUrl(client.docs.residence)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-2 text-neutral-300">
+                        <AlertTriangle size={20} />
+                        <span className="text-[8px] font-black uppercase tracking-tighter">Não Anexado</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* App Prints */}
+                {(client.docs?.appPrints || []).map((print, idx) => (
+                  <div key={idx} className="space-y-2">
+                    <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">App {idx + 1}</p>
+                    <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
+                      <img src={getFileUrl(print)} className="w-full h-full object-cover" alt={`App ${idx + 1}`} />
+                      <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                        <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
+                        <a href={getFileUrl(print)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {(!client.docs?.appPrints || client.docs.appPrints.length === 0) && (
+                  <div className="col-span-2 p-6 bg-neutral-50 border-2 border-dashed border-neutral-100 rounded-3xl flex items-center justify-center">
+                    <p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest">Sem Prints de Aplicativo</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ClientDetailModal;

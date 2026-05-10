@@ -7,18 +7,33 @@ const EMPTY_FORM = {
   laborValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta'
 };
 
-const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onCloseServiceOrder, serviceOrders = [] }) => {
+const AdminOficina = ({ 
+  vehicles = [], 
+  investors = [], 
+  rentals = [],
+  replacementContracts = [],
+  onAddMaintenance, 
+  onCloseServiceOrder, 
+  serviceOrders = [] 
+}) => {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewingOS, setViewingOS] = useState(null);
+  const [replacementCarPlate, setReplacementCarPlate] = useState('');
+  const [isRented, setIsRented] = useState(false);
 
   useEffect(() => {
     if (form.plate) {
       const v = vehicles.find(v => v.plate === form.plate);
       if (v) setForm(prev => ({ ...prev, model: v.model, responsible: 'Administradora' }));
+      
+      const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
+      setIsRented(!!rental);
+    } else {
+      setIsRented(false);
     }
-  }, [form.plate, vehicles]);
+  }, [form.plate, vehicles, rentals]);
 
   // Opções de responsável: somente investidor do veículo selecionado + Administradora
   const selectedVehicle = vehicles.find(v => v.plate === form.plate);
@@ -38,9 +53,10 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
   const handleSubmit = (e) => {
     e.preventDefault();
     const os = { ...form, id: Date.now(), openedAt: new Date().toISOString(), total: totalOS };
-    onCloseServiceOrder(os, 'open');
+    onCloseServiceOrder(os, 'open', replacementCarPlate);
     setShowForm(false);
     setForm(EMPTY_FORM);
+    setReplacementCarPlate('');
   };
 
   const handleCloseOS = (os) => {
@@ -66,7 +82,6 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
         </button>
       </div>
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {[
           { label: 'Total de O.S.', value: serviceOrders.length, color: 'neutral' },
@@ -81,13 +96,11 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
         ))}
       </div>
 
-      {/* Search */}
       <div className="relative max-w-xl">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por placa, modelo ou serviço..." className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-light shadow-sm" />
       </div>
 
-      {/* OS List */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {filtered.length === 0 && (
           <div className="col-span-3 text-center py-20 bg-neutral-50 rounded-[3rem] border border-neutral-100">
@@ -128,7 +141,6 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
         ))}
       </div>
 
-      {/* New OS Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setShowForm(false)} />
@@ -183,7 +195,17 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
                       <div key={i} className="grid grid-cols-12 gap-3 items-center bg-neutral-50 p-4 rounded-xl">
                         <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-6 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
                         <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100 text-center" />
-                        <input type="number" value={part.unitValue} onChange={e => updatePart(i, 'unitValue', e.target.value)} placeholder="Valor unit." className="col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
+                        <input 
+                          type="text" 
+                          value={part.unitValue} 
+                          onChange={e => {
+                            let v = e.target.value.replace(/\D/g, '');
+                            v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                            updatePart(i, 'unitValue', v);
+                          }} 
+                          placeholder="Valor unit." 
+                          className="col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
+                        />
                         <button type="button" onClick={() => removePart(i)} className="col-span-1 text-neutral-300 hover:text-red-500 transition-colors flex justify-center"><X size={14} /></button>
                       </div>
                     ))}
@@ -193,7 +215,17 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Mão de Obra (R$)</label>
-                    <input type="number" value={form.laborValue} onChange={e => setForm({ ...form, laborValue: e.target.value })} placeholder="0,00" className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
+                    <input 
+                      type="text" 
+                      value={form.laborValue} 
+                      onChange={e => {
+                        let v = e.target.value.replace(/\D/g, '');
+                        v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        setForm({ ...form, laborValue: v });
+                      }} 
+                      placeholder="0,00" 
+                      className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Prestador / Oficina</label>
@@ -216,6 +248,35 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
                   </div>
                 </div>
 
+                {isRented && (
+                  <div className="p-6 bg-blue-50 border border-blue-100 rounded-[2rem] space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg"><Car size={20} /></div>
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Fluxo de Carro Reserva</p>
+                        <p className="text-xs font-bold text-blue-900">Este veículo possui um contrato ativo. Deseja vincular um carro reserva?</p>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-widest text-blue-400 font-black ml-1">Selecionar Carro Reserva (Opcional)</label>
+                      <select 
+                        value={replacementCarPlate} 
+                        onChange={e => setReplacementCarPlate(e.target.value)} 
+                        className="w-full bg-white border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm"
+                      >
+                        <option value="">Nenhum carro reserva</option>
+                        {vehicles.filter(v => v.status === 'Disponível').map(v => (
+                          <option key={v.id} value={v.plate}>{v.plate} — {v.model}</option>
+                        ))}
+                      </select>
+                      <p className="text-[8px] text-blue-400 font-medium uppercase tracking-widest pl-1 italic">
+                        * Ao selecionar, o contrato temporário (R$ 80/dia) será iniciado automaticamente.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="p-6 bg-neutral-900 rounded-2xl flex justify-between items-center">
                   <p className="text-[9px] font-black text-neutral-400 uppercase">Total estimado da O.S.</p>
                   <p className="text-2xl font-black text-[#C5A059]">{totalOS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
@@ -231,7 +292,6 @@ const AdminOficina = ({ vehicles = [], investors = [], onAddMaintenance, onClose
         </div>
       )}
 
-      {/* View OS Detail + Close Modal */}
       {viewingOS && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setViewingOS(null)} />

@@ -4,6 +4,7 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminLocacoes = ({
   rentals,
+  inspections = [],
   rentalFilter,
   setRentalFilter,
   setShowAddForm,
@@ -13,7 +14,8 @@ const AdminLocacoes = ({
   setIsEditingRental,
   setItemToDelete,
   setDeleteType,
-  setShowDeleteAuthModal
+  setShowDeleteAuthModal,
+  onGoToVistorias
 }) => {
   const filteredRentals = rentals.filter(rental => {
     const startDate = new Date(rental.date + 'T12:00:00');
@@ -155,120 +157,151 @@ const AdminLocacoes = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50 font-light">
-              {filteredRentals.map((rental) => (
-                <tr key={rental.id} className="hover:bg-neutral-50/50 transition-all group border-b border-neutral-100 last:border-0 relative">
-                  <td className="p-6">
-                    <div className="flex items-center gap-8 p-3 rounded-[2.5rem] group-hover:bg-white transition-colors duration-500 min-w-[300px]">
-                      <div className="w-28 h-20 rounded-3xl overflow-hidden bg-neutral-100 shrink-0 shadow-xl border-4 border-white group-hover:shadow-[#C5A059]/20 transition-all duration-500">
-                        <img src={rental.image} alt={rental.vehicle} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                      </div>
-                      <div className="space-y-3">
-                        <h6 className="text-lg font-black text-neutral-900 uppercase tracking-tighter leading-none group-hover:text-[#C5A059] transition-colors">{rental.vehicle}</h6>
-                        <div className="flex items-center gap-2">
-                          <div className="flex flex-col w-20 h-10 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-md scale-110 origin-left">
-                            <div className="h-2.5 bg-[#003399] flex items-center justify-center">
-                              <span className="text-[5px] text-white font-black tracking-[0.2em]">BRASIL</span>
-                            </div>
-                            <div className="flex-1 flex items-center justify-center bg-white">
-                              <span className="text-[10px] font-black tracking-tight text-neutral-900">{(rental.plate || '').replace('-', '') || 'S/ PLACA'}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center gap-4 bg-neutral-50/50 p-3 rounded-[2rem] border border-neutral-100 group-hover:bg-white group-hover:border-[#C5A059]/20 transition-all duration-500">
-                      <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-xl group-hover:bg-[#C5A059] group-hover:text-white transition-colors">
-                        <User size={20} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-black text-neutral-900 truncate">{rental.user}</p>
-                        <div className="flex items-center gap-3">
-                          <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Condutor</p>
-                          {rental.clientPhone && (
-                            <a
-                              href={`https://wa.me/${rental.clientPhone.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-600 transition-colors"
-                            >
-                              <Phone size={10} /> Whats
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <div className="pl-4 border-l-2 border-[#C5A059]/20">
-                      <span className="text-sm font-black text-neutral-900 block">{rental.value}</span>
-                      <span className="text-[9px] text-[#C5A059] font-black uppercase tracking-[0.2em] mt-1 block">{rental.period}</span>
-                    </div>
-                  </td>
-                  <td className="p-6 text-center">
-                    {(() => {
-                      const startDate = new Date(rental.date + 'T12:00:00');
-                      const periodValue = parseInt(rental.period) || 1;
-                      const isWeekly = (rental.period || '').includes('sem');
-                      const totalDays = isWeekly ? periodValue * 7 : periodValue;
-                      const endDate = new Date(startDate.getTime());
-                      endDate.setDate(startDate.getDate() + totalDays);
-                      const now = new Date();
-                      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                      const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-                      const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              {filteredRentals.map((rental) => {
+                const hasEntrega = inspections.some(ins => ins.vehiclePlate === rental.plate && ins.type === 'Entrega');
+                const isEnding = (() => {
+                  const startDate = new Date(rental.date + 'T12:00:00');
+                  const periodValue = parseInt(rental.period) || 1;
+                  const isWeekly = (rental.period || '').includes('sem');
+                  const totalDays = isWeekly ? periodValue * 7 : periodValue;
+                  const endDate = new Date(startDate.getTime());
+                  endDate.setDate(startDate.getDate() + totalDays);
+                  const today = new Date();
+                  today.setHours(0,0,0,0);
+                  const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                  const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                  return diffDays <= 1; // 1 day before or after
+                })();
+                const hasDevolucao = inspections.some(ins => ins.vehiclePlate === rental.plate && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.date));
 
-                      return (
-                        <div className="flex flex-col items-center gap-2">
-                          <div className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-sm border-2 transition-all ${diffDays <= 2 ? 'bg-red-50 text-red-600 border-red-100' :
-                              diffDays <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                'bg-emerald-50 text-emerald-600 border-emerald-100'
-                            }`}>
-                            {diffDays > 0 ? `Faltam ${diffDays} dias` : 'Encerrado'}
-                          </div>
-                          <span className="text-[8px] text-neutral-400 font-black uppercase tracking-tighter">Devolução: {endDate.toLocaleDateString('pt-BR')}</span>
+                return (
+                  <tr key={rental.id} className="hover:bg-neutral-50/50 transition-all group border-b border-neutral-100 last:border-0 relative">
+                    <td className="p-6">
+                      <div className="flex items-center gap-8 p-3 rounded-[2.5rem] group-hover:bg-white transition-colors duration-500 min-w-[300px]">
+                        <div className="w-28 h-20 rounded-3xl overflow-hidden bg-neutral-100 shrink-0 shadow-xl border-4 border-white group-hover:shadow-[#C5A059]/20 transition-all duration-500">
+                          <img src={rental.image} alt={rental.vehicle} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                         </div>
-                      );
-                    })()}
-                  </td>
-                  <td className="p-6 text-right">
-                    <div className="flex justify-end gap-3 pr-2">
-                      <button
-                        onClick={() => {
-                          setSelectedRental(rental);
-                          setShowRentalDetailModal(true);
-                        }}
-                        className="w-12 h-12 bg-neutral-900 text-white rounded-2xl hover:bg-[#C5A059] transition-all flex items-center justify-center shadow-xl group/btn"
-                        title="Ver Detalhes"
-                      >
-                        <ClipboardList size={20} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setSelectedRental(rental);
-                          // Logic for editing rental should be here
-                        }}
-                        className="w-12 h-12 bg-white text-neutral-400 border border-neutral-100 rounded-2xl hover:border-[#C5A059] hover:text-[#C5A059] transition-all flex items-center justify-center shadow-sm"
-                        title="Editar Contrato"
-                      >
-                        <Pencil size={18} />
-                      </button>
-                      <button
-                        onClick={() => {
-                          setItemToDelete(rental);
-                          setDeleteType('rental');
-                          setShowDeleteAuthModal(true);
-                        }}
-                        className="w-12 h-12 bg-white text-neutral-400 border border-neutral-100 rounded-2xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm"
-                        title="Encerrar Contrato"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        <div className="space-y-3">
+                          <h6 className="text-lg font-black text-neutral-900 uppercase tracking-tighter leading-none group-hover:text-[#C5A059] transition-colors">{rental.vehicle}</h6>
+                          <div className="flex items-center gap-2">
+                            <div className="flex flex-col w-20 h-10 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-md scale-110 origin-left">
+                              <div className="h-2.5 bg-[#003399] flex items-center justify-center">
+                                <span className="text-[5px] text-white font-black tracking-[0.2em]">BRASIL</span>
+                              </div>
+                              <div className="flex-1 flex items-center justify-center bg-white">
+                                <span className="text-[10px] font-black tracking-tight text-neutral-900">{(rental.plate || '').replace('-', '') || 'S/ PLACA'}</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="flex flex-col gap-2">
+                        <div className="flex items-center gap-4 bg-neutral-50/50 p-3 rounded-[2rem] border border-neutral-100 group-hover:bg-white group-hover:border-[#C5A059]/20 transition-all duration-500">
+                          <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-xl group-hover:bg-[#C5A059] group-hover:text-white transition-colors">
+                            <User size={20} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-black text-neutral-900 truncate">{rental.user}</p>
+                            <div className="flex items-center gap-3">
+                              <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Condutor</p>
+                              {rental.clientPhone && (
+                                <a
+                                  href={`https://wa.me/${rental.clientPhone.replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-600 transition-colors"
+                                >
+                                  <Phone size={10} /> Whats
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {/* Alerts for Inspection */}
+                        {!hasEntrega && (
+                          <button onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Entrega' })} className="py-1.5 bg-amber-500 text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-sm animate-pulse flex items-center justify-center gap-2">
+                            <ClipboardList size={10} /> Realizar Vistoria de Entrega
+                          </button>
+                        )}
+                        {isEnding && !hasDevolucao && (
+                          <button onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Devolução' })} className="py-1.5 bg-red-500 text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-sm animate-bounce flex items-center justify-center gap-2">
+                            <ClipboardList size={10} /> Realizar Vistoria de Devolução
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <div className="pl-4 border-l-2 border-[#C5A059]/20">
+                        <span className="text-sm font-black text-neutral-900 block">{rental.value}</span>
+                        <span className="text-[9px] text-[#C5A059] font-black uppercase tracking-[0.2em] mt-1 block">{rental.period}</span>
+                      </div>
+                    </td>
+                    <td className="p-6 text-center">
+                      {(() => {
+                        const startDate = new Date(rental.date + 'T12:00:00');
+                        const periodValue = parseInt(rental.period) || 1;
+                        const isWeekly = (rental.period || '').includes('sem');
+                        const totalDays = isWeekly ? periodValue * 7 : periodValue;
+                        const endDate = new Date(startDate.getTime());
+                        endDate.setDate(startDate.getDate() + totalDays);
+                        const now = new Date();
+                        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+                        const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+                        return (
+                          <div className="flex flex-col items-center gap-2">
+                            <div className={`px-5 py-2.5 rounded-2xl text-[9px] font-black uppercase tracking-widest shadow-sm border-2 transition-all ${diffDays <= 2 ? 'bg-red-50 text-red-600 border-red-100' :
+                                diffDays <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                  'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              }`}>
+                              {diffDays > 0 ? `Faltam ${diffDays} dias` : 'Encerrado'}
+                            </div>
+                            <span className="text-[8px] text-neutral-400 font-black uppercase tracking-tighter">Devolução: {endDate.toLocaleDateString('pt-BR')}</span>
+                          </div>
+                        );
+                      })()}
+                    </td>
+                    <td className="p-6 text-right">
+                      <div className="flex justify-end gap-3 pr-2">
+                        <button
+                          onClick={() => {
+                            setSelectedRental(rental);
+                            setShowRentalDetailModal(true);
+                          }}
+                          className="w-12 h-12 bg-neutral-900 text-white rounded-2xl hover:bg-[#C5A059] transition-all flex items-center justify-center shadow-xl group/btn"
+                          title="Ver Detalhes"
+                        >
+                          <ClipboardList size={20} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedRental(rental);
+                            // Logic for editing rental should be here
+                          }}
+                          className="w-12 h-12 bg-white text-neutral-400 border border-neutral-100 rounded-2xl hover:border-[#C5A059] hover:text-[#C5A059] transition-all flex items-center justify-center shadow-sm"
+                          title="Editar Contrato"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setItemToDelete(rental);
+                            setDeleteType('rental');
+                            setShowDeleteAuthModal(true);
+                          }}
+                          className="w-12 h-12 bg-white text-neutral-400 border border-neutral-100 rounded-2xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm"
+                          title="Encerrar Contrato"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

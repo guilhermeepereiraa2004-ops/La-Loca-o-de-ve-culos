@@ -63,7 +63,7 @@ const App = () => {
       initialKm: '5000', km: '15000', fipeValue: '850000', investor: 'Ricardo Santana', adminTax: '15',
       protectionPaidByAdmin: true, protectionValue: '120', franchiseInsurance: true, hasSpareKey: true,
       lastBeltChangeKm: '10000', beltChangeIntervalKm: '80000', image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80', dividend: '3500',
-      weeklyRental: '2500', investmentValue: '850000', preventiveMaintenance: true, status: 'Alugado',
+      weeklyRental: '2500', investmentValue: '850000', preventiveMaintenance: true, status: 'Disponível',
       entryDate: '2024-01-15', crlvFile: null, isFavorite: true
     },
     {
@@ -80,6 +80,8 @@ const App = () => {
   const [inspections, setInspections] = useState([]);
   const [serviceOrders, setServiceOrders] = useState([]);
   const [systemUsers, setSystemUsers] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [replacementContracts, setReplacementContracts] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showInterestModal, setShowInterestModal] = useState(false);
@@ -95,13 +97,29 @@ const App = () => {
     setLeads(prev => [{ ...lead, id: Date.now(), status: 'novo', date: new Date().toLocaleDateString('pt-BR') }, ...prev]);
   };
 
-  const handleUpdateLeadStatus = (id, status) => {
-    setLeads(prev => prev.map(l => l.id === id ? { ...l, status } : l));
+  const handleUpdateLeadStatus = (id, status, updatedBy) => {
+    setLeads(prev => prev.map(l => l.id === id ? { ...l, status, updatedBy } : l));
   };
 
   const handleAddRental = (rental) => {
     setRentals(prev => [{ ...rental, id: Date.now() }, ...prev]);
     setVehicles(prev => prev.map(v => v.id === rental.vehicleId ? { ...v, status: 'Alugado' } : v));
+    
+    // Add to clients if not already exists
+    setClients(prev => {
+      const exists = prev.find(c => c.phone === rental.clientPhone || (c.cnh && c.cnh === rental.cnh));
+      if (exists) return prev;
+      return [...prev, {
+        name: rental.user,
+        phone: rental.clientPhone,
+        email: rental.email,
+        cnh: rental.cnh,
+        cnhValidity: rental.cnhValidity,
+        registrationDate: new Date().toLocaleDateString('pt-BR'),
+        docs: rental.docs,
+        address: rental.address
+      }];
+    });
   };
 
   const handleDeleteRental = (id) => {
@@ -160,21 +178,31 @@ const App = () => {
     if (!rental) return;
 
     // 1. Update Rental Status
-    setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, status: 'Encerrado', endDate: new Date().toLocaleDateString('pt-BR') } : r));
+    setRentals(prev => prev.map(r => r.id === rentalId ? { 
+      ...r, 
+      status: 'Encerrado', 
+      endDate: new Date().toLocaleDateString('pt-BR'),
+      depositPaid: closureData.caucaoAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2 }), // Finalize deposit state
+      closureNote: closureData.type === 'return' ? 'Saldo a devolver' : 'Saldo devedor liquidado'
+    } : r));
     
     // 2. Update Vehicle Status
-    setVehicles(prev => prev.map(v => v.id === rental.vehicleId ? { ...v, status: 'Disponível' } : v));
+    setVehicles(prev => prev.map(v => v.plate === rental.plate ? { ...v, status: 'Disponível' } : v));
 
-    // 3. Register Financial Transaction
+    // 3. Register Financial Transaction for the liquidation
     handleAddTransaction({
       date: new Date().toISOString().split('T')[0],
       type: closureData.type === 'return' ? 'out' : 'in',
       val: closureData.balance,
-      desc: `Liquidação de Caução - Contrato ${rental.plate} - ${rental.user}`,
-      cat: closureData.type === 'return' ? 'Caução a devolver' : 'Boleto Avulso',
+      desc: `Liquidação Final - Contrato ${rental.plate} - ${rental.user} (${closureData.type === 'return' ? 'Devolução de Saldo' : 'Cobrança de Resíduo'})`,
+      cat: closureData.type === 'return' ? 'Caução a devolver' : 'Aluguel',
       vehiclePlate: rental.plate,
+      status: 'pendente', // Usually pending until financial confirmation
       responsible: 'Administradora'
     });
+
+    // 4. Mark all previous pending items for this rental as 'liquidado' or 'compensado'
+    // This is optional but good for data integrity
   };
 
   const handlePayCaucaoInstallment = (rentalId, installmentNumber, value) => {
@@ -183,7 +211,6 @@ const App = () => {
         const paidInstallments = [...(r.paidInstallments || []), installmentNumber];
         const depositReceived = (parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0) + value;
         
-        // Format back to string if needed, or keep as number
         return { 
           ...r, 
           paidInstallments, 
@@ -192,18 +219,74 @@ const App = () => {
       }
       return r;
     }));
+  };
 
-    // Add to financeiro
+  const handleConfirmPayment = (rentalId, billingData) => {
     const rental = rentals.find(r => r.id === rentalId);
-    handleAddTransaction({
-      date: new Date().toISOString().split('T')[0],
-      type: 'in',
-      val: value,
-      desc: `Caução - Parcela ${installmentNumber} - ${rental?.user}`,
-      cat: 'Caução',
-      vehiclePlate: rental?.plate,
-      responsible: 'Administradora'
-    });
+    if (!rental) return;
+
+    const vehicle = vehicles.find(v => v.plate === rental.plate);
+    const adminTaxPercent = parseFloat(vehicle?.adminTax || 15) / 100;
+    
+    // 1. Admin Tax Revenue
+    const baseValue = billingData.weeklyRate || 0;
+    const adminRevenue = baseValue * adminTaxPercent;
+    
+    if (adminRevenue > 0) {
+      handleAddTransaction({
+        date: new Date().toISOString().split('T')[0],
+        type: 'in',
+        val: adminRevenue,
+        desc: `Taxa Adm (${vehicle?.adminTax || 15}%) - ${rental.user}`,
+        cat: 'Taxa Adm',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 2. Late Fees (Multas) - Entirely for Admin
+    if (billingData.lateFee > 0) {
+      handleAddTransaction({
+        date: new Date().toISOString().split('T')[0],
+        type: 'in',
+        val: billingData.lateFee,
+        desc: `Multa por Atraso - ${rental.user}`,
+        cat: 'Multas',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 3. Tire Tax - Entirely for Admin
+    if (billingData.tireTax > 0) {
+      handleAddTransaction({
+        date: new Date().toISOString().split('T')[0],
+        type: 'in',
+        val: billingData.tireTax,
+        desc: `Taxa de Pneus - ${rental.user}`,
+        cat: 'Taxa Pneus',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 4. Replacement Car Profit (if any)
+    if (billingData.replacementCharge > 0) {
+      // Assuming replacement car profit goes to admin
+      handleAddTransaction({
+        date: new Date().toISOString().split('T')[0],
+        type: 'in',
+        val: billingData.replacementCharge,
+        desc: `Carro Reserva (${billingData.replacementDays}d) - ${rental.user}`,
+        cat: 'Carro Reserva',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
   };
 
   const handleAddInspection = (inspection) => {
@@ -214,13 +297,55 @@ const App = () => {
     setInspections(prev => prev.filter(ins => ins.id !== id));
   };
 
-  const handleCloseServiceOrder = (os, mode) => {
+  const handleCloseServiceOrder = (os, mode, replacementCarPlate) => {
     if (mode === 'open') {
       setServiceOrders(prev => [{ ...os, status: 'Aberta' }, ...prev]);
+      
+      // Update vehicle status to Maintenance
+      setVehicles(prev => prev.map(v => v.plate === os.plate ? { ...v, status: 'Manutenção' } : v));
+
+      // If replacement car assigned
+      if (replacementCarPlate) {
+        const rental = rentals.find(r => r.plate === os.plate && r.status === 'Ativo');
+        if (rental) {
+          setReplacementContracts(prev => [...prev, {
+            id: Date.now(),
+            mainVehiclePlate: os.plate,
+            replacementVehiclePlate: replacementCarPlate,
+            driverName: rental.user,
+            startDate: new Date().toISOString(),
+            dailyRate: 80, // Default or selected
+            status: 'Ativo'
+          }]);
+          // Mark replacement car as Rented/Replacement
+          setVehicles(prev => prev.map(v => v.plate === replacementCarPlate ? { ...v, status: 'Alugado (Reserva)' } : v));
+        }
+      }
       return;
     }
     // Close OS
     setServiceOrders(prev => prev.map(o => o.id === os.id ? { ...o, status: 'Concluída', closedAt: new Date().toISOString() } : o));
+    
+    // Update vehicle status back to Alugado (if it was alugado before)
+    const wasRented = rentals.some(r => r.plate === os.plate && r.status === 'Ativo');
+    setVehicles(prev => prev.map(v => v.plate === os.plate ? { ...v, status: wasRented ? 'Alugado' : 'Disponível' } : v));
+
+    // Close replacement contract if exists
+    setReplacementContracts(prev => prev.map(rc => {
+      if (rc.mainVehiclePlate === os.plate && rc.status === 'Ativo') {
+        const endDate = new Date().toISOString();
+        // Calculate days for next billing logic (optional here, but marked as closed)
+        return { ...rc, status: 'Encerrado', endDate };
+      }
+      return rc;
+    }));
+
+    // Mark replacement car as Disponível
+    const activeReplacement = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
+    if (activeReplacement) {
+      setVehicles(prev => prev.map(v => v.plate === activeReplacement.replacementVehiclePlate ? { ...v, status: 'Disponível' } : v));
+    }
+
     // 1. Log maintenance history
     handleAddMaintenance({
       vehiclePlate: os.plate,
@@ -251,6 +376,7 @@ const App = () => {
       <AdminDashboard
         leads={leads}
         rentals={rentals}
+        clients={clients}
         investors={investors}
         vehicles={vehicles}
         transactions={transactions}
@@ -259,6 +385,7 @@ const App = () => {
         onAddInspection={handleAddInspection}
         onDeleteInspection={handleDeleteInspection}
         serviceOrders={serviceOrders}
+        replacementContracts={replacementContracts}
         onCloseServiceOrder={handleCloseServiceOrder}
         onCompleteClosure={handleCompleteClosure}
         onPayCaucaoInstallment={handlePayCaucaoInstallment}
@@ -276,6 +403,7 @@ const App = () => {
         onAddMaintenance={handleAddMaintenance}
         onUpdateMaintenance={handleUpdateMaintenance}
         onDeleteMaintenance={handleDeleteMaintenance}
+        onConfirmPayment={handleConfirmPayment}
         currentUser={currentUser}
         systemUsers={systemUsers}
         onAddSystemUser={handleAddSystemUser}
@@ -366,8 +494,8 @@ const App = () => {
               </button>
             ))}
           </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setView('admin-login')} className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-neutral-900 transition-colors hidden md:block">
+          <div className="flex items-center gap-3 md:gap-6">
+            <button onClick={() => setView('admin-login')} className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-neutral-900 transition-colors">
               Admin
             </button>
             <button

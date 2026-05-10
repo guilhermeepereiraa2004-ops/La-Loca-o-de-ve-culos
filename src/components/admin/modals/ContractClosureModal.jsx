@@ -18,18 +18,19 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       // 1. Debts from inspection
       const inspectionDebts = (inspection.deductions || []).reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
 
-      // 2. Unpaid fines (Simulated or from transactions if categorized)
+      // 2. Unpaid fines (From transactions)
       const unpaidFines = transactions
-        .filter(t => t.vehiclePlate === rental.plate && t.cat === 'Multa' && t.status === 'pendente')
+        .filter(t => t.vehiclePlate === rental.plate && (t.cat === 'Multa' || t.desc.toLowerCase().includes('multa')) && t.status === 'pendente')
         .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
 
-      // 3. Unpaid rentals (Simulated or calculated based on weeks)
-      // For this demo, let's assume we check the rentals state or a specific field
-      const unpaidRentals = rental.unpaidBalance || 0; 
+      // 3. Unpaid rentals (From transactions)
+      const unpaidRentals = transactions
+        .filter(t => t.vehiclePlate === rental.plate && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && t.status === 'pendente')
+        .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
 
-      // 4. Unpaid Caucao (from Caucao logic)
+      // 4. Unpaid Caucao (Balance remaining)
       const totalCaucao = parseFloat(String(rental.depositTotal).replace(/\./g, '').replace(',', '.')) || 0;
-      const paidCaucao = parseFloat(String(rental.depositPaid).replace(/\./g, '').replace(',', '.')) || 0;
+      const paidCaucao = parseFloat(String(rental.depositPaid || rental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
       const unpaidCaucao = totalCaucao - paidCaucao;
 
       const totalDebts = inspectionDebts + unpaidFines + unpaidRentals + unpaidCaucao;

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
 import { 
-  TrendingUp, Car, Mail, Key, Users, Wallet, Landmark, Wrench, Eye, X, Menu, 
-  ChevronRight, AlertTriangle, Calendar, ClipboardList, Plus, Check, Camera, FileText
+  TrendingUp, Car, Mail, Key, Users, User, Wallet, Landmark, Wrench, Eye, X, Menu, 
+  ChevronRight, AlertTriangle, Calendar, ClipboardList, Plus, Check, Camera, FileText, Receipt
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import AdminLeads from './tabs/AdminLeads';
@@ -20,16 +20,19 @@ import ContractClosureModal from './modals/ContractClosureModal';
 import TerminationTermModal from './modals/TerminationTermModal';
 import AdminUsuarios from './tabs/AdminUsuarios';
 import AdminOficina from './tabs/AdminOficina';
+import AdminClientes from './tabs/AdminClientes';
+import AdminFaturamento from './tabs/AdminFaturamento';
+import VehicleDetailModal from './modals/VehicleDetailModal';
 
 const AdminDashboard = ({
-  leads, rentals, investors, vehicles, transactions, onAddTransaction,
+  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction,
   onUpdateStatus, onAddRental, onDeleteRental, onUpdateRental,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
   inspections, onAddInspection, onDeleteInspection,
-  serviceOrders, onCloseServiceOrder,
-  onCompleteClosure, onPayCaucaoInstallment,
+  serviceOrders, replacementContracts, onCloseServiceOrder,
+  onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onGoHome, onViewVehicleDetail
 }) => {
@@ -98,9 +101,12 @@ const AdminDashboard = ({
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showInspectionDetailModal, setShowInspectionDetailModal] = useState(false);
   const [selectedInspection, setSelectedInspection] = useState(null);
+  const [showVehicleDetailModal, setShowVehicleDetailModal] = useState(false);
+  const [selectedVehicleForDetail, setSelectedVehicleForDetail] = useState(null);
   const [showClosureModal, setShowClosureModal] = useState(false);
   const [showTerminationTerm, setShowTerminationTerm] = useState(false);
   const [finalClosureData, setFinalClosureData] = useState(null);
+  const [pendingInspection, setPendingInspection] = useState(null);
   const [showAdminSuccess, setShowAdminSuccess] = useState({ show: false, title: '', message: '' });
   const [currentRentalStep, setCurrentRentalStep] = useState(1);
   const totalRentalSteps = 4;
@@ -350,6 +356,7 @@ const AdminDashboard = ({
     const today = new Date();
     let preventiveCount = 0;
     let beltCount = 0;
+    let inspectionPendingCount = 0;
 
     (vehicles || []).forEach(v => {
       // 6-month preventive maintenance alert
@@ -372,13 +379,25 @@ const AdminDashboard = ({
       if (currentKm >= (lastChange + interval - 5000)) {
         beltCount++;
       }
+
+      // Vistoria Periódica alert: less than 2 per month for rented cars
+      if (v.status === 'Alugado') {
+        const lastMonthInspections = (inspections || []).filter(ins => 
+          ins.vehiclePlate === v.plate && 
+          ins.type === 'Periódica' &&
+          (today - new Date(ins.date)) / (1000 * 60 * 60 * 24) <= 30
+        ).length;
+        if (lastMonthInspections < 2) {
+          inspectionPendingCount++;
+        }
+      }
     });
 
     return [
       { title: 'Manutenção Preventiva', count: preventiveCount, type: preventiveCount > 0 ? 'critical' : 'info', icon: <Wrench size={16} /> },
       { title: 'Troca de Correia Dentada', count: beltCount, type: beltCount > 0 ? 'critical' : 'info', icon: <Wrench size={16} /> },
       { title: 'CNH próxima do vencimento', count: 3, type: 'warning', icon: <Calendar size={16} /> },
-      { title: 'Vistorias pendentes', count: 5, type: 'critical', icon: <ClipboardList size={16} /> },
+      { title: 'Vistorias Periódicas Pendentes', count: inspectionPendingCount, type: inspectionPendingCount > 0 ? 'critical' : 'info', icon: <ClipboardList size={16} /> },
     ];
   };
 
@@ -486,7 +505,7 @@ const AdminDashboard = ({
   const alerts = getDynamicAlerts();
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex animate-in fade-in duration-500 relative">
+    <div className="min-h-screen xl:h-screen bg-neutral-50 flex animate-in fade-in duration-500 relative xl:overflow-hidden">
       {/* Mobile Toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -497,19 +516,21 @@ const AdminDashboard = ({
 
       {/* Sidebar */}
       <aside className={`bg-neutral-900 text-white flex flex-col fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
-        <div className={`p-8 border-b border-neutral-800 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+        <div className={`p-6 md:p-7 2xl:p-8 border-b border-neutral-800 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
           <div className="flex items-center gap-2">
             <span className="text-xl font-black text-white">LA</span>
             <span className="text-xl font-black text-[#C5A059]">LOCAÇÃO</span>
           </div>
         </div>
-        <nav className="flex-1 p-6 space-y-4">
+        <nav className="flex-1 p-5 md:p-6 space-y-2 md:space-y-3 overflow-y-auto custom-scrollbar no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
           <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>Gerenciamento</div>
           {[
                       { id: 'bi',             label: 'Business Inteligence', icon: TrendingUp },
+            { id: 'faturamento',   label: 'Faturamento', icon: Receipt },
             { id: 'frota',         label: 'Frota', icon: Car },
             { id: 'leads',         label: 'Leads', icon: Mail },
             { id: 'locacao',       label: 'Locação', icon: Key },
+            { id: 'clientes',      label: 'Clientes', icon: User },
             { id: 'investidores',  label: 'Investidores', icon: Users },
             { id: 'financeiro',    label: 'Financeiro', icon: Wallet },
             { id: 'caucao',        label: 'Caução', icon: Landmark },
@@ -532,7 +553,7 @@ const AdminDashboard = ({
             </button>
           ))}
         </nav>
-        <div className="p-6 border-t border-neutral-800 space-y-2">
+        <div className="p-5 md:p-6 border-t border-neutral-800 space-y-3">
           <button
             onClick={onGoHome}
             className="flex items-center gap-3 text-sm font-medium text-neutral-400 hover:text-white transition-colors w-full p-3 group"
@@ -563,7 +584,7 @@ const AdminDashboard = ({
       )}
 
       {/* Main Content */}
-      <main className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-500 ${isSidebarOpen ? 'xl:ml-64' : 'xl:ml-20'}`}>
+      <main className={`flex-1 flex flex-col h-screen xl:h-screen overflow-hidden transition-all duration-500 ${isSidebarOpen ? 'xl:ml-64' : 'xl:ml-20'}`}>
         <header className="h-20 bg-white border-b border-neutral-100 flex items-center justify-between px-6 md:px-12 shadow-sm relative z-10 shrink-0">
           <div className="flex items-center gap-4">
             {!isSidebarOpen && (
@@ -580,6 +601,8 @@ const AdminDashboard = ({
                 activeTab === 'financeiro' ? 'Controle Financeiro' :
                 activeTab === 'caucao' ? 'Gestão de Caução' :
                 activeTab === 'vistoria' ? 'Vistorias Técnicas' :
+                activeTab === 'clientes' ? 'Base de Clientes' :
+                activeTab === 'faturamento' ? 'Faturamento Automatizado' :
                 activeTab === 'manutencaoAdmin' ? 'Histórico de Manutenções' : 
                 activeTab === 'usuarios' ? 'Usuários do Sistema' : 
                 activeTab === 'oficina' ? 'Oficina / O.S.' : 'Painel LA'}
@@ -610,18 +633,23 @@ const AdminDashboard = ({
               leadStatusFilter={leadStatusFilter}
               setLeadStatusFilter={setLeadStatusFilter}
               onUpdateStatus={onUpdateStatus}
+              currentUser={currentUser}
             />
           )}
           {activeTab === 'frota' && (
             <AdminFrota 
               vehicles={vehicles}
+              inspections={inspections}
               vehicleSearch={vehicleSearch}
               setVehicleSearch={setVehicleSearch}
               vehicleStatusFilter={vehicleStatusFilter}
               setVehicleStatusFilter={setVehicleStatusFilter}
               setShowAddForm={setShowAddForm}
               resetVehicleForm={resetVehicleForm}
-              onViewVehicleDetail={onViewVehicleDetail}
+              onViewVehicleDetail={(v) => {
+                setSelectedVehicleForDetail(v);
+                setShowVehicleDetailModal(true);
+              }}
               onUpdateVehicle={onUpdateVehicle}
               setVehicleForm={setVehicleForm}
               setSelectedVehicle={setSelectedVehicle}
@@ -630,11 +658,16 @@ const AdminDashboard = ({
               setItemToDelete={setItemToDelete}
               setDeleteType={setDeleteType}
               setShowDeleteAuthModal={setShowDeleteAuthModal}
+              onGoToVistorias={(data) => {
+                if (data) setPendingInspection(data);
+                setActiveTab('vistoria');
+              }}
             />
           )}
           {activeTab === 'locacao' && (
             <AdminLocacoes 
               rentals={rentals}
+              inspections={inspections}
               rentalFilter={rentalFilter}
               setRentalFilter={setRentalFilter}
               setShowAddForm={setShowAddForm}
@@ -656,6 +689,21 @@ const AdminDashboard = ({
               setItemToDelete={setItemToDelete}
               setDeleteType={setDeleteType}
               setShowDeleteAuthModal={setShowDeleteAuthModal}
+              onGoToVistorias={(data) => {
+                if (data) setPendingInspection(data);
+                setActiveTab('vistoria');
+              }}
+            />
+          )}
+          {activeTab === 'clientes' && (
+            <AdminClientes clients={clients} />
+          )}
+          {activeTab === 'faturamento' && (
+            <AdminFaturamento 
+              rentals={rentals}
+              replacementContracts={replacementContracts}
+              vehicles={vehicles}
+              onConfirmPayment={onConfirmPayment}
             />
           )}
           {activeTab === 'investidores' && (
@@ -711,6 +759,8 @@ const AdminDashboard = ({
                 setSelectedInspection(ins);
                 setShowInspectionDetailModal(true);
               }}
+              pendingInspection={pendingInspection}
+              onClearPendingInspection={() => setPendingInspection(null)}
               isReadOnly={!isAdmin}
             />
           )}
@@ -726,7 +776,9 @@ const AdminDashboard = ({
             <AdminOficina
               vehicles={vehicles}
               investors={investors}
+              rentals={rentals}
               serviceOrders={serviceOrders}
+              replacementContracts={replacementContracts}
               onAddMaintenance={onAddMaintenance}
               onCloseServiceOrder={onCloseServiceOrder}
             />
@@ -773,11 +825,35 @@ const AdminDashboard = ({
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Placa (ID Único)</label>
-                          <input type="text" required value={vehicleForm.plate} onChange={e => setVehicleForm({...vehicleForm, plate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm uppercase" placeholder="ABC-1234" />
+                          <input 
+                            type="text" 
+                            required 
+                            value={vehicleForm.plate} 
+                            onChange={e => {
+                              let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                              if (v.length > 3) v = v.slice(0, 3) + '-' + v.slice(3, 7);
+                              setVehicleForm({...vehicleForm, plate: v});
+                            }} 
+                            maxLength={8}
+                            className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm uppercase" 
+                            placeholder="ABC-1234" 
+                          />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Ano Fab. / Modelo</label>
-                          <input type="text" required value={vehicleForm.year} onChange={e => setVehicleForm({...vehicleForm, year: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="2023/2024" />
+                          <input 
+                            type="text" 
+                            required 
+                            value={vehicleForm.year} 
+                            onChange={e => {
+                              let v = e.target.value.replace(/\D/g, '');
+                              if (v.length > 4) v = v.slice(0, 4) + '/' + v.slice(4, 8);
+                              setVehicleForm({...vehicleForm, year: v});
+                            }} 
+                            maxLength={9}
+                            className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
+                            placeholder="2023/2024" 
+                          />
                         </div>
                       </div>
 
@@ -853,14 +929,34 @@ const AdminDashboard = ({
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor do Investimento</label>
                           <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
-                            <input type="text" value={vehicleForm.investmentValue} onChange={e => setVehicleForm({...vehicleForm, investmentValue: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0,00" />
+                          <input 
+                            type="text" 
+                            value={vehicleForm.investmentValue} 
+                            onChange={e => {
+                              let v = e.target.value.replace(/\D/g, '');
+                              v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                              setVehicleForm({...vehicleForm, investmentValue: v});
+                            }} 
+                            className="w-full bg-neutral-50 border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
+                            placeholder="0,00" 
+                          />
                           </div>
                         </div>
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor FIPE</label>
                           <div className="relative">
                             <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
-                            <input type="text" value={vehicleForm.fipeValue} onChange={e => setVehicleForm({...vehicleForm, fipeValue: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0,00" />
+                          <input 
+                            type="text" 
+                            value={vehicleForm.fipeValue} 
+                            onChange={e => {
+                              let v = e.target.value.replace(/\D/g, '');
+                              v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                              setVehicleForm({...vehicleForm, fipeValue: v});
+                            }} 
+                            className="w-full bg-neutral-50 border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
+                            placeholder="0,00" 
+                          />
                           </div>
                         </div>
                       </div>
@@ -886,7 +982,11 @@ const AdminDashboard = ({
                             type="text" 
                             required 
                             value={vehicleForm.weeklyRental} 
-                            onChange={e => setVehicleForm({...vehicleForm, weeklyRental: e.target.value})} 
+                            onChange={e => {
+                              let v = e.target.value.replace(/\D/g, '');
+                              v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                              setVehicleForm({...vehicleForm, weeklyRental: v});
+                            }} 
                             className="w-full bg-neutral-800 border-none pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/50 transition-all font-black text-white text-lg" 
                             placeholder="600,00" 
                           />
@@ -908,7 +1008,17 @@ const AdminDashboard = ({
                             <p className="text-[8px] text-neutral-400 uppercase font-bold mb-2">Valor Mensal (Debitado do Carro)</p>
                             <div className="relative">
                               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
-                              <input type="text" value={vehicleForm.protectionValue} onChange={e => setVehicleForm({...vehicleForm, protectionValue: e.target.value})} className="w-full bg-white border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0,00" />
+                              <input 
+                                type="text" 
+                                value={vehicleForm.protectionValue} 
+                                onChange={e => {
+                                  let v = e.target.value.replace(/\D/g, '');
+                                  v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                  setVehicleForm({...vehicleForm, protectionValue: v});
+                                }} 
+                                className="w-full bg-white border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
+                                placeholder="0,00" 
+                              />
                             </div>
                           </div>
                         )}
@@ -1368,7 +1478,18 @@ const AdminDashboard = ({
                               <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor Aluguel / {rentalForm.rentalType === 'weekly' ? 'Semana' : 'Dia'}</label>
                               <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-xs">R$</span>
-                                <input type="text" required value={rentalForm.value} onChange={e => setRentalForm({...rentalForm, value: e.target.value})} className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" placeholder="600" />
+                                <input 
+                                  type="text" 
+                                  required 
+                                  value={rentalForm.value} 
+                                  onChange={e => {
+                                    let v = e.target.value.replace(/\D/g, '');
+                                    v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                    setRentalForm({...rentalForm, value: v});
+                                  }} 
+                                  className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" 
+                                  placeholder="0,00" 
+                                />
                               </div>
                               <p className="text-[8px] text-emerald-600 font-bold uppercase tracking-widest ml-1 flex items-center gap-1"><TrendingUp size={10} /> Base de cálculo investidor</p>
                             </div>
@@ -1377,7 +1498,16 @@ const AdminDashboard = ({
                               <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Taxa de Pneus</label>
                               <div className="relative">
                                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-xs">R$</span>
-                                <input type="text" value={rentalForm.tireTax} onChange={e => setRentalForm({...rentalForm, tireTax: e.target.value})} className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" />
+                                <input 
+                                  type="text" 
+                                  value={rentalForm.tireTax} 
+                                  onChange={e => {
+                                    let v = e.target.value.replace(/\D/g, '');
+                                    v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                    setRentalForm({...rentalForm, tireTax: v});
+                                  }} 
+                                  className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" 
+                                />
                               </div>
                               <p className="text-[8px] text-[#C5A059] font-bold uppercase tracking-widest ml-1">Fica 100% para a empresa</p>
                             </div>
@@ -1420,14 +1550,36 @@ const AdminDashboard = ({
                                 <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Caução Total</label>
                                 <div className="relative">
                                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-xs">R$</span>
-                                  <input type="text" required value={rentalForm.depositTotal} onChange={e => setRentalForm({...rentalForm, depositTotal: e.target.value})} className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" placeholder="1000" />
+                                  <input 
+                                    type="text" 
+                                    required 
+                                    value={rentalForm.depositTotal} 
+                                    onChange={e => {
+                                      let v = e.target.value.replace(/\D/g, '');
+                                      v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                      setRentalForm({...rentalForm, depositTotal: v});
+                                    }} 
+                                    className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" 
+                                    placeholder="0,00" 
+                                  />
                                 </div>
                               </div>
                               <div className="space-y-2">
                                 <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Pago no Ato</label>
                                 <div className="relative">
                                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-xs">R$</span>
-                                  <input type="text" required value={rentalForm.depositPaid} onChange={e => setRentalForm({...rentalForm, depositPaid: e.target.value})} className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm text-emerald-600" placeholder="200" />
+                                  <input 
+                                    type="text" 
+                                    required 
+                                    value={rentalForm.depositPaid} 
+                                    onChange={e => {
+                                      let v = e.target.value.replace(/\D/g, '');
+                                      v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                      setRentalForm({...rentalForm, depositPaid: v});
+                                    }} 
+                                    className="w-full bg-white border border-neutral-200 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm text-emerald-600" 
+                                    placeholder="0,00" 
+                                  />
                                 </div>
                               </div>
                             </div>
@@ -1628,6 +1780,7 @@ const AdminDashboard = ({
       {showRentalDetailModal && selectedRental && (
         <RentalDetailModal 
           rental={selectedRental} 
+          inspections={inspections}
           onClose={() => {
             setShowRentalDetailModal(false);
             setSelectedRental(null);
@@ -1677,6 +1830,23 @@ const AdminDashboard = ({
             setShowTerminationTerm(false);
             setShowInspectionDetailModal(false);
             setSelectedInspection(null);
+          }}
+        />
+      )}
+
+      {showVehicleDetailModal && selectedVehicleForDetail && (
+        <VehicleDetailModal 
+          vehicle={selectedVehicleForDetail}
+          inspections={inspections}
+          maintenances={maintenances}
+          onClose={() => {
+            setShowVehicleDetailModal(false);
+            setSelectedVehicleForDetail(null);
+          }}
+          onGoToVistorias={(data) => {
+            if (data) setPendingInspection(data);
+            setShowVehicleDetailModal(false);
+            setActiveTab('vistoria');
           }}
         />
       )}

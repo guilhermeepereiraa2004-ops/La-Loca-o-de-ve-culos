@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ClipboardCheck, Calendar, Car, Gauge, Fuel, Camera, Play, Eye, Download, AlertTriangle, FileText } from 'lucide-react';
+import { X, ClipboardCheck, Calendar, Car, Gauge, Fuel, Camera, Play, Eye, Download, AlertTriangle, FileText, Ban } from 'lucide-react';
 
 const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
   const [selectedMedia, setSelectedMedia] = useState(null);
@@ -84,7 +84,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
             <div className="bg-neutral-50 p-6 rounded-3xl border border-neutral-100">
               <p className="text-[8px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-4">Estado Pneus</p>
               <div className="flex items-center gap-3">
-                <FileCheck size={20} className="text-neutral-900" />
+                <ClipboardCheck size={20} className="text-neutral-900" />
                 <h5 className="text-2xl font-black text-neutral-900 uppercase tracking-tight">{inspection.tireCondition}</h5>
               </div>
             </div>
@@ -100,13 +100,16 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
               {[
                 { id: 'front', label: 'Frente Completa' },
                 { id: 'rear', label: 'Traseira Completa' },
-                { id: 'sideRight', label: 'Lateral Direita' },
-                { id: 'sideLeft', label: 'Lateral Esquerda' },
-                { id: 'angleFront', label: 'Frente em Ângulo' },
-                { id: 'angleRear', label: 'Traseira em Ângulo' },
+                { id: 'sideRightFront', label: 'Lat. Dir. Dianteira' },
+                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
+                { id: 'sideRightRear', label: 'Lat. Dir. Traseira' },
+                { id: 'sideLeftRear', label: 'Lat. Esq. Traseira' },
                 { id: 'plate', label: 'Placa do Veículo' },
                 { id: 'odometer', label: 'Hodômetro (KM)' },
                 { id: 'dashboard', label: 'Painel Ligado' },
+                { id: 'interior1', label: 'Interior 1' },
+                { id: 'interior2', label: 'Interior 2' },
+                { id: 'tools', label: 'Triang/Mac/Chave' },
               ].map((slot) => {
                 const photo = inspection.photos[slot.id];
                 return (
@@ -168,6 +171,43 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
               </div>
             </div>
           </section>
+
+          {/* Section: Damages */}
+          {inspection.hasDamages && (
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+               <div className="flex items-center gap-3 mb-8">
+                  <AlertTriangle size={18} className="text-red-500" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Avarias Identificadas</h5>
+               </div>
+               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {inspection.damages?.map((dmg, idx) => (
+                    <div key={idx} className="bg-white p-6 rounded-[2.5rem] border border-neutral-100 shadow-sm flex flex-col gap-6">
+                       <div className="aspect-video bg-neutral-100 rounded-2xl overflow-hidden relative group">
+                          {dmg.photo ? (
+                            <>
+                              <img src={dmg.photo.preview} className="w-full h-full object-cover" alt={`Avaria ${idx + 1}`} />
+                              <button 
+                                onClick={() => setSelectedMedia({ type: 'image', url: dmg.photo.preview })}
+                                className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white"
+                              >
+                                <Eye size={20} />
+                              </button>
+                            </>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-neutral-300">
+                               <AlertTriangle size={24} />
+                            </div>
+                          )}
+                       </div>
+                       <div className="space-y-2">
+                          <span className="text-[8px] uppercase font-black text-neutral-400 tracking-widest">Descrição da Avaria</span>
+                          <p className="text-xs text-neutral-700 font-bold leading-relaxed">{dmg.description || 'Sem descrição detalhada.'}</p>
+                       </div>
+                    </div>
+                  ))}
+               </div>
+            </section>
+          )}
 
           {/* Section 3: Deductions (Return Only) */}
           {inspection.deductions && inspection.deductions.length > 0 && (
@@ -232,9 +272,10 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
               </p>
             </div>
           </section>
+
         </div>
 
-        {/* Footer removed per user request */}
+        {/* Footer */}
         {inspection.type === 'Devolução' && (
           <div className="p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
             <button 

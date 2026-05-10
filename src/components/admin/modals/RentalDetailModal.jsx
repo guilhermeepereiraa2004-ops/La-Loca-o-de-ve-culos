@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
-const RentalDetailModal = ({ rental, onClose }) => {
+const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
   const [selectedImage, setSelectedImage] = useState(null);
 
   const getFileUrl = (file) => {
@@ -51,6 +51,13 @@ const RentalDetailModal = ({ rental, onClose }) => {
   };
 
   const dates = calculateDates();
+
+  // Filter inspections for this rental
+  const rentalInspections = inspections.filter(ins => 
+    ins.vehiclePlate === rental.plate && 
+    new Date(ins.date) >= new Date(rental.date) &&
+    ins.type !== 'Coleta'
+  ).sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
@@ -169,6 +176,47 @@ const RentalDetailModal = ({ rental, onClose }) => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </section>
+
+              {/* Vistorias Section - NEW */}
+              <section>
+                <div className="flex items-center gap-3 mb-6">
+                  <ClipboardList size={18} className="text-[#C5A059]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Histórico de Vistorias neste Contrato</h5>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {rentalInspections.length > 0 ? (
+                    rentalInspections.map((ins) => (
+                      <div key={ins.id} className="bg-neutral-50 p-6 rounded-3xl border border-neutral-100 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className={`px-2 py-1 rounded-md text-[7px] font-black uppercase tracking-widest ${
+                              ins.type === 'Entrega' ? 'bg-blue-500 text-white' : 
+                              ins.type === 'Devolução' ? 'bg-red-500 text-white' : 
+                              'bg-[#C5A059] text-white'
+                            }`}>
+                              {ins.type}
+                            </span>
+                            <p className="text-xs font-black text-neutral-900 mt-2">{new Date(ins.date).toLocaleDateString('pt-BR')}</p>
+                          </div>
+                          <p className="text-[9px] font-bold text-neutral-400 uppercase">{ins.km} KM</p>
+                        </div>
+                        <div className="flex gap-2 overflow-x-auto pb-2">
+                          {(ins.images || []).map((img, i) => (
+                            <button key={i} onClick={() => setSelectedImage(img)} className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-neutral-200">
+                              <img src={img} className="w-full h-full object-cover" alt="Vistoria" />
+                            </button>
+                          ))}
+                        </div>
+                        <p className="text-[8px] text-neutral-500 line-clamp-2 italic">"{ins.observations || 'Sem observações'}"</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="col-span-2 p-10 bg-neutral-50 rounded-[2.5rem] border border-dashed border-neutral-200 text-center">
+                      <p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest">Nenhuma vistoria realizada vinculada a este contrato</p>
+                    </div>
+                  )}
                 </div>
               </section>
 
