@@ -424,6 +424,7 @@ const App = () => {
     return (
       <InvestorDashboard
         transactions={transactions}
+        vehicles={vehicles}
         onLogout={() => setView('home')}
       />
     );

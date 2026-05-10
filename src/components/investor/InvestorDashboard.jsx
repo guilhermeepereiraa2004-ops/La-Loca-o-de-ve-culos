@@ -5,91 +5,53 @@ import {
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 
-const InvestorDashboard = ({ transactions = [], onLogout }) => {
+const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
 
-  // Calcular despesas reais do investidor a partir das transações
-  const realInvestorExpenses = transactions
-    .filter(t => t.responsible === 'Investidor' && t.type === 'out')
+  // Filter vehicles belonging to this investor (Mocking Ricardo Santana for now)
+  const myVehicles = vehicles.filter(v => v.investor?.toLowerCase().includes('ricardo') || v.investor?.toLowerCase().includes('santana') || vehicles.length <= 3);
+
+  // Calcular ganhos e despesas reais do investidor a partir das transações
+  const investorTransactions = transactions.filter(t => 
+    myVehicles.some(v => v.plate === t.vehiclePlate)
+  );
+
+  const realInvestorRevenue = investorTransactions
+    .filter(t => t.type === 'in' && t.responsible === 'Investidor')
     .reduce((acc, t) => acc + Math.abs(t.val), 0);
 
-  // Dados simulados do Investidor (Ricardo Santana)
-  const myVehicles = [
-    {
-      id: 1,
-      model: 'Porsche 911 Carrera',
-      plate: 'LA-9110',
-      year: '2023/2023',
-      investValue: 850000,
-      adminTax: '15%',
-      currentYield: 3500,
-      totalYield: 24500,
-      yieldPerc: '0.41%',
-      status: 'alugado',
-      image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80&w=200'
-    },
-    {
-      id: 2,
-      model: 'Audi RS6 Avant',
-      plate: 'LA-0066',
-      year: '2022/2023',
-      investValue: 720000,
-      adminTax: '12%',
-      currentYield: 4200,
-      totalYield: 29400,
-      yieldPerc: '0.58%',
-      status: 'manutenção',
-      image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?auto=format&fit=crop&q=80&w=200'
-    },
-    {
-      id: 3,
-      model: 'Mercedes-Benz C300',
-      plate: 'LA-3030',
-      year: '2024/2024',
-      investValue: 350000,
-      adminTax: '15%',
-      currentYield: 0,
-      totalYield: 0,
-      yieldPerc: '0.00%',
-      status: 'disponível',
-      image: 'https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=200'
-    },
-  ];
+  const realInvestorExpenses = investorTransactions
+    .filter(t => t.type === 'out' && t.responsible === 'Investidor')
+    .reduce((acc, t) => acc + Math.abs(t.val), 0);
 
-  const maintenanceHistory = [
-    { id: 1, vehicle: 'Porsche 911 Carrera', plate: 'LA-9110', type: 'Revisão Preventiva', date: '2024-04-12', cost: 'R$ 1.250,00', status: 'Concluído', icon: <ShieldCheck size={16} /> },
-    { id: 2, vehicle: 'Audi RS6 Avant', plate: 'LA-0066', type: 'Troca de Pneus', date: '2024-05-01', cost: 'R$ 4.800,00', status: 'Em Aberto', icon: <Car size={16} /> },
-    { id: 3, vehicle: 'Porsche 911 Carrera', plate: 'LA-9110', type: 'Troca de Óleo e Filtros', date: '2024-03-15', cost: 'R$ 850,00', status: 'Concluído', icon: <Wrench size={16} /> },
-    { id: 4, vehicle: 'Mercedes-Benz C300', plate: 'LA-3030', type: 'Higienização Detalhada', date: '2024-05-04', cost: 'R$ 450,00', status: 'Concluído', icon: <Star size={16} /> },
-  ];
+  // Maintenance history from transactions
+  const maintenanceHistory = transactions
+    .filter(t => t.cat === 'Manutenção' && myVehicles.some(v => v.plate === t.vehiclePlate))
+    .map(t => ({
+      id: t.id,
+      vehicle: vehicles.find(v => v.plate === t.vehiclePlate)?.model || 'Veículo',
+      plate: t.vehiclePlate,
+      type: t.desc,
+      date: t.date,
+      cost: `R$ ${t.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      status: t.status === 'pago' ? 'Concluído' : 'Em Aberto',
+      icon: <Wrench size={16} />
+    }));
 
   const dividendHistory = [
     {
       id: 1,
       period: 'Maio 2024',
-      gross: 12500,
-      adminTax: 1875,
+      gross: realInvestorRevenue || 12500, // Fallback to mock if no transactions
+      adminTax: (realInvestorRevenue * 0.15) || 1875,
       discounts: {
-        maintenance: 450 + realInvestorExpenses, // Soma despesas reais aqui
+        maintenance: realInvestorExpenses,
         insurance: 39.90,
         protection: 120
       },
       status: 'pendente',
       date: '10/06/2024'
-    },
-    {
-      id: 2,
-      period: 'Abril 2024',
-      gross: 11800,
-      adminTax: 1770,
-      discounts: {
-        maintenance: 1250,
-        insurance: 39.90,
-        protection: 120
-      },
-      status: 'pago',
-      date: '10/05/2024'
     }
   ];
 
@@ -97,10 +59,10 @@ const InvestorDashboard = ({ transactions = [], onLogout }) => {
     maintenanceFilter === 'todos' || m.vehicle === maintenanceFilter
   );
 
-  const totalInvested = myVehicles.reduce((acc, v) => acc + v.investValue, 0);
-  const currentMonthDividends = myVehicles.reduce((acc, v) => acc + v.currentYield, 0);
-  const yearDividends = myVehicles.reduce((acc, v) => acc + v.totalYield, 0);
-  const avgYield = '0.52%';
+  const totalInvested = myVehicles.reduce((acc, v) => acc + (parseFloat(String(v.investmentValue || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+  const currentMonthDividends = realInvestorRevenue - (realInvestorRevenue * 0.15) - realInvestorExpenses;
+  const yearDividends = currentMonthDividends; // Simplified for now
+  const avgYield = totalInvested > 0 ? ((currentMonthDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
 
   const getFifthBusinessDay = (date = new Date()) => {
     const year = date.getFullYear();
