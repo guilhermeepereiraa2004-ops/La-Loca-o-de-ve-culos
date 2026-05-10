@@ -13,7 +13,13 @@ import AdminFinanceiro from './tabs/AdminFinanceiro';
 import AdminCaucao from './tabs/AdminCaucao';
 import AdminBI from './tabs/AdminBI';
 import AdminManutencao from './tabs/AdminManutencao';
+import AdminVistoria from './tabs/AdminVistoria';
 import RentalDetailModal from './modals/RentalDetailModal';
+import InspectionDetailModal from './modals/InspectionDetailModal';
+import ContractClosureModal from './modals/ContractClosureModal';
+import TerminationTermModal from './modals/TerminationTermModal';
+import AdminUsuarios from './tabs/AdminUsuarios';
+import AdminOficina from './tabs/AdminOficina';
 
 const AdminDashboard = ({
   leads, rentals, investors, vehicles, transactions, onAddTransaction,
@@ -21,6 +27,10 @@ const AdminDashboard = ({
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
+  inspections, onAddInspection, onDeleteInspection,
+  serviceOrders, onCloseServiceOrder,
+  onCompleteClosure, onPayCaucaoInstallment,
+  currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onGoHome, onViewVehicleDetail
 }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -28,6 +38,13 @@ const AdminDashboard = ({
   const [showAddForm, setShowAddForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingRental, setIsEditingRental] = useState(false);
+
+  // Permission helper
+  const isAdmin = !currentUser || currentUser.role === 'administrador';
+  const canAccess = (moduleId) => {
+    if (isAdmin) return true;
+    return (currentUser?.modules || []).includes(moduleId);
+  };
   
   const [investorForm, setInvestorForm] = useState({
     name: '', email: '', phone: '', cpf: '', address: '',
@@ -79,6 +96,11 @@ const AdminDashboard = ({
   const [showRentalDetailModal, setShowRentalDetailModal] = useState(false);
   const [selectedRental, setSelectedRental] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [showInspectionDetailModal, setShowInspectionDetailModal] = useState(false);
+  const [selectedInspection, setSelectedInspection] = useState(null);
+  const [showClosureModal, setShowClosureModal] = useState(false);
+  const [showTerminationTerm, setShowTerminationTerm] = useState(false);
+  const [finalClosureData, setFinalClosureData] = useState(null);
   const [showAdminSuccess, setShowAdminSuccess] = useState({ show: false, title: '', message: '' });
   const [currentRentalStep, setCurrentRentalStep] = useState(1);
   const totalRentalSteps = 4;
@@ -484,15 +506,18 @@ const AdminDashboard = ({
         <nav className="flex-1 p-6 space-y-4">
           <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>Gerenciamento</div>
           {[
-            { id: 'bi', label: 'Business Inteligence', icon: TrendingUp },
-            { id: 'frota', label: 'Frota', icon: Car },
-            { id: 'leads', label: 'Leads', icon: Mail },
-            { id: 'locacao', label: 'Locação', icon: Key },
-            { id: 'investidores', label: 'Investidores', icon: Users },
-            { id: 'financeiro', label: 'Financeiro', icon: Wallet },
-            { id: 'caucao', label: 'Caução', icon: Landmark },
+                      { id: 'bi',             label: 'Business Inteligence', icon: TrendingUp },
+            { id: 'frota',         label: 'Frota', icon: Car },
+            { id: 'leads',         label: 'Leads', icon: Mail },
+            { id: 'locacao',       label: 'Locação', icon: Key },
+            { id: 'investidores',  label: 'Investidores', icon: Users },
+            { id: 'financeiro',    label: 'Financeiro', icon: Wallet },
+            { id: 'caucao',        label: 'Caução', icon: Landmark },
             { id: 'manutencaoAdmin', label: 'Manutenção', icon: Wrench },
-          ].map((item) => (
+            { id: 'vistoria',      label: 'Vistoria', icon: ClipboardList },
+            { id: 'oficina',       label: 'Oficina', icon: Wrench },
+            ...(isAdmin ? [{ id: 'usuarios', label: 'Usuários', icon: Users }] : []),
+          ].filter(item => canAccess(item.id) || item.id === 'usuarios').map((item) => (
             <button
               key={item.id}
               onClick={() => {
@@ -554,16 +579,23 @@ const AdminDashboard = ({
                 activeTab === 'investidores' ? 'Cadastro de Investidores' :
                 activeTab === 'financeiro' ? 'Controle Financeiro' :
                 activeTab === 'caucao' ? 'Gestão de Caução' :
-                activeTab === 'manutencaoAdmin' ? 'Histórico de Manutenções' : 'Painel LA'}
+                activeTab === 'vistoria' ? 'Vistorias Técnicas' :
+                activeTab === 'manutencaoAdmin' ? 'Histórico de Manutenções' : 
+                activeTab === 'usuarios' ? 'Usuários do Sistema' : 
+                activeTab === 'oficina' ? 'Oficina / O.S.' : 'Painel LA'}
             </h2>
           </div>
           <div className="flex items-center gap-6">
             <div className="text-right hidden md:block">
-              <p className="text-xs font-bold uppercase tracking-widest text-neutral-900">Admin Principal</p>
-              <p className="text-[10px] text-neutral-400 font-light">Laveiculos@gmail.com</p>
+                          <p className="text-xs font-bold uppercase tracking-widest text-neutral-900">
+              {currentUser?.name || 'Admin Principal'}
+            </p>
+              <p className="text-[10px] text-neutral-400 font-light">
+              {currentUser ? (currentUser.role === 'administrador' ? 'Administrador' : 'Funcionário') : 'Laveiculos@gmail.com'}
+              </p>
             </div>
             <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-[#C5A059]/30">
-              LA
+              {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'LA'}
             </div>
           </div>
         </header>
@@ -655,17 +687,48 @@ const AdminDashboard = ({
           {activeTab === 'caucao' && (
             <AdminCaucao 
               rentals={rentals}
-              payCaucaoInstallment={payCaucaoInstallment}
+              payCaucaoInstallment={onPayCaucaoInstallment}
             />
           )}
           {activeTab === 'manutencaoAdmin' && (
             <AdminManutencao 
               vehicles={vehicles}
               maintenances={maintenances}
-              onAddMaintenance={onAddMaintenance}
-              onUpdateMaintenance={onUpdateMaintenance}
-              onDeleteMaintenance={onDeleteMaintenance}
+              onAddMaintenance={isAdmin ? onAddMaintenance : undefined}
+              onUpdateMaintenance={isAdmin ? onUpdateMaintenance : undefined}
+              onDeleteMaintenance={isAdmin ? onDeleteMaintenance : undefined}
               setShowAdminSuccess={setShowAdminSuccess}
+              isReadOnly={!isAdmin}
+            />
+          )}
+          {activeTab === 'vistoria' && (
+            <AdminVistoria 
+              inspections={inspections} 
+              vehicles={vehicles} 
+              onAddInspection={isAdmin ? onAddInspection : undefined}
+              onDeleteInspection={isAdmin ? onDeleteInspection : undefined}
+              onViewDetail={(ins) => {
+                setSelectedInspection(ins);
+                setShowInspectionDetailModal(true);
+              }}
+              isReadOnly={!isAdmin}
+            />
+          )}
+          {activeTab === 'usuarios' && isAdmin && (
+            <AdminUsuarios 
+              systemUsers={systemUsers}
+              onAddUser={onAddSystemUser}
+              onUpdateUser={onUpdateSystemUser}
+              onDeleteUser={onDeleteSystemUser}
+            />
+          )}
+          {activeTab === 'oficina' && (
+            <AdminOficina
+              vehicles={vehicles}
+              investors={investors}
+              serviceOrders={serviceOrders}
+              onAddMaintenance={onAddMaintenance}
+              onCloseServiceOrder={onCloseServiceOrder}
             />
           )}
         </div>
@@ -1569,6 +1632,52 @@ const AdminDashboard = ({
             setShowRentalDetailModal(false);
             setSelectedRental(null);
           }} 
+        />
+      )}
+
+      {showInspectionDetailModal && selectedInspection && (
+        <InspectionDetailModal 
+          inspection={selectedInspection}
+          onClose={() => {
+            setShowInspectionDetailModal(false);
+            setSelectedInspection(null);
+          }}
+          onCloseContract={(ins) => {
+            setSelectedInspection(ins);
+            setShowClosureModal(true);
+          }}
+        />
+      )}
+
+      {showClosureModal && selectedInspection && (
+        <ContractClosureModal 
+          inspection={selectedInspection}
+          rental={rentals.find(r => r.plate === selectedInspection.vehiclePlate)}
+          rentals={rentals}
+          transactions={transactions}
+          onClose={() => setShowClosureModal(false)}
+          onConfirm={(closureData) => {
+            const currentRental = rentals.find(r => r.plate === selectedInspection.vehiclePlate);
+            if (currentRental) {
+              onCompleteClosure(currentRental.id, closureData);
+              setFinalClosureData(closureData);
+              setShowClosureModal(false);
+              setShowTerminationTerm(true);
+            }
+          }}
+        />
+      )}
+
+      {showTerminationTerm && selectedInspection && finalClosureData && (
+        <TerminationTermModal 
+          inspection={selectedInspection}
+          rental={rentals.find(r => r.plate === selectedInspection.vehiclePlate)}
+          closureData={finalClosureData}
+          onClose={() => {
+            setShowTerminationTerm(false);
+            setShowInspectionDetailModal(false);
+            setSelectedInspection(null);
+          }}
         />
       )}
     </div>

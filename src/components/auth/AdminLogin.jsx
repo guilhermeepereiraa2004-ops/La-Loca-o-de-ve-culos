@@ -2,24 +2,31 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, Mail, Star } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 
-const AdminLogin = ({ onBack, onLoginSuccess }) => {
+const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    // Master admin
     if (email === 'Laveiculos@gmail.com' && password === '123456') {
-      onLoginSuccess();
-    } else {
-      setError('Credenciais inválidas. Verifique seu e-mail e senha.');
+      onLoginSuccess(null); // null = full admin
+      return;
     }
+    // Employee lookup
+    const employee = systemUsers.find(u => u.email === email && u.password === password);
+    if (employee) {
+      onLoginSuccess(employee);
+      return;
+    }
+    setError('Credenciais inválidas. Verifique seu e-mail e senha.');
   };
 
   useEffect(() => {
     const savedAuth = localStorage.getItem('la_admin_auth');
     if (savedAuth === 'true') {
-      onLoginSuccess();
+      onLoginSuccess(null);
     }
   }, [onLoginSuccess]);
 

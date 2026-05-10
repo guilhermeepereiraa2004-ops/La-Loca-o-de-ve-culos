@@ -1,10 +1,14 @@
-import React from 'react';
-import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck } from 'lucide-react';
+import React, { useState } from 'react';
+import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as BankIcon, Receipt } from 'lucide-react';
 
 const AdminCaucao = ({
-  rentals,
+  rentals = [],
   payCaucaoInstallment
 }) => {
+  const [search, setSearch] = useState('');
+  const [selectedRental, setSelectedRental] = useState(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+
   const totalCustodia = rentals.reduce((acc, r) => acc + (parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
   const totalReceber = rentals.reduce((acc, r) => {
     const total = parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
@@ -12,6 +16,16 @@ const AdminCaucao = ({
     return acc + (total - received);
   }, 0);
   const totalContratado = rentals.reduce((acc, r) => acc + (parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+
+  const filteredRentals = rentals.filter(r => 
+    r.user?.toLowerCase().includes(search.toLowerCase()) || 
+    r.plate?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const handleOpenPayModal = (rental) => {
+    setSelectedRental(rental);
+    setShowPayModal(true);
+  };
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-700">
@@ -62,6 +76,8 @@ const AdminCaucao = ({
             <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
             <input
               type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por condutor ou placa..."
               className="w-full bg-white border border-neutral-100 py-3 pl-10 pr-4 rounded-xl text-[10px] outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all"
             />
@@ -73,7 +89,6 @@ const AdminCaucao = ({
               <tr className="bg-neutral-50/50">
                 <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black">Condutor / Veículo</th>
                 <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Dia Pagamento</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Próxima Parcela</th>
                 <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Caução Total</th>
                 <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Valor Recebido</th>
                 <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Saldo Restante</th>
@@ -82,30 +97,27 @@ const AdminCaucao = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-50">
-              {rentals.length > 0 ? (
-                rentals.map((rental) => {
+              {filteredRentals.length > 0 ? (
+                filteredRentals.map((rental) => {
                   const total = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
                   const received = parseFloat(String(rental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
                   const remaining = total - received;
-                  const days = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
-                  const start = rental.date ? new Date(rental.date + 'T12:00:00') : null;
-                  const payDay = rental.paymentDay || (start ? days[start.getDay()] : '---');
-                  const now = new Date();
-                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0);
-                  let currentDue = null;
-                  if (start && remaining > 0) {
-                    let check = new Date(start.getTime());
-                    check.setDate(check.getDate() + 7);
-                    while (check.getTime() + (6 * 24 * 60 * 60 * 1000) < today.getTime()) {
-                      check.setDate(check.getDate() + 7);
-                    }
-                    currentDue = check;
-                  }
 
-                  const currentDueDateStr = currentDue ? currentDue.toISOString().split('T')[0] : null;
-                  const isCurrentPaid = (rental.paidCaucaoDates || []).includes(currentDueDateStr);
-                  const nextDueDisplay = currentDue ? currentDue.toLocaleDateString('pt-BR') : 'Liquidado';
+                  // Calculate Next Due Date
+                  const paidCount = (rental.paidInstallments || []).length;
+                  const startDate = rental.date ? new Date(rental.date + 'T12:00:00') : new Date();
+                  const nextDueDate = new Date(startDate.getTime());
+                  nextDueDate.setDate(startDate.getDate() + (paidCount * 7));
+                  
+                  const today = new Date();
+                  today.setHours(12, 0, 0, 0);
+                  const tomorrow = new Date(today);
+                  tomorrow.setDate(today.getDate() + 1);
 
+                  const isDueToday = nextDueDate.toDateString() === today.toDateString();
+                  const isDueTomorrow = nextDueDate.toDateString() === tomorrow.toDateString();
+                  const isOverdue = nextDueDate < today && remaining > 0;
+                  
                   return (
                     <tr key={rental.id} className="hover:bg-neutral-50/50 transition-all group border-b border-neutral-50 last:border-0">
                       <td className="p-8">
@@ -114,33 +126,34 @@ const AdminCaucao = ({
                             {rental.user ? rental.user.charAt(0) : '?'}
                           </div>
                           <div>
-                            <p className="text-sm font-black text-neutral-900">{rental.user || 'Desconhecido'}</p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-sm font-black text-neutral-900">{rental.user || 'Desconhecido'}</p>
+                              {isDueToday && (
+                                <span className="flex items-center gap-1 bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse">
+                                  <AlertTriangle size={8} /> Pagamento Hoje
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{rental.vehicle || 'S/ veículo'} • {rental.plate || 'S/ placa'}</p>
                           </div>
                         </div>
                       </td>
                       <td className="p-8 text-center">
-                        <span className="text-[9px] font-black text-neutral-900 uppercase tracking-widest px-3 py-1.5 bg-neutral-100 rounded-lg border border-neutral-200">
-                          {payDay}
-                        </span>
-                      </td>
-                      <td className="p-8 text-center">
                         <div className="flex flex-col items-center">
-                          {isCurrentPaid ? (
-                            <div className="flex flex-col items-center">
-                              <p className="text-sm font-black text-neutral-900">{nextDueDisplay}</p>
-                              <span className="text-[8px] font-black uppercase tracking-widest text-emerald-500 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-100 mt-1">Parcela Paga</span>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center">
-                              <p className="text-sm font-black text-neutral-900">{nextDueDisplay}</p>
-                              <span className="text-[8px] font-black uppercase tracking-widest text-amber-500 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100 mt-1">Pendente</span>
-                            </div>
-                          )}
-                          {remaining > 0 && rental.depositInstallments > 0 && (
-                            <p className="text-[9px] font-bold text-[#C5A059] mt-1 animate-pulse">
-                              R$ {(remaining / rental.depositInstallments).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border ${
+                            isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100' :
+                            isDueTomorrow ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                            'bg-neutral-100 text-neutral-900 border-neutral-200'
+                          }`}>
+                            {rental.paymentDay || '---'}
+                          </span>
+                          {remaining > 0 && (
+                            <span className={`text-[8px] font-bold mt-2 uppercase tracking-tighter ${
+                              isDueToday || isOverdue ? 'text-red-500' : 
+                              isDueTomorrow ? 'text-amber-500' : 'text-neutral-400'
+                            }`}>
+                              Vence: {nextDueDate.toLocaleDateString('pt-BR')}
+                            </span>
                           )}
                         </div>
                       </td>
@@ -156,14 +169,16 @@ const AdminCaucao = ({
                             R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                           {rental.depositInstallments > 0 && remaining > 0 && (
-                            <p className="text-[8px] uppercase font-black text-neutral-300 mt-1">{rental.depositInstallments}x parcelas restantes</p>
+                            <p className="text-[8px] uppercase font-black text-neutral-300 mt-1">
+                              {(rental.paidInstallments || []).length} de {rental.depositInstallments} parcelas pagas
+                            </p>
                           )}
                         </div>
                       </td>
                       <td className="p-8 text-center">
-                        {remaining > 0 && !isCurrentPaid ? (
+                        {remaining > 0 ? (
                           <button
-                            onClick={() => payCaucaoInstallment(rental.id, currentDueDateStr)}
+                            onClick={() => handleOpenPayModal(rental)}
                             className="px-4 py-2 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 mx-auto"
                           >
                             <Check size={12} /> Confirmar Pago
@@ -188,7 +203,7 @@ const AdminCaucao = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan="8" className="p-20 text-center">
+                  <td colSpan="7" className="p-20 text-center">
                     <div className="flex flex-col items-center gap-4 text-neutral-300">
                       <Landmark size={48} className="opacity-20" />
                       <p className="text-[10px] uppercase tracking-[0.3em] font-black">Nenhuma garantia registrada no momento</p>
@@ -200,6 +215,81 @@ const AdminCaucao = ({
           </table>
         </div>
       </div>
+
+      {/* Pay Installment Modal */}
+      {showPayModal && selectedRental && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setShowPayModal(false)} />
+          <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-500">
+            <div className="p-8 border-b border-neutral-100 flex justify-between items-center bg-white">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                  <Receipt size={24} />
+                </div>
+                <div>
+                  <h4 className="text-xl font-black uppercase tracking-tighter text-neutral-900">Marcar Parcela como Paga</h4>
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-1">{selectedRental.user}</p>
+                </div>
+              </div>
+              <button onClick={() => setShowPayModal(false)} className="text-neutral-300 hover:text-neutral-900 transition-colors">
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
+                <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-4">Selecione a parcela a liquidar:</p>
+                <div className="grid grid-cols-2 gap-4">
+                  {Array.from({ length: selectedRental.depositInstallments || 1 }).map((_, i) => {
+                    const installmentNum = i + 1;
+                    const isPaid = (selectedRental.paidInstallments || []).includes(installmentNum);
+                    const total = parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                    const valuePerInstallment = total / (selectedRental.depositInstallments || 1);
+
+                    return (
+                      <button
+                        key={installmentNum}
+                        disabled={isPaid}
+                        onClick={() => {
+                          payCaucaoInstallment(selectedRental.id, installmentNum, valuePerInstallment);
+                          setShowPayModal(false);
+                        }}
+                        className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-2 group ${isPaid 
+                          ? 'bg-emerald-50 border-emerald-100 opacity-50 cursor-not-allowed' 
+                          : 'bg-white border-neutral-100 hover:border-[#C5A059] hover:shadow-xl'}`}
+                      >
+                        <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${isPaid ? 'text-emerald-600' : 'text-neutral-400 group-hover:text-[#C5A059]'}`}>
+                          Parcela {installmentNum}
+                        </span>
+                        <span className={`text-sm font-black ${isPaid ? 'text-emerald-900' : 'text-neutral-900'}`}>
+                          R$ {valuePerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        {isPaid && <Check size={14} className="text-emerald-600" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
+                <ShieldCheck size={18} className="text-amber-500" />
+                <p className="text-[9px] text-amber-700 font-bold uppercase tracking-tight leading-relaxed">
+                  Ao confirmar, o valor será adicionado ao saldo recebido e registrado no histórico financeiro.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-8 bg-neutral-50/50 flex justify-end">
+              <button
+                onClick={() => setShowPayModal(false)}
+                className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all"
+              >
+                Voltar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
