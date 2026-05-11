@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
-import { getDayOfWeek } from '../../../utils/adminUtils';
+import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 
 const RentalFormModal = ({ 
   isOpen, onClose, currentRentalStep, setCurrentRentalStep, totalRentalSteps, 

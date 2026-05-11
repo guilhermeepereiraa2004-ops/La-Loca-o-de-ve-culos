@@ -219,26 +219,51 @@ const VehicleFormModal = ({
                     <div className="flex justify-between items-center">
                       <label className="text-[10px] uppercase tracking-widest text-neutral-900 font-black">Proteção Veicular</label>
                       <div className="flex bg-white p-1 rounded-xl border border-neutral-100">
-                        <button type="button" onClick={() => setVehicleForm({...vehicleForm, protectionPaidByAdmin: true})} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${vehicleForm.protectionPaidByAdmin ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-600'}`}>Sim</button>
-                        <button type="button" onClick={() => setVehicleForm({...vehicleForm, protectionPaidByAdmin: false, protectionValue: ''})} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${!vehicleForm.protectionPaidByAdmin ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-600'}`}>Não</button>
+                        <button type="button" onClick={() => setVehicleForm({...vehicleForm, hasProtection: true})} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${vehicleForm.hasProtection ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-600'}`}>Sim</button>
+                        <button type="button" onClick={() => setVehicleForm({...vehicleForm, hasProtection: false, protectionValue: ''})} className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${!vehicleForm.hasProtection ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-600'}`}>Não</button>
                       </div>
                     </div>
-                    {vehicleForm.protectionPaidByAdmin && (
-                      <div className="animate-in slide-in-from-top-2 duration-300 pt-2 border-t border-neutral-200/50">
-                        <p className="text-[8px] text-neutral-400 uppercase font-bold mb-2">Valor Mensal (Debitado do Carro)</p>
-                        <div className="relative">
-                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
+                    
+                    {vehicleForm.hasProtection && (
+                      <div className="animate-in slide-in-from-top-2 duration-300 pt-4 border-t border-neutral-200/50 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Empresa da Proteção</label>
                           <input 
                             type="text" 
-                            value={vehicleForm.protectionValue} 
-                            onChange={e => {
-                              let v = e.target.value.replace(/\D/g, '');
-                              v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                              setVehicleForm({...vehicleForm, protectionValue: v});
-                            }} 
-                            className="w-full bg-white border border-neutral-100 pl-10 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
-                            placeholder="0,00" 
+                            value={vehicleForm.protectionCompany} 
+                            onChange={e => setVehicleForm({...vehicleForm, protectionCompany: e.target.value})} 
+                            className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
+                            placeholder="Ex: APVS, Gol Plus, etc."
                           />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data do Pagamento</label>
+                            <input 
+                              type="date" 
+                              value={vehicleForm.protectionPaymentDate} 
+                              onChange={e => setVehicleForm({...vehicleForm, protectionPaymentDate: e.target.value})} 
+                              className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor Mensal</label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
+                              <input 
+                                type="text" 
+                                value={vehicleForm.protectionValue} 
+                                onChange={e => {
+                                  let v = e.target.value.replace(/\D/g, '');
+                                  v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                                  setVehicleForm({...vehicleForm, protectionValue: v});
+                                }} 
+                                className="w-full bg-white border border-neutral-100 pl-8 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
+                                placeholder="0,00" 
+                              />
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}

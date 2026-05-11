@@ -39,6 +39,10 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
       icon: <Wrench size={16} />
     }));
 
+  const totalProtectionDiscount = myVehicles
+    .filter(v => v.hasProtection)
+    .reduce((acc, v) => acc + (parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+
   const dividendHistory = [
     {
       id: 1,
@@ -47,8 +51,8 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
       adminTax: (realInvestorRevenue * 0.15) || 1875,
       discounts: {
         maintenance: realInvestorExpenses,
-        insurance: 39.90,
-        protection: 120
+        insurance: 39.90 * myVehicles.filter(v => v.franchiseInsurance).length,
+        protection: totalProtectionDiscount
       },
       status: 'pendente',
       date: '10/06/2024'
@@ -59,8 +63,8 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
     maintenanceFilter === 'todos' || m.vehicle === maintenanceFilter
   );
 
-  const totalInvested = myVehicles.reduce((acc, v) => acc + (parseFloat(String(v.investmentValue || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
-  const currentMonthDividends = realInvestorRevenue - (realInvestorRevenue * 0.15) - realInvestorExpenses;
+  const totalInsurance = 39.90 * myVehicles.filter(v => v.franchiseInsurance).length;
+  const currentMonthDividends = realInvestorRevenue - (realInvestorRevenue * 0.15) - realInvestorExpenses - totalProtectionDiscount - totalInsurance;
   const yearDividends = currentMonthDividends; // Simplified for now
   const avgYield = totalInvested > 0 ? ((currentMonthDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
 

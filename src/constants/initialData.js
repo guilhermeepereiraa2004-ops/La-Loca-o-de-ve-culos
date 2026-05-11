@@ -49,6 +49,7 @@ export const INITIAL_VEHICLES = [
     protectionPaidByAdmin: true, protectionValue: '120', franchiseInsurance: true, hasSpareKey: true,
     lastBeltChangeKm: '10000', beltChangeIntervalKm: '80000', image: 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80', dividend: '3500',
     weeklyRental: '2500', investmentValue: '850000', preventiveMaintenance: true, status: 'Disponível',
+    hasProtection: true, protectionCompany: 'APVS Premium', protectionPaymentDate: '2024-01-15',
     entryDate: '2024-01-15', crlvFile: null, isFavorite: true
   },
   {
@@ -57,6 +58,7 @@ export const INITIAL_VEHICLES = [
     protectionPaidByAdmin: false, protectionValue: '150', franchiseInsurance: true, hasSpareKey: false,
     lastBeltChangeKm: '20000', beltChangeIntervalKm: '60000', image: 'https://images.unsplash.com/photo-1600712242805-5f5666b0b4e9?auto=format&fit=crop&q=80', dividend: '4200',
     weeklyRental: '2000', investmentValue: '720000', preventiveMaintenance: false, status: 'Disponível',
+    hasProtection: false, protectionCompany: '', protectionPaymentDate: '2024-03-10',
     entryDate: '2024-03-10', crlvFile: null, isFavorite: true
   }
 ];

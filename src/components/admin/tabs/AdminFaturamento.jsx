@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Search, Receipt, Calendar, ArrowRight, Car, AlertCircle, CheckCircle2, TrendingUp, Wallet } from 'lucide-react';
+import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 
 const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = [], onConfirmPayment }) => {
   const [search, setSearch] = useState('');
@@ -54,12 +55,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h3 className="text-4xl font-black uppercase tracking-tighter">Faturamento Semanal</h3>
-          <p className="text-neutral-400 text-sm font-light mt-1">Cálculo automatizado de ciclos, abatimentos e carros reserva.</p>
-        </div>
-        <div className="bg-neutral-900 text-white px-8 py-4 rounded-2xl flex items-center gap-3">
-          <Calendar size={18} className="text-[#C5A059]" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Próximo Fechamento: Quarta-feira</span>
+          <h3 className="text-4xl font-black uppercase tracking-tighter">Faturamento Individual</h3>
+          <p className="text-neutral-400 text-sm font-light mt-1">Gestão de cobranças baseada no ciclo individual de cada contrato.</p>
         </div>
       </div>
 
@@ -88,7 +85,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     </div>
                     <div>
                       <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{rental.user}</h4>
-                      <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Contrato Permanente</p>
+                      <div className="flex items-center gap-2">
+                        <Calendar size={10} className="text-[#C5A059]" />
+                        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">
+                          Ciclo: <span className="text-neutral-900">{getDayOfWeek(rental.startDate)}s</span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                   <div className="p-6 bg-neutral-50 rounded-3xl border border-neutral-100">

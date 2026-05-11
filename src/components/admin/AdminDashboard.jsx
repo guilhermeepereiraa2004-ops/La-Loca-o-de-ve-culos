@@ -34,8 +34,9 @@ import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 
 // Hooks & Utils
+import { AlertTriangle } from 'lucide-react';
 import { useAdminState } from '../../hooks/useAdminState';
-import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils';
+import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction,
@@ -75,7 +76,11 @@ const AdminDashboard = ({
     setVehicleForm({
       model: '', plate: '', year: '', renavam: '', initialKm: '',
       fipeValue: '', investor: '', adminTax: '15', investorTax: '85',
-      protectionPaidByAdmin: false, protectionValue: '', franchiseInsurance: false, 
+      hasProtection: false,
+      protectionCompany: '',
+      protectionPaymentDate: new Date().toISOString().split('T')[0],
+      protectionValue: '',
+      franchiseInsurance: false, 
       hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
       image: '', imageFile: null, imagePreview: null, weeklyRental: '', 
       investmentValue: '', preventiveMaintenance: true,

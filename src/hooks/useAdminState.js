@@ -40,7 +40,11 @@ export const useAdminState = (currentUser) => {
   const [vehicleForm, setVehicleForm] = useState({
     model: '', plate: '', year: '', renavam: '', initialKm: '',
     fipeValue: '', investor: '', adminTax: '15', investorTax: '85',
-    protectionPaidByAdmin: false, protectionValue: '', franchiseInsurance: false, 
+    hasProtection: false,
+    protectionCompany: '',
+    protectionPaymentDate: new Date().toISOString().split('T')[0],
+    protectionValue: '',
+    franchiseInsurance: false, 
     hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
     image: '', imageFile: null, imagePreview: null, weeklyRental: '', 
     investmentValue: '', preventiveMaintenance: true,
