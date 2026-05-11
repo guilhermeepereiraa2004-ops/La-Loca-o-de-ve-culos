@@ -83,9 +83,19 @@ const VehicleFormModal = ({
                       <input type="text" required value={vehicleForm.renavam} onChange={e => setVehicleForm({...vehicleForm, renavam: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="00000000000" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM Inicial</label>
-                      <input type="number" required value={vehicleForm.initialKm} onChange={e => setVehicleForm({...vehicleForm, initialKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0" />
+                      <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
+                      <select value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
+                        <option value="Disponível">Disponível</option>
+                        <option value="Alugado">Alugado</option>
+                        <option value="Manutenção">Manutenção</option>
+                        <option value="Indisponível">Indisponível</option>
+                      </select>
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM Inicial</label>
+                    <input type="number" required value={vehicleForm.initialKm} onChange={e => setVehicleForm({...vehicleForm, initialKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0" />
                   </div>
                 </div>
               </section>
@@ -239,11 +249,13 @@ const VehicleFormModal = ({
 
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
-                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data do Pagamento</label>
+                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dia de Vencimento</label>
                             <input 
-                              type="date" 
-                              value={vehicleForm.protectionPaymentDate} 
-                              onChange={e => setVehicleForm({...vehicleForm, protectionPaymentDate: e.target.value})} 
+                              type="number" 
+                              min="1"
+                              max="31"
+                              value={vehicleForm.protectionPaymentDay} 
+                              onChange={e => setVehicleForm({...vehicleForm, protectionPaymentDay: e.target.value})} 
                               className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
                             />
                           </div>

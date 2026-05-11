@@ -178,9 +178,8 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
                <div className="flex items-center gap-3 mb-8">
                   <AlertTriangle size={18} className="text-red-500" />
                   <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Avarias Identificadas</h5>
-               </div>
-               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                  {inspection.damages?.map((dmg, idx) => (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {inspection.damages?.filter(d => d.photo || d.description)?.map((dmg, idx) => (
                     <div key={idx} className="bg-white p-6 rounded-[2.5rem] border border-neutral-100 shadow-sm flex flex-col gap-6">
                        <div className="aspect-video bg-neutral-100 rounded-2xl overflow-hidden relative group">
                           {dmg.photo ? (
@@ -205,7 +204,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
                        </div>
                     </div>
                   ))}
-               </div>
+               </div>            </div>
             </section>
           )}
 

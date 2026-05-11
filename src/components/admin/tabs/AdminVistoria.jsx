@@ -89,28 +89,38 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
 
   const alerts = getOperationalAlerts();
 
-  const handleSubmit = (e) => {
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onAddInspection({
-      ...inspectionForm,
-      id: Date.now()
-    });
-    setShowForm(false);
-    setInspectionForm({
-      type: 'Entrega',
-      vehiclePlate: '',
-      date: new Date().toISOString().split('T')[0],
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      km: '',
-      fuelLevel: 'Cheio',
-      tireCondition: 'Bom',
-      photos: {},
-      video: null,
-      observations: '',
-      hasDamages: false,
-      damages: [],
-      deductions: []
-    });
+    if (isSaving) return;
+
+    try {
+      setIsSaving(true);
+      await onAddInspection({
+        ...inspectionForm
+      });
+      setShowForm(false);
+      setInspectionForm({
+        type: 'Entrega',
+        vehiclePlate: '',
+        date: new Date().toISOString().split('T')[0],
+        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+        km: '',
+        fuelLevel: 'Cheio',
+        tireCondition: 'Bom',
+        photos: {},
+        video: null,
+        observations: '',
+        hasDamages: false,
+        damages: [],
+        deductions: []
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddDeduction = () => {
@@ -748,9 +758,17 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
               </button>
               <button
                 type="submit"
-                className="px-12 py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all shadow-2xl shadow-neutral-900/10"
+                disabled={isSaving}
+                className={`px-12 py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center gap-3 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#C5A059]'}`}
               >
-                Salvar Vistoria
+                {isSaving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Salvando Dossiê...
+                  </>
+                ) : (
+                  'Salvar Vistoria'
+                )}
               </button>
             </div>
           </form>

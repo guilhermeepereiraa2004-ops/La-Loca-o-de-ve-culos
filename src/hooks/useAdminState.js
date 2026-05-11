@@ -38,7 +38,7 @@ export const useAdminState = (currentUser) => {
   });
 
   const [vehicleForm, setVehicleForm] = useState({
-    model: '', plate: '', year: '', renavam: '', initialKm: '',
+    model: '', plate: '', year: '', renavam: '', initialKm: '', status: 'Disponível',
     fipeValue: '', investor: '', adminTax: '15', investorTax: '85',
     hasProtection: false,
     protectionCompany: '',
@@ -58,8 +58,8 @@ export const useAdminState = (currentUser) => {
   });
 
   const [rentalForm, setRentalForm] = useState({
-    user: '', clientPhone: '', email: '', cnh: '', cnhValidity: '', 
-    cnhSecurityCode: '', vehicle: '', plate: '', rentalType: 'weekly', 
+    user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '', 
+    vehicle: '', plate: '', rentalType: 'weekly', 
     value: '', tireTax: '25', durationWeeks: '4', depositTotal: '', 
     depositPaid: '', depositInstallments: '1', 
     startDate: new Date().toISOString().split('T')[0],

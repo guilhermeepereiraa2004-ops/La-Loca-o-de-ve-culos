@@ -48,7 +48,7 @@ const AdminDashboard = ({
   serviceOrders, replacementContracts, onCloseServiceOrder,
   onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
-  onLogout, onGoHome, onViewVehicleDetail
+  onLogout, onSeed, onGoHome, onViewVehicleDetail
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -74,11 +74,11 @@ const AdminDashboard = ({
 
   const resetVehicleForm = () => {
     setVehicleForm({
-      model: '', plate: '', year: '', renavam: '', initialKm: '',
+      model: '', plate: '', year: '', renavam: '', initialKm: '', status: 'Disponível',
       fipeValue: '', investor: '', adminTax: '15', investorTax: '85',
       hasProtection: false,
       protectionCompany: '',
-      protectionPaymentDate: new Date().toISOString().split('T')[0],
+      protectionPaymentDay: '10',
       protectionValue: '',
       franchiseInsurance: false, 
       hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
@@ -143,6 +143,7 @@ const AdminDashboard = ({
     onAddRental({
       ...rentalForm,
       id: Date.now(),
+      vehicleId: selectedVehicle ? selectedVehicle.id : rentalForm.vehicleId,
       date: rentalForm.startDate,
       period: `${rentalForm.durationWeeks} semanas`,
       vehicle: selectedVehicle ? selectedVehicle.model : rentalForm.vehicle,
@@ -151,15 +152,11 @@ const AdminDashboard = ({
       startDate: rentalForm.startDate
     });
 
-    if (onUpdateVehicle && selectedVehicle) {
-      onUpdateVehicle({ ...selectedVehicle, status: 'Locado' });
-    }
-
     setShowAddForm(false);
     setCurrentRentalStep(1);
     setRentalForm({
-      user: '', clientPhone: '', email: '', cnh: '', cnhValidity: '', cnhSecurityCode: '',
-      vehicle: '', plate: '', rentalType: 'weekly', value: '', tireTax: '25',
+      user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '',
+      vehicle: '', plate: '', vehicleId: '', rentalType: 'weekly', value: '', tireTax: '25',
       durationWeeks: '4', depositTotal: '', depositPaid: '', depositInstallments: '1',
       startDate: new Date().toISOString().split('T')[0],
       lateFine: '10', dailyInterest: '1', observations: '',
@@ -211,7 +208,13 @@ const AdminDashboard = ({
       />
 
       <main className={`flex-1 flex flex-col h-screen xl:h-screen overflow-hidden transition-all duration-500 ${isSidebarOpen ? 'xl:ml-64' : 'xl:ml-20'}`}>
-        <AdminHeader activeTab={activeTab} currentUser={currentUser} isSidebarOpen={isSidebarOpen} />
+        <AdminHeader 
+          activeTab={activeTab} 
+          currentUser={currentUser} 
+          isSidebarOpen={isSidebarOpen} 
+          onSeed={onSeed}
+          hasData={vehicles.length > 0}
+        />
 
         <div className="flex-1 overflow-y-auto p-6 md:p-12">
           {activeTab === 'bi' && <AdminBI stats={biData.mainStats} alerts={alerts} operationalData={biData.operationalSummary} />}
@@ -288,7 +291,14 @@ const AdminDashboard = ({
           {activeTab === 'vistoria' && (
             <AdminVistoria 
               inspections={inspections} vehicles={vehicles} 
-              onAddInspection={isAdmin ? onAddInspection : undefined}
+              onAddInspection={async (ins) => {
+                await onAddInspection(ins);
+                setShowAdminSuccess({
+                  show: true,
+                  title: 'Vistoria Registrada',
+                  message: `O dossiê de ${ins.type} do veículo ${ins.vehiclePlate} foi salvo com sucesso no banco de dados.`
+                });
+              }}
               onDeleteInspection={isAdmin ? onDeleteInspection : undefined}
               onViewDetail={(ins) => { setSelectedInspection(ins); setShowInspectionDetailModal(true); }}
               pendingInspection={pendingInspection} onClearPendingInspection={() => setPendingInspection(null)}
@@ -359,7 +369,16 @@ const AdminDashboard = ({
       {/* Modals */}
       {showRentalDetailModal && <RentalDetailModal rental={selectedRental} isOpen={showRentalDetailModal} onClose={() => setShowRentalDetailModal(false)} onUpdate={onUpdateRental} onPayCaucao={onPayCaucaoInstallment} />}
       {showInspectionDetailModal && <InspectionDetailModal inspection={selectedInspection} isOpen={showInspectionDetailModal} onClose={() => setShowInspectionDetailModal(false)} />}
-      {showVehicleDetailModal && <VehicleDetailModal vehicle={selectedVehicleForDetail} isOpen={showVehicleDetailModal} onClose={() => setShowVehicleDetailModal(false)} />}
+      {showVehicleDetailModal && (
+        <VehicleDetailModal 
+          vehicle={selectedVehicleForDetail} 
+          inspections={inspections}
+          maintenances={maintenances}
+          rentals={rentals}
+          isOpen={showVehicleDetailModal} 
+          onClose={() => setShowVehicleDetailModal(false)} 
+        />
+      )}
       <AdminSuccessModal data={showAdminSuccess} onClose={() => setShowAdminSuccess({ ...showAdminSuccess, show: false })} />
     </div>
   );

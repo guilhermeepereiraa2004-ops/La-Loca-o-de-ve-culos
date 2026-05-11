@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { 
   X, ClipboardList, Clock, User, CreditCard, Camera, 
   Download, Car, Calendar, Landmark, AlertTriangle, 
-  FileText, TrendingUp, Phone, Mail, Image as ImageIcon
+  FileText, TrendingUp, Phone, Mail, Image as ImageIcon,
+  FileDown
 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
+import { generateRentalContract } from '../../../utils/contractGenerator';
 
 const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -93,9 +95,17 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
               <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">Detalhes do Contrato</h4>
             </div>
           </div>
-          <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={() => generateRentalContract(rental)}
+              className="flex items-center gap-3 px-6 py-3 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl"
+            >
+              <FileDown size={18} /> Gerar Contrato (.docx)
+            </button>
+            <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -161,18 +171,22 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
                       <CreditCard size={16} className="text-[#C5A059]" />
                       <p className="text-[10px] uppercase font-black tracking-widest text-neutral-900">Habilitação (CNH)</p>
                     </div>
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-y-6 gap-x-4">
+                      <div>
+                        <p className="text-[8px] uppercase font-bold text-neutral-400">Número CNH</p>
+                        <p className="text-sm font-black text-neutral-900">{rental.cnhNumber || '---'}</p>
+                      </div>
                       <div>
                         <p className="text-[8px] uppercase font-bold text-neutral-400">Registro CNH</p>
-                        <p className="text-sm font-black text-neutral-900">{rental.cnh || '---'}</p>
+                        <p className="text-sm font-black text-neutral-900">{rental.cnhRegisterNumber || '---'}</p>
+                      </div>
+                      <div>
+                        <p className="text-[8px] uppercase font-bold text-neutral-400">Nascimento</p>
+                        <p className="text-sm font-black text-neutral-900">{rental.birthDate ? new Date(rental.birthDate + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
                       </div>
                       <div>
                         <p className="text-[8px] uppercase font-bold text-neutral-400">Validade</p>
-                        <p className="text-sm font-black text-neutral-900">{rental.cnhValidity || '---'}</p>
-                      </div>
-                      <div>
-                        <p className="text-[8px] uppercase font-bold text-neutral-400">Cód. Segurança</p>
-                        <p className="text-sm font-black text-neutral-900">{rental.cnhSecurityCode || '---'}</p>
+                        <p className="text-sm font-black text-neutral-900">{rental.cnhValidity ? new Date(rental.cnhValidity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
                       </div>
                     </div>
                   </div>

@@ -24,6 +24,7 @@ const App = () => {
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
+    seedData,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
@@ -78,6 +79,7 @@ const App = () => {
           setCurrentUser(null);
           setView('home');
         }}
+        onSeed={seedData}
         onGoHome={() => setView('home')}
         onViewVehicleDetail={(v) => setView('vehicle-' + v.id)}
       />

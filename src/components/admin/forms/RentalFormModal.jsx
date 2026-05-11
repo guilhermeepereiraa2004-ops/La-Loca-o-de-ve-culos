@@ -1,7 +1,8 @@
 import React from 'react';
-import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera } from 'lucide-react';
+import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera, FileDown } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
+import { generateRentalContract } from '../../../utils/contractGenerator';
 
 const RentalFormModal = ({ 
   isOpen, onClose, currentRentalStep, setCurrentRentalStep, totalRentalSteps, 
@@ -56,6 +57,7 @@ const RentalFormModal = ({
                       ...rentalForm, 
                       plate: v.plate, 
                       vehicle: v.model,
+                      vehicleId: v.id,
                       value: v.weeklyRental || ''
                     })}
                     className={`p-6 rounded-[2rem] border-2 text-left transition-all group ${rentalForm.plate === v.plate ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-100 hover:border-[#C5A059]/30'}`}
@@ -100,19 +102,25 @@ const RentalFormModal = ({
                   <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">E-mail</label>
                   <input type="email" required value={rentalForm.email} onChange={e => setRentalForm({...rentalForm, email: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="exemplo@email.com" />
                 </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="space-y-2 col-span-2">
-                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">CNH</label>
-                    <input type="text" required value={rentalForm.cnh} onChange={e => setRentalForm({...rentalForm, cnh: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Número da CNH" />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Número CNH</label>
+                    <input type="text" required value={rentalForm.cnhNumber} onChange={e => setRentalForm({...rentalForm, cnhNumber: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: 123456789" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Cód. Seg.</label>
-                    <input type="text" required value={rentalForm.cnhSecurityCode} onChange={e => setRentalForm({...rentalForm, cnhSecurityCode: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" />
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Número de Registro</label>
+                    <input type="text" required value={rentalForm.cnhRegisterNumber} onChange={e => setRentalForm({...rentalForm, cnhRegisterNumber: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: 987654321" />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Validade CNH</label>
-                  <input type="date" required value={rentalForm.cnhValidity} onChange={e => setRentalForm({...rentalForm, cnhValidity: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" />
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data de Nascimento</label>
+                    <input type="date" required value={rentalForm.birthDate} onChange={e => setRentalForm({...rentalForm, birthDate: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Validade CNH</label>
+                    <input type="date" required value={rentalForm.cnhValidity} onChange={e => setRentalForm({...rentalForm, cnhValidity: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" />
+                  </div>
                 </div>
               </div>
 
@@ -448,11 +456,15 @@ const RentalFormModal = ({
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-lg">
-                  <div className="p-6 bg-neutral-50 rounded-3xl border border-neutral-100 flex flex-col items-center gap-4 group hover:bg-white transition-all hover:shadow-xl">
-                    <FileText size={32} className="text-[#C5A059]" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-900">Contrato Digital</span>
-                    <button type="button" className="text-[8px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors">GERAR .DOCX</button>
-                  </div>
+                  <button 
+                    type="button" 
+                    onClick={() => generateRentalContract(rentalForm)}
+                    className="p-6 bg-neutral-50 rounded-3xl border border-neutral-100 flex flex-col items-center gap-4 group hover:bg-white transition-all hover:shadow-xl w-full"
+                  >
+                    <FileDown size={32} className="text-[#C5A059]" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-neutral-900">Gerar Contrato Digital</span>
+                    <span className="text-[8px] font-bold text-neutral-400 hover:text-neutral-600 transition-colors">BAIXAR .DOCX</span>
+                  </button>
                   <div className="p-6 bg-neutral-50 rounded-3xl border border-neutral-100 flex flex-col items-center gap-4 group hover:bg-white transition-all hover:shadow-xl">
                     <Check size={32} className="text-emerald-500" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-neutral-900">Vistoria de Saída</span>

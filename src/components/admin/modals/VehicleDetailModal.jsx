@@ -2,11 +2,20 @@ import React from 'react';
 import { X, Car, Calendar, Gauge, Users, TrendingUp, ShieldCheck, ClipboardCheck, Wrench, AlertTriangle, ChevronRight, Eye } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
-const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], onClose, onGoToVistorias }) => {
+const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rentals = [], onClose, onGoToVistorias }) => {
   if (!vehicle) return null;
 
-  const vehicleInspections = inspections.filter(ins => ins.vehiclePlate === vehicle.plate);
-  const vehicleMaintenances = maintenances.filter(m => m.plate === vehicle.plate);
+  const vehicleInspections = inspections.filter(ins => 
+    (ins.vehiclePlate || '').replace('-', '').toUpperCase() === (vehicle.plate || '').replace('-', '').toUpperCase()
+  );
+  const vehicleMaintenances = maintenances.filter(m => 
+    (m.plate || '').replace('-', '').toUpperCase() === (vehicle.plate || '').replace('-', '').toUpperCase()
+  );
+
+  const activeRental = rentals.find(r => 
+    (r.plate || '').replace('-', '').toUpperCase() === (vehicle.plate || '').replace('-', '').toUpperCase() && 
+    r.status === 'Ativo'
+  );
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
@@ -119,6 +128,37 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], onCl
                         </div>
                     </div>
                 </section>
+
+                {activeRental && (
+                  <section className="space-y-6 animate-in slide-in-from-top duration-500">
+                    <div className="flex items-center gap-3">
+                        <Users size={18} className="text-emerald-500" />
+                        <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Locação Ativa</h4>
+                    </div>
+                    <div className="bg-emerald-50 p-8 rounded-[2.5rem] border border-emerald-100 space-y-6 shadow-sm">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-emerald-600/60 mb-1">Condutor Responsável</p>
+                            <p className="text-xl font-black text-neutral-900 leading-tight">{activeRental.user}</p>
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-emerald-200 bg-white text-emerald-600`}>
+                            {activeRental.period || activeRental.rentalType}
+                          </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-emerald-100">
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-emerald-600/60 mb-1">Faturamento</p>
+                            <p className="text-sm font-black text-neutral-900">{activeRental.value} / sem</p>
+                          </div>
+                          <div>
+                            <p className="text-[8px] uppercase font-bold text-emerald-600/60 mb-1">Início</p>
+                            <p className="text-sm font-black text-neutral-900">{new Date(activeRental.startDate + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                          </div>
+                        </div>
+                    </div>
+                  </section>
+                )}
             </div>
 
             {/* Right Column: History */}
