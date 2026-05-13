@@ -82,6 +82,8 @@ const App = () => {
         onSeed={seedData}
         onGoHome={() => setView('home')}
         onViewVehicleDetail={(v) => setView('vehicle-' + v.id)}
+        selectedImage={selectedImage}
+        setSelectedImage={setSelectedImage}
       />
     );
   }

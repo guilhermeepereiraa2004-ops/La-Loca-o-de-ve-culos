@@ -23,6 +23,7 @@ import ContractClosureModal from './modals/ContractClosureModal';
 import TerminationTermModal from './modals/TerminationTermModal';
 import VehicleDetailModal from './modals/VehicleDetailModal';
 import AdminSuccessModal from './modals/AdminSuccessModal';
+import ImageViewer from '../ui/ImageViewer';
 
 // Forms
 import VehicleFormModal from './forms/VehicleFormModal';
@@ -48,7 +49,8 @@ const AdminDashboard = ({
   serviceOrders, replacementContracts, onCloseServiceOrder,
   onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
-  onLogout, onSeed, onGoHome, onViewVehicleDetail
+  onLogout, onSeed, onGoHome, onViewVehicleDetail,
+  selectedImage, setSelectedImage
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -246,7 +248,7 @@ const AdminDashboard = ({
               resetRentalForm={() => {
                 setCurrentRentalStep(1);
                 setRentalForm({
-                  user: '', clientPhone: '', email: '', cnh: '', cnhValidity: '', cnhSecurityCode: '',
+                  user: '', clientPhone: '', email: '', cnh: '', cnhValidity: '',
                   vehicle: '', plate: '', rentalType: 'weekly', value: '', tireTax: '25',
                   durationWeeks: '4', depositTotal: '', depositPaid: '', depositInstallments: '1',
                   startDate: new Date().toISOString().split('T')[0],
@@ -290,7 +292,7 @@ const AdminDashboard = ({
           )}
           {activeTab === 'vistoria' && (
             <AdminVistoria 
-              inspections={inspections} vehicles={vehicles} 
+              inspections={inspections} vehicles={vehicles} rentals={rentals} 
               onAddInspection={async (ins) => {
                 await onAddInspection(ins);
                 setShowAdminSuccess({
@@ -367,7 +369,25 @@ const AdminDashboard = ({
       )}
 
       {/* Modals */}
-      {showRentalDetailModal && <RentalDetailModal rental={selectedRental} isOpen={showRentalDetailModal} onClose={() => setShowRentalDetailModal(false)} onUpdate={onUpdateRental} onPayCaucao={onPayCaucaoInstallment} />}
+      {showRentalDetailModal && (
+        <RentalDetailModal 
+          rental={selectedRental} 
+          isOpen={showRentalDetailModal} 
+          onClose={() => setShowRentalDetailModal(false)} 
+          onUpdate={async (data) => {
+            const result = await onUpdateRental(data);
+            if (result?.success) {
+              setShowAdminSuccess({
+                show: true,
+                title: 'Contrato Anexado',
+                message: 'O contrato assinado foi enviado e vinculado \u00e0 loca\u00e7\u00e3o com sucesso.'
+              });
+            }
+          }} 
+          onPayCaucao={onPayCaucaoInstallment} 
+          setSelectedImage={setSelectedImage}
+        />
+      )}
       {showInspectionDetailModal && <InspectionDetailModal inspection={selectedInspection} isOpen={showInspectionDetailModal} onClose={() => setShowInspectionDetailModal(false)} />}
       {showVehicleDetailModal && (
         <VehicleDetailModal 
@@ -379,7 +399,8 @@ const AdminDashboard = ({
           onClose={() => setShowVehicleDetailModal(false)} 
         />
       )}
-      <AdminSuccessModal data={showAdminSuccess} onClose={() => setShowAdminSuccess({ ...showAdminSuccess, show: false })} />
+      {showAdminSuccess.show && <AdminSuccessModal data={showAdminSuccess} onClose={() => setShowAdminSuccess({ ...showAdminSuccess, show: false })} />}
+      <ImageViewer image={selectedImage} onClose={() => setSelectedImage(null)} />
     </div>
   );
 };

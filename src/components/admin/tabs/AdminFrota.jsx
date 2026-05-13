@@ -164,7 +164,7 @@ const AdminFrota = ({
                             investorTax: car.investorTax || (100 - (parseFloat(car.adminTax) || 15)).toString(),
                             hasProtection: car.hasProtection !== undefined ? car.hasProtection : (car.protectionValue ? true : false),
                             protectionCompany: car.protectionCompany || '',
-                            protectionPaymentDate: car.protectionPaymentDate || new Date().toISOString().split('T')[0],
+                            protectionPaymentDay: car.protectionPaymentDay || '10',
                             protectionValue: car.protectionValue || '',
                             franchiseInsurance: car.franchiseInsurance || false,
                             hasSpareKey: car.hasSpareKey || false,

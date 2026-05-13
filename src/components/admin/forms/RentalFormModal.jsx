@@ -10,6 +10,34 @@ const RentalFormModal = ({
 }) => {
   if (!isOpen) return null;
 
+  const fillTestData = () => {
+    if (currentRentalStep === 2) {
+      setRentalForm({
+        ...rentalForm,
+        user: "Guilherme Pereira",
+        clientPhone: "(79) 99876-5432",
+        email: "guilherme.teste@gmail.com",
+        cnhNumber: "12345678900",
+        cnhRegisterNumber: "987654321",
+        birthDate: "1995-05-15",
+        cnhValidity: "2029-12-31"
+      });
+    } else if (currentRentalStep === 3) {
+      setRentalForm({
+        ...rentalForm,
+        value: "650,00",
+        tireTax: "50,00",
+        startDate: new Date().toISOString().split('T')[0],
+        durationWeeks: "4",
+        depositTotal: "1.500,00",
+        depositPaid: "800,00",
+        depositInstallments: "4",
+        lateFine: "10",
+        dailyInterest: "1"
+      });
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 py-4">
       <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={onClose} />
@@ -89,6 +117,16 @@ const RentalFormModal = ({
 
           {currentRentalStep === 2 && (
             <div className="animate-in fade-in slide-in-from-right duration-500 space-y-8">
+              <div className="flex justify-between items-center mb-4">
+                <p className="text-neutral-500 font-light italic">Insira os dados pessoais e documentos do condutor.</p>
+                <button 
+                  type="button" 
+                  onClick={fillTestData}
+                  className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                >
+                  Preencher com dados de teste
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nome Completo</label>
@@ -294,9 +332,18 @@ const RentalFormModal = ({
 
                 {/* Form Controls */}
                 <div className="lg:col-span-7 space-y-8">
-                  <div className="flex bg-neutral-100 p-1 rounded-2xl w-fit">
-                    <button type="button" onClick={() => setRentalForm({...rentalForm, rentalType: 'daily'})} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${rentalForm.rentalType === 'daily' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-400'}`}>Diária</button>
-                    <button type="button" onClick={() => setRentalForm({...rentalForm, rentalType: 'weekly'})} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${rentalForm.rentalType === 'weekly' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-400'}`}>Semanal</button>
+                  <div className="flex justify-between items-center">
+                    <div className="flex bg-neutral-100 p-1 rounded-2xl w-fit">
+                      <button type="button" onClick={() => setRentalForm({...rentalForm, rentalType: 'daily'})} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${rentalForm.rentalType === 'daily' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-400'}`}>Diária</button>
+                      <button type="button" onClick={() => setRentalForm({...rentalForm, rentalType: 'weekly'})} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${rentalForm.rentalType === 'weekly' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-400'}`}>Semanal</button>
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={fillTestData}
+                      className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                    >
+                      Preencher dados de teste
+                    </button>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">

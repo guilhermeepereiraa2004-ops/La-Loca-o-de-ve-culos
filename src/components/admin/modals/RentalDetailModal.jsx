@@ -7,17 +7,37 @@ import {
 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { generateRentalContract } from '../../../utils/contractGenerator';
+import ImageViewer from '../../ui/ImageViewer';
 
-const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
-  const [selectedImage, setSelectedImage] = useState(null);
+const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSelectedImage: setGlobalSelectedImage }) => {
+  if (!rental) return null;
+  const [localSelectedImage, setLocalSelectedImage] = useState(null);
+  
+  // Use global if available, fallback to local
+  const setSelectedImage = setGlobalSelectedImage || setLocalSelectedImage;
 
   const getFileUrl = (file) => {
     if (!file) return null;
-    if (typeof file === 'string') return file;
+    if (typeof file === 'string') {
+      if (file === '[object Object]') return null; // Prevenção de dados corrompidos
+      if (file.startsWith('http') || file.startsWith('blob:') || file.startsWith('data:')) return file;
+      // Se for apenas um caminho, assume que é do storage
+      return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/La-locacao/${file}`;
+    }
     try {
       return URL.createObjectURL(file);
     } catch (e) {
       return null;
+    }
+  };
+
+  const handlePreview = (url) => {
+    if (!url) return;
+    const isDoc = url.toLowerCase().includes('.doc') || url.toLowerCase().includes('.docx');
+    if (isDoc) {
+      window.open(url, '_blank');
+    } else {
+      setSelectedImage(url);
     }
   };
 
@@ -66,19 +86,6 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
       <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-md" onClick={onClose} />
       <div className="bg-white w-full max-w-7xl h-full max-h-[95vh] rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
         
-        {/* Image Preview Overlay */}
-        {selectedImage && (
-          <div className="fixed inset-0 z-[600] flex items-center justify-center p-10">
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedImage(null)} />
-            <div className="relative z-10 max-w-full max-h-full">
-              <img src={selectedImage} className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" alt="Preview" />
-              <button onClick={() => setSelectedImage(null)} className="absolute -top-12 right-0 text-white flex items-center gap-2 font-black uppercase text-[10px] tracking-widest hover:text-[#C5A059] transition-colors">
-                <X size={20} /> Fechar Preview
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Header */}
         <div className="p-8 md:p-12 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
           <div className="flex items-center gap-6">
@@ -96,6 +103,30 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
             </div>
           </div>
           <div className="flex items-center gap-4">
+            {/* Botão de Anexar Contrato Assinado - MOVIDO PARA O TOPO */}
+            <label className={`flex items-center gap-3 px-6 py-3 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all shadow-xl cursor-pointer group ${
+              rental.docs?.signedContract 
+                ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                : 'bg-neutral-100 text-neutral-900 hover:bg-[#C5A059] hover:text-white'
+            }`}>
+              <Download size={18} className={rental.docs?.signedContract ? '' : 'rotate-180 group-hover:animate-bounce'} />
+              {rental.docs?.signedContract ? 'Contrato Anexado' : 'Anexar Assinado'}
+              <input 
+                type="file" 
+                className="hidden" 
+                accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
+                onChange={async (e) => {
+                  const file = e.target.files[0];
+                  if (file && onUpdate) {
+                    onUpdate({ 
+                      ...rental, 
+                      docs: { ...(rental.docs || {}), signedContract: file } 
+                    });
+                  }
+                }}
+              />
+            </label>
+
             <button 
               onClick={() => generateRentalContract(rental)}
               className="flex items-center gap-3 px-6 py-3 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl"
@@ -110,6 +141,56 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12">
+          
+          {/* Gestão de Contratos - SEÇÃO DEDICADA */}
+          <section className="bg-neutral-900 rounded-[2.5rem] p-10 border border-[#C5A059]/20 shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-96 h-96 bg-[#C5A059]/10 blur-[100px] -mr-48 -mt-48 transition-all group-hover:bg-[#C5A059]/20" />
+            
+            <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-10">
+              <div className="flex items-center gap-8">
+                <div className="w-20 h-20 bg-[#C5A059] rounded-3xl flex items-center justify-center text-neutral-900 shadow-2xl shadow-[#C5A059]/20 transform -rotate-3 group-hover:rotate-0 transition-transform">
+                  <FileText size={40} />
+                </div>
+                <div>
+                  <h4 className="text-2xl font-black text-white uppercase tracking-tight">Gestão de Contratos</h4>
+                  <p className="text-neutral-400 text-xs font-bold uppercase tracking-widest mt-2">Gere e anexe o documento formal assinado</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-6">
+                <button 
+                  onClick={() => generateRentalContract(rental)}
+                  className="flex items-center gap-4 px-10 py-5 bg-white text-neutral-900 text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-2xl transform hover:-translate-y-1"
+                >
+                  <FileDown size={20} /> Gerar Contrato (.docx)
+                </button>
+
+                <label className={`flex items-center gap-4 px-10 py-5 text-xs font-black uppercase tracking-widest rounded-2xl transition-all shadow-2xl cursor-pointer transform hover:-translate-y-1 ${
+                  rental.docs?.signedContract 
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600' 
+                    : 'bg-[#C5A059] text-white hover:bg-white hover:text-[#C5A059]'
+                }`}>
+                  <Download size={20} className={rental.docs?.signedContract ? '' : 'rotate-180'} />
+                  {rental.docs?.signedContract ? 'Contrato Anexado' : 'Anexar Contrato Assinado'}
+                  <input 
+                    type="file" 
+                    className="hidden" 
+                    accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file && onUpdate) {
+                        onUpdate({ 
+                          ...rental, 
+                          docs: { ...rental.docs, signedContract: file } 
+                        });
+                      }
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
+          </section>
+
           {/* Section 1: Top Status Banner */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="md:col-span-2 bg-neutral-900 rounded-[2.5rem] p-10 flex items-center justify-between relative overflow-hidden">
@@ -249,7 +330,7 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
                         <>
                           <img src={getFileUrl(rental.docs.cnh)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="CNH" />
                           <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                            <button onClick={() => setSelectedImage(getFileUrl(rental.docs.cnh))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
+                            <button onClick={() => handlePreview(getFileUrl(rental.docs.cnh))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
                             <a href={getFileUrl(rental.docs.cnh)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
                           </div>
                         </>
@@ -270,7 +351,7 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
                         <>
                           <img src={getFileUrl(rental.docs.residence)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Residência" />
                           <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                            <button onClick={() => setSelectedImage(getFileUrl(rental.docs.residence))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
+                            <button onClick={() => handlePreview(getFileUrl(rental.docs.residence))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
                             <a href={getFileUrl(rental.docs.residence)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
                           </div>
                         </>
@@ -290,7 +371,7 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
                       <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
                         <img src={getFileUrl(print)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Print ${idx + 1}`} />
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                          <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
+                          <button onClick={() => handlePreview(getFileUrl(print))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
                           <a href={getFileUrl(print)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
                         </div>
                       </div>
@@ -307,10 +388,13 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
 
               {/* Contrato Assinado Section */}
               <section>
-                <div className="flex items-center gap-3 mb-6">
-                  <FileText size={18} className="text-[#C5A059]" />
-                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Contrato Formalizado</h5>
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <FileText size={18} className="text-[#C5A059]" />
+                    <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Contrato Formalizado</h5>
+                  </div>
                 </div>
+
                 {rental.docs?.signedContract ? (
                   <div className="bg-emerald-50 border border-emerald-100 p-8 rounded-[2.5rem] flex items-center justify-between group">
                     <div className="flex items-center gap-6">
@@ -318,11 +402,14 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
                         <FileText size={24} />
                       </div>
                       <div>
-                        <p className="text-emerald-700 font-black uppercase tracking-tight">Contrato Assinado.pdf</p>
-                        <p className="text-emerald-600/60 text-[10px] font-bold uppercase tracking-widest mt-1">Anexado em {dates.start}</p>
+                        <p className="text-emerald-700 font-black uppercase tracking-tight">Contrato Assinado</p>
+                        <p className="text-emerald-600/60 text-[10px] font-bold uppercase tracking-widest mt-1">Documento anexado com sucesso</p>
                       </div>
                     </div>
-                    <a href={getFileUrl(rental.docs.signedContract)} download className="px-8 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-neutral-900/10">Baixar Contrato</a>
+                    <div className="flex gap-2">
+                      <button onClick={() => handlePreview(getFileUrl(rental.docs.signedContract))} className="px-6 py-4 bg-white text-neutral-900 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-neutral-900 hover:text-white transition-all shadow-sm">Visualizar</button>
+                      <a href={getFileUrl(rental.docs.signedContract)} download className="px-8 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-neutral-900/10">Baixar</a>
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-amber-50 border border-amber-100 p-8 rounded-[2.5rem] flex items-center justify-between">
@@ -332,7 +419,7 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
                       </div>
                       <div>
                         <p className="text-amber-700 font-black uppercase tracking-tight">Aguardando Contrato</p>
-                        <p className="text-amber-600/60 text-[10px] font-bold uppercase tracking-widest mt-1">Cópia assinada não foi anexada</p>
+                        <p className="text-amber-600/60 text-[10px] font-bold uppercase tracking-widest mt-1">Clique no botão "Anexar Assinado" no topo para subir o arquivo</p>
                       </div>
                     </div>
                   </div>
@@ -419,6 +506,7 @@ const RentalDetailModal = ({ rental, inspections = [], onClose }) => {
           </div>
         </div>
       </div>
+      {localSelectedImage && <ImageViewer image={localSelectedImage} onClose={() => setLocalSelectedImage(null)} />}
     </div>
   );
 };

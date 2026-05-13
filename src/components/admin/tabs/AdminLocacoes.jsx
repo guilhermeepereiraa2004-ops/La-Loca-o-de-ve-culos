@@ -18,9 +18,10 @@ const AdminLocacoes = ({
   onGoToVistorias
 }) => {
   const filteredRentals = rentals.filter(rental => {
-    const startDate = new Date(rental.date + 'T12:00:00');
-    const periodValue = parseInt(rental.period) || 1;
-    const isWeekly = (rental.period || '').includes('sem');
+    const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
+    const startDate = new Date(rawDate + 'T12:00:00');
+    const periodValue = parseInt(rental.durationWeeks || rental.period) || 1;
+    const isWeekly = String(rental.rentalType || rental.period || '').includes('sem') || String(rental.rentalType || rental.period || '').includes('weekly');
     const totalDays = isWeekly ? periodValue * 7 : periodValue;
     const endDate = new Date(startDate.getTime());
     endDate.setDate(startDate.getDate() + totalDays);
@@ -36,12 +37,18 @@ const AdminLocacoes = ({
     return true;
   });
 
-  const totalFaturamento = rentals.reduce((acc, r) => acc + (parseFloat(r.value.replace('R$ ', '').replace('.', '').replace(',', '.')) || 0), 0);
+  const totalFaturamento = rentals.reduce((acc, r) => {
+    const val = typeof r.value === 'string' 
+      ? parseFloat(r.value.replace('R$ ', '').replace(/\./g, '').replace(',', '.')) 
+      : (parseFloat(r.value) || 0);
+    return acc + val;
+  }, 0);
 
   const proximasDevolucoes = rentals.filter(r => {
-    const startDate = new Date(r.date + 'T12:00:00');
-    const periodValue = parseInt(r.period) || 1;
-    const isWeekly = (r.period || '').includes('sem');
+    const rawDate = r.startDate || r.date || new Date().toISOString().split('T')[0];
+    const startDate = new Date(rawDate + 'T12:00:00');
+    const periodValue = parseInt(r.durationWeeks || r.period) || 1;
+    const isWeekly = String(r.rentalType || r.period || '').includes('sem') || String(r.rentalType || r.period || '').includes('weekly');
     const totalDays = isWeekly ? periodValue * 7 : periodValue;
     const endDate = new Date(startDate.getTime());
     endDate.setDate(startDate.getDate() + totalDays);
@@ -158,21 +165,24 @@ const AdminLocacoes = ({
             </thead>
             <tbody className="divide-y divide-neutral-50 font-light">
               {filteredRentals.map((rental) => {
-                const hasEntrega = inspections.some(ins => ins.vehiclePlate === rental.plate && ins.type === 'Entrega');
+                const hasEntrega = inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Entrega');
                 const isEnding = (() => {
-                  const startDate = new Date(rental.date + 'T12:00:00');
-                  const periodValue = parseInt(rental.period) || 1;
-                  const isWeekly = (rental.period || '').includes('sem');
+                  const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
+                  const startDate = new Date(rawDate + 'T12:00:00');
+                  const periodValue = parseInt(rental.durationWeeks || rental.period) || 1;
+                  const isWeekly = String(rental.rentalType || rental.period || '').includes('sem') || String(rental.rentalType || rental.period || '').includes('weekly');
                   const totalDays = isWeekly ? periodValue * 7 : periodValue;
+                  
                   const endDate = new Date(startDate.getTime());
                   endDate.setDate(startDate.getDate() + totalDays);
+                  
                   const today = new Date();
                   today.setHours(0,0,0,0);
                   const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
                   const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                  return diffDays <= 1; // 1 day before or after
+                  return diffDays <= 1; 
                 })();
-                const hasDevolucao = inspections.some(ins => ins.vehiclePlate === rental.plate && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.date));
+                const hasDevolucao = inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.startDate || rental.date));
 
                 return (
                   <tr key={rental.id} className="hover:bg-neutral-50/50 transition-all group border-b border-neutral-100 last:border-0 relative">
@@ -182,14 +192,18 @@ const AdminLocacoes = ({
                           <img src={rental.image} alt={rental.vehicle} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                         </div>
                         <div className="space-y-3">
-                          <h6 className="text-lg font-black text-neutral-900 uppercase tracking-tighter leading-none group-hover:text-[#C5A059] transition-colors">{rental.vehicle}</h6>
+                          <h6 className="text-lg font-black text-neutral-900 uppercase tracking-tighter leading-none group-hover:text-[#C5A059] transition-colors">
+                            {rental.vehicleModel || rental.vehicle || 'Veículo não Identificado'}
+                          </h6>
                           <div className="flex items-center gap-2">
                             <div className="flex flex-col w-20 h-10 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-md scale-110 origin-left">
                               <div className="h-2.5 bg-[#003399] flex items-center justify-center">
                                 <span className="text-[5px] text-white font-black tracking-[0.2em]">BRASIL</span>
                               </div>
                               <div className="flex-1 flex items-center justify-center bg-white">
-                                <span className="text-[10px] font-black tracking-tight text-neutral-900">{(rental.plate || '').replace('-', '') || 'S/ PLACA'}</span>
+                                <span className="text-[10px] font-black tracking-tight text-neutral-900">
+                                  {(rental.vehiclePlate || rental.plate || '').replace('-', '') || 'S/ PLACA'}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -203,53 +217,71 @@ const AdminLocacoes = ({
                             <User size={20} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-black text-neutral-900 truncate">{rental.user}</p>
-                            <div className="flex items-center gap-3">
-                              <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Condutor</p>
-                              {rental.clientPhone && (
-                                <a
-                                  href={`https://wa.me/${rental.clientPhone.replace(/\D/g, '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-600 transition-colors"
-                                >
-                                  <Phone size={10} /> Whats
-                                </a>
-                              )}
-                            </div>
+                              <p className="text-sm font-black text-neutral-900 truncate">{rental.userName || rental.user}</p>
+                              <div className="flex items-center gap-3">
+                                <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Condutor</p>
+                                {(rental.clientPhone || rental.phone) && (
+                                  <a
+                                    href={`https://wa.me/${(rental.clientPhone || rental.phone).replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-600 transition-colors"
+                                  >
+                                    <Phone size={10} /> Whats
+                                  </a>
+                                )}
+                              </div>
                           </div>
                         </div>
-                        {/* Alerts for Inspection */}
-                        {!hasEntrega && (
-                          <button onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Entrega' })} className="py-1.5 bg-amber-500 text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-sm animate-pulse flex items-center justify-center gap-2">
-                            <ClipboardList size={10} /> Realizar Vistoria de Entrega
+                        {/* Vistoria Alerts - Only show if pending and relevant */}
+                        {rental.status === 'Ativo' && isEnding && !hasDevolucao && (
+                          <button 
+                            onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Devolução' })} 
+                            className="py-1.5 bg-red-500 text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-lg animate-bounce flex items-center justify-center gap-2 border-2 border-white"
+                          >
+                            <ClipboardList size={10} /> Vistoria de Devolução Pendente
                           </button>
                         )}
-                        {isEnding && !hasDevolucao && (
-                          <button onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Devolução' })} className="py-1.5 bg-red-500 text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-sm animate-bounce flex items-center justify-center gap-2">
-                            <ClipboardList size={10} /> Realizar Vistoria de Devolução
-                          </button>
+                        
+                        {/* Se o contrato acabou de ser criado e não tem entrega (saída) */}
+                        {rental.status === 'Ativo' && !hasEntrega && (
+                           <button 
+                            onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Entrega' })} 
+                            className="py-1.5 bg-[#C5A059] text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center justify-center gap-2 border-2 border-white"
+                           >
+                             <ClipboardList size={10} /> Realizar Vistoria de Saída
+                           </button>
                         )}
                       </div>
                     </td>
                     <td className="p-6">
                       <div className="pl-4 border-l-2 border-[#C5A059]/20">
-                        <span className="text-sm font-black text-neutral-900 block">{rental.value}</span>
-                        <span className="text-[9px] text-[#C5A059] font-black uppercase tracking-[0.2em] mt-1 block">{rental.period}</span>
+                        <span className="text-sm font-black text-neutral-900 block">
+                          {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
+                        </span>
+                        <span className="text-[9px] text-[#C5A059] font-black uppercase tracking-[0.2em] mt-1 block">
+                          {rental.durationWeeks ? `${rental.durationWeeks} semanas` : (rental.period || 'Semanal')}
+                        </span>
                       </div>
                     </td>
                     <td className="p-6 text-center">
                       {(() => {
-                        const startDate = new Date(rental.date + 'T12:00:00');
-                        const periodValue = parseInt(rental.period) || 1;
-                        const isWeekly = (rental.period || '').includes('sem');
+                        const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
+                        const startDate = new Date(rawDate + 'T12:00:00');
+                        const periodValue = parseInt(rental.durationWeeks || rental.period) || 1;
+                        const isWeekly = String(rental.rentalType || rental.period || '').includes('sem') || String(rental.rentalType || rental.period || '').includes('weekly');
                         const totalDays = isWeekly ? periodValue * 7 : periodValue;
+                        
                         const endDate = new Date(startDate.getTime());
                         endDate.setDate(startDate.getDate() + totalDays);
+                        
                         const now = new Date();
                         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                         const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
                         const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        
+                        const progress = Math.max(0, Math.min(100, ((totalDays - diffDays) / totalDays) * 100));
+                        const isNearlyEnding = diffDays <= 3 && diffDays > 0;
 
                         return (
                           <div className="flex flex-col items-center gap-2">

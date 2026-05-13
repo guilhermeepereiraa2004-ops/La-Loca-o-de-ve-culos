@@ -16,11 +16,11 @@ const AdminClientes = ({ clients = [] }) => {
   };
 
   const filteredClients = clients.filter(c => {
-    const matchesSearch = (c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    const matchesSearch = (c.nome || c.name || '').toLowerCase().includes(search.toLowerCase()) ||
                           (c.cpf || '').includes(search) ||
-                          (c.phone || '').includes(search);
+                          (c.telefone || c.phone || '').includes(search);
     
-    const expired = isExpired(c.cnhValidity);
+    const expired = isExpired(c.cnhExpiration || c.cnhValidity);
     const matchesStatus = statusFilter === 'todos' || 
                           (statusFilter === 'vencidos' && expired) || 
                           (statusFilter === 'ativos' && !expired);
@@ -82,13 +82,13 @@ const AdminClientes = ({ clients = [] }) => {
               
               <div className="flex items-center gap-4 mb-8">
                 <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xl">
-                  {client.name?.charAt(0).toUpperCase()}
+                  {(client.nome || client.name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{client.name}</h4>
+                  <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{client.nome || client.name}</h4>
                   <div className="flex items-center gap-2 mt-0.5">
                     <p className="text-[10px] text-[#C5A059] font-bold uppercase tracking-widest">Cliente Verificado</p>
-                    {isExpired(client.cnhValidity) && (
+                    {isExpired(client.cnhExpiration || client.cnhValidity) && (
                       <span className="bg-red-50 text-red-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter border border-red-100">
                         CNH Vencida
                       </span>
@@ -102,43 +102,38 @@ const AdminClientes = ({ clients = [] }) => {
                   <Phone size={14} className="text-neutral-400" />
                   <div>
                     <p className="text-[8px] uppercase text-neutral-400 font-black">WhatsApp / Contato</p>
-                    <p className="text-xs font-bold text-neutral-900">{client.phone}</p>
+                    <p className="text-xs font-bold text-neutral-900">{client.telefone || client.phone}</p>
                   </div>
                 </div>
+                
                 <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-2xl">
-                  <Mail size={14} className="text-neutral-400" />
-                  <div>
-                    <p className="text-[8px] uppercase text-neutral-400 font-black">E-mail</p>
-                    <p className="text-xs font-bold text-neutral-900 truncate max-w-[180px]">{client.email || 'Não informado'}</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-neutral-50 rounded-2xl">
-                    <p className="text-[8px] uppercase text-neutral-400 font-black">CNH</p>
-                    <p className="text-xs font-bold text-neutral-900">{client.cnh || '---'}</p>
-                  </div>
-                  <div className={`p-4 rounded-2xl border ${isExpired(client.cnhValidity) ? 'bg-red-50 border-red-100' : 'bg-neutral-50 border-neutral-50'}`}>
-                    <p className={`text-[8px] uppercase font-black ${isExpired(client.cnhValidity) ? 'text-red-400' : 'text-neutral-400'}`}>Validade</p>
-                    <p className={`text-xs font-bold ${isExpired(client.cnhValidity) ? 'text-red-600' : 'text-neutral-900'}`}>
-                      {client.cnhValidity ? new Date(client.cnhValidity).toLocaleDateString('pt-BR') : '---'}
-                    </p>
+                  <FileText size={14} className="text-neutral-400" />
+                  <div className="flex flex-col">
+                    <p className="text-[8px] uppercase text-neutral-400 font-black">CNH: {client.cnhNumber}</p>
+                    <span className={`text-[10px] font-black uppercase tracking-tight ${isExpired(client.cnhExpiration || client.cnhValidity) ? 'text-red-500' : 'text-neutral-900'}`}>
+                      {(client.cnhExpiration || client.cnhValidity) ? (
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span>Vence em: {new Date(client.cnhExpiration || client.cnhValidity).toLocaleDateString('pt-BR')}</span>
+                          <span className="px-2 py-0.5 bg-neutral-100 text-neutral-500 text-[8px] rounded">
+                            {(() => {
+                              const diff = new Date(client.cnhExpiration || client.cnhValidity).getTime() - new Date().getTime();
+                              const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+                              return days > 0 ? `${days} dias` : 'Vencido';
+                            })()}
+                          </span>
+                        </div>
+                      ) : 'Não informado'}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-neutral-50 flex justify-between items-center">
-                <div>
-                  <p className="text-[8px] uppercase text-neutral-400 font-black">Data de Cadastro</p>
-                  <p className="text-[10px] font-black text-neutral-700">{client.registrationDate || 'Recentemente'}</p>
-                </div>
-                <button 
-                  onClick={() => setSelectedClient(client)}
-                  className="w-10 h-10 bg-neutral-900 text-white rounded-full flex items-center justify-center hover:bg-[#C5A059] transition-all"
-                  title="Ver Dossiê do Cliente"
-                >
-                  <Eye size={14} />
-                </button>
-              </div>
+              <button 
+                onClick={() => setSelectedClient(client)}
+                className="w-full py-4 bg-neutral-900 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2"
+              >
+                <Eye size={14} /> Abrir Ficha do Cliente
+              </button>
             </div>
           ))
         )}
@@ -147,6 +142,7 @@ const AdminClientes = ({ clients = [] }) => {
       {selectedClient && (
         <ClientDetailModal 
           client={selectedClient} 
+          isOpen={!!selectedClient} 
           onClose={() => setSelectedClient(null)} 
         />
       )}

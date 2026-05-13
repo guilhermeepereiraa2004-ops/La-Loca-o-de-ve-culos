@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Camera, Plus, Search, ClipboardCheck, Trash2, Eye, Calendar, Fuel, Gauge, Car, Check, AlertTriangle, X, Loader2, ShieldCheck } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
 
-const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection }) => {
+const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection }) => {
   const [showForm, setShowForm] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
   const [inspectionSearch, setInspectionSearch] = useState('');
@@ -42,8 +42,13 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
   }, [pendingInspection, onClearPendingInspection]);
 
   const filteredInspections = inspections.filter(ins => {
+    const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate);
+    const conductorName = (activeRental?.userName || activeRental?.user || '').toLowerCase();
+    
     const matchesSearch = ins.vehiclePlate.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
-                         ins.type.toLowerCase().includes(inspectionSearch.toLowerCase());
+                         ins.type.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
+                         conductorName.includes(inspectionSearch.toLowerCase());
+                         
     const matchesType = filterType === 'Todos' || ins.type === filterType;
     
     let matchesDate = true;
@@ -299,7 +304,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                     <Car size={24} />
                   </div>
                   <div>
-                    <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{ins.vehiclePlate}</h4>
+                    <div className="flex items-center gap-3 mb-1">
+                      <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{ins.vehiclePlate}</h4>
+                      {ins.type === 'Entrega' || ins.type === 'Devolução' ? (
+                        <span className="px-2 py-0.5 bg-neutral-900 text-white text-[7px] font-black uppercase tracking-widest rounded">
+                          {rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate)?.userName || rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate)?.user || 'Condutor N/I'}
+                        </span>
+                      ) : null}
+                    </div>
                     <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{ins.date} às {ins.time}</p>
                   </div>
                 </div>
@@ -377,9 +389,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], onAddInspection, onDel
                   required
                 >
                   <option value="">Selecione o Veículo</option>
-                  {vehicles.map(v => (
-                    <option key={v.id} value={v.plate}>{v.model} - {v.plate}</option>
-                  ))}
+                  {vehicles.map(v => {
+                    const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === v.plate && r.status === 'Ativo');
+                    return (
+                      <option key={v.id} value={v.plate}>
+                        {v.model} - {v.plate} {activeRental ? `(${activeRental.userName || activeRental.user})` : ''}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
 
