@@ -160,6 +160,7 @@ const AdminFrota = ({
                             initialKm: car.initialKm || '',
                             fipeValue: car.fipeValue || '',
                             investor: car.investor || '',
+                            investorId: car.investorId || '',
                             adminTax: car.adminTax || '15',
                             investorTax: car.investorTax || (100 - (parseFloat(car.adminTax) || 15)).toString(),
                             hasProtection: car.hasProtection !== undefined ? car.hasProtection : (car.protectionValue ? true : false),
@@ -172,8 +173,7 @@ const AdminFrota = ({
                             beltChangeIntervalKm: car.beltChangeIntervalKm || '',
                             image: car.image || '',
                             investmentValue: car.investmentValue || '',
-                            preventiveMaintenance: car.preventiveMaintenance || false,
-                            crlvFile: car.crlvFile || null
+                            preventiveMaintenance: car.preventiveMaintenance || false
                           });
                           setIsEditing(true);
                           setShowAddForm(true);

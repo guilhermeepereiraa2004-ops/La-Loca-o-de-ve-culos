@@ -25,10 +25,10 @@ const FleetPage = ({ vehicles = [], onBack, onInterest }) => {
           >
             <ChevronLeft size={16} /> Voltar para o Início
           </button>
-          <EditorialLabel className="text-[#C5A059] mb-4">Catálogo Completo</EditorialLabel>
-          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Nossa <span className="text-[#C5A059]">Frota</span></h1>
+          <EditorialLabel className="text-[#C5A059] mb-4">Escolha seu Veículo</EditorialLabel>
+          <h1 className="text-5xl md:text-7xl font-black uppercase tracking-tighter mb-6">Alugue <span className="text-[#C5A059]">Agora</span></h1>
           <p className="text-neutral-400 font-light max-w-xl text-lg">
-            Explore nossa seleção completa de veículos premium. Qualidade e exclusividade em cada detalhe.
+            Encontre o carro ideal para seu trabalho ou lazer. Locação simplificada com o padrão LA Locação.
           </p>
         </div>
       </header>
@@ -111,7 +111,7 @@ const FleetPage = ({ vehicles = [], onBack, onInterest }) => {
                         : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-900 hover:text-white'
                       }`}
                     >
-                      {car.status === 'Alugado' ? 'Indisponível' : 'Tenho Interesse'}
+                      {car.status === 'Alugado' ? 'Indisponível' : 'Alugar Agora'}
                     </button>
                   </div>
                 </div>

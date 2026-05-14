@@ -12,12 +12,25 @@ const ClientDetailModal = ({ client, onClose }) => {
 
   const getFileUrl = (file) => {
     if (!file) return null;
-    if (typeof file === 'string') return file;
-    try {
-      return URL.createObjectURL(file);
-    } catch (e) {
-      return null;
+    
+    // Handle object format (like {preview: 'url'})
+    if (typeof file === 'object') {
+      if (file.preview) return file.preview;
+      if (file.url) return file.url;
+      try {
+        return URL.createObjectURL(file);
+      } catch (e) {
+        return null;
+      }
     }
+
+    if (typeof file === 'string') {
+      if (file === '[object Object]') return null;
+      if (file.startsWith('http') || file.startsWith('blob:') || file.startsWith('data:')) return file;
+      return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/La-locacao/${file}`;
+    }
+    
+    return null;
   };
 
   const isExpired = (dateStr) => {
@@ -60,7 +73,7 @@ const ClientDetailModal = ({ client, onClose }) => {
                   {isExpired(client.cnhValidity) ? 'Cadastro Irregular' : 'Cadastro Regular'}
                 </span>
               </div>
-              <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">{client.name}</h4>
+              <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">{client.nome || client.name}</h4>
             </div>
           </div>
           <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
@@ -89,11 +102,17 @@ const ClientDetailModal = ({ client, onClose }) => {
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">WhatsApp</p>
-                    <p className="text-sm font-black text-neutral-900">{client.phone || '---'}</p>
+                    <p className="text-sm font-black text-neutral-900">{client.telefone || client.phone || '---'}</p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">E-mail</p>
                     <p className="text-sm font-black text-neutral-900 truncate">{client.email || '---'}</p>
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Data de Nascimento</p>
+                    <p className="text-sm font-black text-neutral-900 leading-tight">
+                      {client.birthDate ? new Date(client.birthDate).toLocaleDateString('pt-BR') : '---'}
+                    </p>
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Endereço</p>
@@ -110,8 +129,12 @@ const ClientDetailModal = ({ client, onClose }) => {
                 </div>
                 <div className="grid grid-cols-3 gap-6 bg-neutral-900 text-white p-8 rounded-[2.5rem] shadow-xl">
                   <div>
+                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº CNH</p>
+                    <p className="text-sm font-black">{client.cnhNumber || client.cnh || '---'}</p>
+                  </div>
+                  <div>
                     <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº Registro</p>
-                    <p className="text-sm font-black">{client.cnh || '---'}</p>
+                    <p className="text-sm font-black">{client.cnhRegisterNumber || '---'}</p>
                   </div>
                   <div>
                     <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Validade</p>
@@ -142,9 +165,8 @@ const ClientDetailModal = ({ client, onClose }) => {
                     {client.docs?.cnh ? (
                       <>
                         <img src={getFileUrl(client.docs.cnh)} className="w-full h-full object-cover" alt="CNH" />
-                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
-                          <a href={getFileUrl(client.docs.cnh)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                         </div>
                       </>
                     ) : (
@@ -163,9 +185,8 @@ const ClientDetailModal = ({ client, onClose }) => {
                     {client.docs?.residence ? (
                       <>
                         <img src={getFileUrl(client.docs.residence)} className="w-full h-full object-cover" alt="Residência" />
-                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
-                          <a href={getFileUrl(client.docs.residence)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                         </div>
                       </>
                     ) : (
@@ -183,9 +204,8 @@ const ClientDetailModal = ({ client, onClose }) => {
                     <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">App {idx + 1}</p>
                     <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
                       <img src={getFileUrl(print)} className="w-full h-full object-cover" alt={`App ${idx + 1}`} />
-                      <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                        <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
-                        <a href={getFileUrl(print)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                      <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                        <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                       </div>
                     </div>
                   </div>

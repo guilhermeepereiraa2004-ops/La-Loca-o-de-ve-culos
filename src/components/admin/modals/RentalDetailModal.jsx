@@ -9,7 +9,7 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 import { generateRentalContract } from '../../../utils/contractGenerator';
 import ImageViewer from '../../ui/ImageViewer';
 
-const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSelectedImage: setGlobalSelectedImage }) => {
+const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSelectedImage: setGlobalSelectedImage, onGoToVistorias, onPayCaucao }) => {
   if (!rental) return null;
   const [localSelectedImage, setLocalSelectedImage] = useState(null);
   
@@ -18,17 +18,26 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
 
   const getFileUrl = (file) => {
     if (!file) return null;
+    
+    // Handle object format (like {preview: 'url'})
+    if (typeof file === 'object') {
+      if (file.preview) return file.preview;
+      if (file.url) return file.url;
+      try {
+        return URL.createObjectURL(file);
+      } catch (e) {
+        return null;
+      }
+    }
+
     if (typeof file === 'string') {
       if (file === '[object Object]') return null; // Prevenção de dados corrompidos
       if (file.startsWith('http') || file.startsWith('blob:') || file.startsWith('data:')) return file;
       // Se for apenas um caminho, assume que é do storage
       return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/La-locacao/${file}`;
     }
-    try {
-      return URL.createObjectURL(file);
-    } catch (e) {
-      return null;
-    }
+    
+    return null;
   };
 
   const handlePreview = (url) => {
@@ -298,9 +307,9 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
                           <p className="text-[9px] font-bold text-neutral-400 uppercase">{ins.km} KM</p>
                         </div>
                         <div className="flex gap-2 overflow-x-auto pb-2">
-                          {(ins.images || []).map((img, i) => (
-                            <button key={i} onClick={() => setSelectedImage(img)} className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-neutral-200">
-                              <img src={img} className="w-full h-full object-cover" alt="Vistoria" />
+                          {Object.values(ins.photos || {}).map((photo, i) => (
+                            <button key={i} onClick={() => setSelectedImage(getFileUrl(photo))} className="w-12 h-12 rounded-lg overflow-hidden shrink-0 border border-neutral-200">
+                              <img src={getFileUrl(photo)} className="w-full h-full object-cover" alt="Vistoria" />
                             </button>
                           ))}
                         </div>
@@ -329,9 +338,8 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
                       {rental.docs?.cnh ? (
                         <>
                           <img src={getFileUrl(rental.docs.cnh)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="CNH" />
-                          <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                            <button onClick={() => handlePreview(getFileUrl(rental.docs.cnh))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
-                            <a href={getFileUrl(rental.docs.cnh)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                          <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                            <button onClick={() => handlePreview(getFileUrl(rental.docs.cnh))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                           </div>
                         </>
                       ) : (
@@ -350,9 +358,8 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
                       {rental.docs?.residence ? (
                         <>
                           <img src={getFileUrl(rental.docs.residence)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt="Residência" />
-                          <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                            <button onClick={() => handlePreview(getFileUrl(rental.docs.residence))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
-                            <a href={getFileUrl(rental.docs.residence)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                          <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                            <button onClick={() => handlePreview(getFileUrl(rental.docs.residence))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                           </div>
                         </>
                       ) : (
@@ -364,15 +371,14 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
                     </div>
                   </div>
 
-                  {/* App Prints (Iterate if multiple) */}
-                  {(rental.docs?.appPrints || []).slice(0, 2).map((print, idx) => (
+                  {/* App Prints (Iterate all) */}
+                  {(rental.docs?.appPrints || []).map((print, idx) => (
                     <div key={idx} className="space-y-2">
                       <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">Print App {idx + 1}</p>
                       <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
                         <img src={getFileUrl(print)} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Print ${idx + 1}`} />
-                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                          <button onClick={() => handlePreview(getFileUrl(print))} className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={18} /></button>
-                          <a href={getFileUrl(print)} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform"><Download size={18} /></a>
+                        <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <button onClick={() => handlePreview(getFileUrl(print))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                         </div>
                       </div>
                     </div>
@@ -406,9 +412,21 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
                         <p className="text-emerald-600/60 text-[10px] font-bold uppercase tracking-widest mt-1">Documento anexado com sucesso</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button onClick={() => handlePreview(getFileUrl(rental.docs.signedContract))} className="px-6 py-4 bg-white text-neutral-900 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-neutral-900 hover:text-white transition-all shadow-sm">Visualizar</button>
-                      <a href={getFileUrl(rental.docs.signedContract)} download className="px-8 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-neutral-900/10">Baixar</a>
+                    <div className="flex flex-col gap-4">
+                      <div className="flex gap-2">
+                        <button onClick={() => handlePreview(getFileUrl(rental.docs.signedContract))} className="px-6 py-4 bg-white text-neutral-900 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-neutral-900 hover:text-white transition-all shadow-sm">Visualizar</button>
+                        <a href={getFileUrl(rental.docs.signedContract)} target="_blank" rel="noopener noreferrer" download className="px-8 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-600 transition-all shadow-xl shadow-neutral-900/10">Baixar</a>
+                      </div>
+                      
+                      {/* New Button: Realizar Vistoria de Entrega */}
+                      {!inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Entrega') && (
+                        <button 
+                          onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Entrega' })}
+                          className="w-full py-4 bg-[#C5A059] text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-neutral-900 transition-all shadow-xl flex items-center justify-center gap-3 animate-pulse hover:animate-none"
+                        >
+                          <ClipboardList size={16} /> Realizar Vistoria de Entrega
+                        </button>
+                      )}
                     </div>
                   </div>
                 ) : (

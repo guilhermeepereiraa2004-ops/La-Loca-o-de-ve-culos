@@ -39,7 +39,7 @@ export const useAdminState = (currentUser) => {
 
   const [vehicleForm, setVehicleForm] = useState({
     model: '', plate: '', year: '', renavam: '', initialKm: '', status: 'Disponível',
-    fipeValue: '', investor: '', adminTax: '15', investorTax: '85',
+    fipeValue: '', investor: '', investorId: '', adminTax: '15', investorTax: '85',
     hasProtection: false,
     protectionCompany: '',
     protectionPaymentDate: new Date().toISOString().split('T')[0],

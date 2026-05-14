@@ -92,9 +92,23 @@ const AdminDashboard = ({
 
   const handleSaveVehicle = (e) => {
     e.preventDefault();
+    
+    // Sanatiza valores numéricos que podem estar formatados como string (ex: "1.250,00")
+    const cleanNumeric = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'number') return val;
+      const clean = val.toString().replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    };
+
     const vehicleData = {
       ...vehicleForm,
       id: vehicleForm.id || Date.now(),
+      weeklyRental: cleanNumeric(vehicleForm.weeklyRental),
+      fipeValue: cleanNumeric(vehicleForm.fipeValue),
+      investmentValue: cleanNumeric(vehicleForm.investmentValue),
+      protectionValue: cleanNumeric(vehicleForm.protectionValue),
+      initialKm: parseFloat(vehicleForm.initialKm) || 0,
       image: vehicleForm.imagePreview || vehicleForm.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'
     };
 
@@ -116,9 +130,16 @@ const AdminDashboard = ({
 
   const handleSaveTransaction = (e) => {
     e.preventDefault();
+    const cleanNumeric = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'number') return val;
+      const clean = val.toString().replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    };
+
     onAddTransaction({
       ...financeForm,
-      val: parseFloat(financeForm.val.replace(',', '.')) * (financeForm.type === 'out' ? -1 : 1),
+      val: cleanNumeric(financeForm.val) * (financeForm.type === 'out' ? -1 : 1),
       status: 'Concluído'
     });
     setShowFinanceForm(false);
@@ -141,9 +162,19 @@ const AdminDashboard = ({
       return;
     }
 
+    const cleanNumeric = (val) => {
+      if (!val) return 0;
+      if (typeof val === 'number') return val;
+      const clean = val.toString().replace(/\./g, '').replace(',', '.');
+      return parseFloat(clean) || 0;
+    };
+
     const selectedVehicle = vehicles.find(v => v.plate === rentalForm.plate);
     onAddRental({
       ...rentalForm,
+      weeklyValue: cleanNumeric(rentalForm.weeklyValue),
+      depositTotal: cleanNumeric(rentalForm.depositTotal),
+      tireTax: cleanNumeric(rentalForm.tireTax),
       id: Date.now(),
       vehicleId: selectedVehicle ? selectedVehicle.id : rentalForm.vehicleId,
       date: rentalForm.startDate,
@@ -386,6 +417,12 @@ const AdminDashboard = ({
           }} 
           onPayCaucao={onPayCaucaoInstallment} 
           setSelectedImage={setSelectedImage}
+          inspections={inspections}
+          onGoToVistorias={(data) => {
+            if (data) setPendingInspection(data);
+            setActiveTab('vistoria');
+            setShowRentalDetailModal(false);
+          }}
         />
       )}
       {showInspectionDetailModal && <InspectionDetailModal inspection={selectedInspection} isOpen={showInspectionDetailModal} onClose={() => setShowInspectionDetailModal(false)} />}

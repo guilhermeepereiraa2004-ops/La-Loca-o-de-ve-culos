@@ -22,6 +22,7 @@ export const useAppState = () => {
   const [selectedVehicleForInterest, setSelectedVehicleForInterest] = useState(null);
   const [interestForm, setInterestForm] = useState({ name: '', phone: '', email: '', observation: '' });
 
+
   // Robust Mapping System for Portuguese Database Schema (Audited from Supabase)
   const TABLE_MAPPINGS = {
     rentals: {
@@ -32,17 +33,17 @@ export const useAppState = () => {
       date: 'start_date', // Fallback para compatibilidade
       endDate: 'end_date',
       value: 'value',
-      tireTax: 'imposto_de_pneus',
+      tireTax: 'tire_tax',
       status: 'status',
       createdAt: 'created_at',
       cnhRegisterNumber: 'registro_cnh',
       cnhNumber: 'cnh_number',
       cnh: 'cnh_number',
       birthDate: 'data_de_nascimento',
-      userName: 'nome de usu\u00e1rio',
-      user: 'nome de usu\u00e1rio',
-      clientPhone: 'telefone_do_cliente',
-      phone: 'telefone_do_cliente',
+      userName: 'user_name',
+      user: 'user_name',
+      clientPhone: 'client_phone',
+      phone: 'client_phone',
       email: 'e-mail',
       cnhValidity: 'cnh_validity',
       cnhSecurityCode: 'cnh_c\u00f3digo_de_seguran\u00e7a',
@@ -52,9 +53,9 @@ export const useAppState = () => {
       vehiclePlate: 'placa',
       rentalType: 'tipo',
       durationWeeks: 'semanas',
-      depositTotal: 'total do dep\u00f3sito',
-      depositPaid: 'cau\u00e7\u00e3o_paga',
-      depositInstallments: 'parcelas de dep\u00f3sito',
+      depositTotal: 'deposit_total',
+      depositPaid: 'deposit_paid',
+      depositInstallments: 'deposit_installments',
       lateFine: 'multa_tardia',
       dailyInterest: 'juros_di\u00e1rios',
       observations: 'observa\u00e7\u00f5es',
@@ -62,32 +63,31 @@ export const useAppState = () => {
       signedContract: 'contrato_assinado'
     },
     vehicles: {
-      model: 'modelo',
-      plate: 'placa',
-      year: 'ano',
+      model: 'model',
+      plate: 'plate',
+      year: 'year',
       renavam: 'renavam',
-      initialKm: 'km_inicial',
+      initialKm: 'initial_km',
       km: 'km',
-      fipeValue: 'valor_fipe',
+      fipeValue: 'fipe_value',
       investorId: 'investor_id',
-      investor: 'investidor',
-      adminTax: 'imposto administrativo',
-      investorTax: 'imposto_do_investidor',
-      hasProtection: 'tem_prote\u00e7\u00e3o',
-      protectionCompany: 'empresa_de_prote\u00e7\u00e3o',
-      protectionValue: 'valor_de_prote\u00e7\u00e3o',
-      franchiseInsurance: 'seguro_de_franquia',
-      hasSpareKey: 'tem_chave_reserva',
-      lastBeltChangeKm: '\u00faltima_troca_de_correia_km',
-      beltChangeIntervalKm: 'intervalo_de_troca_de_correia_km',
-      image: 'imagem',
-      weeklyRental: 'aluguel semanal',
-      investmentValue: 'valor_investimento',
-      preventiveMaintenance: 'manuten\u00e7\u00e3o_preventiva',
-      entryDate: 'data_entrada',
-      isFavorite: 'favorito',
+      adminTax: 'admin_tax',
+      investorTax: 'investor_tax',
+      hasProtection: 'has_protection',
+      protectionCompany: 'protection_company',
+      protectionValue: 'protection_value',
+      franchiseInsurance: 'franchise_insurance',
+      hasSpareKey: 'has_spare_key',
+      lastBeltChangeKm: 'last_belt_change_km',
+      beltChangeIntervalKm: 'belt_change_interval_km',
+      image: 'image',
+      weeklyRental: 'weekly_rental',
+      investmentValue: 'investment_value',
+      preventiveMaintenance: 'preventive_maintenance',
+      entryDate: 'entry_date',
+      isFavorite: 'is_favorite',
       status: 'status',
-      dividend: 'dividendo'
+      dividend: 'dividend'
     },
     clients: {
       id: 'id',
@@ -99,6 +99,9 @@ export const useAppState = () => {
       cnhNumber: 'cnh_number',
       cnh: 'cnh_number',
       cnhExpiration: 'cnh_validity',
+      birthDate: 'data_de_nascimento',
+      cnhRegisterNumber: 'registro_cnh',
+      docs: 'documentos',
       status: 'status'
     },
     investors: {
@@ -111,7 +114,8 @@ export const useAppState = () => {
       password: 'senha',
       status: 'status',
       bank: 'banco',
-      pix: 'pix'
+      pix: 'pix',
+      adminTax: 'taxa_adm'
     },
     transactions: {
       type: 'tipo',
@@ -157,11 +161,12 @@ export const useAppState = () => {
   const mapToSnake = (obj, tableName) => {
     const mappings = TABLE_MAPPINGS[tableName] || {};
     const newObj = {};
+    const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor'];
     for (const key in obj) {
+      if (skipKeys.includes(key)) continue;
       if (mappings[key]) {
         newObj[mappings[key]] = obj[key];
       } else {
-        // Fallback to auto snake_case
         const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
         newObj[snakeKey] = obj[key];
       }
@@ -172,7 +177,8 @@ export const useAppState = () => {
   // Load Data from Supabase
   useEffect(() => {
     const loadData = async () => {
-      const tables = [
+      try {
+        const tables = [
         { table: 'leads', setter: setLeads },
         { table: 'rentals', setter: setRentals },
         { table: 'investors', setter: setInvestors },
@@ -230,10 +236,13 @@ export const useAppState = () => {
           item.setter(mappedData);
         }
       }
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+      }
     };
 
     loadData();
-  }, [vehicles.length]);
+  }, []);
 
   const handleAddSystemUser = async (user) => {
     const { data, error } = await supabase.from('system_users').insert([mapToSnake(user)]).select();
@@ -333,21 +342,35 @@ export const useAppState = () => {
       const { data, error } = await supabase.from('rentals').insert([payload]).select();
       if (error) throw error;
       
-      // Automação: Criar registro na tabela de Clientes (Baseado no schema real)
+      // Automação: Criar ou atualizar registro na tabela de Clientes (Baseado no condutor da locação)
       const clientPayload = {
         nome: rental.user,
         telefone: rental.clientPhone || rental.phone,
         'e-mail': rental.email,
         cnh_number: rental.cnhNumber || rental.cnh,
         cnh_validity: rental.cnhValidity,
+        registro_cnh: rental.cnhRegisterNumber,
+        data_de_nascimento: rental.birthDate,
+        documentos: uploadedDocs,
         status: 'Ativo'
       };
       
-      await supabase.from('clients').insert([clientPayload]);
+      // Tenta inserir ou atualizar se já existir (usando nome como critério de busca se não houver ID)
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('cnh_number', clientPayload.cnh_number)
+        .maybeSingle();
+
+      if (existingClient) {
+        await supabase.from('clients').update(clientPayload).eq('id', existingClient.id);
+      } else {
+        await supabase.from('clients').insert([clientPayload]);
+      }
       
-      // Recarregar dados para garantir consistência
-      const { data: newClients } = await supabase.from('clients').select('*');
-      if (newClients) setClients(mapToCamel(newClients, 'clients'));
+      // Recarregar dados de clientes para manter o estado do frontend atualizado
+      const { data: updatedClients } = await supabase.from('clients').select('*');
+      if (updatedClients) setClients(mapToCamel(updatedClients, 'clients'));
 
       if (data) {
         const newRental = mapToCamel(data, 'rentals')[0];
@@ -711,6 +734,7 @@ export const useAppState = () => {
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
-    handleInterestSubmit
+    handleInterestSubmit,
+    seedData: () => console.log('Seed data is no longer available.')
   };
 };

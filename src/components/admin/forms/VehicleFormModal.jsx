@@ -110,9 +110,12 @@ const VehicleFormModal = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Investidor Dono</label>
-                      <select required value={vehicleForm.investor} onChange={e => setVehicleForm({...vehicleForm, investor: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
+                      <select required value={vehicleForm.investorId} onChange={e => {
+                        const inv = investors.find(i => i.id.toString() === e.target.value);
+                        setVehicleForm({...vehicleForm, investorId: e.target.value, investor: inv ? inv.name : ''});
+                      }} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
                         <option value="">Selecione...</option>
-                        {investors.map(inv => <option key={inv.id} value={inv.name}>{inv.name}</option>)}
+                        {investors.map(inv => <option key={inv.id} value={inv.id}>{inv.name}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">

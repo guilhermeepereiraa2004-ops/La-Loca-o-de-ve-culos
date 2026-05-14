@@ -1,5 +1,5 @@
 import React from 'react';
-import { ChevronDown, ChevronRight, Car, ShieldCheck, Wrench, Phone, Instagram, Facebook, Check } from 'lucide-react';
+import { ChevronDown, ChevronRight, Car, ShieldCheck, Wrench, TrendingUp, Phone, Instagram, Facebook, Check } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 
 const LandingPage = ({ vehicles, onSetView, onInterest }) => {
@@ -7,53 +7,238 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
     <>
       {/* Hero */}
       <section className="min-h-screen relative overflow-hidden flex items-center justify-center pt-20">
+        {/* Background Layer */}
         <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
           style={{ backgroundImage: "url('/hero-bg-new.png')" }}
         />
-        <div className="absolute inset-0 bg-neutral-950/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/30 to-neutral-950/50" />
-
-        <div className="relative z-10 w-full max-w-5xl mx-auto px-6 md:px-12 py-28 flex flex-col items-center text-center">
-          <div className="inline-flex items-center gap-3 mb-8">
-            <div className="w-8 h-[1px] bg-[#C5A059]" />
-            <span className="text-[#C5A059] text-[10px] uppercase tracking-[0.4em] font-black">Locação Profissional de Veículos</span>
-            <div className="w-8 h-[1px] bg-[#C5A059]" />
+        <div className="absolute inset-0 bg-neutral-950/70" />
+        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/50 via-transparent to-neutral-950" />
+        
+        {/* Decorative Elements */}
+        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-neutral-950 to-transparent z-10" />
+        
+        <div className="relative z-20 w-full max-w-6xl mx-auto px-6 md:px-12 py-20 flex flex-col items-center text-center">
+          {/* Main Heading */}
+          <div className="max-w-4xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
+            <h1 className="font-black uppercase tracking-tighter leading-[0.85] text-white">
+              <span className="block text-5xl md:text-7xl lg:text-8xl mb-2">LA</span>
+              <span className="block text-6xl md:text-8xl lg:text-9xl text-[#C5A059]" style={{ textShadow: '0 0 60px rgba(197,160,89,0.2)' }}>
+                LOCAÇÃO
+              </span>
+            </h1>
           </div>
 
-          <h1 className="font-black uppercase tracking-tighter leading-none mb-6">
-            <span className="block text-7xl md:text-[9rem] lg:text-[11rem] text-white drop-shadow-2xl">LA</span>
-            <span className="block text-7xl md:text-[9rem] lg:text-[11rem] text-[#C5A059] drop-shadow-2xl" style={{ textShadow: '0 0 80px rgba(197,160,89,0.3)' }}>LOCAÇÃO</span>
-          </h1>
+          {/* Separator */}
+          <div className="w-16 h-[1px] bg-[#C5A059]/40 mb-10" />
 
-          <div className="w-24 h-[2px] bg-[#C5A059]/40 mb-8" />
+          {/* Description */}
+          <div className="max-w-xl mb-14 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-400">
+            <p className="text-neutral-300 font-light text-base md:text-xl leading-relaxed">
+              Gestão de frota inteligente e locação premium em Aracaju. 
+              <span className="block mt-2 text-[#C5A059]/80 font-medium italic">Sua jornada começa com o melhor padrão de qualidade.</span>
+            </p>
+          </div>
 
-          <p className="text-neutral-300 font-light text-base md:text-lg max-w-xl mb-12 leading-relaxed">
-            Plataforma premium de gestão de frota e locação de veículos em Aracaju.
-            <span className="text-[#C5A059] font-semibold"> Conduza seus sonhos com excelência.</span>
-          </p>
-
-          <div className="flex flex-col sm:flex-row gap-4 items-center">
-            <a
-              href="#contato"
-              className="px-10 py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white transition-all shadow-2xl shadow-[#C5A059]/30 min-w-[180px] text-center"
-            >
-              Alugar Agora
-            </a>
+          {/* CTAs */}
+          <div className="flex flex-col sm:flex-row gap-6 items-center animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-600">
             <button
               onClick={() => {
                 onSetView('fleet');
                 window.scrollTo(0, 0);
               }}
-              className="px-10 py-5 bg-white/10 backdrop-blur-sm text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white/20 transition-all border border-white/20 min-w-[180px] text-center"
+              className="group relative px-12 py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full overflow-hidden transition-all shadow-2xl shadow-[#C5A059]/30 hover:scale-105 active:scale-95"
             >
-              Ver Frota
+              <span className="relative z-10">Alugar Agora</span>
+              <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+            </button>
+            
+            <button
+              onClick={() => {
+                onSetView('fleet');
+                window.scrollTo(0, 0);
+              }}
+              className="px-12 py-5 bg-white/5 backdrop-blur-md text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white/10 transition-all border border-white/20 hover:border-white/40 shadow-xl"
+            >
+              Conhecer Frota
             </button>
           </div>
 
-          <div className="mt-20 flex flex-col items-center gap-2 animate-bounce opacity-50">
-            <span className="text-[8px] uppercase tracking-[0.3em] text-white font-bold">Explorar</span>
-            <ChevronDown size={16} className="text-[#C5A059]" />
+          {/* Scroll Indicator */}
+          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-1000 opacity-40">
+            <div className="w-[1px] h-12 bg-gradient-to-b from-[#C5A059] to-transparent" />
+          </div>
+        </div>
+      </section>
+
+      {/* Sobre Nós */}
+      <section id="sobre" className="py-32 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 md:px-12">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+            {/* Image Side */}
+            <div className="flex-1 w-full relative">
+              <div className="relative z-10 aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl">
+                <img 
+                  src="/la-inauguracao-14.jpg" 
+                  alt="Inauguração LA Locação" 
+                  className="w-full h-full object-cover transition-transform duration-[2000ms] hover:scale-105"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/40 to-transparent" />
+              </div>
+              
+              {/* Decorative background box */}
+              <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-[#C5A059]/10 rounded-[3rem] -z-0 hidden lg:block" />
+              
+              {/* Floating badge */}
+              <div className="absolute -left-8 bottom-12 z-20 bg-neutral-900 p-8 rounded-3xl shadow-2xl border border-white/10 hidden md:block animate-in fade-in slide-in-from-left-4 duration-1000">
+                <p className="text-[#C5A059] text-5xl font-black mb-1">05+</p>
+                <p className="text-white text-[9px] uppercase tracking-[0.3em] font-black">Anos de Liderança</p>
+                <div className="mt-4 flex gap-1">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <div key={star} className="w-2 h-2 rounded-full bg-[#C5A059]" />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Text Side */}
+            <div className="flex-1 space-y-10">
+              <div>
+                <EditorialLabel className="text-[#C5A059] mb-4">A Empresa</EditorialLabel>
+                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-neutral-900 leading-[0.95] mb-8">
+                  Excelência e Confiança na <span className="text-[#C5A059]">Gestão de Frotas</span>
+                </h2>
+                <div className="w-24 h-[2px] bg-[#C5A059]" />
+              </div>
+
+              <div className="space-y-6 text-neutral-500 font-light text-lg leading-relaxed">
+                <p>
+                  A <span className="font-bold text-neutral-900">LA Locação de Veículos</span> nasceu com um propósito claro: elevar o patamar da mobilidade em Aracaju através de um serviço que une transparência absoluta e veículos de alto padrão.
+                </p>
+                <p>
+                  Operamos com um modelo de negócio inovador que beneficia tanto quem precisa de um veículo para rodar quanto quem deseja investir no mercado de frotas. Nossa curadoria rigorosa garante que cada veículo em nossa base seja um ativo de valor e segurança.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
+                <div className="space-y-4">
+                  <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]">
+                    <ShieldCheck size={20} />
+                  </div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Garantia LA</h4>
+                  <p className="text-[13px] text-neutral-400 font-medium leading-relaxed">Processos auditados e segurança jurídica em todos os contratos firmados.</p>
+                </div>
+                <div className="space-y-4">
+                  <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]">
+                    <Wrench size={20} />
+                  </div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Manutenção Ativa</h4>
+                  <p className="text-[13px] text-neutral-400 font-medium leading-relaxed">Cuidado preventivo contínuo, assegurando o valor e a performance da frota.</p>
+                </div>
+              </div>
+
+              <div className="pt-6">
+                <button 
+                  onClick={() => {
+                    const el = document.getElementById('frota');
+                    el?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="inline-flex items-center gap-6 text-neutral-900 font-black text-[10px] uppercase tracking-[0.4em] group"
+                >
+                  Conheça nossa frota
+                  <div className="w-12 h-12 rounded-full border border-neutral-200 flex items-center justify-center group-hover:bg-neutral-900 group-hover:border-neutral-900 group-hover:text-[#C5A059] transition-all duration-500 shadow-lg group-hover:shadow-[#C5A059]/20">
+                    <ChevronRight size={18} />
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Oportunidade Motoristas - Clean Light Layout */}
+      <section id="oportunidade-motoristas" className="py-32 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 md:px-12">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
+            
+            {/* Image Side */}
+            <div className="flex-1 w-full order-2 lg:order-1">
+              <div className="relative group">
+                <div className="relative z-10 aspect-square rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-neutral-100">
+                  <img 
+                    src="/uber-99.png" 
+                    alt="Uber e 99" 
+                    className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/20 to-transparent" />
+                </div>
+                {/* Decorative background circle */}
+                <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#C5A059]/5 rounded-full -z-0" />
+                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-neutral-50 rounded-full -z-0" />
+              </div>
+            </div>
+
+            {/* Text Side */}
+            <div className="flex-1 space-y-10 order-1 lg:order-2">
+              <div className="space-y-4">
+                <div className="inline-flex items-center gap-3">
+                  <div className="w-10 h-[2px] bg-[#C5A059]" />
+                  <span className="text-[#C5A059] text-[10px] uppercase tracking-[0.4em] font-black">Ganhe Mais Todos os Dias</span>
+                </div>
+                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-neutral-900 leading-[0.95]">
+                  A Melhor Oportunidade para <span className="text-[#C5A059]">Motoristas de Aplicativo</span>
+                </h2>
+                <p className="text-neutral-500 font-light text-xl leading-relaxed">
+                  Maximize seus lucros na Uber e 99 com um parceiro que entende o seu negócio. Na LA Locação, você tem carro premium e custo zero de manutenção.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-8">
+                {[
+                  { icon: <TrendingUp />, title: "Lucratividade Superior", desc: "Sem gastos com manutenção e seguro, sobra muito mais dinheiro no seu bolso ao final da semana." },
+                  { icon: <ShieldCheck />, title: "Suporte e Segurança 24h", desc: "Assistência completa e seguro total incluso. Você nunca fica na mão durante o trabalho." },
+                  { icon: <Check />, title: "Aprovação Facilitada", desc: "Processo rápido e sem burocracia excessiva para você começar a faturar o quanto antes." }
+                ].map((item, idx) => (
+                  <div key={idx} className="flex gap-6 items-start">
+                    <div className="shrink-0 w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-lg shadow-neutral-900/20">
+                      {React.cloneElement(item.icon, { size: 22 })}
+                    </div>
+                    <div className="space-y-1">
+                      <h4 className="text-lg font-black uppercase tracking-tight text-neutral-900">{item.title}</h4>
+                      <p className="text-neutral-500 font-light text-sm leading-relaxed">{item.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="pt-6">
+                <a 
+                  href="https://wa.me/5579999999999" 
+                  target="_blank" 
+                  className="inline-flex items-center gap-6 px-12 py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-[#C5A059] transition-all shadow-2xl shadow-neutral-900/20 group"
+                >
+                  Consultar Condições
+                  <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Requirements Section (Light Version) */}
+          <div className="mt-32 p-12 bg-neutral-50 rounded-[3rem] border border-neutral-100 flex flex-col lg:flex-row items-center justify-between gap-12">
+            <div className="max-w-xl">
+              <h4 className="text-2xl font-black uppercase tracking-tight text-neutral-900 mb-4">O que você precisa para começar?</h4>
+              <p className="text-neutral-500 font-light text-sm leading-relaxed">
+                Para manter nosso padrão de excelência, solicitamos apenas o básico: CNH ativa (mínimo 2 anos), comprovante de residência e aprovação em nossa análise interna simplificada.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-4 justify-center">
+              <div className="flex items-center gap-4 px-8 py-4 bg-white rounded-2xl border border-neutral-100 shadow-sm">
+                <div className="w-2 h-2 rounded-full bg-[#C5A059] animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Vagas Disponíveis para Hoje</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -62,12 +247,12 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
       <section id="frota" className="py-32 bg-white">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="mb-20">
-            <EditorialLabel className="text-[#C5A059] mb-4">Nossa Frota</EditorialLabel>
+            <EditorialLabel className="text-[#C5A059] mb-4">Alugue Agora</EditorialLabel>
             <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
-              Veículos<br/>Exclusivos
+              Escolha seu <br/>Próximo Veículo
             </h2>
             <p className="text-neutral-500 font-light max-w-xl text-lg">
-              Conheça nossa seleção de veículos premium em destaque na nossa frota.
+              Veículos premium revisados e prontos para você rodar hoje mesmo. Selecione o que mais combina com seu perfil.
             </p>
           </div>
 
