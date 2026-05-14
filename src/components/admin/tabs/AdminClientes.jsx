@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Search, User, Phone, Mail, FileText, Calendar, ExternalLink, Eye } from 'lucide-react';
 import ClientDetailModal from '../modals/ClientDetailModal';
 
-const AdminClientes = ({ clients = [] }) => {
+const AdminClientes = ({ clients = [], onUpdateClient }) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selectedClient, setSelectedClient] = useState(null);
@@ -144,6 +144,14 @@ const AdminClientes = ({ clients = [] }) => {
           client={selectedClient} 
           isOpen={!!selectedClient} 
           onClose={() => setSelectedClient(null)} 
+          onUpdate={async (updatedData) => {
+            if (onUpdateClient) {
+              const res = await onUpdateClient(updatedData);
+              if (res && res.success) {
+                setSelectedClient(updatedData);
+              }
+            }
+          }}
         />
       )}
     </div>

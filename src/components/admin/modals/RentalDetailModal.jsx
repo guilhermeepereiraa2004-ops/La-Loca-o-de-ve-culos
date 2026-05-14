@@ -278,6 +278,10 @@ const RentalDetailModal = ({ rental, inspections = [], onClose, onUpdate, setSel
                         <p className="text-[8px] uppercase font-bold text-neutral-400">Validade</p>
                         <p className="text-sm font-black text-neutral-900">{rental.cnhValidity ? new Date(rental.cnhValidity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
                       </div>
+                      <div className="col-span-2">
+                        <p className="text-[8px] uppercase font-bold text-neutral-400">Cód. Segurança</p>
+                        <p className="text-sm font-black text-neutral-900">{rental.cnhSecurityCode || '---'}</p>
+                      </div>
                     </div>
                   </div>
                 </div>

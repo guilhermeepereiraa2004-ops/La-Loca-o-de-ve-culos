@@ -165,7 +165,11 @@ const AdminLocacoes = ({
             </thead>
             <tbody className="divide-y divide-neutral-50 font-light">
               {filteredRentals.map((rental) => {
-                const hasEntrega = inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Entrega');
+                const hasEntrega = inspections.some(ins => 
+                  ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && 
+                  ins.type === 'Entrega' && 
+                  new Date(ins.date) >= new Date(rental.startDate || rental.date)
+                );
                 const isEnding = (() => {
                   const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
                   const startDate = new Date(rawDate + 'T12:00:00');
@@ -247,9 +251,9 @@ const AdminLocacoes = ({
                         {rental.status === 'Ativo' && !hasEntrega && (
                            <button 
                             onClick={() => onGoToVistorias({ vehiclePlate: rental.plate, type: 'Entrega' })} 
-                            className="py-1.5 bg-[#C5A059] text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center justify-center gap-2 border-2 border-white"
+                            className="py-1.5 bg-[#C5A059] text-white text-[7px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center justify-center gap-2 border-2 border-white animate-pulse"
                            >
-                             <ClipboardList size={10} /> Realizar Vistoria de Saída
+                             <ClipboardList size={10} /> Realizar Vistoria de Entrega
                            </button>
                         )}
                       </div>

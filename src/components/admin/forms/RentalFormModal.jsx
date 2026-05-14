@@ -150,14 +150,18 @@ const RentalFormModal = ({
                     <input type="text" required value={rentalForm.cnhRegisterNumber} onChange={e => setRentalForm({...rentalForm, cnhRegisterNumber: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: 987654321" />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data de Nascimento</label>
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nascimento</label>
                     <input type="date" required value={rentalForm.birthDate} onChange={e => setRentalForm({...rentalForm, birthDate: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Validade CNH</label>
                     <input type="date" required value={rentalForm.cnhValidity} onChange={e => setRentalForm({...rentalForm, cnhValidity: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Cód. Segurança</label>
+                    <input type="text" required value={rentalForm.cnhSecurityCode || ''} onChange={e => setRentalForm({...rentalForm, cnhSecurityCode: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: 123456789" />
                   </div>
                 </div>
               </div>

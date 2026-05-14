@@ -27,23 +27,23 @@ export const useAppState = () => {
   const TABLE_MAPPINGS = {
     rentals: {
       id: 'id',
-      vehicleId: 'vehicle_id',
-      clientId: 'client_id',
+      vehicleId: 'id_veiculo',
+      clientId: 'id_cliente',
       startDate: 'start_date',
       date: 'start_date', // Fallback para compatibilidade
       endDate: 'end_date',
       value: 'value',
-      tireTax: 'tire_tax',
+      tireTax: 'imposto_de_pneus',
       status: 'status',
       createdAt: 'created_at',
       cnhRegisterNumber: 'registro_cnh',
-      cnhNumber: 'cnh_number',
       cnh: 'cnh_number',
+      cnhNumber: 'cnh_number',
       birthDate: 'data_de_nascimento',
-      userName: 'user_name',
       user: 'user_name',
-      clientPhone: 'client_phone',
+      userName: 'user_name',
       phone: 'client_phone',
+      clientPhone: 'client_phone',
       email: 'e-mail',
       cnhValidity: 'cnh_validity',
       cnhSecurityCode: 'cnh_c\u00f3digo_de_seguran\u00e7a',
@@ -53,8 +53,8 @@ export const useAppState = () => {
       vehiclePlate: 'placa',
       rentalType: 'tipo',
       durationWeeks: 'semanas',
-      depositTotal: 'deposit_total',
-      depositPaid: 'deposit_paid',
+      depositTotal: 'total do dep\u00f3sito',
+      depositPaid: 'cau\u00e7\u00e3o_paga',
       depositInstallments: 'deposit_installments',
       lateFine: 'multa_tardia',
       dailyInterest: 'juros_di\u00e1rios',
@@ -92,12 +92,13 @@ export const useAppState = () => {
     clients: {
       id: 'id',
       name: 'nome',
+      nome: 'nome',
       email: 'e-mail',
       phone: 'telefone',
       cpf: 'cpf',
       address: 'endere\u00e7o',
-      cnhNumber: 'cnh_number',
       cnh: 'cnh_number',
+      cnhNumber: 'cnh_number',
       cnhExpiration: 'cnh_validity',
       birthDate: 'data_de_nascimento',
       cnhRegisterNumber: 'registro_cnh',
@@ -213,16 +214,18 @@ export const useAppState = () => {
             });
             
             // Sincronização retroativa: Se houver locação ativa de cliente que não está na base, cadastra
-            const currentClients = data.filter(d => d.table === 'clients').length > 0 ? mapToCamel(data.filter(d => d.table === 'clients')[0], 'clients') : clients;
+            // Carrega os clientes de forma independente para evitar conflitos de mapeamento
+            const { data: cData } = await supabase.from('clients').select('*');
+            if (cData) setClients(mapToCamel(cData, 'clients'));
             
             for (const rental of mappedData) {
-              const clientExists = clients.some(c => (c.nome || c.name || '').toLowerCase() === (rental.userName || rental.user || '').toLowerCase());
-              if (!clientExists && (rental.userName || rental.user)) {
+              const clientExists = clients.some(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+              if (!clientExists && rental.user) {
                 supabase.from('clients').insert([{
-                  nome: rental.userName || rental.user,
+                  nome: rental.user,
                   telefone: rental.clientPhone || rental.phone,
                   cnh_number: rental.cnhNumber || rental.cnh,
-                  cnh_expiration: rental.cnhValidity,
+                  cnh_validity: rental.cnhValidity,
                   status: 'Ativo'
                 }]).then(() => {
                    supabase.from('clients').select('*').then(({data: cData}) => {
@@ -328,7 +331,8 @@ export const useAppState = () => {
         return parseFloat(String(val).replace(/\./g, '').replace(',', '.')) || 0;
       };
 
-      // Ensure specific fields are correctly formatted
+      // Ensure specific fields are correctly formatted via mapping or direct assignment
+      // The mapToSnake already handles most, but we ensure BRL parsing here
       payload['value'] = parseBRL(rental.value);
       payload['imposto_de_pneus'] = parseBRL(rental.tireTax);
       payload['total do dep\u00f3sito'] = parseBRL(rental.depositTotal);
@@ -342,35 +346,47 @@ export const useAppState = () => {
       const { data, error } = await supabase.from('rentals').insert([payload]).select();
       if (error) throw error;
       
-      // Automação: Criar ou atualizar registro na tabela de Clientes (Baseado no condutor da locação)
-      const clientPayload = {
-        nome: rental.user,
-        telefone: rental.clientPhone || rental.phone,
-        'e-mail': rental.email,
-        cnh_number: rental.cnhNumber || rental.cnh,
-        cnh_validity: rental.cnhValidity,
-        registro_cnh: rental.cnhRegisterNumber,
-        data_de_nascimento: rental.birthDate,
-        documentos: uploadedDocs,
-        status: 'Ativo'
-      };
-      
-      // Tenta inserir ou atualizar se já existir (usando nome como critério de busca se não houver ID)
-      const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('cnh_number', clientPayload.cnh_number)
-        .maybeSingle();
+      // Automação: Criar ou atualizar registro na tabela de Clientes
+      try {
+        const cleanDate = (d) => (d && String(d).trim() !== '') ? d : null;
+        
+        const clientPayload = {
+          nome: rental.user,
+          telefone: rental.clientPhone || rental.phone || null,
+          'e-mail': rental.email || null,
+          cnh_number: rental.cnhNumber || rental.cnh || null,
+          cnh_validity: cleanDate(rental.cnhValidity),
+          registro_cnh: rental.cnhRegisterNumber || null,
+          data_de_nascimento: cleanDate(rental.birthDate),
+          documentos: { ...(uploadedDocs || {}), cnhSecurityCode: rental.cnhSecurityCode || null },
+          status: 'Ativo'
+        };
 
-      if (existingClient) {
-        await supabase.from('clients').update(clientPayload).eq('id', existingClient.id);
-      } else {
-        await supabase.from('clients').insert([clientPayload]);
+        if (clientPayload.cnh_number) {
+          const { data: existingClient } = await supabase
+            .from('clients')
+            .select('id')
+            .eq('cnh_number', clientPayload.cnh_number)
+            .maybeSingle();
+
+          if (existingClient) {
+            const { error: updateError } = await supabase.from('clients').update(clientPayload).eq('id', existingClient.id);
+            if (updateError) throw updateError;
+          } else {
+            const { error: insertError } = await supabase.from('clients').insert([clientPayload]);
+            if (insertError) throw insertError;
+          }
+          
+          // Refresh clients list immediately
+          const { data: updatedClients, error: selectError } = await supabase.from('clients').select('*');
+          if (selectError) throw selectError;
+          if (updatedClients) setClients(mapToCamel(updatedClients, 'clients'));
+        }
+      } catch (clientErr) {
+        console.error("Erro na sincronização de cliente:", clientErr);
+        const errorMsg = clientErr.details || clientErr.message || 'Erro desconhecido';
+        alert(`Atenção: A locação foi salva, mas houve um erro ao cadastrar o cliente na Base de Clientes.\n\nDetalhes: ${errorMsg}\n\nIsso geralmente ocorre se a tabela 'clients' estiver faltando alguma coluna.`);
       }
-      
-      // Recarregar dados de clientes para manter o estado do frontend atualizado
-      const { data: updatedClients } = await supabase.from('clients').select('*');
-      if (updatedClients) setClients(mapToCamel(updatedClients, 'clients'));
 
       if (data) {
         const newRental = mapToCamel(data, 'rentals')[0];
@@ -387,8 +403,11 @@ export const useAppState = () => {
       await handleUpdateVehicle({ id: rental.vehicleId, status: 'Alugado' });
       return { success: true };
     } catch (error) {
-      console.error("Erro ao criar locação:", error);
-      alert(`Erro no Banco de Dados: ${error.message}`);
+      console.error("Erro detalhado ao criar locação:", error);
+      // Exibe o erro completo para diagnóstico
+      const errorMsg = error.details || error.message || 'Erro desconhecido';
+      const hint = error.hint ? `\n\nDica: ${error.hint}` : '';
+      alert(`ERRO NO BANCO DE DADOS:\n${errorMsg}${hint}\n\nVerifique se as colunas na tabela do Supabase batem com os nomes no código.`);
       return { success: false, error };
     }
   };
@@ -400,6 +419,16 @@ export const useAppState = () => {
       if (rental) await handleUpdateVehicle({ id: rental.vehicleId, status: 'Dispon\u00edvel' });
       setRentals(prev => prev.filter(r => r.id !== id));
     }
+  };
+
+  const handleUpdateClient = async (updatedClient) => {
+    const payload = mapToSnake(updatedClient, 'clients');
+    delete payload.id;
+    const { error } = await supabase.from('clients').update(payload).eq('id', updatedClient.id);
+    if (!error) {
+      setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+    }
+    return { success: !error, error };
   };
 
   const handleUpdateRental = async (updatedRental) => {
@@ -730,7 +759,7 @@ export const useAppState = () => {
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleAddLead, handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
-    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction,
+    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleAddTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,

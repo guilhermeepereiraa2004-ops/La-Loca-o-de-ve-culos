@@ -2,13 +2,24 @@ import React, { useState } from 'react';
 import { 
   X, User, Phone, Mail, FileText, 
   MapPin, CreditCard, ImageIcon, Download, 
-  AlertTriangle, Calendar, ShieldCheck, Camera
+  AlertTriangle, Calendar, ShieldCheck, Camera, Edit2, Save
 } from 'lucide-react';
 
-const ClientDetailModal = ({ client, onClose }) => {
+const ClientDetailModal = ({ client, onClose, onUpdate }) => {
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState(client || {});
 
   if (!client) return null;
+
+  const handleSave = async () => {
+    if (onUpdate) {
+      const formToSave = { ...editForm };
+      delete formToSave.cnhSecurityCode; // We only want it inside docs JSON
+      await onUpdate(formToSave);
+    }
+    setIsEditing(false);
+  };
 
   const getFileUrl = (file) => {
     if (!file) return null;
@@ -76,9 +87,20 @@ const ClientDetailModal = ({ client, onClose }) => {
               <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">{client.nome || client.name}</h4>
             </div>
           </div>
-          <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
-            <X size={24} />
-          </button>
+          <div className="flex items-center gap-3">
+            {isEditing ? (
+              <button onClick={handleSave} className="flex items-center gap-2 px-6 py-3 bg-[#C5A059] text-white font-black uppercase tracking-widest text-[10px] rounded-full hover:bg-neutral-900 transition-all shadow-xl">
+                <Save size={16} /> Salvar
+              </button>
+            ) : (
+              <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-900 font-black uppercase tracking-widest text-[10px] rounded-full hover:bg-neutral-200 transition-all">
+                <Edit2 size={16} /> Editar
+              </button>
+            )}
+            <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
+              <X size={24} />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -97,26 +119,30 @@ const ClientDetailModal = ({ client, onClose }) => {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
                   <div>
-                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">CPF</p>
-                    <p className="text-sm font-black text-neutral-900">{client.cpf || '---'}</p>
-                  </div>
-                  <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">WhatsApp</p>
-                    <p className="text-sm font-black text-neutral-900">{client.telefone || client.phone || '---'}</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.telefone || editForm.phone || ''} onChange={e => setEditForm({...editForm, telefone: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900">{client.telefone || client.phone || '---'}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">E-mail</p>
-                    <p className="text-sm font-black text-neutral-900 truncate">{client.email || '---'}</p>
+                    {isEditing ? (
+                      <input type="email" value={editForm.email || ''} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900 truncate">{client.email || '---'}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Data de Nascimento</p>
-                    <p className="text-sm font-black text-neutral-900 leading-tight">
-                      {client.birthDate ? new Date(client.birthDate).toLocaleDateString('pt-BR') : '---'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Endereço</p>
-                    <p className="text-sm font-black text-neutral-900 leading-tight">{client.address || '---'}</p>
+                    {isEditing ? (
+                      <input type="date" value={editForm.birthDate || ''} onChange={e => setEditForm({...editForm, birthDate: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900 leading-tight">
+                        {client.birthDate ? new Date(client.birthDate).toLocaleDateString('pt-BR') : '---'}
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -127,24 +153,40 @@ const ClientDetailModal = ({ client, onClose }) => {
                   <CreditCard size={18} className="text-[#C5A059]" />
                   <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Habilitação (CNH)</h5>
                 </div>
-                <div className="grid grid-cols-3 gap-6 bg-neutral-900 text-white p-8 rounded-[2.5rem] shadow-xl">
+                <div className="grid grid-cols-4 gap-6 bg-neutral-900 text-white p-8 rounded-[2.5rem] shadow-xl">
                   <div>
                     <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº CNH</p>
-                    <p className="text-sm font-black">{client.cnhNumber || client.cnh || '---'}</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.cnhNumber || editForm.cnh || ''} onChange={e => setEditForm({...editForm, cnhNumber: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className="text-sm font-black">{client.cnhNumber || client.cnh || '---'}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº Registro</p>
-                    <p className="text-sm font-black">{client.cnhRegisterNumber || '---'}</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.cnhRegisterNumber || ''} onChange={e => setEditForm({...editForm, cnhRegisterNumber: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className="text-sm font-black">{client.cnhRegisterNumber || '---'}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Validade</p>
-                    <p className={`text-sm font-black ${isExpired(client.cnhValidity) ? 'text-red-400' : 'text-white'}`}>
-                      {client.cnhValidity || '---'}
-                    </p>
+                    {isEditing ? (
+                      <input type="date" value={editForm.cnhExpiration || editForm.cnhValidity || ''} onChange={e => setEditForm({...editForm, cnhExpiration: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className={`text-sm font-black ${isExpired(client.cnhExpiration || client.cnhValidity) ? 'text-red-400' : 'text-white'}`}>
+                        {(client.cnhExpiration || client.cnhValidity) ? new Date(client.cnhExpiration || client.cnhValidity).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '---'}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Cód. Seg.</p>
-                    <p className="text-sm font-black">{client.cnhSecurityCode || '---'}</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.cnhSecurityCode || editForm.docs?.cnhSecurityCode || ''} onChange={e => setEditForm({...editForm, cnhSecurityCode: e.target.value, docs: { ...(editForm.docs || {}), cnhSecurityCode: e.target.value }})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                    ) : (
+                      <p className="text-sm font-black">{client.cnhSecurityCode || client.docs?.cnhSecurityCode || '---'}</p>
+                    )}
                   </div>
                 </div>
               </section>

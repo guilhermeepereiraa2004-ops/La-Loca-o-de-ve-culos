@@ -89,16 +89,6 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               {/* Decorative background box */}
               <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-[#C5A059]/10 rounded-[3rem] -z-0 hidden lg:block" />
               
-              {/* Floating badge */}
-              <div className="absolute -left-8 bottom-12 z-20 bg-neutral-900 p-8 rounded-3xl shadow-2xl border border-white/10 hidden md:block animate-in fade-in slide-in-from-left-4 duration-1000">
-                <p className="text-[#C5A059] text-5xl font-black mb-1">05+</p>
-                <p className="text-white text-[9px] uppercase tracking-[0.3em] font-black">Anos de Liderança</p>
-                <div className="mt-4 flex gap-1">
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <div key={star} className="w-2 h-2 rounded-full bg-[#C5A059]" />
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* Text Side */}
@@ -156,39 +146,47 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         </div>
       </section>
 
-      {/* Oportunidade Motoristas - Clean Light Layout */}
-      <section id="oportunidade-motoristas" className="py-32 bg-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
+      {/* Oportunidade Motoristas - Golden/Yellow Layout */}
+      <section id="oportunidade-motoristas" className="py-32 bg-[#C5A059] relative overflow-hidden">
+        {/* Decorative background elements for a premium feel */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.3),transparent)]" />
+        <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-black/5 rounded-full blur-3xl" />
+
+        <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
             
             {/* Image Side */}
-            <div className="flex-1 w-full order-2 lg:order-1">
+            <div className="flex-[1.3] w-full order-2 lg:order-2">
               <div className="relative group">
-                <div className="relative z-10 aspect-square rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-neutral-100">
+                <div className="relative z-10 aspect-[4/3] rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20">
                   <img 
                     src="/uber-99.png" 
                     alt="Uber e 99" 
                     className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/30 to-transparent" />
                 </div>
                 {/* Decorative background circle */}
-                <div className="absolute -top-12 -left-12 w-48 h-48 bg-[#C5A059]/5 rounded-full -z-0" />
-                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-neutral-50 rounded-full -z-0" />
+                <div className="absolute -top-12 -left-12 w-48 h-48 bg-white/20 rounded-full -z-0 blur-xl" />
+                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-black/10 rounded-full -z-0 blur-xl" />
               </div>
             </div>
 
             {/* Text Side */}
-            <div className="flex-1 space-y-10 order-1 lg:order-2">
+            <div className="flex-1 space-y-10 order-1 lg:order-1">
               <div className="space-y-4">
-                <div className="inline-flex items-center gap-3">
-                  <div className="w-10 h-[2px] bg-[#C5A059]" />
-                  <span className="text-[#C5A059] text-[10px] uppercase tracking-[0.4em] font-black">Ganhe Mais Todos os Dias</span>
+                <div className="space-y-2">
+                  <EditorialLabel className="text-neutral-900/40">Uber e 99</EditorialLabel>
+                  <div className="inline-flex items-center gap-3">
+                    <div className="w-10 h-[2px] bg-neutral-900" />
+                    <span className="text-neutral-900 text-[10px] uppercase tracking-[0.4em] font-black">Ganhe Mais Todos os Dias</span>
+                  </div>
                 </div>
-                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-neutral-900 leading-[0.95]">
-                  A Melhor Oportunidade para <span className="text-[#C5A059]">Motoristas de Aplicativo</span>
+                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-neutral-950 leading-[0.95]">
+                  A Melhor Oportunidade para <br /><span className="text-white drop-shadow-sm">Motoristas de Aplicativo</span>
                 </h2>
-                <p className="text-neutral-500 font-light text-xl leading-relaxed">
+                <p className="text-neutral-900/80 font-medium text-xl leading-relaxed">
                   Maximize seus lucros na Uber e 99 com um parceiro que entende o seu negócio. Na LA Locação, você tem carro premium e custo zero de manutenção.
                 </p>
               </div>
@@ -199,13 +197,13 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                   { icon: <ShieldCheck />, title: "Suporte e Segurança 24h", desc: "Assistência completa e seguro total incluso. Você nunca fica na mão durante o trabalho." },
                   { icon: <Check />, title: "Aprovação Facilitada", desc: "Processo rápido e sem burocracia excessiva para você começar a faturar o quanto antes." }
                 ].map((item, idx) => (
-                  <div key={idx} className="flex gap-6 items-start">
-                    <div className="shrink-0 w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-lg shadow-neutral-900/20">
+                  <div key={idx} className="flex gap-6 items-start group/item">
+                    <div className="shrink-0 w-12 h-12 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-xl group-hover/item:scale-110 transition-transform">
                       {React.cloneElement(item.icon, { size: 22 })}
                     </div>
                     <div className="space-y-1">
-                      <h4 className="text-lg font-black uppercase tracking-tight text-neutral-900">{item.title}</h4>
-                      <p className="text-neutral-500 font-light text-sm leading-relaxed">{item.desc}</p>
+                      <h4 className="text-lg font-black uppercase tracking-tight text-neutral-950">{item.title}</h4>
+                      <p className="text-neutral-900/70 font-medium text-sm leading-relaxed">{item.desc}</p>
                     </div>
                   </div>
                 ))}
@@ -215,7 +213,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <a 
                   href="https://wa.me/5579999999999" 
                   target="_blank" 
-                  className="inline-flex items-center gap-6 px-12 py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-[#C5A059] transition-all shadow-2xl shadow-neutral-900/20 group"
+                  className="inline-flex items-center gap-6 px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white hover:text-neutral-950 transition-all shadow-2xl shadow-black/20 group"
                 >
                   Consultar Condições
                   <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -223,22 +221,6 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               </div>
             </div>
 
-          </div>
-
-          {/* Requirements Section (Light Version) */}
-          <div className="mt-32 p-12 bg-neutral-50 rounded-[3rem] border border-neutral-100 flex flex-col lg:flex-row items-center justify-between gap-12">
-            <div className="max-w-xl">
-              <h4 className="text-2xl font-black uppercase tracking-tight text-neutral-900 mb-4">O que você precisa para começar?</h4>
-              <p className="text-neutral-500 font-light text-sm leading-relaxed">
-                Para manter nosso padrão de excelência, solicitamos apenas o básico: CNH ativa (mínimo 2 anos), comprovante de residência e aprovação em nossa análise interna simplificada.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-4 justify-center">
-              <div className="flex items-center gap-4 px-8 py-4 bg-white rounded-2xl border border-neutral-100 shadow-sm">
-                <div className="w-2 h-2 rounded-full bg-[#C5A059] animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Vagas Disponíveis para Hoje</span>
-              </div>
-            </div>
           </div>
         </div>
       </section>
@@ -325,17 +307,18 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         </div>
       </section>
 
-      {/* Investidores */}
-      <section id="investidores" className="py-32 bg-neutral-950 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10" />
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950 via-neutral-950/90 to-neutral-950" />
+      {/* Investidores - Golden/Yellow Layout */}
+      <section id="investidores" className="py-32 bg-[#C5A059] relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.3),transparent)]" />
+        
         <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-20">
           <div className="flex-1">
-            <EditorialLabel className="text-[#C5A059] mb-4">Seja um Parceiro</EditorialLabel>
-            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-8">
-              Programa de<br/><span className="text-[#C5A059]">Investidores</span>
+            <EditorialLabel className="text-neutral-900/40 mb-4">Seja um Parceiro</EditorialLabel>
+            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-8 leading-[0.9]">
+              Programa de<br/><span className="text-white drop-shadow-sm">Investidores</span>
             </h2>
-            <p className="text-neutral-400 font-light text-lg mb-10 leading-relaxed max-w-xl">
+            <p className="text-neutral-900/80 font-medium text-lg mb-10 leading-relaxed max-w-xl">
               Rentabilize seu patrimônio com segurança. Coloque seu veículo na nossa frota e receba dividendos semanais enquanto nós cuidamos de toda a gestão, manutenção e locação.
             </p>
             <ul className="space-y-6 mb-12">
@@ -345,25 +328,25 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 'Seguro total e rastreamento veicular',
                 'Portal exclusivo para acompanhar resultados'
               ].map((item, idx) => (
-                <li key={idx} className="flex items-center gap-4 text-white font-bold text-sm">
-                  <div className="w-8 h-8 rounded-full bg-[#C5A059]/20 flex items-center justify-center text-[#C5A059]">
+                <li key={idx} className="flex items-center gap-4 text-neutral-950 font-bold text-sm">
+                  <div className="w-8 h-8 rounded-full bg-neutral-950 flex items-center justify-center text-[#C5A059]">
                     <Check size={16} />
                   </div>
                   {item}
                 </li>
               ))}
             </ul>
-            <a href="#contato" className="inline-flex px-10 py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white transition-all shadow-2xl shadow-[#C5A059]/20">
+            <a href="#contato" className="inline-flex px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white hover:text-neutral-950 transition-all shadow-2xl shadow-black/20">
               Quero ser Investidor
             </a>
           </div>
           <div className="flex-1 w-full relative">
-            <div className="aspect-[4/5] bg-neutral-900 rounded-[3rem] overflow-hidden relative border border-white/10 shadow-2xl">
+            <div className="aspect-[4/5] bg-neutral-900 rounded-[3rem] overflow-hidden relative border border-white/20 shadow-2xl">
                <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80" alt="Investimentos" className="w-full h-full object-cover opacity-80" />
-               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent" />
-               <div className="absolute bottom-10 left-10 right-10 p-8 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20">
+               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+               <div className="absolute bottom-10 left-10 right-10 p-8 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl">
                  <p className="text-[#C5A059] text-[10px] uppercase tracking-[0.3em] font-black mb-2">Transparência Total</p>
-                 <p className="text-white font-bold text-lg">Acompanhe seus rendimentos em tempo real através do Portal do Investidor.</p>
+                 <p className="text-white font-bold text-lg leading-snug">Acompanhe seus rendimentos em tempo real através do Portal do Investidor.</p>
                </div>
             </div>
           </div>
@@ -395,22 +378,26 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         </div>
       </section>
 
-      {/* Contact Section */}
-      <section id="contato" className="py-32 bg-neutral-950">
-        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center">
-          <div className="w-24 h-24 bg-[#C5A059] rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-[#C5A059]/30">
-            <Phone size={40} className="text-neutral-950" />
+      {/* Contact Section - Golden/Yellow Layout */}
+      <section id="contato" className="py-32 bg-[#C5A059] relative overflow-hidden">
+        {/* Decorative blurs */}
+        <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/20 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-black/5 rounded-full blur-3xl" />
+
+        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center relative z-10">
+          <div className="w-24 h-24 bg-neutral-950 rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-black/20">
+            <Phone size={40} className="text-[#C5A059]" />
           </div>
-          <EditorialLabel className="text-[#C5A059] mb-4">Entre em Contato</EditorialLabel>
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-white mb-6">Fale Conosco</h2>
-          <p className="text-neutral-400 font-light mb-12 text-xl">Pronto para acelerar? Entre em contato e reserve seu veículo ou agende uma reunião para conhecer o modelo de investimento.</p>
+          <EditorialLabel className="text-neutral-900/40 mb-4">Entre em Contato</EditorialLabel>
+          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-6 leading-none">Fale Conosco</h2>
+          <p className="text-neutral-900/80 font-medium mb-12 text-xl leading-relaxed">Pronto para acelerar? Entre em contato e reserve seu veículo ou agende uma reunião para conhecer o modelo de investimento.</p>
           <a
             href="https://wa.me/5579999999999"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-4 px-12 py-6 bg-[#C5A059] text-neutral-950 text-[12px] uppercase tracking-[0.4em] font-black rounded-full hover:bg-white transition-all shadow-2xl shadow-[#C5A059]/30"
+            className="inline-flex items-center gap-4 px-12 py-6 bg-neutral-950 text-white text-[12px] uppercase tracking-[0.4em] font-black rounded-full hover:bg-white hover:text-neutral-950 transition-all shadow-2xl shadow-black/20 group"
           >
-            <Phone size={20} /> Whatsapp LA Locação
+            <Phone size={20} className="group-hover:scale-110 transition-transform" /> Whatsapp LA Locação
           </a>
         </div>
       </section>

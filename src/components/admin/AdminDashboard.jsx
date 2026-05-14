@@ -41,7 +41,7 @@ import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction,
-  onUpdateStatus, onAddRental, onDeleteRental, onUpdateRental,
+  onUpdateStatus, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
@@ -172,7 +172,7 @@ const AdminDashboard = ({
     const selectedVehicle = vehicles.find(v => v.plate === rentalForm.plate);
     onAddRental({
       ...rentalForm,
-      weeklyValue: cleanNumeric(rentalForm.weeklyValue),
+      value: cleanNumeric(rentalForm.value),
       depositTotal: cleanNumeric(rentalForm.depositTotal),
       tireTax: cleanNumeric(rentalForm.tireTax),
       id: Date.now(),
@@ -279,7 +279,7 @@ const AdminDashboard = ({
               resetRentalForm={() => {
                 setCurrentRentalStep(1);
                 setRentalForm({
-                  user: '', clientPhone: '', email: '', cnh: '', cnhValidity: '',
+                  user: '', clientPhone: '', email: '', cnhNumber: '', cnhValidity: '',
                   vehicle: '', plate: '', rentalType: 'weekly', value: '', tireTax: '25',
                   durationWeeks: '4', depositTotal: '', depositPaid: '', depositInstallments: '1',
                   startDate: new Date().toISOString().split('T')[0],
@@ -293,7 +293,7 @@ const AdminDashboard = ({
               onGoToVistorias={(data) => { if (data) setPendingInspection(data); setActiveTab('vistoria'); }}
             />
           )}
-          {activeTab === 'clientes' && <AdminClientes clients={clients} />}
+          {activeTab === 'clientes' && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
           {activeTab === 'faturamento' && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} onConfirmPayment={onConfirmPayment} />}
           {activeTab === 'investidores' && (
             <AdminInvestidores 
