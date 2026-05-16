@@ -107,9 +107,9 @@ export const useAppState = () => {
     },
     investors: {
       id: 'id',
-      name: 'nome',
-      email: 'e-mail',
-      phone: 'telefone',
+      name: 'name',
+      email: 'email',
+      phone: 'phone',
       cpf: 'cpf',
       address: 'endere\u00e7o',
       password: 'senha',
@@ -179,66 +179,78 @@ export const useAppState = () => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const tables = [
-        { table: 'leads', setter: setLeads },
-        { table: 'rentals', setter: setRentals },
-        { table: 'investors', setter: setInvestors },
-        { table: 'vehicles', setter: setVehicles },
-        { table: 'transactions', setter: setTransactions },
-        { table: 'maintenances', setter: setMaintenances },
-        { table: 'inspections', setter: setInspections },
-        { table: 'service_orders', setter: setServiceOrders },
-        { table: 'system_users', setter: setSystemUsers },
-        { table: 'clients', setter: setClients },
-        { table: 'replacement_contracts', setter: setReplacementContracts }
-      ];
+        // Primeiro carregamos os veículos para estarem disponíveis para enriquecer as locações
+        const { data: vData, error: vError } = await supabase.from('vehicles').select('*, investors(name)');
+        let allVehicles = [];
+        if (!vError && vData) {
+          allVehicles = mapToCamel(vData, 'vehicles');
+          setVehicles(allVehicles);
+        }
 
-      for (const item of tables) {
-        let query = supabase.from(item.table).select('*');
-        if (item.table === 'vehicles') query = supabase.from('vehicles').select('*, investors(name)');
-        if (item.table === 'rentals' || item.table === 'leads') query = query.order('created_at', { ascending: false });
-        
-        const { data, error } = await query;
-        if (!error && data) {
-          let mappedData = mapToCamel(data, item.table);
+        const tables = [
+          { table: 'leads', setter: setLeads },
+          { table: 'rentals', setter: setRentals },
+          { table: 'investors', setter: setInvestors },
+          { table: 'transactions', setter: setTransactions },
+          { table: 'maintenances', setter: setMaintenances },
+          { table: 'inspections', setter: setInspections },
+          { table: 'service_orders', setter: setServiceOrders },
+          { table: 'system_users', setter: setSystemUsers },
+          { table: 'clients', setter: setClients },
+          { table: 'replacement_contracts', setter: setReplacementContracts }
+        ];
+
+        for (const item of tables) {
+          // Pulamos veículos pois já carregamos acima
+          if (item.table === 'vehicles') continue;
+
+          let query = supabase.from(item.table).select('*');
+          if (item.table === 'rentals' || item.table === 'leads') query = query.order('created_at', { ascending: false });
           
-          if (item.table === 'rentals' && vehicles.length > 0) {
-            mappedData = mappedData.map(rental => {
-              const vehicle = vehicles.find(v => v.id === rental.vehicleId);
-              return {
-                ...rental,
-                image: vehicle?.image || rental.image,
-                vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle,
-                plate: vehicle?.plate || rental.vehiclePlate || rental.plate
-              };
-            });
+          const { data, error } = await query;
+          if (!error && data) {
+            let mappedData = mapToCamel(data, item.table);
             
-            // Sincronização retroativa: Se houver locação ativa de cliente que não está na base, cadastra
-            // Carrega os clientes de forma independente para evitar conflitos de mapeamento
-            const { data: cData } = await supabase.from('clients').select('*');
-            if (cData) setClients(mapToCamel(cData, 'clients'));
-            
-            for (const rental of mappedData) {
-              const clientExists = clients.some(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
-              if (!clientExists && rental.user) {
-                supabase.from('clients').insert([{
-                  nome: rental.user,
-                  telefone: rental.clientPhone || rental.phone,
-                  cnh_number: rental.cnhNumber || rental.cnh,
-                  cnh_validity: rental.cnhValidity,
-                  status: 'Ativo'
-                }]).then(() => {
-                   supabase.from('clients').select('*').then(({data: cData}) => {
-                     if (cData) setClients(mapToCamel(cData, 'clients'));
-                   });
-                });
+            if (item.table === 'rentals') {
+              const { data: cData } = await supabase.from('clients').select('*');
+              const currentClients = cData ? mapToCamel(cData, 'clients') : [];
+              if (cData) setClients(currentClients);
+
+              mappedData = mappedData.map(rental => {
+                const vehicle = allVehicles.find(v => v.id === rental.vehicleId);
+                const client = currentClients.find(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+                return {
+                  ...rental,
+                  image: vehicle?.image || rental.image,
+                  vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle || rental.modelo,
+                  plate: vehicle?.plate || rental.vehiclePlate || rental.plate || rental.placa,
+                  cpf: client?.cpf || rental.cpf,
+                  address: client?.address || rental.address,
+                  cnh: client?.cnh || rental.cnh || rental.cnhNumber
+                };
+              });
+              
+              for (const rental of mappedData) {
+                const clientExists = currentClients.some(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+                if (!clientExists && rental.user) {
+                  supabase.from('clients').insert([{
+                    nome: rental.user,
+                    telefone: rental.clientPhone || rental.phone,
+                    cnh_number: rental.cnhNumber || rental.cnh,
+                    cnh_validity: rental.cnhValidity,
+                    status: 'Ativo'
+                  }]).then(() => {
+                     supabase.from('clients').select('*').then(({data: cDataRefresh}) => {
+                       if (cDataRefresh) setClients(mapToCamel(cDataRefresh, 'clients'));
+                     });
+                  });
+                }
               }
             }
+            
+            item.setter(mappedData);
           }
-          
-          item.setter(mappedData);
         }
-      }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
       }
@@ -460,8 +472,29 @@ export const useAppState = () => {
       const { error } = await supabase.from('rentals').update(payload).eq('id', finalRental.id);
       if (error) throw error;
 
+      // Sincroniza com a tabela de clientes se houver CNH e Nome
+      if (finalRental.cnhNumber || finalRental.cnh) {
+        const cnh = finalRental.cnhNumber || finalRental.cnh;
+        const clientPayload = {
+          name: finalRental.userName || finalRental.user,
+          phone: finalRental.clientPhone || finalRental.phone,
+          email: finalRental.email,
+          cnh_number: cnh,
+          cnh_validity: finalRental.cnhValidity,
+          registro_cnh: finalRental.cnhRegisterNumber,
+          data_de_nascimento: finalRental.birthDate
+        };
+        // Remove campos vazios para não sobrescrever com null
+        Object.keys(clientPayload).forEach(key => clientPayload[key] === undefined && delete clientPayload[key]);
+        
+        await supabase.from('clients').update(clientPayload).eq('cnh_number', cnh);
+        
+        // Atualiza estado local de clientes
+        setClients(prev => prev.map(c => c.cnhNumber === cnh || c.cnh === cnh ? { ...c, ...clientPayload, name: clientPayload.name } : c));
+      }
+
       setRentals(prev => prev.map(r => r.id === finalRental.id ? { ...finalRental } : r));
-      alert('Contrato anexado com sucesso!');
+      alert('Contrato atualizado com sucesso!');
       return { success: true };
     } catch (error) {
       console.error("Erro ao atualizar loca\u00e7\u00e3o:", error);
@@ -597,36 +630,142 @@ export const useAppState = () => {
     if (!error) setMaintenances(prev => prev.filter(m => m.id !== id));
   };
 
-  const handleCompleteClosure = async (rentalId, closureData) => {
+  const handleCompleteClosure = async (rentalId, closureData, attachedFile) => {
     const rental = rentals.find(r => r.id === rentalId);
-    if (!rental) return;
+    if (!rental) return { success: false, error: 'Rental not found' };
 
-    const { error } = await supabase.from('rentals').update({ status: 'Encerrado', end_date: new Date().toISOString().split('T')[0] }).eq('id', rentalId);
-    
-    if (!error) {
-      setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, status: 'Encerrado' } : r));
+    try {
+      let terminationTermUrl = null;
+      if (attachedFile) {
+        terminationTermUrl = await uploadFile(attachedFile, 'contratos');
+      }
+
+      const updatedDocs = {
+        ...(rental.docs || {}),
+        terminationTerm: terminationTermUrl || (rental.docs?.terminationTerm),
+        closureSummary: closureData
+      };
+
+      const todayStr = new Date().toISOString().split('T')[0];
+      
+      const { error: updateError } = await supabase.from('rentals').update({ 
+        status: 'Encerrado', 
+        end_date: todayStr,
+        documentos: updatedDocs
+      }).eq('id', rentalId);
+      
+      if (updateError) throw updateError;
+
+      // Atualização Local
+      setRentals(prev => prev.map(r => r.id === rentalId ? { 
+        ...r, 
+        status: 'Encerrado', 
+        endDate: todayStr,
+        docs: updatedDocs 
+      } : r));
+
       await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
 
-      await handleAddTransaction({
-        date: new Date().toISOString().split('T')[0],
-        type: closureData.type === 'return' ? 'out' : 'in',
-        val: closureData.balance,
-        desc: `Liquidação Final - ${rental.user}`,
-        cat: closureData.type === 'return' ? 'Caução' : 'Aluguel',
-        vehiclePlate: rental.plate,
-        status: 'Pendente',
-        responsible: 'Administradora'
-      });
+      const transactionsToAdd = [];
+      const today = todayStr;
+
+      // 1. Registro de descontos da caução (se houver débitos)
+      if (closureData.totalDebts > 0) {
+        transactionsToAdd.push({
+          date: today,
+          type: 'out',
+          val: Math.min(closureData.totalDebts, closureData.caucaoAvailable),
+          desc: `Dedução de Caução (Rescisão) - ${rental.user}`,
+          cat: 'Caução',
+          vehiclePlate: rental.plate,
+          status: 'Pago',
+          responsible: 'Administradora'
+        });
+      }
+
+      // 2. Registro do saldo final
+      if (closureData.type === 'return' && closureData.balance > 0) {
+        // Caução a devolver (Pendente)
+        transactionsToAdd.push({
+          date: today,
+          type: 'out',
+          val: closureData.balance,
+          desc: `Caução a Devolver (Rescisão) - ${rental.user}`,
+          cat: 'Caução',
+          vehiclePlate: rental.plate,
+          status: 'Pendente',
+          responsible: 'Administradora'
+        });
+      } else if (closureData.type === 'debt' && closureData.balance > 0) {
+        // Saldo devedor final (Cobrança avulsa)
+        transactionsToAdd.push({
+          date: today,
+          type: 'in',
+          val: closureData.balance,
+          desc: `Cobrança Final (Rescisão) - ${rental.user}`,
+          cat: 'Aluguel',
+          vehiclePlate: rental.plate,
+          status: 'Pendente',
+          responsible: 'Administradora'
+        });
+      }
+
+      if (transactionsToAdd.length > 0) {
+        for (const trans of transactionsToAdd) {
+          await handleAddTransaction(trans);
+        }
+      }
+      return { success: true };
+    } catch (error) {
+      console.error("Erro ao encerrar contrato:", error);
+      alert(`Erro ao encerrar contrato: ${error.message}`);
+      return { success: false, error };
     }
   };
 
   const handlePayCaucaoInstallment = async (rentalId, installmentNumber, value) => {
-    const rental = rentals.find(r => r.id === rentalId);
-    if (!rental) return;
+    try {
+      const rental = rentals.find(r => r.id === rentalId);
+      if (!rental) return;
 
-    const paidInstallments = [...(rental.paidInstallments || []), installmentNumber];
-    const { error } = await supabase.from('rentals').update({ paid_installments: paidInstallments }).eq('id', rentalId);
-    if (!error) setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, paidInstallments } : r));
+      const paidInstallments = [...(rental.paidInstallments || []), installmentNumber];
+      const currentReceived = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+      const newReceived = currentReceived + value;
+
+      // Usando nomes de colunas do mapeamento para garantir compatibilidade
+      const updatePayload = {
+        'paid_installments': paidInstallments,
+        'cau\u00e7\u00e3o_paga': newReceived
+      };
+
+      const { error } = await supabase.from('rentals').update(updatePayload).eq('id', rentalId);
+      
+      if (error) {
+        console.error("Erro ao atualizar caução:", error);
+        // Tenta um fallback se a coluna paid_installments não existir (pode estar dentro de documentos)
+        if (error.code === 'PGRST204' || error.message.includes('column "paid_installments" does not exist')) {
+          const updatedDocs = { ...(rental.docs || {}), paidInstallments };
+          await supabase.from('rentals').update({ 
+            'documentos': updatedDocs,
+            'cau\u00e7\u00e3o_paga': newReceived 
+          }).eq('id', rentalId);
+        } else {
+          throw error;
+        }
+      }
+
+      setRentals(prev => prev.map(r => r.id === rentalId ? { 
+        ...r, 
+        paidInstallments, 
+        depositReceived: newReceived,
+        depositPaid: newReceived 
+      } : r));
+      
+      alert(`Parcela ${installmentNumber} marcada como paga com sucesso!`);
+    } catch (err) {
+      console.error("Erro fatal no pagamento de caução:", err);
+      alert(`Erro ao processar pagamento: ${err.message}`);
+    }
   };
 
   const handleConfirmPayment = async (rentalId, billingData) => {

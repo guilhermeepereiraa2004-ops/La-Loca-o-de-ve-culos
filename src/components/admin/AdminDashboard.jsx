@@ -155,7 +155,7 @@ const AdminDashboard = ({
     });
   };
 
-  const handleSaveRental = (e) => {
+  const handleSaveRental = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!rentalForm.plate || !rentalForm.user) {
       alert('Por favor, preencha os dados obrigatórios do veículo e condutor.');
@@ -170,23 +170,40 @@ const AdminDashboard = ({
     };
 
     const selectedVehicle = vehicles.find(v => v.plate === rentalForm.plate);
-    onAddRental({
+    const rentalData = {
       ...rentalForm,
       value: cleanNumeric(rentalForm.value),
       depositTotal: cleanNumeric(rentalForm.depositTotal),
       tireTax: cleanNumeric(rentalForm.tireTax),
-      id: Date.now(),
       vehicleId: selectedVehicle ? selectedVehicle.id : rentalForm.vehicleId,
       date: rentalForm.startDate,
       period: `${rentalForm.durationWeeks} semanas`,
       vehicle: selectedVehicle ? selectedVehicle.model : rentalForm.vehicle,
       image: selectedVehicle ? selectedVehicle.image : 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80',
-      status: 'Ativo',
+      status: rentalForm.status || 'Ativo',
       startDate: rentalForm.startDate
-    });
+    };
+
+    const wasEditing = isEditingRental;
+
+    if (wasEditing) {
+      await onUpdateRental({ ...rentalData, id: selectedRental.id });
+    } else {
+      await onAddRental({ ...rentalData, id: Date.now() });
+    }
 
     setShowAddForm(false);
+    setIsEditingRental(false);
     setCurrentRentalStep(1);
+    
+    setShowAdminSuccess({
+      show: true,
+      title: wasEditing ? 'Locação Atualizada' : 'Locação Registrada',
+      message: wasEditing 
+        ? `Os dados do contrato de ${rentalForm.user} foram atualizados com sucesso.`
+        : `O contrato de ${rentalForm.user} foi criado e o veículo marcado como alugado.`
+    });
+
     setRentalForm({
       user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '',
       vehicle: '', plate: '', vehicleId: '', rentalType: 'weekly', value: '', tireTax: '25',
@@ -194,12 +211,6 @@ const AdminDashboard = ({
       startDate: new Date().toISOString().split('T')[0],
       lateFine: '10', dailyInterest: '1', observations: '',
       docs: { cnh: null, residence: null, appPrints: [], signedContract: null }
-    });
-    
-    setShowAdminSuccess({
-      show: true,
-      title: 'Locação Registrada',
-      message: `O contrato de ${rentalForm.user} foi criado e o veículo marcado como alugado.`
     });
   };
 
@@ -289,6 +300,7 @@ const AdminDashboard = ({
               }}
               setSelectedRental={setSelectedRental} setShowRentalDetailModal={setShowRentalDetailModal}
               setIsEditingRental={setIsEditingRental} setItemToDelete={setItemToDelete}
+              setRentalForm={setRentalForm}
               setDeleteType={setDeleteType} setShowDeleteAuthModal={setShowDeleteAuthModal}
               onGoToVistorias={(data) => { if (data) setPendingInspection(data); setActiveTab('vistoria'); }}
             />
@@ -425,7 +437,79 @@ const AdminDashboard = ({
           }}
         />
       )}
-      {showInspectionDetailModal && <InspectionDetailModal inspection={selectedInspection} isOpen={showInspectionDetailModal} onClose={() => setShowInspectionDetailModal(false)} />}
+      {showInspectionDetailModal && (
+        <InspectionDetailModal 
+          inspection={selectedInspection} 
+          isOpen={showInspectionDetailModal} 
+          onClose={() => setShowInspectionDetailModal(false)}
+          onCloseContract={(ins) => {
+            setPendingInspection(ins);
+            const rental = rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate && r.status === 'Ativo');
+            if (rental) {
+              setSelectedRental(rental);
+              setShowInspectionDetailModal(false);
+              setShowClosureModal(true);
+            } else {
+              alert('Não foi possível encontrar um contrato ativo para este veículo.');
+            }
+          }}
+        />
+      )}
+      
+      {showClosureModal && (
+        <ContractClosureModal 
+          inspection={selectedInspection || pendingInspection}
+          rental={selectedRental}
+          transactions={transactions}
+          onClose={() => setShowClosureModal(false)}
+          onConfirm={(data) => {
+            setFinalClosureData(data);
+            setShowClosureModal(false);
+            setShowTerminationTerm(true);
+          }}
+        />
+      )}
+
+      {showTerminationTerm && (
+        <TerminationTermModal 
+          inspection={selectedInspection || pendingInspection}
+          rental={selectedRental}
+          closureData={finalClosureData}
+          onClose={() => setShowTerminationTerm(false)}
+          onFinalize={async (attachedFile) => {
+            try {
+              const result = await onCompleteClosure(selectedRental.id, finalClosureData, attachedFile);
+              
+              if (result && result.success === false) {
+                // Erro já tratado com alert no useAppState, não fecha o modal
+                return;
+              }
+
+              // Atualiza o estado local do selectedRental para refletir o encerramento imediatamente no modal
+              setSelectedRental(prev => ({
+                ...prev,
+                status: 'Encerrado',
+                docs: {
+                  ...(prev.docs || {}),
+                  closureSummary: finalClosureData,
+                  terminationTerm: 'pending_refresh'
+                }
+              }));
+
+              setShowTerminationTerm(false);
+              setShowAdminSuccess({
+                show: true,
+                title: 'Contrato Encerrado',
+                message: `O contrato de ${selectedRental.user} foi finalizado com o termo assinado anexado.`
+              });
+            } catch (err) {
+              console.error("Erro ao finalizar encerramento:", err);
+              alert("Ocorreu um erro inesperado ao finalizar o encerramento.");
+            }
+          }}
+        />
+      )}
+
       {showVehicleDetailModal && (
         <VehicleDetailModal 
           vehicle={selectedVehicleForDetail} 

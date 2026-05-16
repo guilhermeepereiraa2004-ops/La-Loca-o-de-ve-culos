@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as BankIcon, Receipt } from 'lucide-react';
+import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as BankIcon, Receipt, AlertTriangle } from 'lucide-react';
+import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminCaucao = ({
   rentals = [],
@@ -8,18 +9,21 @@ const AdminCaucao = ({
   const [search, setSearch] = useState('');
   const [selectedRental, setSelectedRental] = useState(null);
   const [showPayModal, setShowPayModal] = useState(false);
+  const [pendingInstallment, setPendingInstallment] = useState(null);
 
-  const totalCustodia = rentals.reduce((acc, r) => acc + (parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
-  const totalReceber = rentals.reduce((acc, r) => {
+  const safeRentals = Array.isArray(rentals) ? rentals : [];
+
+  const totalCustodia = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+  const totalReceber = safeRentals.reduce((acc, r) => {
     const total = parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
     const received = parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
     return acc + (total - received);
   }, 0);
-  const totalContratado = rentals.reduce((acc, r) => acc + (parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+  const totalContratado = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
 
-  const filteredRentals = rentals.filter(r => 
-    r.user?.toLowerCase().includes(search.toLowerCase()) || 
-    r.plate?.toLowerCase().includes(search.toLowerCase())
+  const filteredRentals = safeRentals.filter(r => 
+    (r.userName || r.user || '').toLowerCase().includes(search.toLowerCase()) || 
+    (r.plate || r.vehiclePlate || '').toLowerCase().includes(search.toLowerCase())
   );
 
   const handleOpenPayModal = (rental) => {
@@ -28,75 +32,116 @@ const AdminCaucao = ({
   };
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-700">
-      {/* Caução Dashboard */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white p-10 rounded-[2.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
-          <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-4 flex items-center gap-2">
-            <ShieldCheck size={14} className="text-emerald-500" /> Caução em Custódia
-          </p>
-          <p className="text-4xl font-black text-neutral-900">
-            R$ {totalCustodia.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <p className="text-[10px] text-neutral-300 font-bold mt-4 uppercase tracking-widest">Total recebido e disponível</p>
-        </div>
-
-        <div className="bg-white p-10 rounded-[2.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform" />
-          <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-4 flex items-center gap-2">
-            <Clock size={14} className="text-amber-500" /> Saldo a Receber (Parcelado)
-          </p>
-          <p className="text-4xl font-black text-neutral-900">
-            R$ {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <p className="text-[10px] text-neutral-300 font-bold mt-4 uppercase tracking-widest">Expectativa de recebimento</p>
-        </div>
-
-        <div className="bg-neutral-950 p-10 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-40 h-40 bg-[#C5A059]/10 rounded-full blur-3xl -z-10 group-hover:scale-110 transition-transform" />
-          <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black mb-4">Total Geral Contratado</p>
-          <p className="text-4xl font-black text-[#C5A059]">
-            R$ {totalContratado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </p>
-          <div className="mt-6 flex gap-2">
-            <span className="px-3 py-1 bg-neutral-900 border border-neutral-800 rounded-full text-[9px] font-black uppercase tracking-widest text-[#C5A059]">Garantia Total da Frota</span>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-12">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <EditorialLabel className="text-emerald-600 tracking-[0.3em]">Gestão de Ativos em Custódia</EditorialLabel>
           </div>
+          <h3 className="text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Caução</h3>
+          <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Monitoramento de garantias contratuais e fluxos de recebimento.</p>
         </div>
       </div>
 
-      {/* Deposits List */}
-      <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden">
-        <div className="p-10 border-b border-neutral-50 bg-neutral-50/30 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div>
-            <h4 className="text-xl font-black uppercase tracking-tighter">Detalhamento por Contrato</h4>
-            <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-bold mt-1">Acompanhamento individual de garantias</p>
+      {/* Editorial Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+        <div className="p-10 bg-white rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
+          <div className="flex items-center gap-4 mb-10 relative">
+            <div className="w-12 h-12 bg-neutral-900 text-emerald-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+              <ShieldCheck size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Em Custódia</p>
+              <p className="text-[9px] text-emerald-600 font-bold uppercase tracking-widest mt-0.5">Disponível</p>
+            </div>
           </div>
-          <div className="relative w-full md:w-72">
-            <Search size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-2xl font-black text-emerald-600 tracking-tighter">R$</span>
+            <h4 className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">
+              {totalCustodia.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </h4>
+          </div>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Saldo Recebido</p>
+        </div>
+
+        <div className="p-10 bg-white rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
+          <div className="flex items-center gap-4 mb-10 relative">
+            <div className="w-12 h-12 bg-neutral-900 text-amber-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:-rotate-12 transition-transform">
+              <Clock size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Expectativa</p>
+              <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest mt-0.5">Saldo a Receber</p>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-2xl font-black text-amber-600 tracking-tighter">R$</span>
+            <h4 className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">
+              {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </h4>
+          </div>
+          <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Parcelas Pendentes</p>
+        </div>
+
+        <div className="p-10 bg-neutral-900 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#C5A059]/10 blur-[100px] -mr-24 -mt-24" />
+          <div className="flex items-center gap-4 mb-10 relative">
+            <div className="w-12 h-12 bg-[#C5A059] text-neutral-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Landmark size={24} />
+            </div>
+            <div>
+              <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Garantia Total</p>
+              <p className="text-[9px] text-[#C5A059] font-bold uppercase tracking-widest mt-0.5">Frota Ativa</p>
+            </div>
+          </div>
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-2xl font-black text-[#C5A059] tracking-tighter">R$</span>
+            <h4 className="text-5xl font-black text-white tracking-tighter leading-none">
+              {totalContratado.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+            </h4>
+          </div>
+          <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest">Volume Contratual</p>
+        </div>
+      </div>
+
+      {/* Main Table Container */}
+      <div className="bg-white rounded-[4rem] border border-neutral-50 shadow-2xl shadow-neutral-900/5 overflow-hidden">
+        <div className="px-12 py-10 border-b border-neutral-50 bg-white flex flex-col lg:flex-row justify-between items-center gap-8">
+          <div className="space-y-1">
+            <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black">Detalhamento Financeiro</h5>
+            <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-widest">Controle individual de garantias contratuais</p>
+          </div>
+          
+          <div className="relative w-full lg:w-96 group">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Buscar por condutor ou placa..."
-              className="w-full bg-white border border-neutral-100 py-3 pl-10 pr-4 rounded-xl text-[10px] outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all"
+              placeholder="Pesquisar por condutor ou placa..."
+              className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
             />
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
+
+        <div className="overflow-x-auto overflow-y-hidden">
+          <table className="w-full text-left border-separate border-spacing-y-4 px-8 pb-8">
             <thead>
-              <tr className="bg-neutral-50/50">
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black">Condutor / Veículo</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Dia Pagamento</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Caução Total</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Valor Recebido</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Saldo Restante</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-center">Ação</th>
-                <th className="p-8 text-[10px] uppercase tracking-widest text-neutral-400 font-black text-right">Status Garantia</th>
+              <tr className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-black">
+                <th className="px-8 py-6">Condutor & Veículo</th>
+                <th className="px-8 py-6 text-center">Vencimento</th>
+                <th className="px-8 py-6 text-center">Total Contratado</th>
+                <th className="px-8 py-6 text-center">Saldo Recebido</th>
+                <th className="px-8 py-6 text-center">Restante</th>
+                <th className="px-8 py-6 text-center">Ações</th>
+                <th className="px-8 py-6 text-right">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-50">
+            <tbody className="font-light">
               {filteredRentals.length > 0 ? (
                 filteredRentals.map((rental) => {
                   const total = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
@@ -105,97 +150,110 @@ const AdminCaucao = ({
 
                   // Calculate Next Due Date
                   const paidCount = (rental.paidInstallments || []).length;
-                  const startDate = rental.date ? new Date(rental.date + 'T12:00:00') : new Date();
+                  const startDate = rental.date || rental.startDate ? new Date((rental.date || rental.startDate) + 'T12:00:00') : new Date();
                   const nextDueDate = new Date(startDate.getTime());
                   nextDueDate.setDate(startDate.getDate() + (paidCount * 7));
                   
                   const today = new Date();
                   today.setHours(12, 0, 0, 0);
-                  const tomorrow = new Date(today);
-                  tomorrow.setDate(today.getDate() + 1);
-
                   const isDueToday = nextDueDate.toDateString() === today.toDateString();
-                  const isDueTomorrow = nextDueDate.toDateString() === tomorrow.toDateString();
                   const isOverdue = nextDueDate < today && remaining > 0;
                   
                   return (
-                    <tr key={rental.id} className="hover:bg-neutral-50/50 transition-all group border-b border-neutral-50 last:border-0">
-                      <td className="p-8">
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059] font-black text-xs shadow-lg">
-                            {rental.user ? rental.user.charAt(0) : '?'}
+                    <tr key={rental.id} className="group transition-all duration-500">
+                      {/* Conductor Column */}
+                      <td className="px-2 py-4 bg-white border border-neutral-100 rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
+                        <div className="flex items-center gap-6 pl-6 min-w-[280px]">
+                          <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-sm shadow-xl group-hover:rotate-6 transition-transform">
+                            {(rental.userName || rental.user || '?').charAt(0)}
                           </div>
-                          <div>
+                          <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm font-black text-neutral-900">{rental.user || 'Desconhecido'}</p>
+                              <p className="text-base font-black text-neutral-900 tracking-tight">{rental.userName || rental.user || 'Desconhecido'}</p>
                               {isDueToday && (
-                                <span className="flex items-center gap-1 bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse">
-                                  <AlertTriangle size={8} /> Pagamento Hoje
+                                <span className="bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
+                                  <AlertTriangle size={8} /> Hoje
                                 </span>
                               )}
                             </div>
-                            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{rental.vehicle || 'S/ veículo'} • {rental.plate || 'S/ placa'}</p>
+                            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{rental.vehicleModel || rental.vehicle || 'S/ veículo'} • {rental.vehiclePlate || rental.plate || 'S/ placa'}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="p-8 text-center">
-                        <div className="flex flex-col items-center">
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border ${
-                            isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100' :
-                            isDueTomorrow ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-neutral-100 text-neutral-900 border-neutral-200'
+
+                      {/* Due Date Column */}
+                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <div className="flex flex-col items-center gap-1.5">
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl border transition-all ${
+                            isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
+                            'bg-neutral-50 text-neutral-900 border-neutral-100'
                           }`}>
                             {rental.paymentDay || '---'}
                           </span>
                           {remaining > 0 && (
-                            <span className={`text-[8px] font-bold mt-2 uppercase tracking-tighter ${
-                              isDueToday || isOverdue ? 'text-red-500' : 
-                              isDueTomorrow ? 'text-amber-500' : 'text-neutral-400'
+                            <span className={`text-[8px] font-black uppercase tracking-tighter ${
+                              isDueToday || isOverdue ? 'text-red-500' : 'text-neutral-400'
                             }`}>
-                              Vence: {nextDueDate.toLocaleDateString('pt-BR')}
+                              {nextDueDate.toLocaleDateString('pt-BR')}
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="p-8 text-center font-bold text-neutral-900 text-sm">
-                        R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+
+                      {/* Total Column */}
+                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <span className="text-base font-black text-neutral-900 tracking-tight">
+                          R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
                       </td>
-                      <td className="p-8 text-center font-bold text-emerald-600 text-sm">
-                        R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+
+                      {/* Received Column */}
+                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 inline-block">
+                          <span className="text-base font-black text-emerald-600 tracking-tight">
+                            R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
                       </td>
-                      <td className="p-8 text-center">
-                        <div className="flex flex-col items-center">
-                          <span className={`text-sm font-bold ${remaining > 0 ? 'text-amber-600' : 'text-neutral-400'}`}>
+
+                      {/* Remaining Column */}
+                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <div className="flex flex-col items-center gap-1">
+                          <span className={`text-base font-black tracking-tight ${remaining > 0 ? 'text-amber-600' : 'text-neutral-300'}`}>
                             R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
-                          {rental.depositInstallments > 0 && remaining > 0 && (
-                            <p className="text-[8px] uppercase font-black text-neutral-300 mt-1">
-                              {(rental.paidInstallments || []).length} de {rental.depositInstallments} parcelas pagas
+                          {rental.depositInstallments > 1 && remaining > 0 && (
+                            <p className="text-[8px] uppercase font-black text-neutral-400">
+                              {(rental.paidInstallments || []).length}/{rental.depositInstallments} parcelas
                             </p>
                           )}
                         </div>
                       </td>
-                      <td className="p-8 text-center">
+
+                      {/* Actions Column */}
+                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         {remaining > 0 ? (
                           <button
                             onClick={() => handleOpenPayModal(rental)}
-                            className="px-4 py-2 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 transition-all flex items-center gap-2 shadow-lg shadow-emerald-500/20 mx-auto"
+                            className="px-6 py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
                           >
-                            <Check size={12} /> Confirmar Pago
+                            <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
                           </button>
                         ) : (
-                          <div className="flex items-center gap-2 text-emerald-500 justify-center">
-                            <FileCheck size={14} />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Tudo Pago</span>
+                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
+                            <FileCheck size={16} />
+                            <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
                           </div>
                         )}
                       </td>
-                      <td className="p-8 text-right">
-                        <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest ${remaining <= 0
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                          : 'bg-amber-50 text-amber-600 border border-amber-100'
+
+                      {/* Status Column */}
+                      <td className="px-8 py-4 bg-white border border-neutral-100 rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-12">
+                        <span className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 transition-all duration-700 ${remaining <= 0
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-500/10'
+                          : 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm shadow-amber-500/10 group-hover:scale-105'
                           }`}>
-                          {remaining <= 0 ? 'Liquidado' : 'Em Aberto'}
+                          {remaining <= 0 ? 'Garantido' : 'Pendente'}
                         </span>
                       </td>
                     </tr>
@@ -203,10 +261,15 @@ const AdminCaucao = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="p-20 text-center">
-                    <div className="flex flex-col items-center gap-4 text-neutral-300">
-                      <Landmark size={48} className="opacity-20" />
-                      <p className="text-[10px] uppercase tracking-[0.3em] font-black">Nenhuma garantia registrada no momento</p>
+                  <td colSpan="7" className="p-32 text-center bg-white border border-neutral-100 rounded-[3rem]">
+                    <div className="flex flex-col items-center gap-6">
+                      <div className="w-24 h-24 bg-neutral-50 rounded-[2.5rem] flex items-center justify-center text-neutral-200">
+                        <Landmark size={48} />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xl font-black uppercase tracking-tighter text-neutral-900">Nenhum Ativo Encontrado</p>
+                        <p className="text-[10px] text-neutral-400 uppercase tracking-[0.2em] font-bold">Refine sua busca ou aguarde novos contratos</p>
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -219,7 +282,7 @@ const AdminCaucao = ({
       {/* Pay Installment Modal */}
       {showPayModal && selectedRental && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setShowPayModal(false)} />
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => { setShowPayModal(false); setPendingInstallment(null); }} />
           <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-500">
             <div className="p-8 border-b border-neutral-100 flex justify-between items-center bg-white">
               <div className="flex items-center gap-4">
@@ -227,65 +290,112 @@ const AdminCaucao = ({
                   <Receipt size={24} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-black uppercase tracking-tighter text-neutral-900">Marcar Parcela como Paga</h4>
-                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-1">{selectedRental.user}</p>
+                  <h4 className="text-xl font-black uppercase tracking-tighter text-neutral-900">
+                    {pendingInstallment ? 'Confirmar Recebimento' : 'Marcar como Pago'}
+                  </h4>
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-1">{selectedRental.userName || selectedRental.user}</p>
                 </div>
               </div>
-              <button onClick={() => setShowPayModal(false)} className="text-neutral-300 hover:text-neutral-900 transition-colors">
+              <button onClick={() => { setShowPayModal(false); setPendingInstallment(null); }} className="text-neutral-300 hover:text-neutral-900 transition-colors">
                 <X size={24} />
               </button>
             </div>
 
-            <div className="p-8 space-y-6">
-              <div className="bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
-                <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-4">Selecione a parcela a liquidar:</p>
-                <div className="grid grid-cols-2 gap-4">
-                  {Array.from({ length: selectedRental.depositInstallments || 1 }).map((_, i) => {
-                    const installmentNum = i + 1;
-                    const isPaid = (selectedRental.paidInstallments || []).includes(installmentNum);
-                    const total = parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-                    const valuePerInstallment = total / (selectedRental.depositInstallments || 1);
+            <div className="p-8">
+              {!pendingInstallment ? (
+                <div className="space-y-6">
+                  <div className="bg-neutral-50 p-8 rounded-[2rem] border border-neutral-100 shadow-inner">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-6 text-center">Selecione a parcela para liquidar</p>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Array.from({ length: selectedRental.depositInstallments || 1 }).map((_, i) => {
+                        const installmentNum = i + 1;
+                        const isPaid = (selectedRental.paidInstallments || []).includes(installmentNum);
+                        const total = parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                        const valuePerInstallment = total / (selectedRental.depositInstallments || 1);
 
-                    return (
-                      <button
-                        key={installmentNum}
-                        disabled={isPaid}
-                        onClick={() => {
-                          payCaucaoInstallment(selectedRental.id, installmentNum, valuePerInstallment);
-                          setShowPayModal(false);
-                        }}
-                        className={`p-6 rounded-2xl border transition-all flex flex-col items-center gap-2 group ${isPaid 
-                          ? 'bg-emerald-50 border-emerald-100 opacity-50 cursor-not-allowed' 
-                          : 'bg-white border-neutral-100 hover:border-[#C5A059] hover:shadow-xl'}`}
-                      >
-                        <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${isPaid ? 'text-emerald-600' : 'text-neutral-400 group-hover:text-[#C5A059]'}`}>
-                          Parcela {installmentNum}
-                        </span>
-                        <span className={`text-sm font-black ${isPaid ? 'text-emerald-900' : 'text-neutral-900'}`}>
-                          R$ {valuePerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                        {isPaid && <Check size={14} className="text-emerald-600" />}
-                      </button>
-                    );
-                  })}
+                        return (
+                          <button
+                            key={installmentNum}
+                            disabled={isPaid}
+                            onClick={() => {
+                              setPendingInstallment({
+                                number: installmentNum,
+                                value: valuePerInstallment
+                              });
+                            }}
+                            className={`p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-2 group ${isPaid 
+                              ? 'bg-emerald-50 border-emerald-100 opacity-50 cursor-not-allowed' 
+                              : 'bg-white border-neutral-100 hover:border-[#C5A059] hover:shadow-2xl hover:scale-105 active:scale-95'}`}
+                          >
+                            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isPaid ? 'text-emerald-600' : 'text-neutral-400 group-hover:text-[#C5A059]'}`}>
+                              Parcela {installmentNum}
+                            </span>
+                            <span className={`text-lg font-black ${isPaid ? 'text-emerald-900' : 'text-neutral-900'}`}>
+                              R$ {valuePerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                            {isPaid && <Check size={18} className="text-emerald-600" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-8 animate-in zoom-in-95 duration-500">
+                  <div className="bg-emerald-50 p-10 rounded-[3rem] border-2 border-emerald-100 text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100/50 rounded-bl-full -mr-16 -mt-16" />
+                    <ShieldCheck size={48} className="text-emerald-500 mx-auto mb-6" />
+                    <h5 className="text-2xl font-black text-emerald-900 tracking-tighter mb-2">Confirma o pagamento?</h5>
+                    <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-8">Dossiê de Liquidação Parcial</p>
+                    
+                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 mb-6">
+                      <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Valor da Parcela {pendingInstallment.number}</p>
+                      <p className="text-3xl font-black text-neutral-900">R$ {pendingInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
 
-              <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-xl border border-amber-100">
-                <ShieldCheck size={18} className="text-amber-500" />
-                <p className="text-[9px] text-amber-700 font-bold uppercase tracking-tight leading-relaxed">
-                  Ao confirmar, o valor será adicionado ao saldo recebido e registrado no histórico financeiro.
-                </p>
-              </div>
+                    <div className="flex justify-center gap-4">
+                      <div className="text-center px-4">
+                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Faltarão</p>
+                        <p className="text-sm font-black text-emerald-900">{(selectedRental.depositInstallments || 1) - (selectedRental.paidInstallments || []).length - 1} parcelas</p>
+                      </div>
+                      <div className="w-px h-8 bg-emerald-100 self-center" />
+                      <div className="text-center px-4">
+                        <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Saldo Final</p>
+                        <p className="text-sm font-black text-emerald-900">
+                          R$ {(
+                            (parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0) - 
+                            (parseFloat(String(selectedRental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0) - 
+                            pendingInstallment.value
+                          ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={() => {
+                        payCaucaoInstallment(selectedRental.id, pendingInstallment.number, pendingInstallment.value);
+                        setShowPayModal(false);
+                        setPendingInstallment(null);
+                      }}
+                      className="w-full py-6 bg-emerald-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-2xl shadow-emerald-500/30 hover:bg-emerald-600 hover:scale-[1.02] active:scale-95 transition-all"
+                    >
+                      Confirmar Pagamento
+                    </button>
+                    <button
+                      onClick={() => setPendingInstallment(null)}
+                      className="w-full py-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all"
+                    >
+                      Voltar para seleção
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="p-8 bg-neutral-50/50 flex justify-end">
-              <button
-                onClick={() => setShowPayModal(false)}
-                className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all"
-              >
-                Voltar
-              </button>
+            <div className="p-8 bg-neutral-50/50 flex justify-center border-t border-neutral-100">
+               <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-[0.2em]">Liquidando garantia contratual de {selectedRental.userName || selectedRental.user}</p>
             </div>
           </div>
         </div>

@@ -36,3 +36,30 @@ export const uploadFile = async (file, folder) => {
     throw error;
   }
 };
+
+/**
+ * Retorna a URL pública de um caminho no Storage ou a própria string se já for uma URL
+ * @param {string} path Caminho do arquivo ou URL
+ * @returns {string} URL pública
+ */
+export const getPublicUrl = (path) => {
+  if (!path || path === '') return null;
+  
+  // Handle object format (like {preview: 'url'})
+  if (typeof path === 'object') {
+    if (path.preview) return path.preview;
+    if (path.url) return path.url;
+    return null;
+  }
+
+  if (typeof path !== 'string') return null;
+  if (path === '[object Object]') return null;
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
+  
+  const { data: { publicUrl } } = supabase.storage
+    .from('La-locacao')
+    .getPublicUrl(path);
+    
+  return publicUrl;
+};
+

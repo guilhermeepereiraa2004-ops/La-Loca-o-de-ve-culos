@@ -1,4 +1,5 @@
 import { Plus, Search, Pencil, Power, PowerOff, Trash2, Car, Star, AlertTriangle } from 'lucide-react';
+import { getPublicUrl } from '../../../utils/supabaseStorage';
 
 const AdminFrota = ({
   vehicles,
@@ -96,7 +97,7 @@ const AdminFrota = ({
                 )}
 
                 <div className="aspect-[16/9] relative overflow-hidden">
-                  <img src={car.image} alt={car.model} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <img src={getPublicUrl(car.image)} alt={car.model} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
                   
                   {/* Favorite Toggle */}
                   <button

@@ -74,50 +74,52 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         </div>
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-10 space-y-10">
+        <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10">
           {/* Step 1: Consolidation */}
           <section className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 bg-neutral-900 rounded-lg flex items-center justify-center text-white text-[10px] font-black">1</div>
-              <h5 className="text-xs font-black uppercase tracking-widest text-neutral-900">Consolidação de Débitos Pendentes</h5>
+              <h5 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-neutral-900">Consolidação de Débitos Pendentes</h5>
             </div>
 
-            <div className="bg-neutral-50 rounded-[2.5rem] border border-neutral-100 overflow-hidden">
-              <table className="w-full text-left">
-                <thead>
-                  <tr className="bg-neutral-100/50">
-                    <th className="px-8 py-4 text-[9px] uppercase tracking-widest text-neutral-400 font-black">Tipo de Débito</th>
-                    <th className="px-8 py-4 text-[9px] uppercase tracking-widest text-neutral-400 font-black">Fonte de Origem</th>
-                    <th className="px-8 py-4 text-[9px] uppercase tracking-widest text-neutral-400 font-black text-right">Valor</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  <tr>
-                    <td className="px-8 py-4 text-[11px] font-black text-neutral-900 uppercase">Itens de Vistoria</td>
-                    <td className="px-8 py-4 text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Vistoria de Devolução</td>
-                    <td className="px-8 py-4 text-[11px] font-black text-red-500 text-right">R$ {closureData.inspectionDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-8 py-4 text-[11px] font-black text-neutral-900 uppercase">Multas Pendentes</td>
-                    <td className="px-8 py-4 text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Multas</td>
-                    <td className="px-8 py-4 text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidFines.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-8 py-4 text-[11px] font-black text-neutral-900 uppercase">Aluguéis Vencidos</td>
-                    <td className="px-8 py-4 text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Cobranças</td>
-                    <td className="px-8 py-4 text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                  <tr>
-                    <td className="px-8 py-4 text-[11px] font-black text-neutral-900 uppercase">Caução em Aberto</td>
-                    <td className="px-8 py-4 text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Saldo Parcelado</td>
-                    <td className="px-8 py-4 text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidCaucao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                  <tr className="bg-neutral-900">
-                    <td colSpan={2} className="px-8 py-5 text-[10px] font-black text-[#C5A059] uppercase tracking-widest">Total de Débitos Consolidados</td>
-                    <td className="px-8 py-5 text-lg font-black text-white text-right">R$ {closureData.totalDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                  </tr>
-                </tbody>
-              </table>
+            <div className="bg-neutral-50 rounded-[2rem] md:rounded-[2.5rem] border border-neutral-100 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left min-w-[500px] md:min-w-0">
+                  <thead>
+                    <tr className="bg-neutral-100/50">
+                      <th className="px-6 md:px-8 py-4 text-[9px] uppercase tracking-widest text-neutral-400 font-black">Tipo de Débito</th>
+                      <th className="px-6 md:px-8 py-4 text-[9px] uppercase tracking-widest text-neutral-400 font-black">Fonte de Origem</th>
+                      <th className="px-6 md:px-8 py-4 text-[9px] uppercase tracking-widest text-neutral-400 font-black text-right">Valor</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    <tr>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Itens de Vistoria</td>
+                      <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Vistoria de Devolução</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.inspectionDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Multas Pendentes</td>
+                      <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Multas</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidFines.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Aluguéis Vencidos</td>
+                      <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Cobranças</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Caução em Aberto</td>
+                      <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Saldo Parcelado</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidCaucao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                    <tr className="bg-neutral-900">
+                      <td colSpan={2} className="px-6 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-[#C5A059] uppercase tracking-widest">Total de Débitos Consolidados</td>
+                      <td className="px-6 md:px-8 py-5 text-base md:text-lg font-black text-white text-right">R$ {closureData.totalDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </section>
 
@@ -125,34 +127,34 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
           <section className="space-y-6">
             <div className="flex items-center gap-3">
               <div className="w-6 h-6 bg-neutral-900 rounded-lg flex items-center justify-center text-white text-[10px] font-black">2</div>
-              <h5 className="text-xs font-black uppercase tracking-widest text-neutral-900">Confronto com Caução Disponível</h5>
+              <h5 className="text-[10px] md:text-xs font-black uppercase tracking-widest text-neutral-900">Confronto com Caução Disponível</h5>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="bg-neutral-50 p-8 rounded-[2rem] border border-neutral-100 flex flex-col justify-between">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
+              <div className="bg-neutral-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-neutral-100 flex flex-col justify-between">
                 <div>
-                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Caução Líquida Disponível</p>
-                  <h6 className="text-3xl font-black text-emerald-600 tracking-tighter">R$ {closureData.caucaoAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h6>
+                  <p className="text-[8px] md:text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Caução Líquida Disponível</p>
+                  <h6 className="text-2xl md:text-3xl font-black text-emerald-600 tracking-tighter">R$ {closureData.caucaoAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h6>
                 </div>
-                <p className="text-[8px] text-neutral-400 font-bold uppercase mt-4 italic">Valor já pago pelo motorista e retido pela locadora.</p>
+                <p className="text-[7px] md:text-[8px] text-neutral-400 font-bold uppercase mt-4 italic">Valor já pago pelo motorista e retido pela locadora.</p>
               </div>
 
-              <div className={`p-8 rounded-[2rem] border flex flex-col justify-between ${closureData.type === 'return' ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
+              <div className={`p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border flex flex-col justify-between ${closureData.type === 'return' ? 'bg-emerald-50 border-emerald-100' : 'bg-amber-50 border-amber-100'}`}>
                 <div>
-                  <p className={`text-[9px] uppercase tracking-widest font-black mb-1 ${closureData.type === 'return' ? 'text-emerald-700' : 'text-amber-700'}`}>
+                  <p className={`text-[8px] md:text-[9px] uppercase tracking-widest font-black mb-1 ${closureData.type === 'return' ? 'text-emerald-700' : 'text-amber-700'}`}>
                     {closureData.type === 'return' ? 'Saldo a Devolver' : 'Saldo Devedor Final'}
                   </p>
-                  <h6 className={`text-3xl font-black tracking-tighter ${closureData.type === 'return' ? 'text-emerald-900' : 'text-amber-900'}`}>
+                  <h6 className={`text-2xl md:text-3xl font-black tracking-tighter ${closureData.type === 'return' ? 'text-emerald-900' : 'text-amber-900'}`}>
                     R$ {closureData.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </h6>
                 </div>
                 <div className="flex items-center gap-2 mt-4">
                   {closureData.type === 'return' ? (
-                    <Check size={14} className="text-emerald-600" />
+                    <Check size={12} className="text-emerald-600" />
                   ) : (
-                    <AlertTriangle size={14} className="text-amber-600" />
+                    <AlertTriangle size={12} className="text-amber-600" />
                   )}
-                  <span className={`text-[9px] font-black uppercase tracking-widest ${closureData.type === 'return' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                  <span className={`text-[8px] md:text-[9px] font-black uppercase tracking-widest ${closureData.type === 'return' ? 'text-emerald-600' : 'text-amber-600'}`}>
                     {closureData.type === 'return' ? 'Gerar ordem de reembolso' : 'Gerar boleto de cobrança avulso'}
                   </span>
                 </div>
@@ -173,7 +175,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
             onClick={() => onConfirm(closureData)}
             className="px-16 py-5 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-2xl"
           >
-            Confirmar e Encerrar Contrato
+            Gerar Termo de Rescisão
           </button>
         </div>
       </div>
