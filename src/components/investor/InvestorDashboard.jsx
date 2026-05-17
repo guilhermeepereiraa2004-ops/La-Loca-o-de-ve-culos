@@ -12,6 +12,12 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
   // Filter vehicles belonging to this investor (Mocking Ricardo Santana for now)
   const myVehicles = vehicles.filter(v => v.investor?.toLowerCase().includes('ricardo') || v.investor?.toLowerCase().includes('santana') || vehicles.length <= 3);
 
+  // Calcular valor total investido com base nos veículos
+  const totalInvested = myVehicles.reduce((acc, v) => {
+    const val = parseFloat(String(v.investmentValue || v.investValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    return acc + val;
+  }, 0);
+
   // Calcular ganhos e despesas reais do investidor a partir das transações
   const investorTransactions = transactions.filter(t => 
     myVehicles.some(v => v.plate === t.vehiclePlate)

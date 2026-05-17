@@ -14,9 +14,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
 
   const handleSave = async () => {
     if (onUpdate) {
-      const formToSave = { ...editForm };
-      delete formToSave.cnhSecurityCode; // We only want it inside docs JSON
-      await onUpdate(formToSave);
+      await onUpdate(editForm);
     }
     setIsEditing(false);
   };
@@ -178,14 +176,6 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                       <p className={`text-sm font-black ${isExpired(client.cnhExpiration || client.cnhValidity) ? 'text-red-400' : 'text-white'}`}>
                         {(client.cnhExpiration || client.cnhValidity) ? new Date(client.cnhExpiration || client.cnhValidity).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '---'}
                       </p>
-                    )}
-                  </div>
-                  <div>
-                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Cód. Seg.</p>
-                    {isEditing ? (
-                      <input type="text" value={editForm.cnhSecurityCode || editForm.docs?.cnhSecurityCode || ''} onChange={e => setEditForm({...editForm, cnhSecurityCode: e.target.value, docs: { ...(editForm.docs || {}), cnhSecurityCode: e.target.value }})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
-                    ) : (
-                      <p className="text-sm font-black">{client.cnhSecurityCode || client.docs?.cnhSecurityCode || '---'}</p>
                     )}
                   </div>
                 </div>

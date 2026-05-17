@@ -1,13 +1,15 @@
 import React from 'react';
-import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera, FileDown, User, Phone, Mail, Smartphone, Download } from 'lucide-react';
+import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera, FileDown, User, Phone, Mail, Smartphone, Download, Loader2 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { generateRentalContract } from '../../../utils/contractGenerator';
+import { compressImage } from '../../../utils/imageCompression';
 
 const RentalFormModal = ({ 
   isOpen, onClose, currentRentalStep, setCurrentRentalStep, totalRentalSteps, 
   rentalForm, setRentalForm, vehicles, onSubmit 
 }) => {
+  const [isProcessingFiles, setIsProcessingFiles] = React.useState(false);
   if (!isOpen) return null;
 
   const fillTestData = () => {
@@ -220,29 +222,48 @@ const RentalFormModal = ({
                 <div className="space-y-6">
                   <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Anexos Obrigatórios</p>
                   <div className="grid grid-cols-1 gap-4">
-                    <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group ${rentalForm.docs.cnh ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
+                    <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${rentalForm.docs.cnh ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${rentalForm.docs.cnh ? 'bg-emerald-500 text-white animate-bounce' : 'bg-white text-neutral-300 group-hover:text-[#C5A059] group-hover:scale-110'}`}>
                         <Camera size={28} />
                       </div>
                       <div className="text-center">
                         <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs.cnh ? 'text-emerald-600' : 'text-neutral-900'}`}>Foto da CNH</span>
-                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">OBRIGATÓRIO</span>
+                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs.cnh ? (rentalForm.docs.cnh.name || 'CNH Selecionada') : 'OBRIGATÓRIO'}</span>
                       </div>
-                      <input type="file" className="hidden" onChange={(e) => setRentalForm({...rentalForm, docs: { ...rentalForm.docs, cnh: e.target.files[0] }})} />
+                      <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          try {
+                            setIsProcessingFiles(true);
+                            const compressed = await compressImage(file);
+                            setRentalForm({...rentalForm, docs: { ...rentalForm.docs, cnh: compressed }});
+                          } finally { setIsProcessingFiles(false); }
+                        }
+                      }} />
+                      {isProcessingFiles && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-[2.5rem]"><Loader2 className="animate-spin text-[#C5A059]" /></div>}
                     </label>
 
-                    <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group ${rentalForm.docs.residence ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
+                    <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${rentalForm.docs.residence ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${rentalForm.docs.residence ? 'bg-emerald-500 text-white animate-bounce' : 'bg-white text-neutral-300 group-hover:text-[#C5A059] group-hover:scale-110'}`}>
                         <FileText size={28} />
                       </div>
                       <div className="text-center">
                         <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs.residence ? 'text-emerald-600' : 'text-neutral-900'}`}>Comprovante</span>
-                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">(OPCIONAL)</span>
+                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs.residence ? (rentalForm.docs.residence.name || 'Comprovante Selecionado') : '(OPCIONAL)'}</span>
                       </div>
-                      <input type="file" className="hidden" onChange={(e) => setRentalForm({...rentalForm, docs: { ...rentalForm.docs, residence: e.target.files[0] }})} />
+                      <input type="file" className="hidden" accept="image/*,application/pdf" onChange={async (e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          try {
+                            setIsProcessingFiles(true);
+                            const compressed = file.type.includes('image') ? await compressImage(file) : file;
+                            setRentalForm({...rentalForm, docs: { ...rentalForm.docs, residence: compressed }});
+                          } finally { setIsProcessingFiles(false); }
+                        }
+                      }} />
                     </label>
 
-                    <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group ${rentalForm.docs.appPrints?.length > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
+                    <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${rentalForm.docs.appPrints?.length > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${rentalForm.docs.appPrints?.length > 0 ? 'bg-emerald-500 text-white animate-bounce' : 'bg-white text-neutral-300 group-hover:text-[#C5A059] group-hover:scale-110'}`}>
                         <Smartphone size={28} />
                       </div>
@@ -254,7 +275,16 @@ const RentalFormModal = ({
                           <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">(OBRIGATÓRIO)</span>
                         )}
                       </div>
-                      <input type="file" multiple className="hidden" onChange={(e) => setRentalForm({...rentalForm, docs: { ...rentalForm.docs, appPrints: Array.from(e.target.files) }})} />
+                      <input type="file" multiple className="hidden" accept="image/*" onChange={async (e) => {
+                        const files = Array.from(e.target.files);
+                        if (files.length > 0) {
+                          try {
+                            setIsProcessingFiles(true);
+                            const compressed = await Promise.all(files.map(f => compressImage(f)));
+                            setRentalForm({...rentalForm, docs: { ...rentalForm.docs, appPrints: compressed }});
+                          } finally { setIsProcessingFiles(false); }
+                        }
+                      }} />
                     </label>
                   </div>
                 </div>
@@ -527,7 +557,16 @@ const RentalFormModal = ({
                       <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs?.signedContract ? 'text-emerald-600' : 'text-neutral-900'}`}>Anexar Assinado</span>
                       <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs?.signedContract ? 'CONTRATO VINCULADO' : 'PDF OU IMAGEM'}</span>
                     </div>
-                    <input type="file" className="hidden" onChange={(e) => setRentalForm({...rentalForm, docs: { ...rentalForm.docs, signedContract: e.target.files[0] }})} />
+                    <input type="file" className="hidden" accept="image/*,application/pdf" onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        try {
+                          setIsProcessingFiles(true);
+                          const compressed = file.type.includes('image') ? await compressImage(file) : file;
+                          setRentalForm({...rentalForm, docs: { ...rentalForm.docs, signedContract: compressed }});
+                        } finally { setIsProcessingFiles(false); }
+                      }
+                    }} />
                   </label>
                 </div>
               </div>

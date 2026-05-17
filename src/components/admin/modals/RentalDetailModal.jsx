@@ -235,10 +235,6 @@ const RentalDetailModal = ({
                       <p className="text-sm font-black text-neutral-900">{rental.cnhRegisterNumber || '---'}</p>
                     </div>
                     <div>
-                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Cód. Segurança</p>
-                      <p className="text-sm font-black text-[#C5A059]">{rental.cnhSecurityCode || '---'}</p>
-                    </div>
-                    <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Validade</p>
                       <p className="text-sm font-black text-neutral-900">{rental.cnhValidity ? new Date(rental.cnhValidity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
                     </div>

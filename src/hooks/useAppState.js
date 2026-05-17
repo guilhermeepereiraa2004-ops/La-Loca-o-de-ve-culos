@@ -153,7 +153,7 @@ export const useAppState = () => {
       }
 
       // Specific join handlers
-      if (item.investors?.nome) newItem.investor = item.investors.nome;
+      if (item.investors?.name) newItem.investor = item.investors.name;
       
       return newItem;
     });
@@ -162,7 +162,7 @@ export const useAppState = () => {
   const mapToSnake = (obj, tableName) => {
     const mappings = TABLE_MAPPINGS[tableName] || {};
     const newObj = {};
-    const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor'];
+    const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor', 'investors'];
     for (const key in obj) {
       if (skipKeys.includes(key)) continue;
       if (mappings[key]) {
@@ -238,6 +238,7 @@ export const useAppState = () => {
                     telefone: rental.clientPhone || rental.phone,
                     cnh_number: rental.cnhNumber || rental.cnh,
                     cnh_validity: rental.cnhValidity,
+                    documentos: rental.docs,
                     status: 'Ativo'
                   }]).then(() => {
                      supabase.from('clients').select('*').then(({data: cDataRefresh}) => {
@@ -310,16 +311,17 @@ export const useAppState = () => {
 
       // --- NOVO: Upload de Documentos ---
       const uploadedDocs = { ...(rental.docs || {}) };
+      const userName = rental.user || 'usuario';
       
       // Upload CNH
       if (rental.docs?.cnh instanceof File) {
-        const url = await uploadFile(rental.docs.cnh, `condutores/${rental.user}`);
+        const url = await uploadFile(rental.docs.cnh, `condutores/${userName}`);
         if (url) uploadedDocs.cnh = url;
       }
       
       // Upload Comprovante de Residência
       if (rental.docs?.residence instanceof File) {
-        const url = await uploadFile(rental.docs.residence, `condutores/${rental.user}`);
+        const url = await uploadFile(rental.docs.residence, `condutores/${userName}`);
         if (url) uploadedDocs.residence = url;
       }
       
@@ -327,12 +329,24 @@ export const useAppState = () => {
       if (rental.docs?.appPrints && Array.isArray(rental.docs.appPrints)) {
         const printUrls = await Promise.all(rental.docs.appPrints.map(async (print) => {
           if (print instanceof File) {
-            return await uploadFile(print, `condutores/${rental.user}/prints`);
+            return await uploadFile(print, `condutores/${userName}/prints`);
           }
           return print;
         }));
         uploadedDocs.appPrints = printUrls.filter(u => u);
       }
+
+      // Upload Contrato Assinado (caso já venha no form de nova locação)
+      if (rental.docs?.signedContract instanceof File) {
+        const url = await uploadFile(rental.docs.signedContract, `condutores/${userName}/contratos`);
+        if (url) uploadedDocs.signedContract = url;
+      }
+
+      // Limpeza de segurança: Garante que nenhum objeto File permaneça no JSON
+      Object.keys(uploadedDocs).forEach(key => {
+        if (uploadedDocs[key] instanceof File) delete uploadedDocs[key];
+      });
+
 
       // Atualiza o payload com os caminhos/URLs dos documentos
       payload['documentos'] = uploadedDocs;
@@ -370,7 +384,7 @@ export const useAppState = () => {
           cnh_validity: cleanDate(rental.cnhValidity),
           registro_cnh: rental.cnhRegisterNumber || null,
           data_de_nascimento: cleanDate(rental.birthDate),
-          documentos: { ...(uploadedDocs || {}), cnhSecurityCode: rental.cnhSecurityCode || null },
+          documentos: { ...(uploadedDocs || {}) },
           status: 'Ativo'
         };
 
@@ -384,12 +398,42 @@ export const useAppState = () => {
           if (existingClient) {
             const { error: updateError } = await supabase.from('clients').update(clientPayload).eq('id', existingClient.id);
             if (updateError) throw updateError;
+            // Vincula o ID do cliente ao payload da locação (localmente)
+            payload['id_cliente'] = existingClient.id;
           } else {
-            const { error: insertError } = await supabase.from('clients').insert([clientPayload]);
+            const { data: newClient, error: insertError } = await supabase.from('clients').insert([clientPayload]).select();
             if (insertError) throw insertError;
+            if (newClient && newClient[0]) {
+              payload['id_cliente'] = newClient[0].id;
+            }
+          }
+          
+          // Se o ID do cliente foi obtido, atualiza a locação no banco
+          if (payload['id_cliente'] && data && data[0]) {
+            await supabase.from('rentals').update({ id_cliente: payload['id_cliente'] }).eq('id', data[0].id);
           }
           
           // Refresh clients list immediately
+          const updatedClientObj = {
+            id: payload['id_cliente'],
+            name: clientPayload.nome,
+            phone: clientPayload.telefone,
+            email: clientPayload['e-mail'],
+            cnhNumber: clientPayload.cnh_number,
+            cnhValidity: clientPayload.cnh_validity,
+            cnhRegisterNumber: clientPayload.registro_cnh,
+            birthDate: clientPayload.data_de_nascimento,
+            docs: clientPayload.documentos,
+            status: 'Ativo'
+          };
+
+          setClients(prev => {
+            const exists = prev.find(c => c.cnhNumber === updatedClientObj.cnhNumber);
+            if (exists) {
+              return prev.map(c => c.cnhNumber === updatedClientObj.cnhNumber ? { ...c, ...updatedClientObj } : c);
+            }
+            return [updatedClientObj, ...prev];
+          });
           const { data: updatedClients, error: selectError } = await supabase.from('clients').select('*');
           if (selectError) throw selectError;
           if (updatedClients) setClients(mapToCamel(updatedClients, 'clients'));
@@ -397,7 +441,7 @@ export const useAppState = () => {
       } catch (clientErr) {
         console.error("Erro na sincronização de cliente:", clientErr);
         const errorMsg = clientErr.details || clientErr.message || 'Erro desconhecido';
-        alert(`Atenção: A locação foi salva, mas houve um erro ao cadastrar o cliente na Base de Clientes.\n\nDetalhes: ${errorMsg}\n\nIsso geralmente ocorre se a tabela 'clients' estiver faltando alguma coluna.`);
+        alert(`Atenção: A locação foi salva, mas houve um erro ao cadastrar o cliente na Base de Clientes.\n\nDetalhes: ${errorMsg}`);
       }
 
       if (data) {
@@ -446,15 +490,37 @@ export const useAppState = () => {
   const handleUpdateRental = async (updatedRental) => {
     try {
       let finalRental = { ...updatedRental };
+      const userName = finalRental.user || finalRental.userName || 'usuario';
 
-      // Se houver um arquivo de contrato assinado (objeto File), faz o upload primeiro
-      if (updatedRental.docs?.signedContract instanceof File) {
-        const file = updatedRental.docs.signedContract;
-        const fileUrl = await uploadFile(file, 'contratos');
-        if (fileUrl) {
-          finalRental.docs = { ...finalRental.docs, signedContract: fileUrl };
-        }
+      // Sincroniza upload de todos os possíveis documentos na edição
+      const uploadedDocs = { ...(finalRental.docs || {}) };
+      
+      if (uploadedDocs.cnh instanceof File) {
+        const url = await uploadFile(uploadedDocs.cnh, `condutores/${userName}`);
+        if (url) uploadedDocs.cnh = url;
       }
+      if (uploadedDocs.residence instanceof File) {
+        const url = await uploadFile(uploadedDocs.residence, `condutores/${userName}`);
+        if (url) uploadedDocs.residence = url;
+      }
+      if (uploadedDocs.signedContract instanceof File) {
+        const url = await uploadFile(uploadedDocs.signedContract, `condutores/${userName}/contratos`);
+        if (url) uploadedDocs.signedContract = url;
+      }
+      if (uploadedDocs.appPrints && Array.isArray(uploadedDocs.appPrints)) {
+        const printUrls = await Promise.all(uploadedDocs.appPrints.map(async (print) => {
+          if (print instanceof File) return await uploadFile(print, `condutores/${userName}/prints`);
+          return print;
+        }));
+        uploadedDocs.appPrints = printUrls.filter(u => u);
+      }
+
+      // Limpeza de segurança
+      Object.keys(uploadedDocs).forEach(key => {
+        if (uploadedDocs[key] instanceof File) delete uploadedDocs[key];
+      });
+
+      finalRental.docs = uploadedDocs;
 
       // Map to database schema
       const payload = mapToSnake(finalRental, 'rentals');
@@ -472,27 +538,64 @@ export const useAppState = () => {
       const { error } = await supabase.from('rentals').update(payload).eq('id', finalRental.id);
       if (error) throw error;
 
-      // Sincroniza com a tabela de clientes se houver CNH e Nome
-      if (finalRental.cnhNumber || finalRental.cnh) {
+      // Sincroniza com a tabela de clientes
+      const oldRental = rentals.find(r => r.id === finalRental.id);
+      if (finalRental.user || finalRental.userName) {
         const cnh = finalRental.cnhNumber || finalRental.cnh;
+        const oldCnh = oldRental?.cnhNumber || oldRental?.cnh;
+        const clientId = finalRental.clientId || oldRental?.clientId;
+
         const clientPayload = {
-          name: finalRental.userName || finalRental.user,
-          phone: finalRental.clientPhone || finalRental.phone,
-          email: finalRental.email,
+          nome: finalRental.userName || finalRental.user,
+          telefone: finalRental.clientPhone || finalRental.phone,
+          'e-mail': finalRental.email,
           cnh_number: cnh,
           cnh_validity: finalRental.cnhValidity,
           registro_cnh: finalRental.cnhRegisterNumber,
-          data_de_nascimento: finalRental.birthDate
+          data_de_nascimento: finalRental.birthDate,
+          documentos: finalRental.docs,
+          status: 'Ativo'
         };
-        // Remove campos vazios para não sobrescrever com null
+
+        // Remove campos undefined
         Object.keys(clientPayload).forEach(key => clientPayload[key] === undefined && delete clientPayload[key]);
         
-        await supabase.from('clients').update(clientPayload).eq('cnh_number', cnh);
+        let clientUpdated = false;
+        // 1. Tenta por ID
+        if (clientId) {
+          const { error } = await supabase.from('clients').update(clientPayload).eq('id', clientId);
+          if (!error) clientUpdated = true;
+        } 
         
-        // Atualiza estado local de clientes
-        setClients(prev => prev.map(c => c.cnhNumber === cnh || c.cnh === cnh ? { ...c, ...clientPayload, name: clientPayload.name } : c));
+        // 2. Se não deu certo por ID, tenta pela CNH (nova ou antiga)
+        if (!clientUpdated && (cnh || oldCnh)) {
+          const { error } = await supabase.from('clients').update(clientPayload).or(`cnh_number.eq.${cnh},cnh_number.eq.${oldCnh}`);
+          if (!error) clientUpdated = true;
+        }
+        
+        // Atualiza estado local de clientes para refletir a mudança imediatamente
+        setClients(prev => prev.map(c => {
+          const isMatch = (clientId && c.id === clientId) || 
+                          (cnh && c.cnhNumber === cnh) || 
+                          (oldCnh && c.cnhNumber === oldCnh);
+          if (isMatch) {
+            return { 
+              ...c, 
+              ...clientPayload, 
+              name: clientPayload.nome, 
+              nome: clientPayload.nome, 
+              phone: clientPayload.telefone, 
+              email: clientPayload['e-mail'],
+              docs: clientPayload.documentos, // Garante que docs seja atualizado
+              cnhNumber: clientPayload.cnh_number,
+              cnhValidity: clientPayload.cnh_validity,
+              cnhRegisterNumber: clientPayload.registro_cnh,
+              birthDate: clientPayload.data_de_nascimento
+            };
+          }
+          return c;
+        }));
       }
-
       setRentals(prev => prev.map(r => r.id === finalRental.id ? { ...finalRental } : r));
       alert('Contrato atualizado com sucesso!');
       return { success: true };
@@ -544,12 +647,19 @@ export const useAppState = () => {
     }, 'vehicles');
 
     // Override with parsed numbers
-    dbVehicle['km_inicial'] = parseFloat(vehicle.initialKm) || 0;
+    dbVehicle['year'] = parseInt(vehicle.year) || null;
+    dbVehicle['initial_km'] = parseFloat(vehicle.initialKm) || 0;
     dbVehicle['km'] = parseFloat(vehicle.initialKm) || 0;
-    dbVehicle['valor_fipe'] = parseBRL(vehicle.fipeValue);
-    dbVehicle['aluguel semanal'] = parseBRL(vehicle.weeklyRental);
-    dbVehicle['valor_investimento'] = parseBRL(vehicle.investmentValue);
-    dbVehicle['valor_de_prote\u00e7\u00e3o'] = parseBRL(vehicle.protectionValue);
+    dbVehicle['fipe_value'] = parseBRL(vehicle.fipeValue);
+    dbVehicle['weekly_rental'] = parseBRL(vehicle.weeklyRental);
+    dbVehicle['investment_value'] = parseBRL(vehicle.investmentValue);
+    dbVehicle['protection_value'] = parseBRL(vehicle.protectionValue);
+    dbVehicle['admin_tax'] = parseFloat(vehicle.adminTax) || 0;
+    dbVehicle['investor_tax'] = parseFloat(vehicle.investorTax) || 0;
+    dbVehicle['franchise_insurance'] = parseBRL(vehicle.franchiseInsurance);
+    dbVehicle['last_belt_change_km'] = parseFloat(vehicle.lastBeltChangeKm) || null;
+    dbVehicle['belt_change_interval_km'] = parseFloat(vehicle.beltChangeIntervalKm) || null;
+    dbVehicle['dividend'] = parseBRL(vehicle.dividend);
     dbVehicle['investor_id'] = investorId;
 
     const { data, error } = await supabase.from('vehicles').insert([dbVehicle]).select();
@@ -589,12 +699,19 @@ export const useAppState = () => {
     const dbVehicle = mapToSnake(vehicleData, 'vehicles');
     
     // Manual overrides for parsed values
-    dbVehicle['valor_fipe'] = parseBRL(vehicle.fipeValue);
-    dbVehicle['aluguel semanal'] = parseBRL(vehicle.weeklyRental);
-    dbVehicle['valor_investimento'] = parseBRL(vehicle.investmentValue);
-    dbVehicle['valor_de_prote\u00e7\u00e3o'] = parseBRL(vehicle.protectionValue);
+    dbVehicle['year'] = parseInt(vehicle.year) || null;
+    dbVehicle['fipe_value'] = parseBRL(vehicle.fipeValue);
+    dbVehicle['weekly_rental'] = parseBRL(vehicle.weeklyRental);
+    dbVehicle['investment_value'] = parseBRL(vehicle.investmentValue);
+    dbVehicle['protection_value'] = parseBRL(vehicle.protectionValue);
     dbVehicle['km'] = parseFloat(vehicle.km || vehicle.initialKm) || 0;
-    dbVehicle['km_inicial'] = parseFloat(vehicle.initialKm) || 0;
+    dbVehicle['initial_km'] = parseFloat(vehicle.initialKm) || 0;
+    dbVehicle['admin_tax'] = parseFloat(vehicle.adminTax) || 0;
+    dbVehicle['investor_tax'] = parseFloat(vehicle.investorTax) || 0;
+    dbVehicle['franchise_insurance'] = parseBRL(vehicle.franchiseInsurance);
+    dbVehicle['last_belt_change_km'] = parseFloat(vehicle.lastBeltChangeKm) || null;
+    dbVehicle['belt_change_interval_km'] = parseFloat(vehicle.beltChangeIntervalKm) || null;
+    dbVehicle['dividend'] = parseBRL(vehicle.dividend);
 
     const { error } = await supabase.from('vehicles').update(dbVehicle).eq('id', vehicle.id);
     if (!error) {
