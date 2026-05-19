@@ -40,7 +40,7 @@ import { useAdminState } from '../../hooks/useAdminState';
 import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 
 const AdminDashboard = ({
-  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction,
+  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus,
   onUpdateStatus, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
@@ -140,13 +140,15 @@ const AdminDashboard = ({
     onAddTransaction({
       ...financeForm,
       val: cleanNumeric(financeForm.val) * (financeForm.type === 'out' ? -1 : 1),
-      status: 'Concluído'
+      status: financeForm.status || 'Concluído'
     });
     setShowFinanceForm(false);
     setFinanceForm({
       date: new Date().toISOString().split('T')[0],
       type: 'in', val: '', desc: '', cat: 'Aluguel',
-      vehiclePlate: '', responsible: 'Administradora'
+      vehiclePlate: '', responsible: 'Administradora',
+      status: 'Concluído',
+      investorName: ''
     });
     setShowAdminSuccess({
       show: true,
@@ -236,7 +238,7 @@ const AdminDashboard = ({
   };
 
   const biData = calculateBIStats(transactions, vehicles, rentals, investors, leads);
-  const alerts = getDynamicAlerts(vehicles, maintenances, inspections);
+  const alerts = getDynamicAlerts(vehicles, maintenances, inspections, clients);
 
   return (
     <div className="min-h-screen xl:h-screen bg-neutral-50 flex animate-in fade-in duration-500 relative xl:overflow-hidden">
@@ -261,7 +263,7 @@ const AdminDashboard = ({
         />
 
         <div className="flex-1 overflow-y-auto p-6 md:p-12">
-          {activeTab === 'bi' && <AdminBI stats={biData.mainStats} alerts={alerts} operationalData={biData.operationalSummary} />}
+          {activeTab === 'bi' && <AdminBI stats={biData.mainStats} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
           {activeTab === 'leads' && (
             <AdminLeads 
               leads={leads} leadSearch={leadSearch} setLeadSearch={setLeadSearch}
@@ -313,6 +315,8 @@ const AdminDashboard = ({
               isEditing={isEditing} setIsEditing={setIsEditing} onAddInvestor={onAddInvestor}
               onUpdateInvestor={onUpdateInvestor} onDeleteInvestor={onDeleteInvestor}
               setShowAdminSuccess={setShowAdminSuccess}
+              vehicles={vehicles}
+              transactions={transactions}
             />
           )}
           {activeTab === 'financeiro' && (
@@ -321,6 +325,8 @@ const AdminDashboard = ({
               showFinanceForm={showFinanceForm} setShowFinanceForm={setShowFinanceForm}
               financeForm={financeForm} setFinanceForm={setFinanceForm}
               handleSaveTransaction={handleSaveTransaction} vehicles={vehicles}
+              onUpdateTransactionStatus={onUpdateTransactionStatus}
+              investors={investors}
             />
           )}
           {activeTab === 'caucao' && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} />}
@@ -376,13 +382,14 @@ const AdminDashboard = ({
         isOpen={showAddForm && activeTab === 'locacao'} onClose={() => setShowAddForm(false)}
         currentRentalStep={currentRentalStep} setCurrentRentalStep={setCurrentRentalStep}
         totalRentalSteps={totalRentalSteps} rentalForm={rentalForm} setRentalForm={setRentalForm}
-        vehicles={vehicles} onSubmit={handleSaveRental}
+        vehicles={vehicles} clients={clients} onSubmit={handleSaveRental}
       />
 
       <FinanceFormModal 
         isOpen={showFinanceForm} onClose={() => setShowFinanceForm(false)}
         financeForm={financeForm} setFinanceForm={setFinanceForm}
         vehicles={vehicles} onSubmit={handleSaveTransaction}
+        investors={investors}
       />
 
       {/* Delete Auth Modal */}

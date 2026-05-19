@@ -4,12 +4,15 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { generateRentalContract } from '../../../utils/contractGenerator';
 import { compressImage } from '../../../utils/imageCompression';
+import { formatCPF } from '../../../utils/cpfFormatter';
+
 
 const RentalFormModal = ({ 
   isOpen, onClose, currentRentalStep, setCurrentRentalStep, totalRentalSteps, 
-  rentalForm, setRentalForm, vehicles, onSubmit 
+  rentalForm, setRentalForm, vehicles, clients = [], onSubmit 
 }) => {
   const [isProcessingFiles, setIsProcessingFiles] = React.useState(false);
+  const [conductorType, setConductorType] = React.useState('cadastrar');
   if (!isOpen) return null;
 
   const fillTestData = () => {
@@ -19,6 +22,7 @@ const RentalFormModal = ({
         user: "Guilherme Pereira",
         clientPhone: "(79) 99876-5432",
         email: "guilherme.teste@gmail.com",
+        cpf: "123.456.789-00",
         cnhNumber: "12345678900",
         cnhRegisterNumber: "987654321",
         birthDate: "1995-05-15",
@@ -167,6 +171,67 @@ const RentalFormModal = ({
                 </button>
               </div>
 
+              {/* Segmented Toggle Selector (Glassmorphic) */}
+              <div className="flex justify-center p-1.5 bg-neutral-100 rounded-3xl max-w-md mx-auto">
+                <button
+                  type="button"
+                  onClick={() => setConductorType('cadastrar')}
+                  className={`flex-1 py-4 text-center text-xs font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${conductorType === 'cadastrar' ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-600'}`}
+                >
+                  Cadastrar Condutor
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConductorType('cadastrado')}
+                  className={`flex-1 py-4 text-center text-xs font-black uppercase tracking-widest rounded-2xl transition-all duration-300 ${conductorType === 'cadastrado' ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400 hover:text-neutral-600'}`}
+                >
+                  Condutor Cadastrado
+                </button>
+              </div>
+
+              {/* Dropdown to Autocomplete Registered Conductor */}
+              {conductorType === 'cadastrado' && (
+                <div className="bg-neutral-50 p-8 rounded-[2.5rem] border border-neutral-100 space-y-4 max-w-2xl mx-auto animate-in slide-in-from-top-4 duration-500">
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-[#C5A059] font-black ml-1">Selecionar Condutor Cadastrado</label>
+                  <select
+                    onChange={(e) => {
+                      const selectedId = e.target.value;
+                      if (selectedId === '') return;
+                      const client = clients.find(c => c.id === selectedId);
+                      if (client) {
+                        setRentalForm({
+                          ...rentalForm,
+                          clientId: client.id,
+                          user: client.nome || client.name || '',
+                          clientPhone: client.telefone || client.phone || '',
+                          email: client.email || '',
+                          cpf: client.cpf || '',
+                          cnhNumber: client.cnhNumber || client.cnh || '',
+                          cnhRegisterNumber: client.cnhRegisterNumber || '',
+                          birthDate: client.birthDate || '',
+                          cnhValidity: client.cnhExpiration || client.cnhValidity || '',
+                          docs: {
+                            cnh: client.documentos?.cnh || client.docs?.cnh || null,
+                            residence: client.documentos?.residence || client.docs?.residence || null,
+                            appPrints: client.documentos?.appPrints || client.docs?.appPrints || [],
+                            signedContract: client.documentos?.signedContract || client.docs?.signedContract || null
+                          }
+                        });
+                      }
+                    }}
+                    className="w-full bg-white border border-neutral-200 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-bold text-neutral-900 text-xs cursor-pointer"
+                    defaultValue=""
+                  >
+                    <option value="" disabled>-- Selecione um cliente da lista --</option>
+                    {clients.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.nome || c.name} (CPF: {c.cpf || 'Não Informado'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div className="md:col-span-2 space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -189,6 +254,13 @@ const RentalFormModal = ({
                       <div className="relative group">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                         <input type="email" required value={rentalForm.email} onChange={e => setRentalForm({...rentalForm, email: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="exemplo@email.com" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">CPF do Condutor</label>
+                      <div className="relative group">
+                        <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
+                        <input type="text" required value={rentalForm.cpf || ''} onChange={e => setRentalForm({...rentalForm, cpf: formatCPF(e.target.value)})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="000.000.000-00" />
                       </div>
                     </div>
                     <div className="space-y-3">
@@ -228,7 +300,7 @@ const RentalFormModal = ({
                       </div>
                       <div className="text-center">
                         <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs.cnh ? 'text-emerald-600' : 'text-neutral-900'}`}>Foto da CNH</span>
-                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs.cnh ? (rentalForm.docs.cnh.name || 'CNH Selecionada') : 'OBRIGATÓRIO'}</span>
+                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs.cnh ? (typeof rentalForm.docs.cnh === 'string' ? 'CNH Já Anexada' : rentalForm.docs.cnh.name || 'CNH Selecionada') : 'OBRIGATÓRIO'}</span>
                       </div>
                       <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
                         const file = e.target.files[0];
@@ -242,14 +314,14 @@ const RentalFormModal = ({
                       }} />
                       {isProcessingFiles && <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-[2.5rem]"><Loader2 className="animate-spin text-[#C5A059]" /></div>}
                     </label>
-
+ 
                     <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${rentalForm.docs.residence ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${rentalForm.docs.residence ? 'bg-emerald-500 text-white animate-bounce' : 'bg-white text-neutral-300 group-hover:text-[#C5A059] group-hover:scale-110'}`}>
                         <FileText size={28} />
                       </div>
                       <div className="text-center">
                         <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs.residence ? 'text-emerald-600' : 'text-neutral-900'}`}>Comprovante</span>
-                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs.residence ? (rentalForm.docs.residence.name || 'Comprovante Selecionado') : '(OPCIONAL)'}</span>
+                        <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs.residence ? (typeof rentalForm.docs.residence === 'string' ? 'Documento Já Anexado' : rentalForm.docs.residence.name || 'Comprovante Selecionado') : '(OPCIONAL)'}</span>
                       </div>
                       <input type="file" className="hidden" accept="image/*,application/pdf" onChange={async (e) => {
                         const file = e.target.files[0];
@@ -262,7 +334,7 @@ const RentalFormModal = ({
                         }
                       }} />
                     </label>
-
+ 
                     <label className={`p-8 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${rentalForm.docs.appPrints?.length > 0 ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-100 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white'}`}>
                       <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all ${rentalForm.docs.appPrints?.length > 0 ? 'bg-emerald-500 text-white animate-bounce' : 'bg-white text-neutral-300 group-hover:text-[#C5A059] group-hover:scale-110'}`}>
                         <Smartphone size={28} />
@@ -270,7 +342,9 @@ const RentalFormModal = ({
                       <div className="text-center">
                         <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs.appPrints?.length > 0 ? 'text-emerald-600' : 'text-neutral-900'}`}>Prints App</span>
                         {rentalForm.docs.appPrints?.length > 0 ? (
-                          <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-100 px-3 py-1 rounded-full">{rentalForm.docs.appPrints.length} IMAGENS SELECIONADAS</span>
+                          <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-100 px-3 py-1 rounded-full">
+                            {typeof rentalForm.docs.appPrints[0] === 'string' ? `${rentalForm.docs.appPrints.length} PRINTS JÁ CARREGADOS` : `${rentalForm.docs.appPrints.length} IMAGENS SELECIONADAS`}
+                          </span>
                         ) : (
                           <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">(OBRIGATÓRIO)</span>
                         )}

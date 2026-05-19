@@ -111,21 +111,21 @@ export const useAppState = () => {
       email: 'email',
       phone: 'phone',
       cpf: 'cpf',
-      address: 'endere\u00e7o',
-      password: 'senha',
+      address: 'address',
+      password: 'password',
       status: 'status',
-      bank: 'banco',
-      pix: 'pix',
-      adminTax: 'taxa_adm'
+      bank: 'bank',
+      pix: 'pix'
     },
     transactions: {
-      type: 'tipo',
-      val: 'valor',
-      cat: 'categoria',
-      desc: 'descri\u00e7\u00e3o',
-      date: 'data',
-      vehiclePlate: 'placa',
-      responsible: 'respons\u00e1vel',
+      id: 'id',
+      type: 'type',
+      val: 'val',
+      cat: 'cat',
+      desc: 'desc',
+      date: 'date',
+      vehiclePlate: 'vehicle_plate',
+      responsible: 'responsible',
       status: 'status'
     }
   };
@@ -162,7 +162,7 @@ export const useAppState = () => {
   const mapToSnake = (obj, tableName) => {
     const mappings = TABLE_MAPPINGS[tableName] || {};
     const newObj = {};
-    const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor', 'investors'];
+    const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor', 'investors', 'adminTax'];
     for (const key in obj) {
       if (skipKeys.includes(key)) continue;
       if (mappings[key]) {
@@ -200,6 +200,8 @@ export const useAppState = () => {
           { table: 'replacement_contracts', setter: setReplacementContracts }
         ];
 
+        let loadedTransactions = [];
+
         for (const item of tables) {
           // Pulamos veículos pois já carregamos acima
           if (item.table === 'vehicles') continue;
@@ -210,6 +212,10 @@ export const useAppState = () => {
           const { data, error } = await query;
           if (!error && data) {
             let mappedData = mapToCamel(data, item.table);
+            
+            if (item.table === 'transactions') {
+              loadedTransactions = mappedData;
+            }
             
             if (item.table === 'rentals') {
               const { data: cData } = await supabase.from('clients').select('*');
@@ -251,6 +257,72 @@ export const useAppState = () => {
             
             item.setter(mappedData);
           }
+        }
+
+        // --- AUTO-GERAÇÃO DE PROTEÇÃO VEICULAR ---
+        try {
+          const now = new Date();
+          const currentYear = now.getFullYear();
+          const currentMonth = now.getMonth();
+          const currentDay = now.getDate();
+          
+          let newTransactionsToInsert = [];
+          
+          for (const v of allVehicles) {
+            const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
+            const protVal = parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+            const paymentDay = parseInt(v.protectionPaymentDay) || 10;
+            
+            if (hasProt && protVal > 0 && v.plate) {
+              // Se hoje já chegou ou passou o dia do vencimento da proteção
+              if (currentDay >= paymentDay) {
+                // Verifica se já existe transação de proteção para esse veículo no mês/ano atual
+                const alreadyExists = loadedTransactions.some(t => {
+                  if (t.vehiclePlate !== v.plate) return false;
+                  const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+                  if (!isProtection) return false;
+                  
+                  try {
+                    const tDate = new Date(t.date + 'T12:00:00');
+                    return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
+                  } catch (e) {
+                    return false;
+                  }
+                });
+                
+                if (!alreadyExists) {
+                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+                  newTransactionsToInsert.push({
+                    type: 'out',
+                    val: -protVal,
+                    cat: 'Proteção Veicular',
+                    desc: `Proteção Veicular - ${v.model} (${v.plate})`,
+                    date: dateStr,
+                    vehicle_plate: v.plate,
+                    responsible: 'Administradora',
+                    status: 'Pendente'
+                  });
+                }
+              }
+            }
+          }
+          
+          if (newTransactionsToInsert.length > 0) {
+            const { data: insertedData, error: insertError } = await supabase
+              .from('transactions')
+              .insert(newTransactionsToInsert)
+              .select();
+              
+            if (!insertError && insertedData) {
+              const mappedInserted = mapToCamel(insertedData, 'transactions');
+              const finalTransactions = [...mappedInserted, ...loadedTransactions];
+              setTransactions(finalTransactions);
+            } else if (insertError) {
+              console.error("Erro ao inserir transações de proteção automática:", insertError);
+            }
+          }
+        } catch (autoErr) {
+          console.error("Erro no processo de auto-geração de transações:", autoErr);
         }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
@@ -308,6 +380,7 @@ export const useAppState = () => {
       delete payload.plate;
       delete payload.date;
       delete payload.period;
+      delete payload.cpf;
 
       // --- NOVO: Upload de Documentos ---
       const uploadedDocs = { ...(rental.docs || {}) };
@@ -380,6 +453,7 @@ export const useAppState = () => {
           nome: rental.user,
           telefone: rental.clientPhone || rental.phone || null,
           'e-mail': rental.email || null,
+          cpf: rental.cpf || null,
           cnh_number: rental.cnhNumber || rental.cnh || null,
           cnh_validity: cleanDate(rental.cnhValidity),
           registro_cnh: rental.cnhRegisterNumber || null,
@@ -419,6 +493,7 @@ export const useAppState = () => {
             name: clientPayload.nome,
             phone: clientPayload.telefone,
             email: clientPayload['e-mail'],
+            cpf: clientPayload.cpf,
             cnhNumber: clientPayload.cnh_number,
             cnhValidity: clientPayload.cnh_validity,
             cnhRegisterNumber: clientPayload.registro_cnh,
@@ -549,6 +624,7 @@ export const useAppState = () => {
           nome: finalRental.userName || finalRental.user,
           telefone: finalRental.clientPhone || finalRental.phone,
           'e-mail': finalRental.email,
+          cpf: finalRental.cpf || null,
           cnh_number: cnh,
           cnh_validity: finalRental.cnhValidity,
           registro_cnh: finalRental.cnhRegisterNumber,
@@ -590,7 +666,8 @@ export const useAppState = () => {
               cnhNumber: clientPayload.cnh_number,
               cnhValidity: clientPayload.cnh_validity,
               cnhRegisterNumber: clientPayload.registro_cnh,
-              birthDate: clientPayload.data_de_nascimento
+              birthDate: clientPayload.data_de_nascimento,
+              cpf: clientPayload.cpf
             };
           }
           return c;
@@ -607,13 +684,35 @@ export const useAppState = () => {
   };
 
   const handleAddInvestor = async (investor) => {
-    const { data, error } = await supabase.from('investors').insert([mapToSnake(investor, 'investors')]).select();
-    if (!error && data) setInvestors(prev => [mapToCamel(data, 'investors')[0], ...prev]);
+    try {
+      const payload = mapToSnake(investor, 'investors');
+      const { data, error } = await supabase.from('investors').insert([payload]).select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const camelData = mapToCamel(data, 'investors')[0];
+        setInvestors(prev => [camelData, ...prev]);
+        return { success: true, data: camelData };
+      }
+      return { success: false, error: new Error('Nenhum dado retornado do servidor') };
+    } catch (err) {
+      console.error("Erro ao cadastrar investidor:", err);
+      alert(`Erro ao cadastrar investidor: ${err.message}`);
+      return { success: false, error: err };
+    }
   };
 
   const handleUpdateInvestor = async (updatedInvestor) => {
-    const { error } = await supabase.from('investors').update(mapToSnake(updatedInvestor, 'investors')).eq('id', updatedInvestor.id);
-    if (!error) setInvestors(prev => prev.map(i => i.id === updatedInvestor.id ? updatedInvestor : i));
+    try {
+      const payload = mapToSnake(updatedInvestor, 'investors');
+      const { error } = await supabase.from('investors').update(payload).eq('id', updatedInvestor.id);
+      if (error) throw error;
+      setInvestors(prev => prev.map(i => i.id === updatedInvestor.id ? updatedInvestor : i));
+      return { success: true };
+    } catch (err) {
+      console.error("Erro ao atualizar investidor:", err);
+      alert(`Erro ao atualizar investidor: ${err.message}`);
+      return { success: false, error: err };
+    }
   };
 
   const handleDeleteInvestor = async (id) => {
@@ -730,6 +829,16 @@ export const useAppState = () => {
   const handleAddTransaction = async (transaction) => {
     const { data, error } = await supabase.from('transactions').insert([mapToSnake(transaction, 'transactions')]).select();
     if (!error && data) setTransactions(prev => [mapToCamel(data, 'transactions')[0], ...prev]);
+  };
+
+  const handleUpdateTransactionStatus = async (id, status) => {
+    const { error } = await supabase.from('transactions').update({ status }).eq('id', id);
+    if (!error) {
+      setTransactions(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+    } else {
+      console.error("Erro ao atualizar status da transação:", error);
+      alert("Erro ao atualizar o status da transação.");
+    }
   };
 
   const handleAddMaintenance = async (maintenance) => {
@@ -898,8 +1007,8 @@ export const useAppState = () => {
     if (billingData.lateFee > 0) trans.push({ date: new Date().toISOString().split('T')[0], type: 'in', val: billingData.lateFee, desc: `Multa - ${rental.user}`, cat: 'Multas', vehiclePlate: rental.plate, status: 'pago', responsible: 'Administradora' });
 
     if (trans.length > 0) {
-      const { data, error } = await supabase.from('transactions').insert(trans.map(mapToSnake)).select();
-      if (!error && data) setTransactions(prev => [...mapToCamel(data), ...prev]);
+      const { data, error } = await supabase.from('transactions').insert(trans.map(t => mapToSnake(t, 'transactions'))).select();
+      if (!error && data) setTransactions(prev => [...mapToCamel(data, 'transactions'), ...prev]);
     }
   };
 
@@ -1016,6 +1125,7 @@ export const useAppState = () => {
     handleAddLead, handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleAddTransaction,
+    handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,

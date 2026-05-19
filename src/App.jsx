@@ -28,12 +28,27 @@ const App = () => {
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleUpdateClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
-    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction,
+    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
     handleInterestSubmit
   } = useAppState();
+
+  React.useEffect(() => {
+    const savedInvestor = localStorage.getItem('la_investor_auth');
+    if (savedInvestor) {
+      try {
+        const parsed = JSON.parse(savedInvestor);
+        if (parsed) {
+          setCurrentUser(parsed);
+          setView('investor');
+        }
+      } catch (e) {
+        console.error("Error parsing saved investor auth:", e);
+      }
+    }
+  }, [setCurrentUser, setView]);
 
   // Admin View
   if (view === 'admin') {
@@ -55,6 +70,7 @@ const App = () => {
         onCompleteClosure={handleCompleteClosure}
         onPayCaucaoInstallment={handlePayCaucaoInstallment}
         onAddTransaction={handleAddTransaction}
+        onUpdateTransactionStatus={handleUpdateTransactionStatus}
         onUpdateStatus={handleUpdateLeadStatus}
         onAddRental={handleAddRental}
         onDeleteRental={handleDeleteRental}
@@ -93,9 +109,14 @@ const App = () => {
   if (view === 'investor') {
     return (
       <InvestorDashboard
+        investor={currentUser}
         transactions={transactions}
         vehicles={vehicles}
-        onLogout={() => setView('home')}
+        onLogout={() => {
+          localStorage.removeItem('la_investor_auth');
+          setCurrentUser(null);
+          setView('home');
+        }}
       />
     );
   }
@@ -119,7 +140,12 @@ const App = () => {
     return (
       <InvestorLogin
         onBack={() => setView('home')}
-        onLoginSuccess={() => setView('investor')}
+        investors={investors}
+        onLoginSuccess={(investorObj) => {
+          localStorage.setItem('la_investor_auth', JSON.stringify(investorObj));
+          setCurrentUser(investorObj);
+          setView('investor');
+        }}
       />
     );
   }

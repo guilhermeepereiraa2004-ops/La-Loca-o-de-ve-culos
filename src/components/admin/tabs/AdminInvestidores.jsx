@@ -1,5 +1,7 @@
 import React from 'react';
 import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar } from 'lucide-react';
+import { formatCPF } from '../../../utils/cpfFormatter';
+
 
 const AdminInvestidores = ({
   investors,
@@ -10,8 +12,69 @@ const AdminInvestidores = ({
   onAddInvestor,
   onUpdateInvestor,
   onDeleteInvestor,
-  setShowAdminSuccess
+  setShowAdminSuccess,
+  vehicles = [],
+  transactions = []
 }) => {
+  const calculateInvestorPayout = (inv) => {
+    const invVehicles = (vehicles || []).filter(v => {
+      const invNameMatch = v.investor?.toLowerCase().trim() === inv.name?.toLowerCase().trim();
+      const invIdMatch = v.investorId === inv.id;
+      return invNameMatch || invIdMatch;
+    });
+
+    if (invVehicles.length === 0) return 0;
+
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    const currentMonth = today.getMonth();
+
+    let gross = 0;
+    let adminTaxSum = 0;
+    let maintenanceSum = 0;
+    let protectionSum = 0;
+    let insuranceSum = 0;
+
+    const investorTrans = (transactions || []).filter(t => 
+      invVehicles.some(v => v.plate === t.vehiclePlate)
+    );
+
+    const monthTransactions = investorTrans.filter(t => {
+      if (!t.date) return false;
+      try {
+        const tDate = new Date(t.date + 'T12:00:00');
+        return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    monthTransactions.forEach(t => {
+      const cat = t.cat?.toLowerCase().trim() || '';
+      const val = Math.abs(t.val || 0);
+
+      if (t.type === 'in') {
+        if (cat === 'taxa adm') {
+          adminTaxSum += val;
+        } else {
+          gross += val;
+          const v = invVehicles.find(veh => veh.plate === t.vehiclePlate);
+          const taxRate = parseFloat(v?.adminTax || 15) / 100;
+          adminTaxSum += val * taxRate;
+        }
+      } else if (t.type === 'out') {
+        if (cat.includes('manuten')) {
+          maintenanceSum += val;
+        } else if (cat.includes('prote') || cat.includes('veicular')) {
+          protectionSum += val;
+        } else if (cat.includes('seguro')) {
+          insuranceSum += val;
+        }
+      }
+    });
+
+    return gross - adminTaxSum - (maintenanceSum + protectionSum + insuranceSum);
+  };
   const [showForm, setShowForm] = React.useState(false);
 
   // If we start editing from outside, we should show the form
@@ -125,16 +188,50 @@ const AdminInvestidores = ({
                     <p className="text-xs font-bold text-neutral-700">{investor.cpf}</p>
                   </div>
                   <div className="flex flex-col gap-1">
+                    <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Dados Bancários / PIX</span>
+                    <p className="text-xs text-neutral-700 font-semibold leading-tight">
+                      {investor.bank ? `${investor.bank} | ` : ''} PIX: <span className="text-[#C5A059]">{investor.pix || 'Não Informado'}</span>
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-1">
                     <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Contato</span>
                     <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-xs text-neutral-600">
+                      <div className="flex items-center gap-2 text-xs text-neutral-600 font-medium">
                         <Mail size={12} className="text-[#C5A059]" /> {investor.email}
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-neutral-600">
+                      <div className="flex items-center gap-2 text-xs text-neutral-600 font-medium">
                         <Phone size={12} className="text-[#C5A059]" /> {investor.phone}
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Dynamic monthly payout calculation */}
+                  {(() => {
+                    const payout = calculateInvestorPayout(investor);
+                    const invVehs = (vehicles || []).filter(v => {
+                      const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
+                      const invIdMatch = v.investorId === investor.id;
+                      return invNameMatch || invIdMatch;
+                    });
+                    
+                    return (
+                      <div className="mt-6 pt-6 border-t border-neutral-50 space-y-4">
+                        <div className="flex justify-between items-center bg-neutral-50/50 p-4 rounded-2xl border border-neutral-100">
+                          <div>
+                            <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-black">Repasse Mês Atual</span>
+                            <p className="text-base font-black text-neutral-900 leading-none mt-1 font-mono">R$ {payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                          </div>
+                          <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${payout > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-neutral-100 text-neutral-400'}`}>
+                            {payout > 0 ? 'A Repassar' : 'Sem Ganhos'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2">
+                          <span>Veículos Associados:</span>
+                          <span className="font-black text-neutral-950">{invVehs.length} ativo(s)</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))}
@@ -200,7 +297,7 @@ const AdminInvestidores = ({
                   <input 
                     type="text" 
                     value={investorForm.cpf} 
-                    onChange={e => setInvestorForm({ ...investorForm, cpf: e.target.value })} 
+                    onChange={e => setInvestorForm({ ...investorForm, cpf: formatCPF(e.target.value) })} 
                     className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
                     placeholder="000.000.000-00" 
                   />
@@ -329,10 +426,11 @@ const AdminInvestidores = ({
                 </button>
                 <button
                   type="button"
-                  onClick={(e) => {
+                  onClick={async (e) => {
                     e.preventDefault();
                     if (isEditing) {
-                      onUpdateInvestor(investorForm);
+                      const res = await onUpdateInvestor(investorForm);
+                      if (res && !res.success) return;
                       setIsEditing(false);
                       setShowAdminSuccess({
                         show: true,
@@ -340,7 +438,8 @@ const AdminInvestidores = ({
                         message: 'Os dados do parceiro foram atualizados com sucesso no sistema.'
                       });
                     } else {
-                      onAddInvestor(investorForm);
+                      const res = await onAddInvestor(investorForm);
+                      if (res && !res.success) return;
                       setShowAdminSuccess({
                         show: true,
                         title: 'Investidor Cadastrado',

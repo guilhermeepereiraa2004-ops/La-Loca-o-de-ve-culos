@@ -9,7 +9,6 @@ const AdminLeads = ({
   leadStatusFilter, 
   setLeadStatusFilter, 
   onUpdateStatus, 
-  exportLeadsToExcel,
   currentUser
 }) => {
   const filteredLeads = leads.filter(lead => {
@@ -18,6 +17,54 @@ const AdminLeads = ({
     const matchesStatus = leadStatusFilter === 'todos' || lead.status === leadStatusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const exportLeadsToExcel = () => {
+    if (!filteredLeads || filteredLeads.length === 0) {
+      alert("Não há leads para exportar.");
+      return;
+    }
+
+    const headers = [
+      "ID",
+      "Nome",
+      "Contato/WhatsApp",
+      "E-mail",
+      "Mensagem",
+      "Data de Cadastro",
+      "Status",
+      "Tipo de Lead",
+      "Modelo do Veículo Interessado",
+      "Placa do Veículo Interessado"
+    ];
+    
+    const rows = filteredLeads.map(lead => [
+      lead.id || '',
+      lead.name || '',
+      lead.contact || '',
+      lead.email || '',
+      (lead.message || '').replace(/\r?\n/g, ' '),
+      lead.date || '',
+      lead.status || '',
+      lead.type || '',
+      lead.vehicleModel || '',
+      lead.vehiclePlate || ''
+    ]);
+
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(';'))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `leads_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">

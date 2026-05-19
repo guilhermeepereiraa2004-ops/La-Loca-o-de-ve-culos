@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react';
 
-const AdminBI = ({ stats, alerts, operationalData }) => {
+const AdminBI = ({ stats, alerts, operationalData, setActiveTab }) => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Stats Grid */}
@@ -30,29 +30,46 @@ const AdminBI = ({ stats, alerts, operationalData }) => {
             </span>
           </div>
           <div className="divide-y divide-neutral-50">
-            {alerts.map((alert) => (
-              <div key={alert.title} className="p-6 flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer group">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${alert.type === 'critical' ? 'bg-red-50 text-red-500' :
-                    alert.type === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'
-                    }`}>
-                    {alert.icon}
+            {alerts.map((alert) => {
+              const handleAlertClick = () => {
+                if (!setActiveTab) return;
+                const title = (alert.title || '').toLowerCase();
+                if (title.includes('preventiva') || title.includes('correia')) {
+                  setActiveTab('manutencaoAdmin');
+                } else if (title.includes('cnh')) {
+                  setActiveTab('clientes');
+                } else if (title.includes('vistoria')) {
+                  setActiveTab('vistoria');
+                }
+              };
+              return (
+                <div 
+                  key={alert.title} 
+                  onClick={handleAlertClick}
+                  className="p-6 flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer group"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${alert.type === 'critical' ? 'bg-red-50 text-red-500' :
+                      alert.type === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'
+                      }`}>
+                      {alert.icon}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-neutral-800">{alert.title}</p>
+                      <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Revisão necessária</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-neutral-800">{alert.title}</p>
-                    <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Revisão necessária</p>
+                  <div className="flex items-center gap-4">
+                    <span className={`text-sm font-black ${alert.type === 'critical' ? 'text-red-600' :
+                      alert.type === 'warning' ? 'text-amber-600' : 'text-blue-600'
+                      }`}>
+                      {alert.count}
+                    </span>
+                    <ChevronRight size={16} className="text-neutral-200 group-hover:text-neutral-400 transition-colors" />
                   </div>
                 </div>
-                <div className="flex items-center gap-4">
-                  <span className={`text-sm font-black ${alert.type === 'critical' ? 'text-red-600' :
-                    alert.type === 'warning' ? 'text-amber-600' : 'text-blue-600'
-                    }`}>
-                    {alert.count}
-                  </span>
-                  <ChevronRight size={16} className="text-neutral-200 group-hover:text-neutral-400 transition-colors" />
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

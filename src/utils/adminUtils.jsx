@@ -48,11 +48,29 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
   };
 };
 
-export const getDynamicAlerts = (vehicles, maintenances, inspections) => {
+export const getDynamicAlerts = (vehicles, maintenances, inspections, clients) => {
   const today = new Date();
   let preventiveCount = 0;
   let beltCount = 0;
   let inspectionPendingCount = 0;
+  let cnhAlertCount = 0;
+
+  const todayForCnh = new Date();
+  todayForCnh.setHours(0, 0, 0, 0);
+
+  (clients || []).forEach(c => {
+    const cnhDateStr = c.cnhExpiration || c.cnhValidity;
+    if (!cnhDateStr) return;
+    const expDate = new Date(cnhDateStr);
+    
+    const diffTime = expDate.getTime() - todayForCnh.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Conta CNHs vencidas ou vencendo nos próximos 30 dias (1 mês)
+    if (diffDays <= 30) {
+      cnhAlertCount++;
+    }
+  });
 
   (vehicles || []).forEach(v => {
     const entryDate = new Date(v.entryDate);
@@ -89,7 +107,7 @@ export const getDynamicAlerts = (vehicles, maintenances, inspections) => {
   return [
     { title: 'Manutenção Preventiva', count: preventiveCount, type: preventiveCount > 0 ? 'critical' : 'info', icon: <Wrench size={16} /> },
     { title: 'Troca de Correia Dentada', count: beltCount, type: beltCount > 0 ? 'critical' : 'info', icon: <Wrench size={16} /> },
-    { title: 'CNH próxima do vencimento', count: 3, type: 'warning', icon: <Calendar size={16} /> },
+    { title: 'CNH próxima do vencimento', count: cnhAlertCount, type: cnhAlertCount > 0 ? 'warning' : 'info', icon: <Calendar size={16} /> },
     { title: 'Vistorias Periódicas Pendentes', count: inspectionPendingCount, type: inspectionPendingCount > 0 ? 'critical' : 'info', icon: <ClipboardList size={16} /> },
   ];
 };

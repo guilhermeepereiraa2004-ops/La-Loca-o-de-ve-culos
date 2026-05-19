@@ -3,7 +3,7 @@ import { X, Wallet } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const FinanceFormModal = ({ 
-  isOpen, onClose, financeForm, setFinanceForm, vehicles, onSubmit 
+  isOpen, onClose, financeForm, setFinanceForm, vehicles, onSubmit, investors = []
 }) => {
   if (!isOpen) return null;
 
@@ -56,9 +56,24 @@ const FinanceFormModal = ({
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Categoria</label>
-              <select value={financeForm.cat} onChange={e => setFinanceForm({...financeForm, cat: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm">
+              <select 
+                value={financeForm.cat} 
+                onChange={e => {
+                  const cat = e.target.value;
+                  const isProtection = cat === 'Proteção Veicular';
+                  setFinanceForm({
+                    ...financeForm,
+                    cat,
+                    type: isProtection ? 'out' : financeForm.type,
+                    status: isProtection ? 'Pendente' : (financeForm.status || 'Concluído'),
+                    responsible: isProtection ? 'Administradora' : (financeForm.responsible || 'Administradora')
+                  });
+                }} 
+                className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm"
+              >
                 <option value="Aluguel">Aluguel</option>
                 <option value="Manutenção">Manutenção</option>
+                <option value="Proteção Veicular">Proteção Veicular</option>
                 <option value="Multas">Multas</option>
                 <option value="Seguro">Seguro</option>
                 <option value="Taxa Pneus">Taxa Pneus</option>
@@ -73,6 +88,58 @@ const FinanceFormModal = ({
               </select>
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status</label>
+              <select value={financeForm.status || 'Concluído'} onChange={e => setFinanceForm({...financeForm, status: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm">
+                <option value="Concluído">Concluído (Pago)</option>
+                <option value="Pendente">Pendente</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Responsável</label>
+              <select
+                value={financeForm.responsible.startsWith('Investidor') ? 'Investidor' : 'Administradora'}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (val === 'Investidor') {
+                    setFinanceForm({ ...financeForm, responsible: 'Investidor', investorName: '' });
+                  } else {
+                    setFinanceForm({ ...financeForm, responsible: 'Administradora', investorName: '' });
+                  }
+                }}
+                className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm"
+              >
+                <option value="Administradora">Administradora</option>
+                <option value="Investidor">Investidor</option>
+              </select>
+            </div>
+          </div>
+
+          {financeForm.responsible.startsWith('Investidor') && (
+            <div className="space-y-2 animate-in fade-in duration-300">
+              <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Investidor Responsável</label>
+              <select
+                required
+                value={financeForm.investorName || ''}
+                onChange={e => {
+                  const selectedInvName = e.target.value;
+                  setFinanceForm({ 
+                    ...financeForm, 
+                    investorName: selectedInvName,
+                    responsible: selectedInvName ? `Investidor: ${selectedInvName}` : 'Investidor'
+                  });
+                }}
+                className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm appearance-none cursor-pointer"
+              >
+                <option value="">Selecione um Investidor...</option>
+                {investors.map(inv => (
+                  <option key={inv.id} value={inv.name}>{inv.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
 
           <button type="submit" className="w-full py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl mt-4">
             Registrar Lançamento

@@ -5,35 +5,85 @@ import {
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 
-const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
+const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
 
-  // Filter vehicles belonging to this investor (Mocking Ricardo Santana for now)
-  const myVehicles = vehicles.filter(v => v.investor?.toLowerCase().includes('ricardo') || v.investor?.toLowerCase().includes('santana') || vehicles.length <= 3);
+  // Filter vehicles belonging to this investor and enrich with dynamic yield calculations
+  const rawVehicles = vehicles.filter(v => {
+    if (!investor) return false;
+    const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
+    const invIdMatch = v.investorId === investor.id;
+    return invNameMatch || invIdMatch;
+  });
+
+  const myVehicles = rawVehicles.map(v => {
+    // Calculate investment value safely
+    const investValue = parseFloat(String(v.investmentValue || v.investValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+
+    // Sum all transactions for this vehicle plate
+    const vehicleTrans = transactions.filter(t => t.vehiclePlate === v.plate);
+    let gross = 0;
+    let adminTaxSum = 0;
+    let maintenanceSum = 0;
+    let protectionSum = 0;
+    let insuranceSum = 0;
+
+    vehicleTrans.forEach(t => {
+      const cat = t.cat?.toLowerCase().trim() || '';
+      const val = Math.abs(t.val || 0);
+
+      if (t.type === 'in') {
+        if (cat === 'taxa adm') {
+          adminTaxSum += val;
+        } else {
+          gross += val;
+          const taxRate = parseFloat(v?.adminTax || 15) / 100;
+          adminTaxSum += val * taxRate;
+        }
+      } else if (t.type === 'out') {
+        if (cat.includes('manuten')) {
+          maintenanceSum += val;
+        } else if (cat.includes('prote') || cat.includes('veicular')) {
+          protectionSum += val;
+        } else if (cat.includes('seguro')) {
+          insuranceSum += val;
+        }
+      }
+    });
+
+    const currentYield = gross - adminTaxSum - (maintenanceSum + protectionSum + insuranceSum);
+    const yieldPerc = investValue > 0 ? ((currentYield / investValue) * 100).toFixed(2) + '%' : '0.00%';
+
+    return {
+      ...v,
+      investValue,
+      currentYield,
+      yieldPerc
+    };
+  });
 
   // Calcular valor total investido com base nos veículos
-  const totalInvested = myVehicles.reduce((acc, v) => {
-    const val = parseFloat(String(v.investmentValue || v.investValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
-    return acc + val;
-  }, 0);
+  const totalInvested = myVehicles.reduce((acc, v) => acc + (v.investValue || 0), 0);
 
   // Calcular ganhos e despesas reais do investidor a partir das transações
   const investorTransactions = transactions.filter(t => 
-    myVehicles.some(v => v.plate === t.vehiclePlate)
+    myVehicles.some(v => v.plate === t.vehiclePlate) || 
+    (t.responsible?.toLowerCase().startsWith('investidor:') && t.responsible.split(':')[1]?.trim().toLowerCase() === investor.name?.toLowerCase().trim()) ||
+    (t.responsible?.toLowerCase().trim() === investor.name?.toLowerCase().trim())
   );
 
   const realInvestorRevenue = investorTransactions
-    .filter(t => t.type === 'in' && t.responsible === 'Investidor')
-    .reduce((acc, t) => acc + Math.abs(t.val), 0);
+    .filter(t => t.type === 'in')
+    .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
 
   const realInvestorExpenses = investorTransactions
-    .filter(t => t.type === 'out' && t.responsible === 'Investidor')
-    .reduce((acc, t) => acc + Math.abs(t.val), 0);
+    .filter(t => t.type === 'out')
+    .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
 
   // Maintenance history from transactions
   const maintenanceHistory = transactions
-    .filter(t => t.cat === 'Manutenção' && myVehicles.some(v => v.plate === t.vehiclePlate))
+    .filter(t => (t.cat?.toLowerCase().includes('manuten') || t.desc?.toLowerCase().includes('manuten')) && myVehicles.some(v => v.plate === t.vehiclePlate))
     .map(t => ({
       id: t.id,
       vehicle: vehicles.find(v => v.plate === t.vehiclePlate)?.model || 'Veículo',
@@ -41,7 +91,7 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
       type: t.desc,
       date: t.date,
       cost: `R$ ${t.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      status: t.status === 'pago' ? 'Concluído' : 'Em Aberto',
+      status: t.status === 'pago' || t.status === 'Concluído' ? 'Concluído' : 'Em Aberto',
       icon: <Wrench size={16} />
     }));
 
@@ -49,30 +99,125 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
     .filter(v => v.hasProtection)
     .reduce((acc, v) => acc + (parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
 
-  const dividendHistory = [
-    {
-      id: 1,
-      period: 'Maio 2024',
-      gross: realInvestorRevenue || 12500, // Fallback to mock if no transactions
-      adminTax: (realInvestorRevenue * 0.15) || 1875,
-      discounts: {
-        maintenance: realInvestorExpenses,
-        insurance: 39.90 * myVehicles.filter(v => v.franchiseInsurance).length,
-        protection: totalProtectionDiscount
-      },
-      status: 'pendente',
-      date: '10/06/2024'
+  // Dynamic grouping by month for the last 6 months
+  const getMonthYearLabel = (date) => {
+    const months = [
+      'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+      'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+    ];
+    return `${months[date.getMonth()]} ${date.getFullYear()}`;
+  };
+
+  const dividendHistory = [];
+  const todayDate = new Date();
+
+  for (let i = 0; i < 6; i++) {
+    const targetDate = new Date(todayDate.getFullYear(), todayDate.getMonth() - i, 1);
+    const monthLabel = getMonthYearLabel(targetDate);
+    const targetMonth = targetDate.getMonth();
+    const targetYear = targetDate.getFullYear();
+
+    // Filter transactions for this specific month and year
+    const monthTransactions = investorTransactions.filter(t => {
+      if (!t.date) return false;
+      try {
+        const parsedDate = new Date(t.date + 'T12:00:00');
+        return parsedDate.getMonth() === targetMonth && parsedDate.getFullYear() === targetYear;
+      } catch (e) {
+        return false;
+      }
+    });
+
+    let gross = 0;
+    let adminTaxSum = 0;
+    let maintenanceSum = 0;
+    let protectionSum = 0;
+    let insuranceSum = 0;
+    let otherSum = 0;
+
+    // 1. Calculate from real transactions in that month
+    monthTransactions.forEach(t => {
+      const cat = t.cat?.toLowerCase().trim() || '';
+      const val = Math.abs(t.val || 0);
+
+      if (t.type === 'in') {
+        if (cat === 'taxa adm') {
+          adminTaxSum += val;
+        } else {
+          gross += val;
+          // Dynamically compute admin tax if no separate admin tax transaction is recorded
+          const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
+          const taxRate = v ? (parseFloat(v.adminTax || 15) / 100) : 0;
+          adminTaxSum += val * taxRate;
+        }
+      } else if (t.type === 'out') {
+        if (cat.includes('manuten')) {
+          maintenanceSum += val;
+        } else if (cat.includes('prote') || cat.includes('veicular')) {
+          protectionSum += val;
+        } else if (cat.includes('seguro')) {
+          insuranceSum += val;
+        } else {
+          otherSum += val;
+        }
+      }
+    });
+
+    if (gross > 0 || myVehicles.length > 0) {
+      // Payment date on the 10th of next month
+      const nextMonthDate = new Date(targetYear, targetMonth + 1, 10);
+      const paymentDateLabel = nextMonthDate.toLocaleDateString('pt-BR');
+
+      dividendHistory.push({
+        id: i + 1,
+        period: monthLabel,
+        gross,
+        adminTax: adminTaxSum,
+        discounts: {
+          maintenance: maintenanceSum,
+          insurance: insuranceSum,
+          protection: protectionSum,
+          other: otherSum
+        },
+        status: targetDate < new Date(todayDate.getFullYear(), todayDate.getMonth(), 1) ? 'Concluído' : 'Em Aberto',
+        date: paymentDateLabel
+      });
     }
-  ];
+  }
 
   const filteredMaintenances = maintenanceHistory.filter(m =>
     maintenanceFilter === 'todos' || m.vehicle === maintenanceFilter
   );
 
   const totalInsurance = 39.90 * myVehicles.filter(v => v.franchiseInsurance).length;
-  const currentMonthDividends = realInvestorRevenue - (realInvestorRevenue * 0.15) - realInvestorExpenses - totalProtectionDiscount - totalInsurance;
-  const yearDividends = currentMonthDividends; // Simplified for now
+
+  const currentMonthDividends = dividendHistory[0]
+    ? (dividendHistory[0].gross - dividendHistory[0].adminTax - (dividendHistory[0].discounts.maintenance + dividendHistory[0].discounts.insurance + dividendHistory[0].discounts.protection + (dividendHistory[0].discounts.other || 0)))
+    : 0;
+
+  const yearDividends = dividendHistory.reduce((acc, d) => {
+    const net = d.gross - d.adminTax - (d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0));
+    return acc + net;
+  }, 0);
+
   const avgYield = totalInvested > 0 ? ((currentMonthDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
+
+  // Generate graph bars dynamically based on reverse chronological history
+  const graphBars = [...dividendHistory].reverse().map(d => {
+    const net = d.gross - d.adminTax - (d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0));
+    const shortMonth = d.period.split(' ')[0].substring(0, 3);
+    return {
+      m: shortMonth,
+      v: net
+    };
+  });
+
+  const maxNet = Math.max(...graphBars.map(b => b.v), 1);
+  const graphBarsWithPercentage = graphBars.map(b => ({
+    m: b.m,
+    v: b.v,
+    percent: Math.max(5, Math.min(100, Math.round((b.v / maxNet) * 100)))
+  }));
 
   const getFifthBusinessDay = (date = new Date()) => {
     const year = date.getFullYear();
@@ -177,7 +322,7 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
           <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
             <div>
               <EditorialLabel className="text-[#C5A059] mb-2">Bem-vindo de volta,</EditorialLabel>
-              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-neutral-900">Ricardo Santana</h2>
+              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-neutral-900">{investor?.name || 'Investidor'}</h2>
             </div>
             <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
               <div className="text-right">
@@ -261,19 +406,16 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
                     <EditorialLabel className="text-neutral-300">Rendimentos em R$</EditorialLabel>
                   </div>
                   <div className="h-64 flex items-end justify-between gap-4 px-4">
-                    {[
-                      { m: 'Jan', v: 45 }, { m: 'Fev', v: 52 }, { m: 'Mar', v: 48 },
-                      { m: 'Abr', v: 61 }, { m: 'Mai', v: 75 }, { m: 'Jun', v: 0 }
-                    ].map((bar, i) => (
+                    {graphBarsWithPercentage.map((bar, i) => (
                       <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
                         <div className="w-full relative flex items-end justify-center">
                           <div
-                            style={{ height: `${bar.v}%` }}
+                            style={{ height: `${bar.percent}%` }}
                             className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ${bar.v > 0 ? 'bg-neutral-900 group-hover:bg-[#C5A059]' : 'bg-neutral-50 h-2'}`}
                           />
                           {bar.v > 0 && (
-                            <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black">
-                              {bar.v}%
+                            <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black whitespace-nowrap">
+                              R$ {Math.round(bar.v).toLocaleString('pt-BR')}
                             </div>
                           )}
                         </div>
@@ -448,7 +590,7 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
             <div className="space-y-10 animate-in slide-in-from-right-4 duration-700">
               <div className="grid grid-cols-1 gap-8">
                 {dividendHistory.map((d) => {
-                  const totalDiscounts = d.discounts.maintenance + d.discounts.insurance + d.discounts.protection;
+                  const totalDiscounts = d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0);
                   const netValue = d.gross - d.adminTax - totalDiscounts;
 
                   return (
@@ -506,6 +648,12 @@ const InvestorDashboard = ({ transactions = [], vehicles = [], onLogout }) => {
                                 <span className="text-neutral-500">Proteção Veicular</span>
                                 <span className="font-bold text-red-400">- R$ {d.discounts.protection.toLocaleString('pt-BR')}</span>
                               </div>
+                              {(d.discounts.other || 0) > 0 && (
+                                <div className="flex justify-between items-center text-xs">
+                                  <span className="text-neutral-500 font-bold text-amber-600">Outros Abatimentos</span>
+                                  <span className="font-bold text-red-400">- R$ {d.discounts.other.toLocaleString('pt-BR')}</span>
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

@@ -4,6 +4,8 @@ import {
   MapPin, CreditCard, ImageIcon, Download, 
   AlertTriangle, Calendar, ShieldCheck, Camera, Edit2, Save
 } from 'lucide-react';
+import { formatCPF } from '../../../utils/cpfFormatter';
+
 
 const ClientDetailModal = ({ client, onClose, onUpdate }) => {
   const [selectedImage, setSelectedImage] = useState(null);
@@ -140,6 +142,14 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                       <p className="text-sm font-black text-neutral-900 leading-tight">
                         {client.birthDate ? new Date(client.birthDate).toLocaleDateString('pt-BR') : '---'}
                       </p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">CPF</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.cpf || ''} onChange={e => setEditForm({...editForm, cpf: formatCPF(e.target.value)})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="000.000.000-00" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900">{client.cpf || '---'}</p>
                     )}
                   </div>
                 </div>

@@ -54,11 +54,13 @@ export const useAdminState = (currentUser) => {
   const [financeForm, setFinanceForm] = useState({
     date: new Date().toISOString().split('T')[0],
     type: 'in', val: '', desc: '', cat: 'Aluguel',
-    vehiclePlate: '', responsible: 'Administradora'
+    vehiclePlate: '', responsible: 'Administradora',
+    status: 'Concluído',
+    investorName: ''
   });
 
   const [rentalForm, setRentalForm] = useState({
-    user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '', 
+    user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '', cpf: '',
     vehicle: '', plate: '', rentalType: 'weekly', 
     value: '', tireTax: '25', durationWeeks: '4', depositTotal: '', 
     depositPaid: '', depositInstallments: '1', 
