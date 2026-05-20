@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Menu, TrendingUp, Car, Wrench, Wallet, Calendar, 
-  Search, FileText, ShieldCheck, Star, CheckCircle2 
+  Search, FileText, ShieldCheck, CheckCircle2 
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';

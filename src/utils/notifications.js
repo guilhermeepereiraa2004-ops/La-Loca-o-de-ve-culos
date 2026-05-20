@@ -9,16 +9,15 @@
  * @param {object} params - Todos os dados do app state
  * @returns {{ badges: object, alerts: Array }}
  */
-export function computeNotifications({
-  leads = [],
-  rentals = [],
-  transactions = [],
-  maintenances = [],
-  inspections = [],
-  vehicles = [],
-  serviceOrders = [],
-  replacementContracts = [],
-}) {
+export function computeNotifications(params = {}) {
+  const {
+    leads = [],
+    rentals = [],
+    transactions = [],
+    maintenances = [],
+    inspections = [],
+    serviceOrders = [],
+  } = params;
   const badges = {};
   const alerts = [];
   const now = new Date();

@@ -16,7 +16,7 @@ export const uploadFile = async (file, folder) => {
     const filePath = `${folder}/${fileName}`;
 
     // 1. Fazer o upload
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from('La-locacao')
       .upload(filePath, file, {
         cacheControl: '3600',
