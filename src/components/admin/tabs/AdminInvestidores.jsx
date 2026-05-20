@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { formatCPF } from '../../../utils/cpfFormatter';
 import InvestorPayoutModal from '../modals/InvestorPayoutModal.jsx';
 import { getPayoutsForInvestor, formatReferenceMonth } from '../../../utils/investorPayouts.js';
