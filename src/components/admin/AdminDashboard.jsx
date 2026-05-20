@@ -38,6 +38,7 @@ import AdminHeader from './AdminHeader';
 import { AlertTriangle } from 'lucide-react';
 import { useAdminState } from '../../hooks/useAdminState';
 import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
+import { computeNotifications } from '../../utils/notifications';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus,
@@ -240,6 +241,11 @@ const AdminDashboard = ({
   const biData = calculateBIStats(transactions, vehicles, rentals, investors, leads);
   const alerts = getDynamicAlerts(vehicles, maintenances, inspections, clients);
 
+  // ── Notification system ────────────────────────────────────────────────────
+  const { badges: notifBadges, alerts: notifAlerts, totalCount: notifTotal } = computeNotifications({
+    leads, rentals, transactions, maintenances, inspections, vehicles, serviceOrders, replacementContracts,
+  });
+
   return (
     <div className="min-h-screen xl:h-screen bg-neutral-50 flex animate-in fade-in duration-500 relative xl:overflow-hidden">
       <AdminSidebar 
@@ -250,7 +256,8 @@ const AdminDashboard = ({
         isAdmin={isAdmin} 
         canAccess={canAccess} 
         onGoHome={onGoHome} 
-        onLogout={onLogout} 
+        onLogout={onLogout}
+        badges={notifBadges}
       />
 
       <main className={`flex-1 flex flex-col h-screen xl:h-screen overflow-hidden transition-all duration-500 ${isSidebarOpen ? 'xl:ml-64' : 'xl:ml-20'}`}>
@@ -260,6 +267,9 @@ const AdminDashboard = ({
           isSidebarOpen={isSidebarOpen} 
           onSeed={onSeed}
           hasData={vehicles.length > 0}
+          alerts={notifAlerts}
+          totalCount={notifTotal}
+          onNavigate={setActiveTab}
         />
 
         <div className="flex-1 overflow-y-auto p-6 md:p-12">
@@ -308,7 +318,7 @@ const AdminDashboard = ({
             />
           )}
           {activeTab === 'clientes' && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
-          {activeTab === 'faturamento' && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} onConfirmPayment={onConfirmPayment} />}
+          {activeTab === 'faturamento' && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} onConfirmPayment={onConfirmPayment} />}
           {activeTab === 'investidores' && (
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}
@@ -317,6 +327,7 @@ const AdminDashboard = ({
               setShowAdminSuccess={setShowAdminSuccess}
               vehicles={vehicles}
               transactions={transactions}
+              onAddTransaction={onAddTransaction}
             />
           )}
           {activeTab === 'financeiro' && (

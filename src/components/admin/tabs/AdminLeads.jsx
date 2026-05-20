@@ -14,7 +14,8 @@ const AdminLeads = ({
   const filteredLeads = leads.filter(lead => {
     const name = lead.name || '';
     const matchesSearch = name.toLowerCase().includes((leadSearch || '').toLowerCase());
-    const matchesStatus = leadStatusFilter === 'todos' || lead.status === leadStatusFilter;
+    const matchesStatus = leadStatusFilter === 'todos' || 
+      (lead.status || '').toLowerCase().trim() === leadStatusFilter.toLowerCase().trim();
     return matchesSearch && matchesStatus;
   });
 
@@ -84,7 +85,7 @@ const AdminLeads = ({
           <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-2xl border border-neutral-100 shadow-sm">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
             <span className="text-[10px] uppercase tracking-widest font-black text-neutral-900">
-              {leads.filter(l => l.status === 'novo').length} Novos Leads
+              {leads.filter(l => (l.status || '').toLowerCase().trim() === 'novo').length} Novos Leads
             </span>
           </div>
         </div>
@@ -143,14 +144,15 @@ const AdminLeads = ({
                         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{lead.date}</p>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full w-fit ${lead.status === 'novo' ? 'bg-emerald-50 text-emerald-600' :
-                          lead.status === 'contatado' ? 'bg-blue-50 text-blue-600' :
-                            lead.status === 'convertido' ? 'bg-amber-50 text-amber-600' :
-                              'bg-neutral-100 text-neutral-500'
+                        <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full w-fit ${
+                          (lead.status || '').toLowerCase().trim() === 'novo' ? 'bg-emerald-50 text-emerald-600' :
+                          (lead.status || '').toLowerCase().trim() === 'contatado' ? 'bg-blue-50 text-blue-600' :
+                          (lead.status || '').toLowerCase().trim() === 'convertido' ? 'bg-amber-50 text-amber-600' :
+                            'bg-neutral-100 text-neutral-500'
                           }`}>
                           {lead.status}
                         </span>
-                        {lead.updatedBy && lead.status !== 'novo' && (
+                        {lead.updatedBy && (lead.status || '').toLowerCase().trim() !== 'novo' && (
                           <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest ml-1">
                             por: <span className="text-neutral-900">{lead.updatedBy}</span>
                           </p>
@@ -160,7 +162,7 @@ const AdminLeads = ({
 
                     <div className="flex gap-2">
                       {['contatado', 'convertido', 'perdido'].map((s) => (
-                        lead.status !== s && (
+                        (lead.status || '').toLowerCase().trim() !== s && (
                           <button
                             key={s}
                             onClick={() => onUpdateStatus(lead.id, s, currentUser?.name || 'Admin Principal')}

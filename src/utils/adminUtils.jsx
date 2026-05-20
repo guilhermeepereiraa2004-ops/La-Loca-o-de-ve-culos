@@ -43,7 +43,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
       netProfitRaw: netProfit,
       profitMargin: monthlyRevenue > 0 ? Math.round((netProfit / monthlyRevenue) * 100) : 0,
       investorsCount: investors.length,
-      newLeads: leads.filter(l => l.status === 'novo').length
+      newLeads: leads.filter(l => (l.status || '').toLowerCase().trim() === 'novo').length
     }
   };
 };

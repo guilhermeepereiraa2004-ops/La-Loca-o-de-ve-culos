@@ -5,7 +5,8 @@ import {
 } from 'lucide-react';
 
 const AdminSidebar = ({ 
-  isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, isAdmin, canAccess, onGoHome, onLogout 
+  isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, isAdmin, canAccess, onGoHome, onLogout,
+  badges = {}
 }) => {
   const menuItems = [
     { id: 'bi',             label: 'Business Inteligence', icon: TrendingUp },
@@ -39,23 +40,53 @@ const AdminSidebar = ({
             <span className="text-xl font-black text-[#C5A059]">LOCAÇÃO</span>
           </div>
         </div>
-        <nav className="flex-1 p-5 md:p-6 space-y-2 md:space-y-3 overflow-y-auto custom-scrollbar no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>Gerenciamento</div>
-          {menuItems.filter(item => canAccess(item.id) || item.id === 'usuarios').map((item) => (
-            <button
-              key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                if (window.innerWidth < 1280) setIsSidebarOpen(false);
-              }}
-              className={`w-full flex items-center gap-3 text-sm font-medium p-3 rounded-xl transition-all ${activeTab === item.id ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm' : 'text-neutral-400 hover:text-white'}`}
-              title={item.label}
-            >
-              <item.icon size={16} />
-              <span className={`transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>{item.label}</span>
-            </button>
-          ))}
+
+        <nav className="flex-1 p-5 md:p-6 space-y-1 md:space-y-2 overflow-y-auto custom-scrollbar no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+            Gerenciamento
+          </div>
+
+          {menuItems.filter(item => canAccess(item.id) || item.id === 'usuarios').map((item) => {
+            const badgeCount = badges[item.id] || 0;
+            const isActive = activeTab === item.id;
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  if (window.innerWidth < 1280) setIsSidebarOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 text-sm font-medium p-3 rounded-xl transition-all relative ${
+                  isActive ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                }`}
+                title={item.label}
+              >
+                {/* Icon with collapsed-mode dot indicator */}
+                <div className="relative shrink-0">
+                  <item.icon size={16} />
+                  {/* Dot shown only when sidebar is collapsed and there's a badge */}
+                  {badgeCount > 0 && !isSidebarOpen && (
+                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-[#C5A059] animate-pulse xl:block hidden" />
+                  )}
+                </div>
+
+                {/* Label */}
+                <span className={`flex-1 text-left transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>
+                  {item.label}
+                </span>
+
+                {/* Badge pill — shown only when sidebar is expanded */}
+                {badgeCount > 0 && isSidebarOpen && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#C5A059] text-neutral-950 text-[9px] font-black leading-none shadow-sm">
+                    {badgeCount > 99 ? '99+' : badgeCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </nav>
+
         <div className="p-5 md:p-6 border-t border-neutral-800 space-y-3">
           <button
             onClick={onGoHome}

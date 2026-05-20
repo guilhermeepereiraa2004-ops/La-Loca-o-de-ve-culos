@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/api/asaas/:path*",
+      "destination": "https://sandbox.asaas.com/api/v3/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

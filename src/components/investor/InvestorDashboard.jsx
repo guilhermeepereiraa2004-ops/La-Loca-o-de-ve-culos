@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Menu, TrendingUp, Car, Wrench, Wallet, Calendar, 
-  Search, FileText, ShieldCheck, Star 
+  Search, FileText, ShieldCheck, Star, CheckCircle2 
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
+import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
 
 const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
+  const [realPayouts, setRealPayouts] = useState([]);
+
+  useEffect(() => {
+    if (investor?.id) {
+      getPayoutsForInvestor(investor.id).then(setRealPayouts);
+    }
+  }, [investor?.id]);
 
   // Filter vehicles belonging to this investor and enrich with dynamic yield calculations
   const rawVehicles = vehicles.filter(v => {
@@ -108,6 +116,72 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
     return `${months[date.getMonth()]} ${date.getFullYear()}`;
   };
 
+  // Pré-processamento cronológico de todas as transações para calcular dívidas herdadas
+  const monthlyPerformance = {};
+  
+  investorTransactions.forEach(t => {
+    if (!t.date) return;
+    try {
+      const tDate = new Date(t.date + 'T12:00:00');
+      const monthKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!monthlyPerformance[monthKey]) {
+        monthlyPerformance[monthKey] = {
+          gross: 0, adminTax: 0, maintenance: 0, protection: 0, insurance: 0, other: 0, net: 0
+        };
+      }
+      
+      const cat = t.cat?.toLowerCase().trim() || '';
+      const val = Math.abs(t.val || 0);
+      
+      if (t.type === 'in') {
+        if (cat === 'taxa adm') {
+          monthlyPerformance[monthKey].adminTax += val;
+          monthlyPerformance[monthKey].net -= val;
+        } else {
+          monthlyPerformance[monthKey].gross += val;
+          const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
+          const taxRate = v ? (parseFloat(v.adminTax || 15) / 100) : 0;
+          const calculatedTax = val * taxRate;
+          monthlyPerformance[monthKey].adminTax += calculatedTax;
+          monthlyPerformance[monthKey].net += val;
+          monthlyPerformance[monthKey].net -= calculatedTax;
+        }
+      } else if (t.type === 'out') {
+        monthlyPerformance[monthKey].net -= val;
+        if (cat.includes('manuten')) {
+          monthlyPerformance[monthKey].maintenance += val;
+        } else if (cat.includes('prote') || cat.includes('veicular')) {
+          monthlyPerformance[monthKey].protection += val;
+        } else if (cat.includes('seguro')) {
+          monthlyPerformance[monthKey].insurance += val;
+        } else {
+          monthlyPerformance[monthKey].other += val;
+        }
+      }
+    } catch (e) {}
+  });
+
+  const sortedMonthsKeys = Object.keys(monthlyPerformance).sort();
+  let currentCarriedDebt = 0;
+  
+  for (const month of sortedMonthsKeys) {
+    const perf = monthlyPerformance[month];
+    perf.carriedDebtIn = currentCarriedDebt;
+    
+    const total = perf.net + currentCarriedDebt;
+    if (total > 0) {
+      perf.carriedDebtOut = 0;
+      currentCarriedDebt = 0;
+      perf.finalPayout = total;
+    } else {
+      perf.carriedDebtOut = total;
+      currentCarriedDebt = total;
+      perf.finalPayout = 0; // Negative balance, doesn't get paid, carries over
+    }
+  }
+
+  // Gera o histórico dos últimos 6 meses para visualização
   const dividendHistory = [];
   const todayDate = new Date();
 
@@ -116,57 +190,32 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
     const monthLabel = getMonthYearLabel(targetDate);
     const targetMonth = targetDate.getMonth();
     const targetYear = targetDate.getFullYear();
+    const monthKey = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}`;
 
-    // Filter transactions for this specific month and year
-    const monthTransactions = investorTransactions.filter(t => {
-      if (!t.date) return false;
-      try {
-        const parsedDate = new Date(t.date + 'T12:00:00');
-        return parsedDate.getMonth() === targetMonth && parsedDate.getFullYear() === targetYear;
-      } catch (e) {
-        return false;
-      }
-    });
+    const perf = monthlyPerformance[monthKey];
 
-    let gross = 0;
-    let adminTaxSum = 0;
-    let maintenanceSum = 0;
-    let protectionSum = 0;
-    let insuranceSum = 0;
-    let otherSum = 0;
+    // Exibe o mês se houver transações ou se for o mês atual e ele tiver veículos
+    if (perf || (i === 0 && myVehicles.length > 0)) {
+      const gross = perf?.gross || 0;
+      const adminTaxSum = perf?.adminTax || 0;
+      const maintenanceSum = perf?.maintenance || 0;
+      const protectionSum = perf?.protection || 0;
+      const insuranceSum = perf?.insurance || 0;
+      const otherSum = perf?.other || 0;
+      const carriedDebtIn = perf?.carriedDebtIn || 0;
+      const finalPayout = perf?.finalPayout || 0;
 
-    // 1. Calculate from real transactions in that month
-    monthTransactions.forEach(t => {
-      const cat = t.cat?.toLowerCase().trim() || '';
-      const val = Math.abs(t.val || 0);
+      const refMonthStr = monthKey;
+      const realPayout = realPayouts.find(p => p.reference_month === refMonthStr);
 
-      if (t.type === 'in') {
-        if (cat === 'taxa adm') {
-          adminTaxSum += val;
-        } else {
-          gross += val;
-          // Dynamically compute admin tax if no separate admin tax transaction is recorded
-          const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
-          const taxRate = v ? (parseFloat(v.adminTax || 15) / 100) : 0;
-          adminTaxSum += val * taxRate;
-        }
-      } else if (t.type === 'out') {
-        if (cat.includes('manuten')) {
-          maintenanceSum += val;
-        } else if (cat.includes('prote') || cat.includes('veicular')) {
-          protectionSum += val;
-        } else if (cat.includes('seguro')) {
-          insuranceSum += val;
-        } else {
-          otherSum += val;
-        }
-      }
-    });
-
-    if (gross > 0 || myVehicles.length > 0) {
-      // Payment date on the 10th of next month
       const nextMonthDate = new Date(targetYear, targetMonth + 1, 10);
-      const paymentDateLabel = nextMonthDate.toLocaleDateString('pt-BR');
+      let paymentDateLabel = nextMonthDate.toLocaleDateString('pt-BR');
+      let status = 'Em Aberto';
+
+      if (realPayout) {
+        status = 'Repasse Realizado';
+        paymentDateLabel = new Date(realPayout.paid_at).toLocaleDateString('pt-BR');
+      }
 
       dividendHistory.push({
         id: i + 1,
@@ -177,10 +226,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
           maintenance: maintenanceSum,
           insurance: insuranceSum,
           protection: protectionSum,
-          other: otherSum
+          other: otherSum,
+          carriedDebt: carriedDebtIn
         },
-        status: targetDate < new Date(todayDate.getFullYear(), todayDate.getMonth(), 1) ? 'Concluído' : 'Em Aberto',
-        date: paymentDateLabel
+        netValue: finalPayout,
+        status,
+        date: paymentDateLabel,
+        realPayout
       });
     }
   }
@@ -191,24 +243,18 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
 
   const totalInsurance = 39.90 * myVehicles.filter(v => v.franchiseInsurance).length;
 
-  const currentMonthDividends = dividendHistory[0]
-    ? (dividendHistory[0].gross - dividendHistory[0].adminTax - (dividendHistory[0].discounts.maintenance + dividendHistory[0].discounts.insurance + dividendHistory[0].discounts.protection + (dividendHistory[0].discounts.other || 0)))
-    : 0;
+  const currentMonthDividends = dividendHistory[0] ? dividendHistory[0].netValue : 0;
 
-  const yearDividends = dividendHistory.reduce((acc, d) => {
-    const net = d.gross - d.adminTax - (d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0));
-    return acc + net;
-  }, 0);
+  const yearDividends = dividendHistory.reduce((acc, d) => acc + d.netValue, 0);
 
   const avgYield = totalInvested > 0 ? ((currentMonthDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
 
   // Generate graph bars dynamically based on reverse chronological history
   const graphBars = [...dividendHistory].reverse().map(d => {
-    const net = d.gross - d.adminTax - (d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0));
     const shortMonth = d.period.split(' ')[0].substring(0, 3);
     return {
       m: shortMonth,
-      v: net
+      v: d.netValue
     };
   });
 
@@ -608,14 +654,32 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
 
                         <div className="mt-12 space-y-4">
                           <div className="flex justify-between items-end">
-                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Data do Repasse</p>
+                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">
+                              {d.realPayout ? 'Data do Repasse Realizado' : 'Data Prevista'}
+                            </p>
                             <p className="text-sm font-black text-neutral-900">{d.date}</p>
                           </div>
                           <div className="h-[1px] bg-neutral-200" />
                           <div className="flex justify-between items-end">
                             <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Valor Líquido</p>
-                            <p className="text-3xl font-black text-[#C5A059]">R$ {netValue.toLocaleString('pt-BR')}</p>
+                            <p className="text-3xl font-black text-[#C5A059]">
+                              R$ {(d.realPayout ? parseFloat(d.realPayout.amount) : d.netValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
                           </div>
+                          {d.realPayout && (
+                            <div className="p-3 mt-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-3">
+                              <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                              <div>
+                                <p className="text-[9px] uppercase tracking-widest text-emerald-700 font-black">Repasse Confirmado</p>
+                                <p className="text-xs text-emerald-600 font-medium mt-0.5">
+                                  Enviado via PIX: <strong>{d.realPayout.pix_key || 'Não informado'}</strong>
+                                </p>
+                                {d.realPayout.notes && (
+                                  <p className="text-[10px] text-emerald-600/70 italic mt-1">"{d.realPayout.notes}"</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -650,8 +714,14 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                               </div>
                               {(d.discounts.other || 0) > 0 && (
                                 <div className="flex justify-between items-center text-xs">
-                                  <span className="text-neutral-500 font-bold text-amber-600">Outros Abatimentos</span>
+                                  <span className="text-neutral-500 font-bold">Outros Abatimentos</span>
                                   <span className="font-bold text-red-400">- R$ {d.discounts.other.toLocaleString('pt-BR')}</span>
+                                </div>
+                              )}
+                              {(d.discounts.carriedDebt || 0) < 0 && (
+                                <div className="flex justify-between items-center text-xs p-2 bg-amber-50 rounded-lg border border-amber-100">
+                                  <span className="text-amber-700 font-bold flex items-center gap-1">Dívida Meses Anteriores</span>
+                                  <span className="font-black text-amber-600">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR')}</span>
                                 </div>
                               )}
                             </div>

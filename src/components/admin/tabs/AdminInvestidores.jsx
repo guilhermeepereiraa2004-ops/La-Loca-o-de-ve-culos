@@ -1,6 +1,8 @@
-import React from 'react';
-import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatCPF } from '../../../utils/cpfFormatter';
+import InvestorPayoutModal from '../modals/InvestorPayoutModal.jsx';
+import { getPayoutsForInvestor, formatReferenceMonth } from '../../../utils/investorPayouts.js';
 
 
 const AdminInvestidores = ({
@@ -14,7 +16,8 @@ const AdminInvestidores = ({
   onDeleteInvestor,
   setShowAdminSuccess,
   vehicles = [],
-  transactions = []
+  transactions = [],
+  onAddTransaction
 }) => {
   const calculateInvestorPayout = (inv) => {
     const invVehicles = (vehicles || []).filter(v => {
@@ -23,59 +26,94 @@ const AdminInvestidores = ({
       return invNameMatch || invIdMatch;
     });
 
-    if (invVehicles.length === 0) return 0;
-
-    const today = new Date();
-    const currentYear = today.getFullYear();
-    const currentMonth = today.getMonth();
-
-    let gross = 0;
-    let adminTaxSum = 0;
-    let maintenanceSum = 0;
-    let protectionSum = 0;
-    let insuranceSum = 0;
+    if (invVehicles.length === 0) return { payout: 0, currentMonthNet: 0, carriedDebt: 0 };
 
     const investorTrans = (transactions || []).filter(t => 
-      invVehicles.some(v => v.plate === t.vehiclePlate)
+      invVehicles.some(v => v.plate === t.vehiclePlate) ||
+      (t.responsible?.toLowerCase().trim() === `investidor: ${inv.name?.toLowerCase().trim()}`)
     );
 
-    const monthTransactions = investorTrans.filter(t => {
-      if (!t.date) return false;
+    // Agrupa o saldo de todos os veículos mês a mês
+    const monthlyNet = {};
+    investorTrans.forEach(t => {
+      if (!t.date) return;
       try {
         const tDate = new Date(t.date + 'T12:00:00');
-        return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
-      } catch (e) {
-        return false;
-      }
+        const monthKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!monthlyNet[monthKey]) monthlyNet[monthKey] = 0;
+        
+        const cat = t.cat?.toLowerCase().trim() || '';
+        const val = Math.abs(t.val || 0);
+        
+        if (t.type === 'in') {
+          if (cat === 'taxa adm') {
+             monthlyNet[monthKey] -= val;
+          } else if (cat === 'pagamento de dívida' || cat === 'pagamento dívida') {
+             monthlyNet[monthKey] += val; // Valor integral quita a dívida sem cobrar taxa
+          } else {
+             const v = invVehicles.find(veh => veh.plate === t.vehiclePlate);
+             const taxRate = parseFloat(v?.adminTax || 15) / 100;
+             monthlyNet[monthKey] += val;
+             monthlyNet[monthKey] -= (val * taxRate);
+          }
+        } else if (t.type === 'out') {
+           monthlyNet[monthKey] -= val;
+        }
+      } catch (e) {}
     });
 
-    monthTransactions.forEach(t => {
-      const cat = t.cat?.toLowerCase().trim() || '';
-      const val = Math.abs(t.val || 0);
+    // Processa os meses cronologicamente para transportar o saldo negativo
+    const sortedMonths = Object.keys(monthlyNet).sort();
+    
+    const today = new Date();
+    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-      if (t.type === 'in') {
-        if (cat === 'taxa adm') {
-          adminTaxSum += val;
-        } else {
-          gross += val;
-          const v = invVehicles.find(veh => veh.plate === t.vehiclePlate);
-          const taxRate = parseFloat(v?.adminTax || 15) / 100;
-          adminTaxSum += val * taxRate;
-        }
-      } else if (t.type === 'out') {
-        if (cat.includes('manuten')) {
-          maintenanceSum += val;
-        } else if (cat.includes('prote') || cat.includes('veicular')) {
-          protectionSum += val;
-        } else if (cat.includes('seguro')) {
-          insuranceSum += val;
-        }
+    let carriedBalance = 0;
+
+    for (const month of sortedMonths) {
+      if (month >= currentMonthKey) {
+        // Para no mês atual, pois queremos saber o saldo herdado ATÉ o mês atual
+        break;
       }
-    });
+      
+      const net = monthlyNet[month];
+      const total = net + carriedBalance;
+      
+      if (total > 0) {
+        // Mês positivo quitou as dívidas (e o investidor recebeu o lucro)
+        carriedBalance = 0;
+      } else {
+        // Mês negativo acumula como dívida para o próximo
+        carriedBalance = total;
+      }
+    }
 
-    return gross - adminTaxSum - (maintenanceSum + protectionSum + insuranceSum);
+    const currentMonthNet = monthlyNet[currentMonthKey] || 0;
+    const currentPayout = currentMonthNet + carriedBalance;
+    
+    return {
+      payout: currentPayout, // Pode ser negativo se a dívida continuar
+      currentMonthNet,
+      carriedDebt: carriedBalance
+    };
   };
   const [showForm, setShowForm] = React.useState(false);
+  const [payoutModal, setPayoutModal] = useState(null); // { investor, amount }
+  const [debtPaymentModal, setDebtPaymentModal] = useState(null); // { investor, debtAmount }
+  const [debtPaymentInput, setDebtPaymentInput] = useState('');
+  const [payoutHistory, setPayoutHistory] = useState({}); // investorId → []
+  const [expandedHistory, setExpandedHistory] = useState({}); // investorId → bool
+
+  const loadPayoutHistory = useCallback(async (investorId) => {
+    const records = await getPayoutsForInvestor(investorId);
+    setPayoutHistory(prev => ({ ...prev, [investorId]: records }));
+  }, []);
+
+  useEffect(() => {
+    if (!investors || investors.length === 0) return;
+    investors.forEach(inv => loadPayoutHistory(inv.id));
+  }, [investors, loadPayoutHistory]);
 
   // If we start editing from outside, we should show the form
   React.useEffect(() => {
@@ -86,6 +124,75 @@ const AdminInvestidores = ({
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+      {/* Modal de repasse */}
+      {payoutModal && (
+        <InvestorPayoutModal
+          investor={payoutModal.investor}
+          amount={payoutModal.amount}
+          onClose={() => setPayoutModal(null)}
+          onSuccess={() => {
+            loadPayoutHistory(payoutModal.investor.id);
+            setPayoutModal(null);
+          }}
+        />
+      )}
+
+      {/* Modal de Pagamento de Débito Manual */}
+      {debtPaymentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm relative shadow-2xl">
+            <button onClick={() => setDebtPaymentModal(null)} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full hover:bg-neutral-200 transition-colors">
+              <X size={16} />
+            </button>
+            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6">
+              <Landmark size={24} />
+            </div>
+            <h3 className="text-xl font-black mb-2 text-neutral-900 tracking-tight">Quitar Dívida</h3>
+            <p className="text-sm text-neutral-500 mb-6 font-medium">Investidor: <span className="font-black text-neutral-900">{debtPaymentModal.investor.name}</span></p>
+            
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl mb-6">
+              <p className="text-[10px] font-black uppercase text-red-400 mb-1 tracking-widest">Saldo Devedor Atual</p>
+              <p className="text-2xl font-black text-red-600">R$ {debtPaymentModal.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+            </div>
+            
+            <label className="text-[10px] font-black uppercase tracking-widest text-neutral-400 ml-1">Valor do Pagamento Recebido (R$)</label>
+            <input 
+               type="number" 
+               value={debtPaymentInput}
+               onChange={(e) => setDebtPaymentInput(e.target.value)}
+               placeholder="Ex: 150.00"
+               className="w-full bg-neutral-50 border-none p-5 text-lg rounded-2xl mt-2 mb-6 outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-neutral-900"
+            />
+            
+            <button 
+              onClick={async () => {
+                 const val = parseFloat(debtPaymentInput);
+                 if (val > 0) {
+                   await onAddTransaction({
+                     type: 'in',
+                     val: val,
+                     cat: 'Pagamento de Dívida',
+                     desc: `Pagamento de débito manual - ${debtPaymentModal.investor.name}`,
+                     date: new Date().toISOString().split('T')[0],
+                     responsible: `Investidor: ${debtPaymentModal.investor.name}`,
+                     status: 'Concluído'
+                   });
+                   setShowAdminSuccess({
+                     show: true,
+                     title: 'Dívida Quitada',
+                     message: `O pagamento de R$ ${val.toLocaleString('pt-BR')} foi registrado com sucesso, reduzindo o saldo devedor do investidor.`
+                   });
+                   setDebtPaymentModal(null);
+                 }
+              }}
+              className="w-full py-5 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-lg"
+            >
+               Confirmar Pagamento
+            </button>
+          </div>
+        </div>
+      )}
+
       {!showForm ? (
         <>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
@@ -207,7 +314,7 @@ const AdminInvestidores = ({
                   
                   {/* Dynamic monthly payout calculation */}
                   {(() => {
-                    const payout = calculateInvestorPayout(investor);
+                    const { payout, currentMonthNet, carriedDebt } = calculateInvestorPayout(investor);
                     const invVehs = (vehicles || []).filter(v => {
                       const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
                       const invIdMatch = v.investorId === investor.id;
@@ -219,16 +326,79 @@ const AdminInvestidores = ({
                         <div className="flex justify-between items-center bg-neutral-50/50 p-4 rounded-2xl border border-neutral-100">
                           <div>
                             <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-black">Repasse Mês Atual</span>
-                            <p className="text-base font-black text-neutral-900 leading-none mt-1 font-mono">R$ {payout.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                            <p className="text-base font-black text-neutral-900 leading-none mt-1 font-mono">
+                              R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                            {carriedDebt < 0 && (
+                              <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1">
+                                <span className="bg-amber-100 text-amber-700 px-1 rounded">- R$ {Math.abs(carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> de meses anteriores
+                              </p>
+                            )}
+                            {payout < 0 && (
+                              <p className="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1">
+                                Saldo devedor para próx. mês: R$ {Math.abs(payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </p>
+                            )}
                           </div>
                           <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${payout > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-neutral-100 text-neutral-400'}`}>
-                            {payout > 0 ? 'A Repassar' : 'Sem Ganhos'}
+                            {payout > 0 ? 'A Repassar' : (payout < 0 ? 'Devendo' : 'Sem Ganhos')}
                           </span>
                         </div>
+
                         <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2">
                           <span>Veículos Associados:</span>
                           <span className="font-black text-neutral-950">{invVehs.length} ativo(s)</span>
                         </div>
+
+                        {/* Botão registrar repasse ou Quitar Débito */}
+                        {payout > 0 ? (
+                          <button
+                            onClick={() => setPayoutModal({ investor, amount: payout })}
+                            className="w-full py-4 bg-neutral-900 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#C5A059] hover:text-neutral-900 transition-all flex items-center justify-center gap-2 group">
+                            <SendHorizonal size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                            Registrar Repasse
+                          </button>
+                        ) : payout < 0 ? (
+                          <button
+                            onClick={() => {
+                              setDebtPaymentInput(Math.abs(payout).toString());
+                              setDebtPaymentModal({ investor, debtAmount: Math.abs(payout) });
+                            }}
+                            className="w-full py-4 bg-red-50 text-red-600 border border-red-100 text-[9px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                            Pagar Débitos Pendentes
+                          </button>
+                        ) : null}
+
+                        {/* Histórico de repasses */}
+                        {(payoutHistory[investor.id] || []).length > 0 && (
+                          <div className="border-t border-neutral-50 pt-4">
+                            <button
+                              onClick={() => setExpandedHistory(prev => ({ ...prev, [investor.id]: !prev[investor.id] }))}
+                              className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors mb-3">
+                              <span className="flex items-center gap-1.5"><History size={11} /> Histórico de Repasses</span>
+                              {expandedHistory[investor.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                            </button>
+
+                            {expandedHistory[investor.id] && (
+                              <div className="space-y-2">
+                                {(payoutHistory[investor.id] || []).map(p => (
+                                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
+                                    <div>
+                                      <p className="text-[9px] font-black text-neutral-900">{formatReferenceMonth(p.reference_month)}</p>
+                                      <p className="text-[8px] text-neutral-400 font-medium">
+                                        {new Date(p.paid_at).toLocaleDateString('pt-BR')} — PIX: {p.pix_key || '—'}
+                                      </p>
+                                      {p.notes && <p className="text-[8px] text-neutral-400 italic mt-0.5">{p.notes}</p>}
+                                    </div>
+                                    <span className="text-[10px] font-black text-emerald-600 whitespace-nowrap ml-4">
+                                      R$ {parseFloat(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })()}
