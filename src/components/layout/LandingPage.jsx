@@ -22,8 +22,8 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
           {/* Main Heading */}
           <div className="max-w-4xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
             <h1 className="font-black uppercase tracking-tighter leading-[0.85] text-white">
-              <span className="block text-5xl md:text-7xl lg:text-8xl mb-2">LA</span>
-              <span className="block text-6xl md:text-8xl lg:text-9xl text-[#C5A059]" style={{ textShadow: '0 0 60px rgba(197,160,89,0.2)' }}>
+              <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-2">LA</span>
+              <span className="block text-5xl sm:text-6xl md:text-8xl lg:text-9xl text-[#C5A059]" style={{ textShadow: '0 0 60px rgba(197,160,89,0.2)' }}>
                 LOCAÇÃO
               </span>
             </h1>
@@ -41,13 +41,13 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
           </div>
 
           {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-6 items-center animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-600">
+          <div className="flex flex-col sm:flex-row gap-4 md:gap-6 items-center w-full sm:w-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-600">
             <button
               onClick={() => {
                 onSetView('fleet');
                 window.scrollTo(0, 0);
               }}
-              className="group relative px-12 py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full overflow-hidden transition-all shadow-2xl shadow-[#C5A059]/30 hover:scale-105 active:scale-95"
+              className="group relative w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full overflow-hidden transition-all shadow-2xl shadow-[#C5A059]/30 hover:scale-105 active:scale-95"
             >
               <span className="relative z-10">Alugar Agora</span>
               <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
@@ -58,7 +58,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 onSetView('fleet');
                 window.scrollTo(0, 0);
               }}
-              className="px-12 py-5 bg-white/5 backdrop-blur-md text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white/10 transition-all border border-white/20 hover:border-white/40 shadow-xl"
+              className="w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 bg-white/5 backdrop-blur-md text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white/10 transition-all border border-white/20 hover:border-white/40 shadow-xl"
             >
               Conhecer Frota
             </button>
@@ -95,7 +95,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
             <div className="flex-1 space-y-10">
               <div>
                 <EditorialLabel className="text-[#C5A059] mb-4">A Empresa</EditorialLabel>
-                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-neutral-900 leading-[0.95] mb-8">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-neutral-900 leading-[0.95] mb-8">
                   Excelência e Confiança na <span className="text-[#C5A059]">Gestão de Frotas</span>
                 </h2>
                 <div className="w-24 h-[2px] bg-[#C5A059]" />
@@ -183,7 +183,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                     <span className="text-neutral-900 text-[10px] uppercase tracking-[0.4em] font-black">Ganhe Mais Todos os Dias</span>
                   </div>
                 </div>
-                <h2 className="text-5xl md:text-6xl font-black uppercase tracking-tighter text-neutral-950 leading-[0.95]">
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-neutral-950 leading-[0.95]">
                   A Melhor Oportunidade para <br /><span className="text-white drop-shadow-sm">Motoristas de Aplicativo</span>
                 </h2>
                 <p className="text-neutral-900/80 font-medium text-xl leading-relaxed">
@@ -230,7 +230,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           <div className="mb-20">
             <EditorialLabel className="text-[#C5A059] mb-4">Alugue Agora</EditorialLabel>
-            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
+            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
               Escolha seu <br/>Próximo Veículo
             </h2>
             <p className="text-neutral-500 font-light max-w-xl text-lg">
@@ -315,7 +315,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-20">
           <div className="flex-1">
             <EditorialLabel className="text-neutral-900/40 mb-4">Seja um Parceiro</EditorialLabel>
-            <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-8 leading-[0.9]">
+            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-8 leading-[0.9]">
               Programa de<br/><span className="text-white drop-shadow-sm">Investidores</span>
             </h2>
             <p className="text-neutral-900/80 font-medium text-lg mb-10 leading-relaxed max-w-xl">
@@ -357,7 +357,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
       <section id="servicos" className="py-32 bg-neutral-100">
         <div className="max-w-7xl mx-auto px-6 md:px-12 text-center mb-20">
           <EditorialLabel className="text-[#C5A059] mb-4">O que oferecemos</EditorialLabel>
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
+          <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
             Nossos Serviços
           </h2>
         </div>
@@ -389,7 +389,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
             <Phone size={40} className="text-[#C5A059]" />
           </div>
           <EditorialLabel className="text-neutral-900/40 mb-4">Entre em Contato</EditorialLabel>
-          <h2 className="text-5xl md:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-6 leading-none">Fale Conosco</h2>
+          <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-6 leading-none">Fale Conosco</h2>
           <p className="text-neutral-900/80 font-medium mb-12 text-xl leading-relaxed">Pronto para acelerar? Entre em contato e reserve seu veículo ou agende uma reunião para conhecer o modelo de investimento.</p>
           <a
             href="https://wa.me/5579999999999"
