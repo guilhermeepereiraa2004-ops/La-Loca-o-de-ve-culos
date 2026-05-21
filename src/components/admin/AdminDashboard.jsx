@@ -273,7 +273,7 @@ const AdminDashboard = ({
         />
 
         <div className="flex-1 overflow-y-auto p-6 md:p-12">
-          {activeTab === 'bi' && <AdminBI stats={biData.mainStats} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
+          {activeTab === 'bi' && <AdminBI stats={biData.mainStats} chartData={biData.chartData} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
           {activeTab === 'leads' && (
             <AdminLeads 
               leads={leads} leadSearch={leadSearch} setLeadSearch={setLeadSearch}
