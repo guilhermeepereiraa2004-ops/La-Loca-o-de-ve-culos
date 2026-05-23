@@ -11,13 +11,19 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
 
   if (!inspection || !rental || !closureData) return null;
 
-  const client = (clients || []).find(c => c.id === rental.clientId || c.name === rental.user);
+  const rentalUser = rental.userName || rental.user || '';
+  const client = (clients || []).find(c => 
+    c.id === rental.clientId || 
+    (c.nome && rentalUser && c.nome.toLowerCase() === rentalUser.toLowerCase()) || 
+    (c.name && rentalUser && c.name.toLowerCase() === rentalUser.toLowerCase())
+  );
   const clientCpf = client?.cpf || '---';
   const clientAddress = client?.address || '---';
   const clientCnh = rental.cnhNumber || rental.cnh || client?.cnh || '---';
 
-  const startFormatted = rental.startDate 
-    ? new Date(rental.startDate + 'T12:00:00').toLocaleDateString('pt-BR') 
+  const rawDate = rental.startDate || rental.date;
+  const startFormatted = rawDate 
+    ? new Date(rawDate + 'T12:00:00').toLocaleDateString('pt-BR') 
     : '---';
   const endFormatted = new Date().toLocaleDateString('pt-BR');
 
@@ -179,7 +185,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                   <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">I. QUALIFICAÇÃO DAS PARTES E VEÍCULO</p>
                   <div className="grid grid-cols-2 gap-8 text-[11px]">
                     <div className="space-y-1">
-                      <p><strong>Locatário:</strong> {rental.user}</p>
+                      <p><strong>Locatário:</strong> {rental.userName || rental.user || '---'}</p>
                       <p><strong>CPF:</strong> {clientCpf}</p>
                       <p><strong>CNH:</strong> {clientCnh}</p>
                       <p><strong>Endereço:</strong> {clientAddress}</p>
@@ -273,7 +279,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                 <section className="pt-24 grid grid-cols-2 gap-16 text-center text-[10px] font-sans">
                   <div className="space-y-2">
                     <div className="border-t border-neutral-400 pt-2">
-                      <p className="font-bold">{rental.user}</p>
+                      <p className="font-bold">{rental.userName || rental.user || '---'}</p>
                       <p className="text-[8px] text-neutral-400 uppercase tracking-tight">CPF: {clientCpf}</p>
                     </div>
                     <p className="text-neutral-400 uppercase tracking-widest text-[8px] font-black">Locatário (Motorista)</p>

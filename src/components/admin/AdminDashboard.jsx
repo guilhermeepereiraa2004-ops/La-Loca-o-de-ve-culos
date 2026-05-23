@@ -521,7 +521,7 @@ const AdminDashboard = ({
               setShowAdminSuccess({
                 show: true,
                 title: 'Contrato Encerrado',
-                message: `O contrato de ${selectedRental.user} foi finalizado com o termo assinado anexado.`
+                message: `O contrato de ${selectedRental.userName || selectedRental.user || 'Condutor'} foi finalizado com o termo assinado anexado.`
               });
             } catch (err) {
               console.error("Erro ao finalizar encerramento:", err);
