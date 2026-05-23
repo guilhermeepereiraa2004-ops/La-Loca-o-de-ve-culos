@@ -53,12 +53,12 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
   if (!inspection || !rental) return null;
 
   return (
-    <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+    <div className="fixed inset-0 z-[700] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
       <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-md" onClick={onClose} />
       
-      <div className="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+      <div className="bg-white w-full max-w-4xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
         {/* Header */}
-        <div className="p-10 border-b border-neutral-100 flex justify-between items-center bg-white">
+        <div className="p-10 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
           <div className="flex items-center gap-6">
             <div className="w-16 h-16 bg-neutral-900 rounded-[2rem] flex items-center justify-center text-[#C5A059] shadow-2xl">
               <Ban size={28} />
