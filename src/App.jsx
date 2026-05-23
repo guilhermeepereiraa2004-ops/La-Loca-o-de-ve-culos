@@ -11,6 +11,7 @@ import Navbar from './components/layout/Navbar';
 import InterestModal from './components/ui/modals/InterestModal';
 import SuccessModal from './components/ui/modals/SuccessModal';
 import ImageViewer from './components/ui/ImageViewer';
+import Loader from './components/ui/Loader';
 
 // Hooks
 import { useAppState } from './hooks/useAppState';
@@ -34,6 +35,8 @@ const App = () => {
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
     handleInterestSubmit
   } = useAppState();
+
+  const [isLoaderFinished, setIsLoaderFinished] = React.useState(false);
 
   React.useEffect(() => {
     const savedInvestor = localStorage.getItem('la_investor_auth');
@@ -151,8 +154,11 @@ const App = () => {
   }
 
   // Main Layout (Landing Page, Fleet Page, etc.)
+  const shouldShowLoader = view === 'home' && !isLoaderFinished;
+
   return (
     <div className="min-h-screen bg-white font-sans overflow-x-hidden">
+      {shouldShowLoader && <Loader onComplete={() => setIsLoaderFinished(true)} />}
       <ImageViewer image={selectedImage} onClose={() => setSelectedImage(null)} />
       
       <Navbar onSetView={setView} />

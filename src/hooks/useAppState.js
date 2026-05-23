@@ -3,7 +3,13 @@ import { supabase } from '../lib/supabase';
 import { uploadFile } from '../utils/supabaseStorage';
 
 export const useAppState = () => {
-  const [view, setView] = useState('home');
+  const [view, setView] = useState(() => {
+    const savedAdmin = localStorage.getItem('la_admin_auth');
+    const savedInvestor = localStorage.getItem('la_investor_auth');
+    if (savedAdmin === 'true') return 'admin';
+    if (savedInvestor) return 'investor';
+    return 'home';
+  });
   const [leads, setLeads] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [investors, setInvestors] = useState([]);
@@ -15,7 +21,21 @@ export const useAppState = () => {
   const [systemUsers, setSystemUsers] = useState([]);
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    const savedInvestor = localStorage.getItem('la_investor_auth');
+    if (savedInvestor) {
+      try {
+        return JSON.parse(savedInvestor);
+      } catch (e) {
+        return null;
+      }
+    }
+    const savedAdmin = localStorage.getItem('la_admin_auth');
+    if (savedAdmin === 'true') {
+      return { role: 'administrador', modules: null };
+    }
+    return null;
+  });
   const [selectedImage, setSelectedImage] = useState(null);
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
@@ -96,7 +116,7 @@ export const useAppState = () => {
       email: 'e-mail',
       phone: 'telefone',
       cpf: 'cpf',
-      address: 'endere\u00e7o',
+      address: 'address',
       cnh: 'cnh_number',
       cnhNumber: 'cnh_number',
       cnhExpiration: 'cnh_validity',
@@ -388,6 +408,7 @@ export const useAppState = () => {
       delete payload.date;
       delete payload.period;
       delete payload.cpf;
+      delete payload.address;
 
       // --- NOVO: Upload de Documentos ---
       const uploadedDocs = { ...(rental.docs || {}) };
@@ -614,6 +635,8 @@ export const useAppState = () => {
       delete payload.plate;
       delete payload.date;
       delete payload.period;
+      delete payload.cpf;
+      delete payload.address;
       
       if (payload.value) payload.value = parseFloat(String(payload.value).replace(/\./g, '').replace(',', '.'));
 
