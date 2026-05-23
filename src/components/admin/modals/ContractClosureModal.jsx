@@ -33,7 +33,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       const paidCaucao = parseFloat(String(rental.depositPaid || rental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
       const unpaidCaucao = totalCaucao - paidCaucao;
 
-      const totalDebts = inspectionDebts + unpaidFines + unpaidRentals + unpaidCaucao;
+      const totalDebts = inspectionDebts + unpaidFines + unpaidRentals;
       const caucaoAvailable = paidCaucao;
       const balance = caucaoAvailable - totalDebts;
 
@@ -108,11 +108,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                       <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Cobranças</td>
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
                     </tr>
-                    <tr>
-                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Caução em Aberto</td>
-                      <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Saldo Parcelado</td>
-                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidCaucao.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
-                    </tr>
+
                     <tr className="bg-neutral-900">
                       <td colSpan={2} className="px-6 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-[#C5A059] uppercase tracking-widest">Total de Débitos Consolidados</td>
                       <td className="px-6 md:px-8 py-5 text-base md:text-lg font-black text-white text-right">R$ {closureData.totalDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
