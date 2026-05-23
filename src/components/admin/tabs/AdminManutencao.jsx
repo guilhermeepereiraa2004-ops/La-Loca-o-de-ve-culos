@@ -51,6 +51,7 @@ const AdminManutencao = ({
 
     vehicles.forEach(v => {
       // 6-month preventive maintenance alert
+      if (!v.entryDate) return;
       const entryDate = new Date(v.entryDate);
       const monthsSinceEntry = (today.getFullYear() - entryDate.getFullYear()) * 12 + (today.getMonth() - entryDate.getMonth());
       

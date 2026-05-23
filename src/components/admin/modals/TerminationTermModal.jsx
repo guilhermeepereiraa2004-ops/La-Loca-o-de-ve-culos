@@ -4,12 +4,26 @@ import { compressImage } from '../../../utils/imageCompression';
 
 /* VERSION V04 - CLEANED AND VERIFIED */
 
-const TerminationTermModal = ({ inspection, rental, closureData, onClose, onFinalize }) => {
+const TerminationTermModal = ({ inspection, rental, clients = [], closureData, onClose, onFinalize }) => {
   const [attachment, setAttachment] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [step, setStep] = useState(1);
 
   if (!inspection || !rental || !closureData) return null;
+
+  const client = (clients || []).find(c => c.id === rental.clientId || c.name === rental.user);
+  const clientCpf = client?.cpf || '---';
+  const clientAddress = client?.address || '---';
+  const clientCnh = rental.cnhNumber || rental.cnh || client?.cnh || '---';
+
+  const startFormatted = rental.startDate 
+    ? new Date(rental.startDate + 'T12:00:00').toLocaleDateString('pt-BR') 
+    : '---';
+  const endFormatted = new Date().toLocaleDateString('pt-BR');
+
+  const deductions = inspection.deductions || [];
+  const deductionsTotal = deductions.reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
+  const amountChargedFromDeposit = Math.min(closureData.totalDebts, closureData.caucaoAvailable);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -78,7 +92,7 @@ const TerminationTermModal = ({ inspection, rental, closureData, onClose, onFina
 
         <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
           {/* Action Sidebar */}
-          <div className="w-full md:w-80 bg-neutral-50 p-6 md:p-8 border-r border-neutral-100 flex flex-col gap-6 overflow-y-auto">
+          <div className="w-full md:w-80 bg-neutral-50 p-6 md:p-8 border-r border-neutral-100 flex flex-col gap-6 overflow-y-auto font-sans">
             <div className="p-5 bg-white rounded-3xl border border-neutral-100 shadow-sm space-y-4">
               <div className="flex items-center gap-3 text-neutral-900">
                 <AlertCircle size={16} className="text-[#C5A059]" />
@@ -146,31 +160,133 @@ const TerminationTermModal = ({ inspection, rental, closureData, onClose, onFina
 
           {/* Content Area */}
           <div className="flex-1 bg-neutral-200/30 p-4 md:p-12 overflow-y-auto">
-            <div id="print-term" className="bg-white shadow-2xl mx-auto w-full max-w-[800px] p-8 md:p-16 min-h-[1000px] print:p-0 print:shadow-none">
-              <div className="border-b-2 border-neutral-900 pb-10 mb-10 flex justify-between items-end">
-                <h1 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">LA Locação</h1>
+            <div id="print-term" className="bg-white shadow-2xl mx-auto w-full max-w-[800px] p-8 md:p-16 min-h-[1000px] print:p-0 print:shadow-none font-serif text-neutral-900">
+              <div className="border-b-2 border-neutral-900 pb-6 mb-8 flex justify-between items-end">
+                <div>
+                  <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">LA Locação de Veículos</h1>
+                  <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">L.A. LOCAÇÃO E ADMINISTRAÇÃO LTDA</p>
+                </div>
                 <div className="text-right">
-                  <h2 className="text-lg font-black uppercase tracking-tight text-neutral-900">Termo de Rescisão</h2>
+                  <h2 className="text-lg font-black uppercase tracking-tight text-neutral-900">Termo de Rescisão e Distrato</h2>
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Contrato de Locação</p>
                 </div>
               </div>
 
-              <div className="space-y-10 text-neutral-800 text-xs">
-                <section className="space-y-4">
-                  <p className="font-bold uppercase tracking-widest text-[9px] text-[#C5A059]">I. PARTES</p>
-                  <p><strong>Locatário:</strong> {rental.user}</p>
-                  <p><strong>Veículo:</strong> {rental.vehicle} ({rental.plate})</p>
-                </section>
-
-                <section className="space-y-4">
-                  <p className="font-bold uppercase tracking-widest text-[9px] text-[#C5A059]">II. VALORES</p>
-                  <div className="bg-neutral-900 text-white p-6 rounded-2xl space-y-2">
-                    <div className="flex justify-between"><span>Débitos:</span> <span>R$ {closureData.totalDebts?.toLocaleString('pt-BR')}</span></div>
-                    <div className="flex justify-between"><span>Caução:</span> <span>R$ {closureData.caucaoAvailable?.toLocaleString('pt-BR')}</span></div>
-                    <div className="flex justify-between font-black text-[#C5A059]"><span>Saldo:</span> <span>R$ {closureData.balance?.toLocaleString('pt-BR')}</span></div>
+              <div className="space-y-8 text-neutral-800 text-[11px] leading-relaxed">
+                
+                {/* 1. DADOS DO LOCATÁRIO E VEÍCULO */}
+                <section className="space-y-3">
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">I. QUALIFICAÇÃO DAS PARTES E VEÍCULO</p>
+                  <div className="grid grid-cols-2 gap-8 text-[11px]">
+                    <div className="space-y-1">
+                      <p><strong>Locatário:</strong> {rental.user}</p>
+                      <p><strong>CPF:</strong> {clientCpf}</p>
+                      <p><strong>CNH:</strong> {clientCnh}</p>
+                      <p><strong>Endereço:</strong> {clientAddress}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p><strong>Veículo:</strong> {rental.vehicle || rental.vehicleModel} ({rental.plate || rental.vehiclePlate})</p>
+                      <p><strong>KM de Devolução:</strong> {inspection.km} KM</p>
+                      <p><strong>Data de Início:</strong> {startFormatted}</p>
+                      <p><strong>Data de Término:</strong> {endFormatted}</p>
+                    </div>
                   </div>
                 </section>
 
-                <p className="pt-20 text-center font-bold">________________________________________________<br/>{rental.user}</p>
+                {/* 2. ITENS DE VISTORIA */}
+                <section className="space-y-3">
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">II. ITENS AUFERIDOS NA VISTORIA DE DEVOLUÇÃO</p>
+                  {deductions.length > 0 ? (
+                    <table className="w-full text-left border-collapse text-[10px]">
+                      <thead>
+                        <tr className="border-b border-neutral-200">
+                          <th className="py-2 text-[9px] uppercase tracking-widest text-neutral-400 font-black font-sans">Item/Categoria</th>
+                          <th className="py-2 text-[9px] uppercase tracking-widest text-neutral-400 font-black font-sans">Descrição</th>
+                          <th className="py-2 text-[9px] uppercase tracking-widest text-neutral-400 font-black font-sans text-center">Proporcional</th>
+                          <th className="py-2 text-[9px] uppercase tracking-widest text-neutral-400 font-black font-sans text-right">Valor</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100">
+                        {deductions.map((item, idx) => (
+                          <tr key={idx}>
+                            <td className="py-2 text-[10px] font-black text-neutral-900 uppercase font-sans">{item.category}</td>
+                            <td className="py-2 text-[10px] text-neutral-600 font-sans">{item.description || '-'}</td>
+                            <td className="py-2 text-center text-[10px] font-sans">{item.isProportional ? 'Sim' : 'Não'}</td>
+                            <td className="py-2 text-[10px] font-mono text-neutral-900 text-right">
+                              R$ {parseFloat(item.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        ))}
+                        <tr className="font-bold bg-neutral-50">
+                          <td colSpan={3} className="py-2 pl-2 text-[9px] uppercase tracking-widest text-neutral-900 font-sans">Total Descontos Vistoria</td>
+                          <td className="py-2 pr-2 text-[10px] font-mono text-neutral-900 text-right">R$ {deductionsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  ) : (
+                    <p className="text-[10px] text-neutral-500 italic">Nenhuma avaria ou desconto lançado na vistoria de devolução.</p>
+                  )}
+                </section>
+
+                {/* 3. CONSOLIDAÇÃO FINANCEIRA */}
+                <section className="space-y-3">
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">III. CONSOLIDAÇÃO FINANCEIRA E LIQUIDAÇÃO</p>
+                  <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-100 space-y-2 text-[11px]">
+                    <div className="flex justify-between text-neutral-600">
+                      <span>Total de Débitos Consolidados (Vistoria, Multas, Aluguéis, Caução pendente):</span>
+                      <span className="font-mono text-neutral-950 font-bold">R$ {closureData.totalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-neutral-600">
+                      <span>Caução Total Pago/Disponível:</span>
+                      <span className="font-mono text-emerald-600 font-bold">R$ {closureData.caucaoAvailable?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-neutral-600 border-t border-neutral-200/60 pt-2">
+                      <span>Valor total descontado da caução:</span>
+                      <span className="font-mono text-red-500 font-bold">R$ {amountChargedFromDeposit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    
+                    {closureData.type === 'return' ? (
+                      <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
+                        <span>VALOR A DEVOLVER AO MOTORISTA:</span>
+                        <span className="font-mono text-emerald-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    ) : (
+                      <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
+                        <span>VALOR TOTAL AINDA DEVIDO (Boleto Avulso):</span>
+                        <span className="font-mono text-red-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      </div>
+                    )}
+                  </div>
+                </section>
+
+                {/* 4. CLÁUSULA DE RESPONSABILIDADE FUTURA */}
+                <section className="space-y-3">
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">IV. CLÁUSULA DE RESPONSABILIDADE FUTURA</p>
+                  <p className="text-[10px] text-neutral-600 leading-relaxed text-justify">
+                    O motorista declara ciência e concordância de que a assinatura deste distrato não quita ou extingue a responsabilidade de débitos de natureza superveniente. Assim, <strong>poderão ser incluídos e cobrados débitos adicionais</strong> referentes a: 
+                    (a) multas de trânsito não liquidadas ou notificadas após a devolução, cuja infração tenha ocorrido comprovadamente durante o período de vigência desta locação; 
+                    (b) aluguéis, diárias, juros ou encargos vencidos e não pagos até a presente data de encerramento.
+                  </p>
+                </section>
+
+                {/* 5. ASSINATURAS */}
+                <section className="pt-24 grid grid-cols-2 gap-16 text-center text-[10px] font-sans">
+                  <div className="space-y-2">
+                    <div className="border-t border-neutral-400 pt-2">
+                      <p className="font-bold">{rental.user}</p>
+                      <p className="text-[8px] text-neutral-400 uppercase tracking-tight">CPF: {clientCpf}</p>
+                    </div>
+                    <p className="text-neutral-400 uppercase tracking-widest text-[8px] font-black">Locatário (Motorista)</p>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="border-t border-neutral-400 pt-2">
+                      <p className="font-bold">L.A. LOCAÇÃO E ADMINISTRAÇÃO LTDA</p>
+                      <p className="text-[8px] text-neutral-400 uppercase tracking-tight">Representante Legal</p>
+                    </div>
+                    <p className="text-neutral-400 uppercase tracking-widest text-[8px] font-black">Administradora (Locador)</p>
+                  </div>
+                </section>
+
               </div>
             </div>
           </div>

@@ -177,6 +177,7 @@ const AdminDashboard = ({
       ...rentalForm,
       value: cleanNumeric(rentalForm.value),
       depositTotal: cleanNumeric(rentalForm.depositTotal),
+      depositPaid: cleanNumeric(rentalForm.depositPaid),
       tireTax: cleanNumeric(rentalForm.tireTax),
       vehicleId: selectedVehicle ? selectedVehicle.id : rentalForm.vehicleId,
       date: rentalForm.startDate,
@@ -492,6 +493,7 @@ const AdminDashboard = ({
         <TerminationTermModal 
           inspection={selectedInspection || pendingInspection}
           rental={selectedRental}
+          clients={clients}
           closureData={finalClosureData}
           onClose={() => setShowTerminationTerm(false)}
           onFinalize={async (attachedFile) => {
@@ -507,6 +509,7 @@ const AdminDashboard = ({
               setSelectedRental(prev => ({
                 ...prev,
                 status: 'Encerrado',
+                endDate: new Date().toISOString().split('T')[0],
                 docs: {
                   ...(prev.docs || {}),
                   closureSummary: finalClosureData,

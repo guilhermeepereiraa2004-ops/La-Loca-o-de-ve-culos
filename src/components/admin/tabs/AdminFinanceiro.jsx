@@ -38,10 +38,12 @@ const AdminFinanceiro = ({
     return `${monthNames[parseInt(month) - 1]} / ${year}`;
   };
 
-  // Filter transactions for totals display based on selectedMonth
-  const displayedTransactionsForTotals = transactions.filter(t => 
-    selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth)
-  );
+  // Filter transactions for totals display based on selectedMonth (only company transactions)
+  const displayedTransactionsForTotals = transactions.filter(t => {
+    const matchesMonth = selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth);
+    const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+    return matchesMonth && !isInvestor;
+  });
 
   const totalIn = displayedTransactionsForTotals.filter(t => t.type === 'in').reduce((acc, t) => acc + t.val, 0);
   const totalOut = Math.abs(displayedTransactionsForTotals.filter(t => t.type === 'out').reduce((acc, t) => acc + t.val, 0));
@@ -316,6 +318,7 @@ const AdminFinanceiro = ({
                     <option value="multa">Multa</option>
                     <option value="juros">Juros</option>
                     <option value="taxa de pneus">Taxa de Pneus</option>
+                    <option value="Taxa Gateway / Asaas">Taxa Gateway / Asaas</option>
                     <option value="Outros">Outros</option>
                   </select>
                 </div>

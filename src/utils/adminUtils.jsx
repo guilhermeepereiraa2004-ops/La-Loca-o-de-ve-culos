@@ -8,7 +8,8 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   const monthlyTransactions = transactions.filter(t => {
     const tDate = new Date(t.date);
-    return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear;
+    const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+    return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear && !isInvestor;
   });
 
   const monthlyRevenue = monthlyTransactions
@@ -28,11 +29,14 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
   const utilizationRate = Math.round((activeVehicles / totalVehicles) * 100);
 
   const totalCaucao = rentals.reduce((acc, r) => {
-    const val = parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const val = parseFloat(String(r.depositReceived || r.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
     return acc + val;
   }, 0);
 
-  const saldoAcumulado = transactions.reduce((acc, t) => acc + (t.status === 'Concluído' ? t.val : 0), 0);
+  const saldoAcumulado = transactions.reduce((acc, t) => {
+    const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+    return acc + (t.status === 'Concluído' && !isInvestor ? t.val : 0);
+  }, 0);
   
   const pendingCharges = transactions.filter(t => t.status === 'Pendente').length + 
     rentals.filter(r => r.status === 'Ativo' && r.paymentStatus === 'pendente').length;
@@ -48,7 +52,8 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
     const monthTx = transactions.filter(t => {
       if (!t.date) return false;
       const tDate = new Date(t.date);
-      return tDate.getMonth() === mMonth && tDate.getFullYear() === mYear && t.status === 'Concluído';
+      const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+      return tDate.getMonth() === mMonth && tDate.getFullYear() === mYear && t.status === 'Concluído' && !isInvestor;
     });
 
     const mRev = monthTx.filter(t => t.val > 0).reduce((acc, t) => acc + t.val, 0);
@@ -65,7 +70,8 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
   const date6MonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
   let startingBalance = transactions.filter(t => {
     if (!t.date) return false;
-    return new Date(t.date) < date6MonthsAgo && t.status === 'Concluído';
+    const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+    return new Date(t.date) < date6MonthsAgo && t.status === 'Concluído' && !isInvestor;
   }).reduce((acc, t) => acc + t.val, 0);
 
   chartData.forEach(monthData => {
@@ -121,6 +127,7 @@ export const getDynamicAlerts = (vehicles, maintenances, inspections, clients) =
   });
 
   (vehicles || []).forEach(v => {
+    if (!v.entryDate) return;
     const entryDate = new Date(v.entryDate);
     const monthsSinceEntry = (today.getFullYear() - entryDate.getFullYear()) * 12 + (today.getMonth() - entryDate.getMonth());
     

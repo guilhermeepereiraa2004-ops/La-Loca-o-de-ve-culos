@@ -42,6 +42,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       const val = Math.abs(t.val || 0);
 
       if (t.type === 'in') {
+        if (t.responsible === 'Administradora') return;
         if (cat === 'taxa adm') {
           adminTaxSum += val;
         } else {
@@ -50,6 +51,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
           adminTaxSum += val * taxRate;
         }
       } else if (t.type === 'out') {
+        if (t.responsible === 'Administradora') return;
         if (cat.includes('manuten')) {
           maintenanceSum += val;
         } else if (cat.includes('prote') || cat.includes('veicular')) {
@@ -75,11 +77,12 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
   const totalInvested = myVehicles.reduce((acc, v) => acc + (v.investValue || 0), 0);
 
   // Calcular ganhos e despesas reais do investidor a partir das transações
-  const investorTransactions = transactions.filter(t => 
-    myVehicles.some(v => v.plate === t.vehiclePlate) || 
-    (t.responsible?.toLowerCase().startsWith('investidor:') && t.responsible.split(':')[1]?.trim().toLowerCase() === investor.name?.toLowerCase().trim()) ||
-    (t.responsible?.toLowerCase().trim() === investor.name?.toLowerCase().trim())
-  );
+  const investorTransactions = transactions.filter(t => {
+    if (t.responsible === 'Administradora') return false;
+    return myVehicles.some(v => v.plate === t.vehiclePlate) || 
+      (t.responsible?.toLowerCase().startsWith('investidor:') && t.responsible.split(':')[1]?.trim().toLowerCase() === investor.name?.toLowerCase().trim()) ||
+      (t.responsible?.toLowerCase().trim() === investor.name?.toLowerCase().trim());
+  });
 
   const realInvestorRevenue = investorTransactions
     .filter(t => t.type === 'in')

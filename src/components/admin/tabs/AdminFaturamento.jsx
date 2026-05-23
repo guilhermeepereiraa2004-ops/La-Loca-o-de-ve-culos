@@ -223,22 +223,101 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     const weeklyRate = parseFloat(String(rental.value || 0).replace(/\./g, '').replace(',', '.')) || 0;
     const dailyRate = weeklyRate / 7;
 
-    const activeRC = Array.isArray(replacementContracts)
-      ? replacementContracts.find(rc => rc.mainVehiclePlate === (rental.plate || rental.vehiclePlate) && rc.status === 'Ativo')
-      : null;
+    const dueDateStr = getNextDueDate(rental.startDate || rental.date);
+    if (!dueDateStr) {
+      return { weeklyRate, dailyRate, daysInMaintenance: 0, abatimento: 0, replacementCharge: 0, replacementDays: 0, replacementDailyRate: 0, tireTax: 0, total: weeklyRate, activeRC: null, rcsDetails: [] };
+    }
 
-    const daysInMaintenance = activeRC ? 4 : 0;
-    const replacementDays = activeRC ? 4 : 0;
-    const replacementDailyRate = activeRC ? (activeRC.dailyRate || 80) : 0;
+    const dueDateObj = new Date(dueDateStr + 'T12:00:00');
+    
+    const cycleStartObj = new Date(dueDateObj.getTime());
+    cycleStartObj.setDate(dueDateObj.getDate() - 7);
+    const cycleStartStr = cycleStartObj.toISOString().split('T')[0];
 
-    const abatimento = dailyRate * daysInMaintenance;
-    const replacementCharge = replacementDailyRate * replacementDays;
+    const cycleEndObj = new Date(dueDateObj.getTime());
+    cycleEndObj.setDate(dueDateObj.getDate() - 1);
+    const cycleEndStr = cycleEndObj.toISOString().split('T')[0];
+
+    const getDaysOverlap = (startAStr, endAStr, startBStr, endBStr) => {
+      if (!startAStr || !startBStr || !endBStr) return 0;
+      
+      const dateAStart = new Date(startAStr.split('T')[0] + 'T00:00:00');
+      const dateAEnd = endAStr 
+        ? new Date(endAStr.split('T')[0] + 'T23:59:59') 
+        : new Date('2099-12-31T23:59:59');
+      
+      const dateBStart = new Date(startBStr + 'T00:00:00');
+      const dateBEnd = new Date(endBStr + 'T23:59:59');
+      
+      const overlapStart = new Date(Math.max(dateAStart.getTime(), dateBStart.getTime()));
+      const overlapEnd = new Date(Math.min(dateAEnd.getTime(), dateBEnd.getTime()));
+      
+      if (overlapStart > overlapEnd) {
+        return 0;
+      }
+      
+      const diffTime = overlapEnd.getTime() - overlapStart.getTime();
+      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    };
+
+    const rentalPlate = rental.plate || rental.vehiclePlate;
+    const rentalDriver = rental.user || rental.userName;
+
+    const matchedRCs = Array.isArray(replacementContracts)
+      ? replacementContracts.filter(rc => 
+          (rc.mainVehiclePlate && rentalPlate && rc.mainVehiclePlate.toLowerCase() === rentalPlate.toLowerCase()) ||
+          (rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase())
+        )
+      : [];
+
+    let totalDaysInMaintenance = 0;
+    let totalReplacementCharge = 0;
+    let rcsDetails = [];
+
+    matchedRCs.forEach(rc => {
+      const overlapDays = getDaysOverlap(rc.startDate, rc.endDate, cycleStartStr, cycleEndStr);
+      if (overlapDays > 0) {
+        totalDaysInMaintenance += overlapDays;
+        const rate = parseFloat(rc.dailyRate) || 80;
+        totalReplacementCharge += rate * overlapDays;
+        
+        rcsDetails.push({
+          plate: rc.replacementVehiclePlate,
+          days: overlapDays,
+          rate,
+          total: rate * overlapDays,
+          status: rc.status
+        });
+      }
+    });
+
+    if (totalDaysInMaintenance > 7) {
+      totalDaysInMaintenance = 7;
+    }
+
+    const abatimento = dailyRate * totalDaysInMaintenance;
     const tireTax = parseFloat(String(rental.tireTax || 0).replace(/\./g, '').replace(',', '.')) || 0;
     const lateFeeVal = parseFloat(lateFees[rental.id] || 0);
-    const baseTotal = (weeklyRate - abatimento) + replacementCharge + tireTax;
+    const baseTotal = (weeklyRate - abatimento) + totalReplacementCharge + tireTax;
     const total = baseTotal + lateFeeVal;
 
-    return { weeklyRate, dailyRate, daysInMaintenance, abatimento, replacementCharge, replacementDays, replacementDailyRate, tireTax, total, activeRC };
+    const activeRC = matchedRCs.find(rc => rc.status === 'Ativo') || null;
+
+    return { 
+      weeklyRate, 
+      dailyRate, 
+      daysInMaintenance: totalDaysInMaintenance, 
+      abatimento, 
+      replacementCharge: totalReplacementCharge, 
+      replacementDays: totalDaysInMaintenance, 
+      replacementDailyRate: activeRC ? (activeRC.dailyRate || 80) : 0, 
+      tireTax, 
+      total, 
+      activeRC,
+      cycleStart: cycleStartStr,
+      cycleEnd: cycleEndStr,
+      rcsDetails
+    };
   };
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
@@ -389,22 +468,29 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                       </div>
 
                       {/* Carro Reserva */}
-                      <div className={`p-6 rounded-[2rem] border transition-all ${calc.activeRC ? 'bg-neutral-950 text-white' : 'bg-neutral-50 border-neutral-50 opacity-40'}`}>
+                      <div className={`p-6 rounded-[2rem] border transition-all ${calc.replacementCharge > 0 ? 'bg-neutral-950 text-white' : 'bg-neutral-50 border-neutral-50 opacity-40'}`}>
                         <div className="flex justify-between items-center mb-6">
-                          <p className={`text-[9px] font-black uppercase tracking-widest ${calc.activeRC ? 'text-[#C5A059]' : 'text-neutral-400'}`}>Carro Reserva</p>
+                          <p className={`text-[9px] font-black uppercase tracking-widest ${calc.replacementCharge > 0 ? 'text-[#C5A059]' : 'text-neutral-400'}`}>Carro Reserva</p>
                           {calc.activeRC && <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-pulse" />}
                         </div>
-                        {calc.activeRC ? (
+                        {calc.replacementCharge > 0 ? (
                           <div className="space-y-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-neutral-800 rounded-xl flex items-center justify-center text-[#C5A059]"><Car size={20} /></div>
-                              <div>
-                                <p className="text-sm font-black uppercase tracking-tighter">{calc.activeRC.replacementVehiclePlate}</p>
-                                <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-widest">{calc.replacementDays} diárias</p>
+                            {calc.rcsDetails.map((rc, idx) => (
+                              <div key={idx} className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 bg-neutral-800 rounded-lg flex items-center justify-center text-[#C5A059]"><Car size={16} /></div>
+                                  <div>
+                                    <p className="text-xs font-black uppercase tracking-tighter">{rc.plate}</p>
+                                    <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-widest">
+                                      {rc.days} diárias × R$ {rc.rate} {rc.status === 'Encerrado' && '(Finalizado)'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="text-xs font-bold text-neutral-400">+ R$ {rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                               </div>
-                            </div>
+                            ))}
                             <div className="flex justify-between items-center pt-4 border-t border-neutral-800">
-                              <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Adicional</span>
+                              <span className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest">Total Adicional</span>
                               <span className="text-base font-black text-[#C5A059]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                             </div>
                           </div>

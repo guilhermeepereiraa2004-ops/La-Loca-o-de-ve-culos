@@ -1,0 +1,55 @@
+/* Scroll-triggered reveal animations */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1), transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
+
+/* Hero parallax shimmer */
+@keyframes heroShimmer {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+}
+.hero-shimmer {
+  animation: heroShimmer 4s ease-in-out infinite;
+}
+
+/* Floating scroll indicator */
+@keyframes floatDown {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(8px); opacity: 0.8; }
+}
+.float-down {
+  animation: floatDown 2.5s ease-in-out infinite;
+}
+
+/* Gradient text shine */
+@keyframes textShine {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+.text-shine {
+  background: linear-gradient(90deg, #C5A059 0%, #e8d5a8 25%, #C5A059 50%, #e8d5a8 75%, #C5A059 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textShine 6s linear infinite;
+}
+
+/* Smooth line grow */
+@keyframes lineGrow {
+  from { width: 0; }
+  to { width: 100%; }
+}
+.line-grow {
+  animation: lineGrow 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

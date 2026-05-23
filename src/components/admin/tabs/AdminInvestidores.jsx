@@ -58,7 +58,10 @@ const AdminInvestidores = ({
              monthlyNet[monthKey] -= (val * taxRate);
           }
         } else if (t.type === 'out') {
-           monthlyNet[monthKey] -= val;
+           const isRespInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+           if (isRespInvestor) {
+             monthlyNet[monthKey] -= val;
+           }
         }
       } catch (e) {}
     });
@@ -349,6 +352,63 @@ const AdminInvestidores = ({
                           <span>Veículos Associados:</span>
                           <span className="font-black text-neutral-950">{invVehs.length} ativo(s)</span>
                         </div>
+
+                        {invVehs.length > 0 && (
+                          <div className="space-y-1 bg-neutral-50 p-3 rounded-2xl border border-neutral-100 text-[10px]">
+                            <p className="font-black text-neutral-400 uppercase tracking-widest text-[8px] mb-1">Veículos & Taxas ADM</p>
+                            {invVehs.map(v => (
+                              <div key={v.id} className="flex justify-between text-neutral-600 font-medium">
+                                <span>{v.model} ({v.plate})</span>
+                                <span className="font-black text-neutral-900">Taxa: {v.adminTax || 15}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2">
+                          <span>Seguro Franquia Total (Fixo):</span>
+                          <span className="font-mono text-neutral-900 font-black">
+                            R$ {(39.90 * invVehs.length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+
+                        {(() => {
+                          const now = new Date();
+                          const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                          const currentPayoutRecord = (payoutHistory[investor.id] || []).find(p => p.reference_month === currentMonthKey);
+                          
+                          const getFifthBusinessDay = (date = new Date()) => {
+                            const year = date.getFullYear();
+                            const month = date.getMonth();
+                            let count = 0;
+                            let day = 1;
+                            while (count < 5) {
+                              const d = new Date(year, month, day);
+                              const dayOfWeek = d.getDay();
+                              if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+                              if (count < 5) day++;
+                            }
+                            return new Date(year, month, day);
+                          };
+                          const forecastDate = getFifthBusinessDay(now).toLocaleDateString('pt-BR');
+
+                          return (
+                            <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2 pt-3 border-t border-neutral-50">
+                              <span>Status do Repasse Mês Atual:</span>
+                              <div className="text-right">
+                                <span className={`inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${currentPayoutRecord ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                                  {currentPayoutRecord ? 'Pago' : 'Pendente'}
+                                </span>
+                                <p className="text-[8px] text-neutral-400 mt-1 font-bold">
+                                  {currentPayoutRecord 
+                                    ? `Pago em: ${new Date(currentPayoutRecord.paid_at).toLocaleDateString('pt-BR')}`
+                                    : `Previsão: ${forecastDate}`
+                                  }
+                                </p>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Botão registrar repasse ou Quitar Débito */}
                         {payout > 0 ? (

@@ -141,14 +141,21 @@ export const useAppState = () => {
 
     return data.map(item => {
       const newItem = {};
+      
+      // Pass 1: explicit mappings take priority
       for (const key in item) {
-        // First check explicit mapping
         if (reverseMap[key]) {
           newItem[reverseMap[key]] = item[key];
-        } else {
-          // Fallback to auto camelCase
+        }
+      }
+      
+      // Pass 2: fallback to auto camelCase only if key is not already defined
+      for (const key in item) {
+        if (!reverseMap[key]) {
           const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-          newItem[camelKey] = item[key];
+          if (newItem[camelKey] === undefined) {
+            newItem[camelKey] = item[key];
+          }
         }
       }
 
@@ -843,17 +850,104 @@ export const useAppState = () => {
 
   const handleAddMaintenance = async (maintenance) => {
     const { data, error } = await supabase.from('maintenances').insert([mapToSnake(maintenance)]).select();
-    if (!error && data) setMaintenances(prev => [mapToCamel(data)[0], ...prev]);
+    if (!error && data && data.length > 0) {
+      const inserted = mapToCamel(data)[0];
+      setMaintenances(prev => [inserted, ...prev]);
+
+      // Sincronizar com o financeiro (lançamento automático)
+      try {
+        const vehicle = vehicles.find(v => v.plate === maintenance.vehiclePlate);
+        const investorName = vehicle?.investor;
+        const responsibleStr = maintenance.responsible === 'Investidor' 
+          ? (investorName ? `Investidor: ${investorName}` : 'Investidor') 
+          : 'Administradora';
+        const rawVal = parseFloat(String(maintenance.value).replace(/\./g, '').replace(',', '.')) || 0;
+
+        const newTrans = {
+          type: 'out',
+          val: -Math.abs(rawVal),
+          cat: 'Manutenção',
+          desc: `[Manutenção #${inserted.id}] ${maintenance.serviceType}`,
+          date: maintenance.date || new Date().toISOString().split('T')[0],
+          vehiclePlate: maintenance.vehiclePlate,
+          responsible: responsibleStr,
+          status: 'Concluído'
+        };
+
+        const { data: tData, error: tError } = await supabase.from('transactions').insert([mapToSnake(newTrans, 'transactions')]).select();
+        if (!tError && tData) {
+          setTransactions(prev => [mapToCamel(tData, 'transactions')[0], ...prev]);
+        }
+      } catch (txErr) {
+        console.error("Erro ao sincronizar transação de manutenção:", txErr);
+      }
+    }
   };
 
   const handleUpdateMaintenance = async (updatedMaintenance) => {
     const { error } = await supabase.from('maintenances').update(mapToSnake(updatedMaintenance)).eq('id', updatedMaintenance.id);
-    if (!error) setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? updatedMaintenance : m));
+    if (!error) {
+      setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? updatedMaintenance : m));
+
+      // Sincronizar transação existente ou criar uma nova se não existir
+      try {
+        const descSearch = `[Manutenção #${updatedMaintenance.id}]`;
+        const existingTx = transactions.find(t => t.desc && t.desc.startsWith(descSearch));
+
+        const vehicle = vehicles.find(v => v.plate === updatedMaintenance.vehiclePlate);
+        const investorName = vehicle?.investor;
+        const responsibleStr = updatedMaintenance.responsible === 'Investidor' 
+          ? (investorName ? `Investidor: ${investorName}` : 'Investidor') 
+          : 'Administradora';
+        const rawVal = parseFloat(String(updatedMaintenance.value).replace(/\./g, '').replace(',', '.')) || 0;
+
+        const txData = {
+          type: 'out',
+          val: -Math.abs(rawVal),
+          cat: 'Manutenção',
+          desc: `${descSearch} ${updatedMaintenance.serviceType}`,
+          date: updatedMaintenance.date || new Date().toISOString().split('T')[0],
+          vehiclePlate: updatedMaintenance.vehiclePlate,
+          responsible: responsibleStr,
+          status: 'Concluído'
+        };
+
+        if (existingTx) {
+          const { error: tError } = await supabase.from('transactions').update(mapToSnake(txData, 'transactions')).eq('id', existingTx.id);
+          if (!tError) {
+            setTransactions(prev => prev.map(t => t.id === existingTx.id ? { ...t, ...txData } : t));
+          }
+        } else {
+          const { data: tData, error: tError } = await supabase.from('transactions').insert([mapToSnake(txData, 'transactions')]).select();
+          if (!tError && tData) {
+            setTransactions(prev => [mapToCamel(tData, 'transactions')[0], ...prev]);
+          }
+        }
+      } catch (txErr) {
+        console.error("Erro ao atualizar transação de manutenção:", txErr);
+      }
+    }
   };
 
   const handleDeleteMaintenance = async (id) => {
     const { error } = await supabase.from('maintenances').delete().eq('id', id);
-    if (!error) setMaintenances(prev => prev.filter(m => m.id !== id));
+    if (!error) {
+      setMaintenances(prev => prev.filter(m => m.id !== id));
+
+      // Deletar transação correspondente no financeiro
+      try {
+        const descSearch = `[Manutenção #${id}]`;
+        const existingTx = transactions.find(t => t.desc && t.desc.startsWith(descSearch));
+        if (existingTx) {
+          const { error: tError } = await supabase.from('transactions').delete().eq('id', existingTx.id);
+          if (!tError) {
+            setTransactions(prev => prev.filter(t => t.id !== existingTx.id));
+          }
+        }
+      } catch (txErr) {
+        console.error("Erro ao deletar transação de manutenção:", txErr);
+      }
+    }
   };
 
   const handleCompleteClosure = async (rentalId, closureData, attachedFile) => {
@@ -1000,11 +1094,114 @@ export const useAppState = () => {
 
     const vehicle = vehicles.find(v => v.id === rental.vehicleId);
     const adminTaxPercent = parseFloat(vehicle?.adminTax || 15) / 100;
-    const adminRevenue = (billingData.weeklyRate || 0) * adminTaxPercent;
     
+    // Calcula o aluguel efetivo (com abatimento e carro reserva)
+    const effectiveRent = (billingData.weeklyRate || 0) - (billingData.abatimento || 0) + (billingData.replacementCharge || 0);
+    const adminRevenue = effectiveRent * adminTaxPercent;
+    
+    // Busca a taxa do gateway (Pix ou Boleto) na tabela asaas_payments
+    let fee = 0;
+    let methodLabel = '';
+    try {
+      const { data: payData } = await supabase
+        .from('asaas_payments')
+        .select('billing_type')
+        .eq('rental_id', String(rentalId))
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (payData && payData.length > 0) {
+        const bType = payData[0].billing_type?.toUpperCase();
+        if (bType === 'PIX') {
+          fee = 0.99;
+          methodLabel = 'PIX';
+        } else if (bType === 'BOLETO') {
+          fee = 1.99;
+          methodLabel = 'Boleto';
+        }
+      } else {
+        // Fallback padrão se não houver registro gerado
+        fee = 0.99;
+        methodLabel = 'PIX';
+      }
+    } catch (e) {
+      console.warn("Erro ao ler asaas_payments:", e);
+      fee = 0.99;
+      methodLabel = 'PIX';
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
     const trans = [];
-    if (adminRevenue > 0) trans.push({ date: new Date().toISOString().split('T')[0], type: 'in', val: adminRevenue, desc: `Taxa Adm - ${rental.user}`, cat: 'Taxa Adm', vehiclePlate: rental.plate, status: 'pago', responsible: 'Administradora' });
-    if (billingData.lateFee > 0) trans.push({ date: new Date().toISOString().split('T')[0], type: 'in', val: billingData.lateFee, desc: `Multa - ${rental.user}`, cat: 'Multas', vehiclePlate: rental.plate, status: 'pago', responsible: 'Administradora' });
+
+    // 1. Pagamento de Aluguel (Entrada - base do investidor)
+    if (effectiveRent > 0) {
+      trans.push({
+        date: todayStr,
+        type: 'in',
+        val: effectiveRent,
+        desc: `Pagamento Aluguel - ${rental.user}`,
+        cat: 'Aluguel',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: ''
+      });
+    }
+
+    // 2. Taxa de Administração (Entrada - Empresa)
+    if (adminRevenue > 0) {
+      trans.push({
+        date: todayStr,
+        type: 'in',
+        val: adminRevenue,
+        desc: `Taxa Adm - ${rental.user}`,
+        cat: 'Taxa Adm',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 3. Taxa de Pneus (Entrada - Empresa)
+    if (billingData.tireTax > 0) {
+      trans.push({
+        date: todayStr,
+        type: 'in',
+        val: billingData.tireTax,
+        desc: `Taxa de Pneus - ${rental.user}`,
+        cat: 'taxa de pneus',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 4. Multas / Juros (Entrada - Empresa)
+    if (billingData.lateFee > 0) {
+      trans.push({
+        date: todayStr,
+        type: 'in',
+        val: billingData.lateFee,
+        desc: `Multa por atraso - ${rental.user}`,
+        cat: 'multa',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 5. Custo da Taxa do Gateway (Saída - Custo Administradora)
+    if (fee > 0) {
+      trans.push({
+        date: todayStr,
+        type: 'out',
+        val: -fee,
+        desc: `Taxa Asaas - ${methodLabel} ${rental.user}`,
+        cat: 'Taxa Gateway / Asaas',
+        vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
 
     if (trans.length > 0) {
       const { data, error } = await supabase.from('transactions').insert(trans.map(t => mapToSnake(t, 'transactions'))).select();

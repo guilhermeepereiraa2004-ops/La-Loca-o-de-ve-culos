@@ -77,6 +77,7 @@ const FinanceFormModal = ({
                 <option value="Multas">Multas</option>
                 <option value="Seguro">Seguro</option>
                 <option value="Taxa Pneus">Taxa Pneus</option>
+                <option value="Taxa Gateway / Asaas">Taxa Gateway / Asaas</option>
                 <option value="Outros">Outros</option>
               </select>
             </div>

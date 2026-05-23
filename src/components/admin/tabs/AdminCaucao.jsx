@@ -13,16 +13,16 @@ const AdminCaucao = ({
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
-  const totalCustodia = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+  const totalCustodia = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositReceived || r.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
   const totalReceber = safeRentals.reduce((acc, r) => {
     const total = parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-    const received = parseFloat(String(r.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const received = parseFloat(String(r.depositReceived || r.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
     return acc + (total - received);
   }, 0);
   const totalContratado = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
 
-  const filteredRentals = safeRentals.filter(r => 
-    (r.userName || r.user || '').toLowerCase().includes(search.toLowerCase()) || 
+  const filteredRentals = safeRentals.filter(r =>
+    (r.userName || r.user || '').toLowerCase().includes(search.toLowerCase()) ||
     (r.plate || r.vehiclePlate || '').toLowerCase().includes(search.toLowerCase())
   );
 
@@ -115,7 +115,7 @@ const AdminCaucao = ({
             <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black">Detalhamento Financeiro</h5>
             <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-widest">Controle individual de garantias contratuais</p>
           </div>
-          
+
           <div className="relative w-full lg:w-96 group">
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
             <input
@@ -145,7 +145,7 @@ const AdminCaucao = ({
               {filteredRentals.length > 0 ? (
                 filteredRentals.map((rental) => {
                   const total = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-                  const received = parseFloat(String(rental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                  const received = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
                   const remaining = total - received;
 
                   // Calculate Next Due Date
@@ -153,12 +153,12 @@ const AdminCaucao = ({
                   const startDate = rental.date || rental.startDate ? new Date((rental.date || rental.startDate) + 'T12:00:00') : new Date();
                   const nextDueDate = new Date(startDate.getTime());
                   nextDueDate.setDate(startDate.getDate() + (paidCount * 7));
-                  
+
                   const today = new Date();
                   today.setHours(12, 0, 0, 0);
                   const isDueToday = nextDueDate.toDateString() === today.toDateString();
                   const isOverdue = nextDueDate < today && remaining > 0;
-                  
+
                   return (
                     <tr key={rental.id} className="group transition-all duration-500">
                       {/* Conductor Column */}
@@ -184,16 +184,14 @@ const AdminCaucao = ({
                       {/* Due Date Column */}
                       <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1.5">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl border transition-all ${
-                            isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
-                            'bg-neutral-50 text-neutral-900 border-neutral-100'
-                          }`}>
+                          <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl border transition-all ${isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
+                              'bg-neutral-50 text-neutral-900 border-neutral-100'
+                            }`}>
                             {rental.paymentDay || '---'}
                           </span>
                           {remaining > 0 && (
-                            <span className={`text-[8px] font-black uppercase tracking-tighter ${
-                              isDueToday || isOverdue ? 'text-red-500' : 'text-neutral-400'
-                            }`}>
+                            <span className={`text-[8px] font-black uppercase tracking-tighter ${isDueToday || isOverdue ? 'text-red-500' : 'text-neutral-400'
+                              }`}>
                               {nextDueDate.toLocaleDateString('pt-BR')}
                             </span>
                           )}
@@ -311,7 +309,11 @@ const AdminCaucao = ({
                         const installmentNum = i + 1;
                         const isPaid = (selectedRental.paidInstallments || []).includes(installmentNum);
                         const total = parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-                        const valuePerInstallment = total / (selectedRental.depositInstallments || 1);
+                        const received = parseFloat(String(selectedRental.depositReceived || selectedRental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                        const paidCount = (selectedRental.paidInstallments || []).length;
+                        const totalInstallments = parseInt(selectedRental.depositInstallments) || 1;
+                        const remainingInstallments = Math.max(1, totalInstallments - paidCount);
+                        const valuePerInstallment = Math.max(0, total - received) / remainingInstallments;
 
                         return (
                           <button
@@ -323,8 +325,8 @@ const AdminCaucao = ({
                                 value: valuePerInstallment
                               });
                             }}
-                            className={`p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-2 group ${isPaid 
-                              ? 'bg-emerald-50 border-emerald-100 opacity-50 cursor-not-allowed' 
+                            className={`p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-2 group ${isPaid
+                              ? 'bg-emerald-50 border-emerald-100 opacity-50 cursor-not-allowed'
                               : 'bg-white border-neutral-100 hover:border-[#C5A059] hover:shadow-2xl hover:scale-105 active:scale-95'}`}
                           >
                             <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isPaid ? 'text-emerald-600' : 'text-neutral-400 group-hover:text-[#C5A059]'}`}>
@@ -347,7 +349,7 @@ const AdminCaucao = ({
                     <ShieldCheck size={48} className="text-emerald-500 mx-auto mb-6" />
                     <h5 className="text-2xl font-black text-emerald-900 tracking-tighter mb-2">Confirma o pagamento?</h5>
                     <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-8">Dossiê de Liquidação Parcial</p>
-                    
+
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 mb-6">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Valor da Parcela {pendingInstallment.number}</p>
                       <p className="text-3xl font-black text-neutral-900">R$ {pendingInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
@@ -363,8 +365,8 @@ const AdminCaucao = ({
                         <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Saldo Final</p>
                         <p className="text-sm font-black text-emerald-900">
                           R$ {(
-                            (parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0) - 
-                            (parseFloat(String(selectedRental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0) - 
+                            (parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0) -
+                            (parseFloat(String(selectedRental.depositReceived || selectedRental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0) -
                             pendingInstallment.value
                           ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </p>
@@ -395,7 +397,7 @@ const AdminCaucao = ({
             </div>
 
             <div className="p-8 bg-neutral-50/50 flex justify-center border-t border-neutral-100">
-               <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-[0.2em]">Liquidando garantia contratual de {selectedRental.userName || selectedRental.user}</p>
+              <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-[0.2em]">Liquidando garantia contratual de {selectedRental.userName || selectedRental.user}</p>
             </div>
           </div>
         </div>

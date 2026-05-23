@@ -49,7 +49,7 @@ const RentalDetailModal = ({
 
   const dates = useMemo(() => {
     const startStr = rental.startDate || rental.date;
-    if (!startStr) return { start: '---', end: '---', remaining: 0, progress: 0, totalDays: 0, weekday: '' };
+    if (!startStr) return { start: '---', end: '---', remaining: 0, progress: 0, totalDays: 0, weekday: '', isClosed: false };
     
     try {
       const startDate = new Date(startStr + 'T12:00:00');
@@ -65,17 +65,30 @@ const RentalDetailModal = ({
       
       const elapsedDays = Math.max(0, Math.min(totalDays, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))));
       const progress = totalDays > 0 ? (elapsedDays / totalDays) * 100 : 0;
+
+      const isClosed = rental.status === 'Encerrado';
+      let endToShow = endDate.toLocaleDateString('pt-BR');
+      
+      if (isClosed && rental.endDate) {
+        try {
+          const actualEndDate = new Date(rental.endDate + 'T12:00:00');
+          endToShow = actualEndDate.toLocaleDateString('pt-BR');
+        } catch (e) {
+          // fallback to predicted end
+        }
+      }
       
       return {
         start: startDate.toLocaleDateString('pt-BR'),
-        end: endDate.toLocaleDateString('pt-BR'),
-        remaining: diffDays > 0 ? diffDays : 0,
-        progress,
+        end: endToShow,
+        remaining: isClosed ? 0 : (diffDays > 0 ? diffDays : 0),
+        progress: isClosed ? 100 : progress,
         totalDays,
-        weekday: getDayOfWeek(startStr)
+        weekday: getDayOfWeek(startStr),
+        isClosed
       };
     } catch (e) {
-      return { start: '---', end: '---', remaining: 0, progress: 0, totalDays: 0, weekday: '' };
+      return { start: '---', end: '---', remaining: 0, progress: 0, totalDays: 0, weekday: '', isClosed: false };
     }
   }, [rental]);
 
@@ -157,9 +170,13 @@ const RentalDetailModal = ({
                 <p className="text-[9px] font-bold text-neutral-400 uppercase">{dates.weekday}</p>
               </div>
               <div className="space-y-1 border-l-2 border-neutral-100 pl-6">
-                <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">Término Previsto</p>
+                <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">
+                  {dates.isClosed ? 'Término' : 'Término Previsto'}
+                </p>
                 <p className="text-lg font-black text-neutral-900 tracking-tight">{dates.end}</p>
-                <p className="text-[9px] font-bold text-emerald-500 uppercase">Faltam {dates.remaining} dias</p>
+                <p className={`text-[9px] font-bold uppercase ${dates.isClosed ? 'text-neutral-500' : 'text-emerald-500'}`}>
+                  {dates.isClosed ? 'Contrato Encerrado' : `Faltam ${dates.remaining} dias`}
+                </p>
               </div>
               <div className="space-y-1 border-l-2 border-neutral-100 pl-6">
                 <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">Duração</p>
@@ -177,14 +194,18 @@ const RentalDetailModal = ({
             <div className="mt-10">
               <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden flex p-1 border border-neutral-100">
                 <div 
-                  className="h-full bg-gradient-to-r from-neutral-900 to-[#C5A059] rounded-full shadow-lg transition-all duration-1000"
+                  className={`h-full rounded-full shadow-lg transition-all duration-1000 ${
+                    dates.isClosed 
+                      ? 'bg-neutral-900' 
+                      : 'bg-gradient-to-r from-neutral-900 to-[#C5A059]'
+                  }`}
                   style={{ width: `${dates.progress}%` }}
                 />
               </div>
               <div className="flex justify-between mt-3 text-[8px] font-black uppercase tracking-widest text-neutral-400 px-1">
                 <span>Contrato Iniciado</span>
-                <span>{Math.round(dates.progress)}% concluído</span>
-                <span>Encerramento</span>
+                <span>{dates.isClosed ? '100% Finalizado' : `${Math.round(dates.progress)}% concluído`}</span>
+                <span>{dates.isClosed ? 'Rescindido' : 'Encerramento'}</span>
               </div>
             </div>
           </section>

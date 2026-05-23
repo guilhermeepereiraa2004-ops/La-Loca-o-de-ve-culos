@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2, Calendar } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getPublicUrl } from '../../../utils/supabaseStorage';
 
@@ -19,11 +19,37 @@ const AdminLocacoes = ({
   onGoToVistorias,
   setRentalForm
 }) => {
+  const [searchTerm, setSearchTerm] = React.useState('');
+  const [dateStart, setDateStart] = React.useState('');
+  const [dateEnd, setDateEnd] = React.useState('');
+
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
   const filteredRentals = safeRentals.filter(rental => {
     try {
-      const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
+      const rawDate = rental.startDate || rental.date;
+
+      // 1. Search term filter
+      if (searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const condutor = (rental.userName || rental.user || '').toLowerCase();
+        const placa = (rental.vehiclePlate || rental.plate || '').toLowerCase();
+        const modelo = (rental.vehicleModel || rental.vehicle || '').toLowerCase();
+        if (!condutor.includes(term) && !placa.includes(term) && !modelo.includes(term)) {
+          return false;
+        }
+      }
+
+      // 2. Date range filter - shows all matching regardless of status
+      if (dateStart || dateEnd) {
+        if (!rawDate) return false;
+        if (dateStart && rawDate < dateStart) return false;
+        if (dateEnd && rawDate > dateEnd) return false;
+        return true;
+      }
+
+      // 3. Status filter (applied only if no date filter is active)
+      if (!rawDate) return true;
       const startDate = new Date(rawDate + 'T12:00:00');
       if (isNaN(startDate.getTime())) return true;
 
@@ -192,9 +218,50 @@ const AdminLocacoes = ({
             <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
             <input
               type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Pesquisar por condutor ou placa..."
               className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
             />
+          </div>
+        </div>
+
+        {/* Date Range Filter Bar */}
+        <div className="px-12 py-6 bg-neutral-50/50 border-b border-neutral-50 flex flex-col sm:flex-row items-center gap-6">
+          <div className="flex items-center gap-3">
+            <Calendar size={16} className="text-[#C5A059]" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Filtrar por Período (Início):</span>
+          </div>
+          <div className="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-neutral-200/80 shadow-sm">
+              <span className="text-[9px] font-black uppercase text-neutral-400">De</span>
+              <input
+                type="date"
+                value={dateStart}
+                onChange={(e) => setDateStart(e.target.value)}
+                className="text-xs font-bold text-neutral-800 outline-none bg-transparent"
+              />
+            </div>
+            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-neutral-200/80 shadow-sm">
+              <span className="text-[9px] font-black uppercase text-neutral-400">Até</span>
+              <input
+                type="date"
+                value={dateEnd}
+                onChange={(e) => setDateEnd(e.target.value)}
+                className="text-xs font-bold text-neutral-800 outline-none bg-transparent"
+              />
+            </div>
+            {(dateStart || dateEnd) && (
+              <button
+                onClick={() => {
+                  setDateStart('');
+                  setDateEnd('');
+                }}
+                className="px-4 py-2.5 bg-neutral-900 text-white hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-colors shadow-sm"
+              >
+                Limpar Período
+              </button>
+            )}
           </div>
         </div>
         <div className="overflow-x-auto overflow-y-hidden">

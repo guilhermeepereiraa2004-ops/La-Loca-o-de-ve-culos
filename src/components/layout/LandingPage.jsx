@@ -1,421 +1,360 @@
-import React from 'react';
-import { ChevronDown, ChevronRight, Car, ShieldCheck, Wrench, TrendingUp, Phone, Instagram, Facebook, Check } from 'lucide-react';
-import { EditorialLabel } from '../ui/EditorialLabel';
+import React, { useEffect, useRef } from 'react';
+import { ChevronRight, ChevronDown, Car, ShieldCheck, Wrench, TrendingUp, Phone, Instagram, Facebook, Check, ArrowRight, MapPin } from 'lucide-react';
+import '../../styles/landing-animations.css';
 
+/* ── Scroll-reveal hook ─────────────────────────────────────── */
+const useReveal = () => {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { el.classList.add('visible'); obs.unobserve(el); } },
+      { threshold: 0.15 }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+};
+
+const Reveal = ({ children, className = '', delay = '' }) => {
+  const ref = useReveal();
+  return <div ref={ref} className={`reveal ${delay} ${className}`}>{children}</div>;
+};
+
+/* ── Section Label ──────────────────────────────────────────── */
+const Label = ({ children, light }) => (
+  <div className={`flex items-center gap-3 mb-6 ${light ? 'text-white/40' : 'text-neutral-300'}`}>
+    <div className={`w-8 h-px ${light ? 'bg-white/20' : 'bg-[#C5A059]'}`} />
+    <span className="text-[10px] uppercase tracking-[0.35em] font-semibold">{children}</span>
+  </div>
+);
+
+/* ══════════════════════════════════════════════════════════════ */
 const LandingPage = ({ vehicles, onSetView, onInterest }) => {
   return (
     <>
-      {/* Hero */}
-      <section className="min-h-screen relative overflow-hidden flex items-center justify-center pt-20">
-        {/* Background Layer */}
-        <div
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
-          style={{ backgroundImage: "url('/hero-bg-new.png')" }}
-        />
-        <div className="absolute inset-0 bg-neutral-950/70" />
-        <div className="absolute inset-0 bg-gradient-to-b from-neutral-950/50 via-transparent to-neutral-950" />
-        
-        {/* Decorative Elements */}
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-neutral-950 to-transparent z-10" />
-        
-        <div className="relative z-20 w-full max-w-6xl mx-auto px-6 md:px-12 py-20 flex flex-col items-center text-center">
-          {/* Main Heading */}
-          <div className="max-w-4xl mb-8 animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-200">
-            <h1 className="font-black uppercase tracking-tighter leading-[0.85] text-white">
-              <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-8xl mb-2">LA</span>
-              <span className="block text-5xl sm:text-6xl md:text-8xl lg:text-9xl text-[#C5A059]" style={{ textShadow: '0 0 60px rgba(197,160,89,0.2)' }}>
-                LOCAÇÃO
-              </span>
-            </h1>
-          </div>
+      {/* ═══ HERO ═══════════════════════════════════════════════ */}
+      <section className="min-h-screen relative overflow-hidden flex items-end pb-20 md:pb-28 pt-32">
+        <div className="absolute inset-0 bg-cover bg-center bg-no-repeat scale-110" style={{ backgroundImage: "url('/hero-bg-new.png')" }} />
+        <div className="absolute inset-0 bg-neutral-950/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-950/20 to-transparent" />
+        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-neutral-950/80 to-transparent" />
 
-          {/* Separator */}
-          <div className="w-16 h-[1px] bg-[#C5A059]/40 mb-10" />
-
-          {/* Description */}
-          <div className="max-w-xl mb-14 animate-in fade-in slide-in-from-bottom-6 duration-1000 delay-400">
-            <p className="text-neutral-300 font-light text-base md:text-xl leading-relaxed">
-              Gestão de frota inteligente e locação premium em Aracaju. 
-              <span className="block mt-2 text-[#C5A059]/80 font-medium italic">Sua jornada começa com o melhor padrão de qualidade.</span>
-            </p>
-          </div>
-
-          {/* CTAs */}
-          <div className="flex flex-col sm:flex-row gap-4 md:gap-6 items-center w-full sm:w-auto animate-in fade-in slide-in-from-bottom-8 duration-1000 delay-600">
-            <button
-              onClick={() => {
-                onSetView('fleet');
-                window.scrollTo(0, 0);
-              }}
-              className="group relative w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full overflow-hidden transition-all shadow-2xl shadow-[#C5A059]/30 hover:scale-105 active:scale-95"
-            >
-              <span className="relative z-10">Alugar Agora</span>
-              <div className="absolute inset-0 bg-white translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-            </button>
-            
-            <button
-              onClick={() => {
-                onSetView('fleet');
-                window.scrollTo(0, 0);
-              }}
-              className="w-full sm:w-auto px-8 md:px-12 py-4 md:py-5 bg-white/5 backdrop-blur-md text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white/10 transition-all border border-white/20 hover:border-white/40 shadow-xl"
-            >
-              Conhecer Frota
-            </button>
-          </div>
-
-          {/* Scroll Indicator */}
-          <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 animate-in fade-in slide-in-from-bottom-10 duration-1000 delay-1000 opacity-40">
-            <div className="w-[1px] h-12 bg-gradient-to-b from-[#C5A059] to-transparent" />
-          </div>
-        </div>
-      </section>
-
-      {/* Sobre Nós */}
-      <section id="sobre" className="py-32 bg-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
-            {/* Image Side */}
-            <div className="flex-1 w-full relative">
-              <div className="relative z-10 aspect-[4/5] rounded-[3rem] overflow-hidden shadow-2xl">
-                <img 
-                  src="/la-inauguracao-14.jpg" 
-                  alt="Inauguração LA Locação" 
-                  className="w-full h-full object-cover transition-transform duration-[2000ms] hover:scale-105"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/40 to-transparent" />
-              </div>
-              
-              {/* Decorative background box */}
-              <div className="absolute -bottom-8 -right-8 w-64 h-64 bg-[#C5A059]/10 rounded-[3rem] -z-0 hidden lg:block" />
-              
-            </div>
-
-            {/* Text Side */}
-            <div className="flex-1 space-y-10">
-              <div>
-                <EditorialLabel className="text-[#C5A059] mb-4">A Empresa</EditorialLabel>
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-neutral-900 leading-[0.95] mb-8">
-                  Excelência e Confiança na <span className="text-[#C5A059]">Gestão de Frotas</span>
-                </h2>
-                <div className="w-24 h-[2px] bg-[#C5A059]" />
-              </div>
-
-              <div className="space-y-6 text-neutral-500 font-light text-lg leading-relaxed">
-                <p>
-                  A <span className="font-bold text-neutral-900">LA Locação de Veículos</span> nasceu com um propósito claro: elevar o patamar da mobilidade em Aracaju através de um serviço que une transparência absoluta e veículos de alto padrão.
-                </p>
-                <p>
-                  Operamos com um modelo de negócio inovador que beneficia tanto quem precisa de um veículo para rodar quanto quem deseja investir no mercado de frotas. Nossa curadoria rigorosa garante que cada veículo em nossa base seja um ativo de valor e segurança.
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-10 pt-4">
-                <div className="space-y-4">
-                  <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]">
-                    <ShieldCheck size={20} />
-                  </div>
-                  <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Garantia LA</h4>
-                  <p className="text-[13px] text-neutral-400 font-medium leading-relaxed">Processos auditados e segurança jurídica em todos os contratos firmados.</p>
-                </div>
-                <div className="space-y-4">
-                  <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]">
-                    <Wrench size={20} />
-                  </div>
-                  <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Manutenção Ativa</h4>
-                  <p className="text-[13px] text-neutral-400 font-medium leading-relaxed">Cuidado preventivo contínuo, assegurando o valor e a performance da frota.</p>
-                </div>
-              </div>
-
-              <div className="pt-6">
-                <button 
-                  onClick={() => {
-                    const el = document.getElementById('frota');
-                    el?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="inline-flex items-center gap-6 text-neutral-900 font-black text-[10px] uppercase tracking-[0.4em] group"
+        <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12">
+          <div className="max-w-3xl">
+            <Reveal>
+              <Label light>Locação Premium em Aracaju</Label>
+            </Reveal>
+            <Reveal delay="reveal-delay-1">
+              <h1 className="font-black uppercase tracking-[-0.04em] leading-[0.88] text-white mb-8">
+                <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem]">Dirija o</span>
+                <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] text-shine mt-1">Futuro Hoje</span>
+              </h1>
+            </Reveal>
+            <Reveal delay="reveal-delay-2">
+              <p className="text-white/50 font-light text-lg md:text-xl leading-relaxed max-w-lg mb-12">
+                Veículos de alto padrão, gestão transparente e rendimentos para investidores. Tudo em uma só plataforma.
+              </p>
+            </Reveal>
+            <Reveal delay="reveal-delay-3">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
+                  className="group px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500 flex items-center justify-center gap-3"
                 >
-                  Conheça nossa frota
-                  <div className="w-12 h-12 rounded-full border border-neutral-200 flex items-center justify-center group-hover:bg-neutral-900 group-hover:border-neutral-900 group-hover:text-[#C5A059] transition-all duration-500 shadow-lg group-hover:shadow-[#C5A059]/20">
-                    <ChevronRight size={18} />
-                  </div>
+                  Ver Frota
+                  <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </button>
+                <button
+                  onClick={() => document.getElementById('investidores')?.scrollIntoView({ behavior: 'smooth' })}
+                  className="px-10 py-4 text-white/60 text-[10px] uppercase tracking-[0.3em] font-semibold rounded-full border border-white/10 hover:border-white/30 hover:text-white transition-all duration-500"
+                >
+                  Seja Investidor
                 </button>
               </div>
+            </Reveal>
+          </div>
+
+          {/* Scroll hint */}
+          <div className="absolute bottom-8 right-12 hidden md:flex flex-col items-center float-down">
+            <ChevronDown size={18} className="text-white/30" />
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ SOBRE NÓS ═════════════════════════════════════════ */}
+      <section id="sobre" className="py-24 md:py-36 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-6 md:px-12">
+          <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-28">
+            <Reveal className="flex-1 w-full relative">
+              <div className="relative z-10 aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
+                <img src="/la-inauguracao-14.jpg" alt="Inauguração LA Locação" className="w-full h-full object-cover transition-transform duration-[2500ms] hover:scale-105" />
+                <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/30 to-transparent" />
+              </div>
+              <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-[#C5A059]/8 rounded-3xl hidden lg:block" />
+            </Reveal>
+
+            <div className="flex-1 space-y-8">
+              <Reveal>
+                <Label>A Empresa</Label>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-neutral-900 leading-[0.95]">
+                  Excelência na <span className="text-[#C5A059]">Gestão de Frotas</span>
+                </h2>
+              </Reveal>
+              <Reveal delay="reveal-delay-1">
+                <div className="w-16 h-px bg-[#C5A059]" />
+              </Reveal>
+              <Reveal delay="reveal-delay-2">
+                <p className="text-neutral-400 font-light text-base leading-[1.8]">
+                  A <span className="font-semibold text-neutral-700">LA Locação de Veículos</span> nasceu para elevar o patamar da mobilidade em Aracaju. Unimos transparência absoluta, veículos de alto padrão e um modelo de negócio que beneficia motoristas e investidores.
+                </p>
+              </Reveal>
+              <Reveal delay="reveal-delay-3">
+                <div className="grid grid-cols-2 gap-6 pt-4">
+                  {[
+                    { icon: <ShieldCheck size={18} />, title: 'Garantia LA', desc: 'Segurança jurídica em todos os contratos.' },
+                    { icon: <Wrench size={18} />, title: 'Manutenção', desc: 'Cuidado preventivo contínuo da frota.' }
+                  ].map((item, i) => (
+                    <div key={i} className="space-y-3">
+                      <div className="w-10 h-10 bg-neutral-950 rounded-xl flex items-center justify-center text-[#C5A059]">{item.icon}</div>
+                      <h4 className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-900">{item.title}</h4>
+                      <p className="text-xs text-neutral-400 leading-relaxed">{item.desc}</p>
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Oportunidade Motoristas - Golden/Yellow Layout */}
-      <section id="oportunidade-motoristas" className="py-32 bg-[#C5A059] relative overflow-hidden">
-        {/* Decorative background elements for a premium feel */}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.3),transparent)]" />
-        <div className="absolute -top-24 -left-24 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 bg-black/5 rounded-full blur-3xl" />
-
+      {/* ═══ MOTORISTAS ═════════════════════════════════════════ */}
+      <section id="oportunidade-motoristas" className="py-24 md:py-36 bg-neutral-950 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(197,160,89,0.06),transparent_60%)]" />
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
-            
-            {/* Image Side */}
-            <div className="flex-[1.3] w-full order-2 lg:order-2">
-              <div className="relative group">
-                <div className="relative z-10 aspect-[4/3] rounded-[3rem] overflow-hidden shadow-[0_32px_64px_-16px_rgba(0,0,0,0.3)] border border-white/20">
-                  <img 
-                    src="/uber-99.png" 
-                    alt="Uber e 99" 
-                    className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-900/30 to-transparent" />
-                </div>
-                {/* Decorative background circle */}
-                <div className="absolute -top-12 -left-12 w-48 h-48 bg-white/20 rounded-full -z-0 blur-xl" />
-                <div className="absolute -bottom-12 -right-12 w-64 h-64 bg-black/10 rounded-full -z-0 blur-xl" />
-              </div>
-            </div>
-
-            {/* Text Side */}
-            <div className="flex-1 space-y-10 order-1 lg:order-1">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <EditorialLabel className="text-neutral-900/40">Uber e 99</EditorialLabel>
-                  <div className="inline-flex items-center gap-3">
-                    <div className="w-10 h-[2px] bg-neutral-900" />
-                    <span className="text-neutral-900 text-[10px] uppercase tracking-[0.4em] font-black">Ganhe Mais Todos os Dias</span>
-                  </div>
-                </div>
-                <h2 className="text-4xl md:text-5xl lg:text-6xl font-black uppercase tracking-tighter text-neutral-950 leading-[0.95]">
-                  A Melhor Oportunidade para <br /><span className="text-white drop-shadow-sm">Motoristas de Aplicativo</span>
+            <div className="flex-1 order-2 lg:order-1">
+              <Reveal>
+                <Label light>Uber & 99</Label>
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-white leading-[0.95] mb-6">
+                  Oportunidade para <span className="text-[#C5A059]">Motoristas</span>
                 </h2>
-                <p className="text-neutral-900/80 font-medium text-xl leading-relaxed">
-                  Maximize seus lucros na Uber e 99 com um parceiro que entende o seu negócio. Na LA Locação, você tem carro premium e custo zero de manutenção.
+              </Reveal>
+              <Reveal delay="reveal-delay-1">
+                <p className="text-white/40 font-light text-base leading-[1.8] mb-10 max-w-lg">
+                  Maximize seus lucros com carro premium e custo zero de manutenção. Assistência completa e aprovação facilitada.
                 </p>
-              </div>
-
-              <div className="grid grid-cols-1 gap-8">
+              </Reveal>
+              <div className="space-y-6 mb-10">
                 {[
-                  { icon: <TrendingUp />, title: "Lucratividade Superior", desc: "Sem gastos com manutenção e seguro, sobra muito mais dinheiro no seu bolso ao final da semana." },
-                  { icon: <ShieldCheck />, title: "Suporte e Segurança 24h", desc: "Assistência completa e seguro total incluso. Você nunca fica na mão durante o trabalho." },
-                  { icon: <Check />, title: "Aprovação Facilitada", desc: "Processo rápido e sem burocracia excessiva para você começar a faturar o quanto antes." }
-                ].map((item, idx) => (
-                  <div key={idx} className="flex gap-6 items-start group/item">
-                    <div className="shrink-0 w-12 h-12 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-xl group-hover/item:scale-110 transition-transform">
-                      {React.cloneElement(item.icon, { size: 22 })}
+                  { icon: <TrendingUp size={18} />, title: 'Lucratividade Superior', desc: 'Sem gastos com manutenção, sobra mais no bolso.' },
+                  { icon: <ShieldCheck size={18} />, title: 'Suporte 24h', desc: 'Seguro total e assistência completa inclusa.' },
+                  { icon: <Check size={18} />, title: 'Aprovação Rápida', desc: 'Processo simples para começar a faturar.' }
+                ].map((item, i) => (
+                  <Reveal key={i} delay={`reveal-delay-${i + 2}`}>
+                    <div className="flex gap-5 items-start group">
+                      <div className="shrink-0 w-11 h-11 bg-[#C5A059]/10 rounded-xl flex items-center justify-center text-[#C5A059] group-hover:bg-[#C5A059]/20 transition-colors">{item.icon}</div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white mb-0.5">{item.title}</h4>
+                        <p className="text-xs text-white/35 leading-relaxed">{item.desc}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="text-lg font-black uppercase tracking-tight text-neutral-950">{item.title}</h4>
-                      <p className="text-neutral-900/70 font-medium text-sm leading-relaxed">{item.desc}</p>
-                    </div>
-                  </div>
+                  </Reveal>
                 ))}
               </div>
-
-              <div className="pt-6">
-                <a 
-                  href="https://wa.me/5579999999999" 
-                  target="_blank" 
-                  className="inline-flex items-center gap-6 px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white hover:text-neutral-950 transition-all shadow-2xl shadow-black/20 group"
-                >
-                  Consultar Condições
-                  <ChevronRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              <Reveal delay="reveal-delay-5">
+                <a href="https://wa.me/5579999999999" target="_blank" className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500">
+                  Consultar Condições <ArrowRight size={14} />
                 </a>
-              </div>
+              </Reveal>
             </div>
 
+            <Reveal className="flex-1 w-full order-1 lg:order-2">
+              <div className="aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border border-white/5">
+                <img src="/uber-99.png" alt="Uber e 99" className="w-full h-full object-cover transition-transform duration-[2500ms] hover:scale-105" />
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
 
-      {/* Frota */}
-      <section id="frota" className="py-32 bg-white">
+      {/* ═══ FROTA ══════════════════════════════════════════════ */}
+      <section id="frota" className="py-24 md:py-36 bg-white">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
-          <div className="mb-20">
-            <EditorialLabel className="text-[#C5A059] mb-4">Alugue Agora</EditorialLabel>
-            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
-              Escolha seu <br/>Próximo Veículo
+          <Reveal>
+            <Label>Alugue Agora</Label>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-neutral-900 mb-4">
+              Escolha seu Veículo
             </h2>
-            <p className="text-neutral-500 font-light max-w-xl text-lg">
-              Veículos premium revisados e prontos para você rodar hoje mesmo. Selecione o que mais combina com seu perfil.
+            <p className="text-neutral-400 font-light max-w-lg text-base mb-16">
+              Veículos revisados e prontos para rodar. Selecione o que mais combina com seu perfil.
             </p>
-          </div>
+          </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {vehicles.filter(v => v.isFavorite).length === 0 && (
-              <div className="col-span-3 text-center py-24 bg-neutral-50 rounded-[3rem] border border-neutral-100">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-300">Nenhum veículo em destaque no momento</p>
+              <div className="col-span-3 text-center py-20 bg-neutral-50 rounded-2xl border border-neutral-100">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-300">Nenhum veículo em destaque</p>
               </div>
             )}
-            {vehicles.filter(v => v.isFavorite).map(car => (
-              <div key={car.id} className="group relative bg-neutral-50 rounded-[3rem] overflow-hidden hover:shadow-2xl transition-all duration-500">
-                <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
-                  <img 
-                    src={car.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} 
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                    alt={car.model}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  {car.status === 'Alugado' && (
-                    <div className="absolute top-6 right-6 bg-neutral-900/80 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20">
-                      Locado
-                    </div>
-                  )}
-                </div>
-                <div className="p-10">
-                  <div className="flex justify-between items-start mb-6">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black mb-2">{car.year}</p>
-                      <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-900">{car.model}</h3>
-                    </div>
+            {vehicles.filter(v => v.isFavorite).map((car, i) => (
+              <Reveal key={car.id} delay={`reveal-delay-${Math.min(i + 1, 3)}`}>
+                <div className="group bg-white rounded-2xl overflow-hidden border border-neutral-100 hover:border-neutral-200 hover:shadow-xl transition-all duration-500">
+                  <div className="aspect-[16/10] bg-neutral-100 relative overflow-hidden">
+                    <img
+                      src={car.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      alt={car.model}
+                    />
+                    {car.status === 'Alugado' && (
+                      <div className="absolute top-4 right-4 bg-neutral-900/80 backdrop-blur text-white text-[8px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Locado</div>
+                    )}
                   </div>
-                  <div className="pt-6 border-t border-neutral-200 flex flex-col gap-6">
-                    <div className="flex justify-between items-center">
+                  <div className="p-7">
+                    <p className="text-[9px] uppercase tracking-[0.3em] text-[#C5A059] font-bold mb-1">{car.year}</p>
+                    <h3 className="text-lg font-black uppercase tracking-tight text-neutral-900 mb-5">{car.model}</h3>
+                    <div className="pt-5 border-t border-neutral-100 flex items-center justify-between">
                       <div>
-                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Valor Semanal</p>
-                        <p className="text-xl font-black text-neutral-900">R$ {car.weeklyRental || '550,00'}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-neutral-300 font-bold">Semanal</p>
+                        <p className="text-lg font-black text-neutral-900">R$ {car.weeklyRental || '550'}</p>
                       </div>
+                      <button
+                        onClick={() => onInterest(car)}
+                        disabled={car.status === 'Alugado'}
+                        className={`px-6 py-3 text-[9px] uppercase tracking-[0.2em] font-bold rounded-full transition-all duration-300 ${
+                          car.status === 'Alugado'
+                            ? 'bg-neutral-50 text-neutral-300 cursor-not-allowed'
+                            : 'bg-neutral-900 text-white hover:bg-[#C5A059] hover:text-neutral-950'
+                        }`}
+                      >
+                        {car.status === 'Alugado' ? 'Indisponível' : 'Interesse'}
+                      </button>
                     </div>
-                    <button 
-                      onClick={() => onInterest(car)}
-                      disabled={car.status === 'Alugado'}
-                      className={`w-full py-4 text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl transition-all ${
-                        car.status === 'Alugado' 
-                        ? 'bg-neutral-100 text-neutral-300 cursor-not-allowed' 
-                        : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-900 hover:text-white'
-                      }`}
-                    >
-                      {car.status === 'Alugado' ? 'Indisponível' : 'Tenho Interesse'}
-                    </button>
                   </div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
 
-          <div className="mt-20 flex justify-center">
-            <button 
-              onClick={() => {
-                onSetView('fleet');
-                window.scrollTo(0, 0);
-              }}
-              className="group relative px-12 py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.4em] font-black rounded-full hover:bg-[#C5A059] transition-all shadow-2xl flex items-center gap-4"
+          <Reveal className="mt-16 flex justify-center">
+            <button
+              onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
+              className="group px-10 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-full hover:bg-[#C5A059] hover:text-neutral-950 transition-all duration-500 flex items-center gap-3"
             >
-              Ver toda a frota
-              <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-black/20 transition-all">
-                <ChevronRight size={14} />
-              </div>
+              Ver toda a frota <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </button>
-          </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* Investidores - Golden/Yellow Layout */}
-      <section id="investidores" className="py-32 bg-[#C5A059] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1560179707-f14e90ef3623?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10 mix-blend-overlay" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,rgba(255,255,255,0.3),transparent)]" />
-        
+      {/* ═══ INVESTIDORES ═══════════════════════════════════════ */}
+      <section id="investidores" className="py-24 md:py-36 bg-neutral-950 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(197,160,89,0.05),transparent_60%)]" />
         <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-20">
           <div className="flex-1">
-            <EditorialLabel className="text-neutral-900/40 mb-4">Seja um Parceiro</EditorialLabel>
-            <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-8 leading-[0.9]">
-              Programa de<br/><span className="text-white drop-shadow-sm">Investidores</span>
-            </h2>
-            <p className="text-neutral-900/80 font-medium text-lg mb-10 leading-relaxed max-w-xl">
-              Rentabilize seu patrimônio com segurança. Coloque seu veículo na nossa frota e receba dividendos semanais enquanto nós cuidamos de toda a gestão, manutenção e locação.
-            </p>
-            <ul className="space-y-6 mb-12">
-              {[
-                'Gestão 100% profissional e transparente',
-                'Rendimentos pagos pontualmente toda semana',
-                'Seguro total e rastreamento veicular',
-                'Portal exclusivo para acompanhar resultados'
-              ].map((item, idx) => (
-                <li key={idx} className="flex items-center gap-4 text-neutral-950 font-bold text-sm">
-                  <div className="w-8 h-8 rounded-full bg-neutral-950 flex items-center justify-center text-[#C5A059]">
-                    <Check size={16} />
+            <Reveal>
+              <Label light>Seja um Parceiro</Label>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-white mb-8 leading-[0.95]">
+                Programa de <span className="text-[#C5A059]">Investidores</span>
+              </h2>
+            </Reveal>
+            <Reveal delay="reveal-delay-1">
+              <p className="text-white/40 font-light text-base leading-[1.8] mb-10 max-w-xl">
+                Rentabilize seu patrimônio com segurança. Coloque seu veículo na nossa frota e receba dividendos semanais.
+              </p>
+            </Reveal>
+            <div className="space-y-4 mb-10">
+              {['Gestão 100% profissional e transparente', 'Rendimentos pagos toda semana', 'Seguro total e rastreamento', 'Portal exclusivo de acompanhamento'].map((item, i) => (
+                <Reveal key={i} delay={`reveal-delay-${i + 2}`}>
+                  <div className="flex items-center gap-4">
+                    <div className="w-7 h-7 rounded-full bg-[#C5A059]/10 flex items-center justify-center text-[#C5A059]"><Check size={14} /></div>
+                    <span className="text-sm text-white/70 font-medium">{item}</span>
                   </div>
-                  {item}
-                </li>
+                </Reveal>
               ))}
-            </ul>
-            <a href="#contato" className="inline-flex px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:bg-white hover:text-neutral-950 transition-all shadow-2xl shadow-black/20">
-              Quero ser Investidor
-            </a>
-          </div>
-          <div className="flex-1 w-full relative">
-            <div className="aspect-[4/5] bg-neutral-900 rounded-[3rem] overflow-hidden relative border border-white/20 shadow-2xl">
-               <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80" alt="Investimentos" className="w-full h-full object-cover opacity-80" />
-               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-               <div className="absolute bottom-10 left-10 right-10 p-8 bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl">
-                 <p className="text-[#C5A059] text-[10px] uppercase tracking-[0.3em] font-black mb-2">Transparência Total</p>
-                 <p className="text-white font-bold text-lg leading-snug">Acompanhe seus rendimentos em tempo real através do Portal do Investidor.</p>
-               </div>
             </div>
+            <Reveal delay="reveal-delay-5">
+              <button onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })} className="px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500">
+                Quero Investir
+              </button>
+            </Reveal>
           </div>
-        </div>
-      </section>
-
-      {/* Serviços */}
-      <section id="servicos" className="py-32 bg-neutral-100">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 text-center mb-20">
-          <EditorialLabel className="text-[#C5A059] mb-4">O que oferecemos</EditorialLabel>
-          <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-900 mb-6">
-            Nossos Serviços
-          </h2>
-        </div>
-        <div className="max-w-7xl mx-auto px-6 md:px-12 grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { icon: <Car size={32}/>, title: "Locação Premium", desc: "Veículos de alto padrão revisados e higienizados para uma experiência impecável." },
-            { icon: <ShieldCheck size={32}/>, title: "Proteção Total", desc: "Seguro completo e assistência 24h para você rodar com total tranquilidade." },
-            { icon: <Wrench size={32}/>, title: "Manutenção em Dia", desc: "Oficinas especializadas cuidando de cada detalhe preventivo da nossa frota." }
-          ].map((srv, i) => (
-            <div key={i} className="bg-white p-12 rounded-[3rem] shadow-xl shadow-neutral-200/50 hover:-translate-y-2 transition-transform duration-500 border border-neutral-100">
-              <div className="w-16 h-16 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center text-[#C5A059] mb-8">
-                {srv.icon}
+          <Reveal className="flex-1 w-full">
+            <div className="aspect-[4/5] rounded-3xl overflow-hidden relative border border-white/5 shadow-2xl">
+              <img src="/investidor.jpg" alt="Investimentos" className="w-full h-full object-cover opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/10 to-transparent" />
+              <div className="absolute bottom-8 left-8 right-8 p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
+                <p className="text-[#C5A059] text-[9px] uppercase tracking-[0.3em] font-bold mb-2">Transparência Total</p>
+                <p className="text-white/80 font-medium text-sm leading-snug">Acompanhe rendimentos em tempo real pelo Portal do Investidor.</p>
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tight text-neutral-900 mb-4">{srv.title}</h3>
-              <p className="text-neutral-500 font-light leading-relaxed">{srv.desc}</p>
             </div>
-          ))}
+          </Reveal>
         </div>
       </section>
 
-      {/* Contact Section - Golden/Yellow Layout */}
-      <section id="contato" className="py-32 bg-[#C5A059] relative overflow-hidden">
-        {/* Decorative blurs */}
-        <div className="absolute top-0 left-1/4 w-64 h-64 bg-white/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-black/5 rounded-full blur-3xl" />
-
-        <div className="max-w-4xl mx-auto px-6 md:px-12 text-center relative z-10">
-          <div className="w-24 h-24 bg-neutral-950 rounded-full flex items-center justify-center mx-auto mb-10 shadow-2xl shadow-black/20">
-            <Phone size={40} className="text-[#C5A059]" />
+      {/* ═══ SERVIÇOS ═══════════════════════════════════════════ */}
+      <section id="servicos" className="py-24 md:py-36 bg-neutral-50">
+        <div className="max-w-7xl mx-auto px-6 md:px-12">
+          <Reveal className="text-center mb-16">
+            <Label>O que oferecemos</Label>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-neutral-900">Nossos Serviços</h2>
+          </Reveal>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { icon: <Car size={28} />, title: 'Locação Premium', desc: 'Veículos revisados e higienizados para uma experiência impecável.' },
+              { icon: <ShieldCheck size={28} />, title: 'Proteção Total', desc: 'Seguro completo e assistência 24h para total tranquilidade.' },
+              { icon: <Wrench size={28} />, title: 'Manutenção', desc: 'Oficinas especializadas cuidando de cada detalhe da frota.' }
+            ].map((srv, i) => (
+              <Reveal key={i} delay={`reveal-delay-${i + 1}`}>
+                <div className="bg-white p-10 rounded-2xl border border-neutral-100 hover:border-[#C5A059]/20 hover:shadow-lg transition-all duration-500 group">
+                  <div className="w-14 h-14 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#C5A059] mb-7 group-hover:scale-105 transition-transform">{srv.icon}</div>
+                  <h3 className="text-lg font-black uppercase tracking-tight text-neutral-900 mb-3">{srv.title}</h3>
+                  <p className="text-neutral-400 font-light text-sm leading-relaxed">{srv.desc}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
-          <EditorialLabel className="text-neutral-900/40 mb-4">Entre em Contato</EditorialLabel>
-          <h2 className="text-4xl md:text-5xl lg:text-7xl font-black uppercase tracking-tighter text-neutral-950 mb-6 leading-none">Fale Conosco</h2>
-          <p className="text-neutral-900/80 font-medium mb-12 text-xl leading-relaxed">Pronto para acelerar? Entre em contato e reserve seu veículo ou agende uma reunião para conhecer o modelo de investimento.</p>
-          <a
-            href="https://wa.me/5579999999999"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-4 px-12 py-6 bg-neutral-950 text-white text-[12px] uppercase tracking-[0.4em] font-black rounded-full hover:bg-white hover:text-neutral-950 transition-all shadow-2xl shadow-black/20 group"
-          >
-            <Phone size={20} className="group-hover:scale-110 transition-transform" /> Whatsapp LA Locação
-          </a>
         </div>
       </section>
 
-      <footer className="bg-neutral-950 border-t border-neutral-900 py-16">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div>
-            <span className="text-2xl font-black uppercase tracking-tighter text-white">LA</span>
-            <span className="text-2xl font-black uppercase tracking-tighter text-[#C5A059] ml-1">Locação</span>
+      {/* ═══ CONTATO ════════════════════════════════════════════ */}
+      <section id="contato" className="py-24 md:py-36 bg-neutral-950 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,160,89,0.04),transparent_50%)]" />
+        <div className="max-w-3xl mx-auto px-6 md:px-12 text-center relative z-10">
+          <Reveal>
+            <div className="w-16 h-16 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
+              <Phone size={28} className="text-[#C5A059]" />
+            </div>
+            <Label light>Entre em Contato</Label>
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-white mb-6">Fale Conosco</h2>
+            <p className="text-white/40 font-light mb-12 text-base leading-relaxed">
+              Reserve seu veículo ou agende uma reunião para conhecer o modelo de investimento.
+            </p>
+          </Reveal>
+          <Reveal delay="reveal-delay-1">
+            <a href="https://wa.me/5579999999999" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500 group">
+              <Phone size={16} className="group-hover:scale-110 transition-transform" /> WhatsApp LA Locação
+            </a>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═════════════════════════════════════════════ */}
+      <footer className="bg-neutral-950 border-t border-white/5 py-12">
+        <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-black uppercase tracking-[-0.03em] text-white">LA</span>
+            <span className="text-lg font-black uppercase tracking-[-0.03em] text-[#C5A059]">Locação</span>
           </div>
-          <p className="text-[10px] uppercase tracking-widest text-neutral-600 font-bold">© 2026 LA Locação de Veículos. Aracaju, Sergipe.</p>
-          <div className="flex gap-4">
-            <a href="#" className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400 hover:bg-[#C5A059] hover:text-neutral-950 transition-colors">
-              <Instagram size={20} />
-            </a>
-            <a href="#" className="w-12 h-12 rounded-full bg-neutral-900 flex items-center justify-center text-neutral-400 hover:bg-[#C5A059] hover:text-neutral-950 transition-colors">
-              <Facebook size={20} />
-            </a>
+          <div className="flex items-center gap-2 text-white/20">
+            <MapPin size={12} />
+            <p className="text-[10px] uppercase tracking-widest font-medium">© 2026 · Aracaju, Sergipe</p>
+          </div>
+          <div className="flex gap-3">
+            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/30 hover:bg-[#C5A059] hover:text-neutral-950 transition-all duration-300"><Instagram size={16} /></a>
+            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/30 hover:bg-[#C5A059] hover:text-neutral-950 transition-all duration-300"><Facebook size={16} /></a>
           </div>
         </div>
       </footer>
