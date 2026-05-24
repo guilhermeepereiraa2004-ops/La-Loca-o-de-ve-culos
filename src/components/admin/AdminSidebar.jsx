@@ -1,15 +1,28 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Car, Mail, Key, Users, User, Wallet, Landmark, Wrench, Eye, X, Menu, 
-  ClipboardList, Receipt
+  ClipboardList, Receipt, ShieldAlert
 } from 'lucide-react';
 
 const AdminSidebar = ({ 
   isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, isAdmin, canAccess, onGoHome, onLogout,
   badges = {}
 }) => {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1280);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth >= 1280);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isExpanded = isDesktop ? isHovered : isSidebarOpen;
+
   const menuItems = [
-    { id: 'bi',             label: 'Business Inteligence', icon: TrendingUp },
+    { id: 'bi',             label: 'Business Intelligence', icon: TrendingUp },
     { id: 'faturamento',   label: 'Faturamento', icon: Receipt },
     { id: 'frota',         label: 'Frota', icon: Car },
     { id: 'leads',         label: 'Leads', icon: Mail },
@@ -20,6 +33,7 @@ const AdminSidebar = ({
     { id: 'caucao',        label: 'Caução', icon: Landmark },
     { id: 'manutencaoAdmin', label: 'Manutenção', icon: Wrench },
     { id: 'vistoria',      label: 'Vistoria', icon: ClipboardList },
+    { id: 'multas',        label: 'Multas', icon: ShieldAlert },
     { id: 'oficina',       label: 'Oficina', icon: Wrench },
     ...(isAdmin ? [
       { id: 'usuarios', label: 'Usuários', icon: Users },
@@ -36,18 +50,34 @@ const AdminSidebar = ({
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      <aside className={`bg-neutral-900 text-white flex flex-col fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-48' : '-translate-x-full w-0 opacity-0 xl:w-16 xl:translate-x-0 xl:opacity-100'}`}>
-        <div className={`p-4 md:p-5 border-b border-neutral-800 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+      <aside 
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        className={`bg-neutral-900 text-white flex flex-col fixed h-full z-50 transition-all duration-300 ease-in-out ${
+          isSidebarOpen 
+            ? 'translate-x-0 w-48' 
+            : '-translate-x-full w-0 opacity-0 xl:translate-x-0 xl:opacity-100'
+        } ${
+          isExpanded ? 'xl:w-64 xl:shadow-2xl xl:shadow-black/50' : 'xl:w-16'
+        }`}
+      >
+        <div className={`p-4 md:p-5 border-b border-neutral-800 transition-all duration-300 flex items-center ${isExpanded ? 'justify-start' : 'justify-center'}`}>
           <div className="flex items-center gap-2">
-            <span className="text-xl font-black text-white">LA</span>
-            <span className="text-xl font-black text-[#C5A059]">LOCAÇÃO</span>
+            <span className="text-xl font-black text-white shrink-0">LA</span>
+            {isExpanded && (
+              <span className="text-xl font-black text-[#C5A059] animate-in fade-in duration-300">LOCAÇÃO</span>
+            )}
           </div>
         </div>
 
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
-            Gerenciamento
-          </div>
+        <nav className={`flex-1 space-y-1 overflow-y-auto custom-scrollbar no-scrollbar transition-all duration-300 ${
+          isExpanded ? 'p-4' : 'p-3 xl:px-2'
+        }`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          {isExpanded && (
+            <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 px-1 animate-in fade-in duration-300">
+              Gerenciamento
+            </div>
+          )}
 
           {menuItems.filter(item => canAccess(item.id) || item.id === 'usuarios').map((item) => {
             const badgeCount = badges[item.id] || 0;
@@ -60,28 +90,32 @@ const AdminSidebar = ({
                   setActiveTab(item.id);
                   if (window.innerWidth < 1280) setIsSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-2.5 text-[13px] font-medium p-2.5 rounded-xl transition-all relative ${
+                className={`w-full flex items-center rounded-xl transition-all relative ${
+                  isExpanded ? 'p-2.5 gap-2.5' : 'p-2.5 justify-center'
+                } ${
                   isActive ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-white/5'
                 }`}
                 title={item.label}
               >
                 {/* Icon with collapsed-mode dot indicator */}
-                <div className="relative shrink-0">
+                <div className="relative shrink-0 flex items-center justify-center">
                   <item.icon size={16} />
                   {/* Dot shown only when sidebar is collapsed and there's a badge */}
-                  {badgeCount > 0 && !isSidebarOpen && (
-                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 rounded-full bg-[#C5A059] animate-pulse xl:block hidden" />
+                  {badgeCount > 0 && !isExpanded && (
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C5A059] animate-pulse" />
                   )}
                 </div>
 
                 {/* Label */}
-                <span className={`flex-1 text-left transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>
-                  {item.label}
-                </span>
+                {isExpanded && (
+                  <span className="flex-1 text-left truncate animate-in fade-in slide-in-from-left-2 duration-300">
+                    {item.label}
+                  </span>
+                )}
 
                 {/* Badge pill — shown only when sidebar is expanded */}
-                {badgeCount > 0 && isSidebarOpen && (
-                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#C5A059] text-neutral-950 text-[9px] font-black leading-none shadow-sm">
+                {badgeCount > 0 && isExpanded && (
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#C5A059] text-neutral-950 text-[9px] font-black leading-none shadow-sm animate-in scale-in duration-300">
                     {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}
@@ -90,24 +124,36 @@ const AdminSidebar = ({
           })}
         </nav>
 
-        <div className="p-4 border-t border-neutral-800 space-y-2">
+        <div className={`border-t border-neutral-800 space-y-2 transition-all duration-300 ${
+          isExpanded ? 'p-4' : 'p-3 xl:px-2'
+        }`}>
           <button
             onClick={onGoHome}
-            className="flex items-center gap-2.5 text-[13px] font-medium text-neutral-400 hover:text-white transition-colors w-full p-2.5 group"
+            className={`flex items-center text-[13px] font-medium text-neutral-400 hover:text-white transition-all w-full ${
+              isExpanded ? 'p-2.5 gap-2.5' : 'p-2.5 justify-center'
+            } group`}
+            title="Página Inicial"
           >
-            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#C5A059]/20 group-hover:text-[#C5A059] transition-all">
+            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#C5A059]/20 group-hover:text-[#C5A059] transition-all shrink-0">
               <Eye size={14} />
             </div>
-            <span className={`transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Página Inicial</span>
+            {isExpanded && (
+              <span className="text-left animate-in fade-in slide-in-from-left-2 duration-300">Página Inicial</span>
+            )}
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center gap-2.5 text-[13px] font-medium text-red-400 hover:text-red-300 transition-colors w-full p-2.5 group"
+            className={`flex items-center text-[13px] font-medium text-red-400 hover:text-red-300 transition-all w-full ${
+              isExpanded ? 'p-2.5 gap-2.5' : 'p-2.5 justify-center'
+            } group`}
+            title="Sair"
           >
-            <div className="w-8 h-8 rounded-full bg-red-400/10 flex items-center justify-center group-hover:bg-red-400/20 transition-all">
+            <div className="w-8 h-8 rounded-full bg-red-400/10 flex items-center justify-center group-hover:bg-red-400/20 transition-all shrink-0">
               <X size={14} />
             </div>
-            <span className={`transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Sair</span>
+            {isExpanded && (
+              <span className="text-left animate-in fade-in slide-in-from-left-2 duration-300">Sair</span>
+            )}
           </button>
         </div>
       </aside>
@@ -123,3 +169,4 @@ const AdminSidebar = ({
 };
 
 export default AdminSidebar;
+

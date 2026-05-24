@@ -15,6 +15,7 @@ import AdminUsuarios from './tabs/AdminUsuarios';
 import AdminOficina from './tabs/AdminOficina';
 import AdminClientes from './tabs/AdminClientes';
 import AdminFaturamento from './tabs/AdminFaturamento';
+import AdminMultas from './tabs/AdminMultas';
 
 // Modals
 import RentalDetailModal from './modals/RentalDetailModal';
@@ -54,7 +55,12 @@ const AdminDashboard = ({
   onLogout, onSeed, onGoHome, onViewVehicleDetail,
   selectedImage, setSelectedImage,
   logs = [],
-  isLogsDbConnected
+  isLogsDbConnected,
+  fines = [],
+  isFinesDbConnected = false,
+  onAddFine,
+  onUpdateFine,
+  onDeleteFine
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -264,7 +270,7 @@ const AdminDashboard = ({
         badges={notifBadges}
       />
 
-      <main className={`flex-1 flex flex-col min-w-0 h-screen xl:h-screen overflow-hidden transition-all duration-500 ${isSidebarOpen ? 'xl:ml-48' : 'xl:ml-16'}`}>
+      <main className="flex-1 flex flex-col min-w-0 h-screen xl:h-screen overflow-hidden transition-all duration-500 xl:ml-16">
         <AdminHeader 
           activeTab={activeTab} 
           currentUser={currentUser} 
@@ -322,7 +328,7 @@ const AdminDashboard = ({
             />
           )}
           {activeTab === 'clientes' && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
-          {activeTab === 'faturamento' && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} onConfirmPayment={onConfirmPayment} />}
+          {activeTab === 'faturamento' && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} onConfirmPayment={onConfirmPayment} />}
           {activeTab === 'investidores' && (
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}
@@ -380,6 +386,18 @@ const AdminDashboard = ({
           {activeTab === 'logs' && isAdmin && (
             <AdminLogs logs={logs} isDbConnected={isLogsDbConnected} />
           )}
+          {activeTab === 'multas' && (
+            <AdminMultas 
+              fines={fines}
+              isDbConnected={isFinesDbConnected}
+              onAddFine={onAddFine}
+              onUpdateFine={onUpdateFine}
+              onDeleteFine={onDeleteFine}
+              rentals={rentals}
+              vehicles={vehicles}
+              clients={clients}
+            />
+          )}
           {activeTab === 'oficina' && (
             <AdminOficina
               vehicles={vehicles} investors={investors} rentals={rentals}
@@ -400,7 +418,7 @@ const AdminDashboard = ({
         isOpen={showAddForm && activeTab === 'locacao'} onClose={() => setShowAddForm(false)}
         currentRentalStep={currentRentalStep} setCurrentRentalStep={setCurrentRentalStep}
         totalRentalSteps={totalRentalSteps} rentalForm={rentalForm} setRentalForm={setRentalForm}
-        vehicles={vehicles} clients={clients} onSubmit={handleSaveRental}
+        vehicles={vehicles} clients={clients} fines={fines} onSubmit={handleSaveRental}
       />
 
       <FinanceFormModal 

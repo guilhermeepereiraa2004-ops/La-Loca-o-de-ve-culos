@@ -106,6 +106,23 @@ const TABLE_MAPPINGS = {
     vehiclePlate: 'vehicle_plate',
     responsible: 'responsible',
     status: 'status'
+  },
+  fines: {
+    id: 'id',
+    vehiclePlate: 'vehicle_plate',
+    infraction: 'infraction',
+    date: 'date',
+    value: 'value',
+    location: 'location',
+    driverName: 'driver_name',
+    driverId: 'driver_id',
+    rentalId: 'rental_id',
+    status: 'status',
+    installments: 'installments',
+    paidInstallments: 'paid_installments',
+    installmentValue: 'installment_value',
+    billingSuspended: 'billing_suspended',
+    createdAt: 'created_at'
   }
 };
 
@@ -239,6 +256,39 @@ export const useAppState = () => {
     }
   };
 
+  const [fines, setFines] = useState([]);
+  const [isFinesDbConnected, setIsFinesDbConnected] = useState(false);
+
+  const loadFines = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_fines')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setFines(mapToCamel(data, 'fines'));
+        setIsFinesDbConnected(true);
+        return;
+      }
+      if (error) {
+        console.warn("Supabase system_fines query returned error, falling back to localStorage:", error);
+      }
+    } catch (e) {
+      console.warn("Supabase system_fines table not found, falling back to localStorage", e);
+    }
+    
+    setIsFinesDbConnected(false);
+    try {
+      const localFines = localStorage.getItem('la_system_fines');
+      if (localFines) {
+        setFines(JSON.parse(localFines));
+      }
+    } catch (e) {
+      console.error("Error loading local fines:", e);
+    }
+  };
+
   const logActivity = async (action, targetType, targetId, description, details = null) => {
     const today = new Date().toISOString();
     const uName = currentUser?.name || currentUser?.nome || (currentUser?.role === 'administrador' ? 'Admin Master' : 'Sistema');
@@ -347,7 +397,11 @@ export const useAppState = () => {
 
               mappedData = mappedData.map(rental => {
                 const vehicle = allVehicles.find(v => v.id === rental.vehicleId);
-                const client = currentClients.find(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+                const client = currentClients.find(c => {
+                  if (rental.idCliente && c.id === rental.idCliente) return true;
+                  if (rental.cpf && c.cpf && rental.cpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, '')) return true;
+                  return (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase();
+                });
                 return {
                   ...rental,
                   image: vehicle?.image || rental.image,
@@ -360,7 +414,10 @@ export const useAppState = () => {
               });
               
               for (const rental of mappedData) {
-                const clientExists = currentClients.some(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+                const clientExists = currentClients.some(c => {
+                  if (rental.cpf && c.cpf && rental.cpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, '')) return true;
+                  return (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase();
+                });
                 if (!clientExists && rental.user) {
                   supabase.from('clients').insert([{
                     nome: rental.user,
@@ -368,6 +425,7 @@ export const useAppState = () => {
                     cnh_number: rental.cnhNumber || rental.cnh,
                     cnh_validity: rental.cnhValidity,
                     documentos: rental.docs,
+                    cpf: rental.cpf || null,
                     status: 'Ativo'
                   }]).then(() => {
                      supabase.from('clients').select('*').then(({data: cDataRefresh}) => {
@@ -453,6 +511,9 @@ export const useAppState = () => {
       
       // Carregar os logs do sistema
       await loadLogs();
+      
+      // Carregar as multas do sistema
+      await loadFines();
     };
 
     loadData();
@@ -604,11 +665,14 @@ export const useAppState = () => {
           status: 'Ativo'
         };
 
-        if (clientPayload.cnh_number) {
+        const queryField = clientPayload.cpf ? 'cpf' : (clientPayload.cnh_number ? 'cnh_number' : null);
+        const queryVal = clientPayload.cpf || clientPayload.cnh_number;
+
+        if (queryVal) {
           const { data: existingClient } = await supabase
             .from('clients')
             .select('id')
-            .eq('cnh_number', clientPayload.cnh_number)
+            .eq(queryField, queryVal)
             .maybeSingle();
 
           if (existingClient) {
@@ -645,9 +709,17 @@ export const useAppState = () => {
           };
 
           setClients(prev => {
-            const exists = prev.find(c => c.cnhNumber === updatedClientObj.cnhNumber);
+            const exists = prev.find(c => 
+              (updatedClientObj.cpf && c.cpf === updatedClientObj.cpf) || 
+              (updatedClientObj.cnhNumber && c.cnhNumber === updatedClientObj.cnhNumber)
+            );
             if (exists) {
-              return prev.map(c => c.cnhNumber === updatedClientObj.cnhNumber ? { ...c, ...updatedClientObj } : c);
+              return prev.map(c => 
+                ((updatedClientObj.cpf && c.cpf === updatedClientObj.cpf) || 
+                 (updatedClientObj.cnhNumber && c.cnhNumber === updatedClientObj.cnhNumber)) 
+                  ? { ...c, ...updatedClientObj } 
+                  : c
+              );
             }
             return [updatedClientObj, ...prev];
           });
@@ -790,7 +862,15 @@ export const useAppState = () => {
           if (!error) clientUpdated = true;
         } 
         
-        // 2. Se não deu certo por ID, tenta pela CNH (nova ou antiga)
+        // 2. Se não deu certo por ID, tenta pelo CPF (novo ou antigo)
+        const cpf = finalRental.cpf;
+        const oldCpf = oldRental?.cpf;
+        if (!clientUpdated && (cpf || oldCpf)) {
+          const { error } = await supabase.from('clients').update(clientPayload).or(`cpf.eq.${cpf},cpf.eq.${oldCpf}`);
+          if (!error) clientUpdated = true;
+        }
+
+        // 3. Se não deu certo por CPF/ID, tenta pela CNH (nova ou antiga) como fallback
         if (!clientUpdated && (cnh || oldCnh)) {
           const { error } = await supabase.from('clients').update(clientPayload).or(`cnh_number.eq.${cnh},cnh_number.eq.${oldCnh}`);
           if (!error) clientUpdated = true;
@@ -799,6 +879,8 @@ export const useAppState = () => {
         // Atualiza estado local de clientes para refletir a mudança imediatamente
         setClients(prev => prev.map(c => {
           const isMatch = (clientId && c.id === clientId) || 
+                          (cpf && c.cpf === cpf) || 
+                          (oldCpf && c.cpf === oldCpf) ||
                           (cnh && c.cnhNumber === cnh) || 
                           (oldCnh && c.cnhNumber === oldCnh);
           if (isMatch) {
@@ -1255,6 +1337,143 @@ export const useAppState = () => {
     }
   };
 
+  const handleAddFine = async (fine) => {
+    // Auto driver matching logic
+    let matchedDriverName = 'Não Identificado';
+    let matchedDriverId = null;
+    let matchedRentalId = null;
+
+    if (fine.vehiclePlate && fine.date) {
+      const fineDate = new Date(fine.date);
+      const matchedRental = rentals.find(r => {
+        const matchesPlate = (r.plate || r.vehiclePlate || '').replace('-', '').toLowerCase() === fine.vehiclePlate.replace('-', '').toLowerCase();
+        if (!matchesPlate) return false;
+        
+        const start = new Date(r.startDate || r.date);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = r.endDate ? new Date(r.endDate) : new Date('2099-12-31');
+        end.setHours(23, 59, 59, 999);
+        
+        return fineDate >= start && fineDate <= end;
+      });
+
+      if (matchedRental) {
+        matchedDriverName = matchedRental.userName || matchedRental.user || 'Não Identificado';
+        matchedDriverId = matchedRental.clientId || null;
+        matchedRentalId = matchedRental.id || null;
+      }
+    }
+
+    const val = parseFloat(String(fine.value).replace(/\./g, '').replace(',', '.')) || 0;
+    let installments = 1;
+    if (val <= 150) {
+      installments = 2;
+    } else if (val <= 200) {
+      installments = 3;
+    } else {
+      installments = 4;
+    }
+    const installmentValue = parseFloat((val / installments).toFixed(2));
+
+    const newFine = {
+      ...fine,
+      value: val,
+      installments,
+      paidInstallments: [],
+      installmentValue,
+      driverName: fine.driverName !== undefined ? fine.driverName : matchedDriverName,
+      driverId: fine.driverId !== undefined ? fine.driverId : matchedDriverId,
+      rentalId: fine.rentalId !== undefined ? fine.rentalId : matchedRentalId,
+      status: 'Pendente',
+      billingSuspended: false,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('system_fines')
+        .insert([mapToSnake(newFine, 'fines')])
+        .select();
+
+      if (!error && data) {
+        const camelData = mapToCamel(data, 'fines')[0];
+        setFines(prev => [camelData, ...prev]);
+        setIsFinesDbConnected(true);
+        logActivity('Criar', 'Multas', camelData.id, `Registrou multa: ${camelData.infraction} - Placa: ${camelData.vehiclePlate} - Condutor: ${camelData.driverName}`);
+        return { success: true, data: camelData };
+      }
+      if (error) {
+        console.warn("Supabase system_fines insert error, falling back to local storage:", error);
+      }
+    } catch (e) {
+      console.warn("Could not insert to Supabase system_fines:", e);
+    }
+
+    const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
+    const localFines = JSON.parse(localFinesStr);
+    const localEntry = { ...newFine, id: Date.now() };
+    const updatedFines = [localEntry, ...localFines];
+    localStorage.setItem('la_system_fines', JSON.stringify(updatedFines));
+    setFines(updatedFines);
+    logActivity('Criar', 'Multas', localEntry.id, `Registrou multa (Local): ${localEntry.infraction} - Placa: ${localEntry.vehiclePlate} - Condutor: ${localEntry.driverName}`);
+    return { success: true, data: localEntry };
+  };
+
+  const handleUpdateFine = async (updatedFine) => {
+    try {
+      const payload = mapToSnake(updatedFine, 'fines');
+      delete payload.id;
+      const { error } = await supabase
+        .from('system_fines')
+        .update(payload)
+        .eq('id', updatedFine.id);
+
+      if (!error) {
+        setFines(prev => prev.map(f => f.id === updatedFine.id ? updatedFine : f));
+        setIsFinesDbConnected(true);
+        logActivity('Atualizar', 'Multas', updatedFine.id, `Atualizou status da multa ID ${updatedFine.id} para: ${updatedFine.status}`);
+        return { success: true };
+      }
+    } catch (e) {
+      console.warn("Supabase system_fines update failed, falling back to local storage:", e);
+    }
+
+    setFines(prev => prev.map(f => f.id === updatedFine.id ? updatedFine : f));
+    const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
+    const localFines = JSON.parse(localFinesStr);
+    const updatedLocal = localFines.map(f => f.id === updatedFine.id ? updatedFine : f);
+    localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
+    logActivity('Atualizar', 'Multas', updatedFine.id, `Atualizou status da multa ID ${updatedFine.id} (Local) para: ${updatedFine.status}`);
+    return { success: true };
+  };
+
+  const handleDeleteFine = async (id) => {
+    try {
+      const { error } = await supabase
+        .from('system_fines')
+        .delete()
+        .eq('id', id);
+
+      if (!error) {
+        setFines(prev => prev.filter(f => f.id !== id));
+        setIsFinesDbConnected(true);
+        logActivity('Apagar', 'Multas', id, `Excluiu multa ID ${id}`);
+        return { success: true };
+      }
+    } catch (e) {
+      console.warn("Supabase system_fines delete failed, falling back to local storage:", e);
+    }
+
+    setFines(prev => prev.filter(f => f.id !== id));
+    const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
+    const localFines = JSON.parse(localFinesStr);
+    const updatedLocal = localFines.filter(f => f.id !== id);
+    localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
+    logActivity('Apagar', 'Multas', id, `Excluiu multa ID ${id} (Local)`);
+    return { success: true };
+  };
+
   const handleConfirmPayment = async (rentalId, billingData) => {
     const rental = rentals.find(r => r.id === rentalId);
     if (!rental) return;
@@ -1414,6 +1633,40 @@ export const useAppState = () => {
       const { data, error } = await supabase.from('transactions').insert(trans.map(t => mapToSnake(t, 'transactions'))).select();
       if (!error && data) setTransactions(prev => [...mapToCamel(data, 'transactions'), ...prev]);
     }
+
+    // 6. Atualizar as multas do motorista incluídas neste pagamento
+    if (billingData.finesDetails && Array.isArray(billingData.finesDetails)) {
+      for (const fd of billingData.finesDetails) {
+        const fine = fines.find(f => f.id === fd.id);
+        if (fine) {
+          const nextInstNum = parseInt(fd.installment.split('/')[0]);
+          const paidInstallments = [...(fine.paidInstallments || []), nextInstNum];
+          const isPaid = paidInstallments.length >= fine.installments;
+          const updatedFine = {
+            ...fine,
+            paidInstallments,
+            status: isPaid ? 'Paga' : 'Em Cobrança'
+          };
+          await handleUpdateFine(updatedFine);
+
+          // Lançar transação de pagamento no financeiro (entrada para a empresa dedicada à multa)
+          const newFineTrans = {
+            date: todayStr,
+            type: 'in',
+            val: fd.value,
+            desc: `Cobrança Multa (${fine.infraction} - parc. ${fd.installment}) - ${rental.user}`,
+            cat: 'multa',
+            vehiclePlate: rental.plate,
+            status: 'pago',
+            responsible: 'Administradora'
+          };
+          const { data: tfData, error: tfError } = await supabase.from('transactions').insert([mapToSnake(newFineTrans, 'transactions')]).select();
+          if (!tfError && tfData) {
+            setTransactions(prev => [mapToCamel(tfData, 'transactions')[0], ...prev]);
+          }
+        }
+      }
+    }
   };
 
   const handleAddInspection = async (inspection) => {
@@ -1530,6 +1783,7 @@ export const useAppState = () => {
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, clients, replacementContracts,
+    fines, isFinesDbConnected,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
@@ -1543,6 +1797,7 @@ export const useAppState = () => {
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
     handleInterestSubmit,
+    handleAddFine, handleUpdateFine, handleDeleteFine,
     seedData: () => console.log('Seed data is no longer available.')
   };
 };

@@ -17,6 +17,7 @@ export function computeNotifications(params = {}) {
     maintenances = [],
     inspections = [],
     serviceOrders = [],
+    fines = [],
   } = params;
   const badges = {};
   const alerts = [];
@@ -171,6 +172,19 @@ export function computeNotifications(params = {}) {
       count: expiringRentals.length,
       message: `${expiringRentals.length} contrato${expiringRentals.length > 1 ? 's' : ''} vencendo em até 7 dias`,
       color: 'orange',
+    });
+  }
+
+  // ─── MULTAS ───────────────────────────────────────────────────────────────
+  const pendingFines = (fines || []).filter(f => f.status === 'Pendente' || f.status === 'Em Cobrança');
+  if (pendingFines.length > 0) {
+    badges.multas = pendingFines.length;
+    alerts.push({
+      module: 'multas',
+      label: 'Multas',
+      count: pendingFines.length,
+      message: `${pendingFines.length} multa${pendingFines.length > 1 ? 's' : ''} pendente${pendingFines.length > 1 ? 's' : ''} de pagamento`,
+      color: 'red',
     });
   }
 

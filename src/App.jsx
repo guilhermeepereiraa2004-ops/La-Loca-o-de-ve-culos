@@ -22,6 +22,7 @@ const App = () => {
     leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, clients, replacementContracts,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
+    fines, isFinesDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
@@ -33,7 +34,8 @@ const App = () => {
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
-    handleInterestSubmit
+    handleInterestSubmit,
+    handleAddFine, handleUpdateFine, handleDeleteFine
   } = useAppState();
 
 
@@ -93,6 +95,11 @@ const App = () => {
         systemUsers={systemUsers}
         logs={logs}
         isLogsDbConnected={isLogsDbConnected}
+        fines={fines}
+        isFinesDbConnected={isFinesDbConnected}
+        onAddFine={handleAddFine}
+        onUpdateFine={handleUpdateFine}
+        onDeleteFine={handleDeleteFine}
         onAddSystemUser={handleAddSystemUser}
         onUpdateSystemUser={handleUpdateSystemUser}
         onDeleteSystemUser={handleDeleteSystemUser}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Search, User, Phone, Mail, FileText, Calendar, ExternalLink, Eye } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, Eye } from 'lucide-react';
 import ClientDetailModal from '../modals/ClientDetailModal';
+import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminClientes = ({ clients = [], onUpdateClient }) => {
   const [search, setSearch] = useState('');
@@ -29,27 +30,32 @@ const AdminClientes = ({ clients = [], onUpdateClient }) => {
   });
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
-          <h3 className="text-4xl font-black uppercase tracking-tighter">Base de Clientes</h3>
-          <p className="text-neutral-400 text-sm font-light mt-1">Gestão de condutores com histórico de locação.</p>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
+      {/* Premium Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-6 xl:mb-8 2xl:mb-12">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+            <EditorialLabel className="text-[#C5A059] tracking-[0.3em]">Gestão de Condutores</EditorialLabel>
+          </div>
+          <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Clientes</h3>
+          <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Base de condutores cadastrados e histórico de conformidade de documentos.</p>
         </div>
       </div>
 
       {/* Search & Filters */}
-      <div className="flex flex-col lg:flex-row gap-6 mb-12">
-        <div className="relative flex-1">
-          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
+      <div className="bg-white rounded-[2rem] xl:rounded-[3rem] p-6 border border-neutral-100 shadow-sm mb-8 xl:mb-12 flex flex-col lg:flex-row gap-6 justify-between items-center">
+        <div className="relative flex-1 w-full group">
+          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
           <input 
             type="text" 
             value={search} 
             onChange={e => setSearch(e.target.value)} 
             placeholder="Buscar por nome, CPF ou telefone..." 
-            className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-light shadow-sm" 
+            className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
           />
         </div>
-        <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
+        <div className="flex bg-neutral-50 p-1.5 rounded-[2rem] border border-neutral-100 shadow-inner shrink-0 w-full lg:w-auto">
           {[
             { id: 'todos', label: 'Todos' },
             { id: 'ativos', label: 'CNH Ativa' },
@@ -58,9 +64,9 @@ const AdminClientes = ({ clients = [], onUpdateClient }) => {
             <button
               key={item.id}
               onClick={() => setStatusFilter(item.id)}
-              className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${statusFilter === item.id
-                ? 'bg-neutral-900 text-white shadow-lg'
-                : 'text-neutral-400 hover:text-neutral-900'
+              className={`flex-1 lg:flex-none px-6 py-3.5 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all duration-500 ${statusFilter === item.id
+                ? 'bg-neutral-900 text-white shadow-xl shadow-neutral-900/20 scale-105'
+                : 'text-neutral-400 hover:text-neutral-900 hover:bg-white'
               }`}
             >
               {item.label}
@@ -69,73 +75,142 @@ const AdminClientes = ({ clients = [], onUpdateClient }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+      {/* Grid container */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
         {filteredClients.length === 0 ? (
-          <div className="col-span-full text-center py-24 bg-white rounded-[3rem] border border-dashed border-neutral-200">
-            <User size={48} className="mx-auto text-neutral-200 mb-4" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-300">Nenhum cliente encontrado</p>
+          <div className="col-span-full p-20 text-center bg-white border border-neutral-100 rounded-3xl shadow-sm max-w-md mx-auto">
+            <User size={36} className="mx-auto mb-4 text-neutral-200" />
+            <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tighter mb-1">Nenhum cliente encontrado</h4>
+            <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest leading-none">Não encontramos registros para os filtros selecionados</p>
           </div>
         ) : (
-          filteredClients.map((client, index) => (
-            <div key={index} className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16" />
-              
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xl">
-                  {(client.nome || client.name || '?').charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{client.nome || client.name}</h4>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-[10px] text-[#C5A059] font-bold uppercase tracking-widest">Cliente Verificado</p>
-                    {isExpired(client.cnhExpiration || client.cnhValidity) && (
-                      <span className="bg-red-50 text-red-600 text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-tighter border border-red-100">
-                        CNH Vencida
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+          filteredClients.map((client, index) => {
+            const hasCnh = !!(client.cnhNumber);
+            const expired = isExpired(client.cnhExpiration || client.cnhValidity);
+            
+            // Format days remaining
+            const expirationInfo = (() => {
+              const dateVal = client.cnhExpiration || client.cnhValidity;
+              if (!dateVal) return { label: 'Não informado', days: 0, isExpired: false };
+              const diff = new Date(dateVal).getTime() - new Date().getTime();
+              const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+              const formattedDate = new Date(dateVal).toLocaleDateString('pt-BR');
+              return {
+                label: `Validade: ${formattedDate}`,
+                days: days,
+                isExpired: days <= 0
+              };
+            })();
 
-              <div className="space-y-4 mb-8">
-                <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-2xl">
-                  <Phone size={14} className="text-neutral-400" />
-                  <div>
-                    <p className="text-[8px] uppercase text-neutral-400 font-black">WhatsApp / Contato</p>
-                    <p className="text-xs font-bold text-neutral-900">{client.telefone || client.phone}</p>
-                  </div>
-                </div>
+            return (
+              <div key={index} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">
+                {/* Background ambient light */}
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16 animate-pulse" />
                 
-                <div className="flex items-center gap-3 p-4 bg-neutral-50 rounded-2xl">
-                  <FileText size={14} className="text-neutral-400" />
-                  <div className="flex flex-col">
-                    <p className="text-[8px] uppercase text-neutral-400 font-black">CNH: {client.cnhNumber}</p>
-                    <span className={`text-[10px] font-black uppercase tracking-tight ${isExpired(client.cnhExpiration || client.cnhValidity) ? 'text-red-500' : 'text-neutral-900'}`}>
-                      {(client.cnhExpiration || client.cnhValidity) ? (
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span>Vence em: {new Date(client.cnhExpiration || client.cnhValidity).toLocaleDateString('pt-BR')}</span>
-                          <span className="px-2 py-0.5 bg-neutral-100 text-neutral-500 text-[8px] rounded">
-                            {(() => {
-                              const diff = new Date(client.cnhExpiration || client.cnhValidity).getTime() - new Date().getTime();
-                              const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-                              return days > 0 ? `${days} dias` : 'Vencido';
-                            })()}
-                          </span>
-                        </div>
-                      ) : 'Não informado'}
+                <div>
+                  {/* Card Header: CNH status indicator & verify badge */}
+                  <div className="flex justify-between items-center mb-5 pb-4 border-b border-neutral-100/60">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2 h-2 rounded-full ${expired ? 'bg-red-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                        {expired ? 'CNH Vencida' : 'CNH Regular'}
+                      </span>
+                    </div>
+                    <span className="bg-[#C5A059]/10 text-[#C5A059] text-[8px] font-black px-2 py-1 rounded-xl uppercase tracking-wider">
+                      Verificado
                     </span>
                   </div>
-                </div>
-              </div>
 
-              <button 
-                onClick={() => setSelectedClient(client)}
-                className="w-full py-4 bg-neutral-900 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2"
-              >
-                <Eye size={14} /> Abrir Ficha do Cliente
-              </button>
-            </div>
-          ))
+                  {/* Main Profile Info: Avatar & Name & CPF */}
+                  <div className="flex items-start gap-4 mb-6">
+                    <div className="w-14 h-14 bg-neutral-950 text-[#C5A059] rounded-2xl flex items-center justify-center font-black text-xl shadow-md shrink-0 select-none group-hover:scale-105 transition-transform duration-300">
+                      {(client.nome || client.name || '?').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <h4 className="text-base font-black text-neutral-900 uppercase tracking-tight truncate" title={client.nome || client.name}>
+                        {client.nome || client.name}
+                      </h4>
+                      <div className="inline-flex items-center gap-1.5 font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-50 text-neutral-600 border border-neutral-200/60 uppercase">
+                        CPF: {client.cpf || 'S/CPF'}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Contacts and details */}
+                  <div className="bg-neutral-50/50 border border-neutral-100/70 p-4 rounded-2xl space-y-3.5 mb-6">
+                    {/* Contacts info */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                        <span>Contatos</span>
+                      </div>
+                      
+                      {/* Phone / Whatsapp */}
+                      {(client.telefone || client.phone) && (
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-800">
+                            <Phone size={12} className="text-neutral-400" />
+                            <span>{client.telefone || client.phone}</span>
+                          </div>
+                          <a
+                            href={`https://wa.me/${(client.telefone || client.phone).replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 p-1.5 rounded-lg transition-colors flex items-center justify-center"
+                            title="WhatsApp"
+                          >
+                            <Phone size={12} />
+                          </a>
+                        </div>
+                      )}
+
+                      {/* Email */}
+                      {(client.email) && (
+                        <div className="flex items-center gap-2 text-xs font-bold text-neutral-800 truncate" title={client.email}>
+                          <Mail size={12} className="text-neutral-400 shrink-0" />
+                          <span className="truncate">{client.email}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* CNH Details */}
+                    <div className="pt-3 border-t border-neutral-100/80 space-y-2">
+                      <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                        <span>Carteira de Habilitação</span>
+                      </div>
+                      
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-xs font-black text-neutral-900">
+                          {client.cnhNumber ? `Nº ${client.cnhNumber}` : 'S/ CNH Cadastrada'}
+                        </span>
+                        {hasCnh && (
+                          <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                            expirationInfo.isExpired ? 'bg-red-50 text-red-600 border border-red-100/50' :
+                            expirationInfo.days <= 30 ? 'bg-amber-50 text-amber-600 border border-amber-100/50' :
+                            'bg-emerald-50 text-emerald-600 border border-emerald-100/50'
+                          }`}>
+                            {expirationInfo.isExpired ? 'Vencido' : `${expirationInfo.days} dias`}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                        <Calendar size={11} className="text-[#C5A059]" />
+                        <span>{expirationInfo.label}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Action */}
+                <button 
+                  onClick={() => setSelectedClient(client)}
+                  className="w-full py-3.5 bg-neutral-950 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-200"
+                >
+                  <Eye size={13} /> Abrir Ficha do Cliente
+                </button>
+              </div>
+            );
+          })
         )}
       </div>
 

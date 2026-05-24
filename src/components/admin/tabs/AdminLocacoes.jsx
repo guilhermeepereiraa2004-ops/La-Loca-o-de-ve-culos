@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2, Calendar } from 'lucide-react';
+import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2, Calendar, X } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getPublicUrl } from '../../../utils/supabaseStorage';
 
@@ -264,18 +264,10 @@ const AdminLocacoes = ({
             )}
           </div>
         </div>
-        <div className="hidden lg:block overflow-x-auto overflow-y-hidden">
-          <table className="w-full text-left border-separate border-spacing-y-2 xl:border-spacing-y-3 2xl:border-spacing-y-4 px-4 pb-4 xl:px-6 xl:pb-6 2xl:px-8 2xl:pb-8 min-w-full">
-            <thead>
-              <tr className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-black">
-                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4">Veículo & Identificação</th>
-                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4">Perfil do Condutor</th>
-                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4">Acordo Financeiro</th>
-                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-center">Cronograma</th>
-                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-right">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="font-light">
+
+        <div className="p-6 md:p-8 xl:p-10 bg-neutral-50/30">
+          {filteredRentals.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
               {filteredRentals.map((rental) => {
                 try {
                   const hasEntrega = inspections.some(ins => 
@@ -314,134 +306,136 @@ const AdminLocacoes = ({
                   })();
 
                   const hasDevolucao = inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.startDate || rental.date));
+                  const isClosed = dates.isClosed;
 
-                return (
-                  <tr key={rental.id} className="group transition-all duration-500">
-                    {/* Vehicle Column */}
-                    <td className="px-2 py-2 xl:py-2.5 2xl:py-3 bg-white border border-neutral-100 rounded-l-[1.5rem] xl:rounded-l-[2rem] 2xl:rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
-                      <div className="flex items-center gap-2 xl:gap-3 pl-2 xl:pl-3">
-                        <div className="w-20 h-14 xl:w-22 xl:h-16 2xl:w-26 2xl:h-20 rounded-[1.2rem] xl:rounded-[1.5rem] 2xl:rounded-[2rem] overflow-hidden bg-neutral-100 shrink-0 shadow-xl border-2 xl:border-4 border-white group-hover:scale-105 transition-all duration-700">
+                  return (
+                    <div key={rental.id} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">
+                      {/* Card Top: Status & Remaining Days */}
+                      <div className="flex justify-between items-center mb-5 pb-4 border-b border-neutral-100/60">
+                        <div className="flex items-center gap-2">
+                          <span className={`w-2 h-2 rounded-full ${isClosed ? 'bg-neutral-300' : 'bg-emerald-500 animate-pulse'}`} />
+                          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
+                            {isClosed ? 'Encerrado' : 'Ativo'}
+                          </span>
+                        </div>
+                        <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-wider ${
+                          isClosed ? 'bg-neutral-100 text-neutral-500' :
+                          dates.remaining <= 2 ? 'bg-red-50 text-red-600 border border-red-100/50' :
+                          dates.remaining <= 5 ? 'bg-amber-50 text-amber-600 border border-amber-100/50' :
+                          'bg-emerald-50 text-emerald-600 border border-emerald-100/50'
+                        }`}>
+                          {isClosed ? 'Finalizado' : dates.remaining > 0 ? `Restam ${dates.remaining} dias` : 'Vencido'}
+                        </span>
+                      </div>
+
+                      {/* Main Info: Vehicle details & Conductor name */}
+                      <div className="flex items-start gap-4 mb-6">
+                        <div className="w-20 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-150 shadow-sm shrink-0">
                           <img 
                             src={getPublicUrl(rental.image) || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} 
                             alt={rental.vehicle} 
-                            className="w-full h-full object-cover group-hover:rotate-2 transition-transform duration-700" 
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                           />
                         </div>
-                        <div className="space-y-1.5 xl:space-y-4">
-                          <div>
-                            <p className="text-[8px] font-black uppercase tracking-widest text-[#C5A059] mb-1">Modelo Selecionado</p>
-                            <h6 className="text-xs xl:text-base 2xl:text-xl font-black text-neutral-900 uppercase tracking-tighter leading-none group-hover:text-[#C5A059] transition-colors">
-                              {rental.vehicleModel || rental.vehicle || 'Veículo Indefinido'}
-                            </h6>
+                        <div className="min-w-0 flex-1 space-y-1">
+                          <div className="flex items-baseline gap-2 flex-wrap">
+                            <h4 className="text-sm font-black text-neutral-900 uppercase tracking-tight truncate max-w-[130px]" title={rental.vehicleModel || rental.vehicle}>
+                              {rental.vehicleModel || rental.vehicle || 'Veículo N/I'}
+                            </h4>
+                            <span className="font-mono text-[9px] font-bold px-1.5 py-0.5 rounded bg-neutral-50 text-neutral-600 border border-neutral-200/60 uppercase">
+                              {(rental.vehiclePlate || rental.plate || '').replace('-', '') || 'S/PLACA'}
+                            </span>
                           </div>
-                          <div className="flex flex-col w-16 h-8 xl:w-20 xl:h-9 2xl:w-24 2xl:h-10 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-lg transform group-hover:rotate-1 transition-all">
-                            <div className="h-2.5 bg-[#003399] flex items-center justify-center">
-                              <span className="text-[5px] text-white font-black tracking-[0.3em]">BRASIL</span>
-                            </div>
-                            <div className="flex-1 flex items-center justify-center bg-white">
-                              <span className="text-[8px] xl:text-[11px] 2xl:text-xs font-black tracking-tight text-neutral-900">
-                                {(rental.vehiclePlate || rental.plate || '').replace('-', '') || 'S/ PLACA'}
-                              </span>
-                            </div>
+                          
+                          <div className="flex items-center gap-2 pt-0.5">
+                            <span className="text-xs font-bold text-neutral-500 truncate" title={rental.userName || rental.user}>
+                              {rental.userName || rental.user}
+                            </span>
+                            {(rental.clientPhone || rental.phone) && (
+                              <a
+                                href={`https://wa.me/${(rental.clientPhone || rental.phone).replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-emerald-500 hover:text-emerald-600 transition-colors shrink-0"
+                                title="WhatsApp"
+                              >
+                                <Phone size={10} />
+                              </a>
+                            )}
                           </div>
                         </div>
                       </div>
-                    </td>
 
-                    {/* Conductor Column */}
-                    <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
-                      <div className="flex flex-col gap-1.5 xl:gap-2">
-                        <div className="flex items-center gap-2 xl:gap-2.5 bg-neutral-50/50 p-2 xl:p-2.5 rounded-[1.2rem] xl:rounded-[2rem] border border-neutral-100 group-hover:bg-white group-hover:border-[#C5A059]/20 transition-all duration-500">
-                          <div className="w-7 h-7 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-neutral-900 rounded-lg xl:rounded-2xl flex items-center justify-center text-[#C5A059] shadow-xl group-hover:bg-[#C5A059] group-hover:text-white transition-colors shrink-0">
-                            <User size={16} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs xl:text-base font-black text-neutral-900 tracking-tight truncate leading-none mb-1">{rental.userName || rental.user}</p>
-                            <div className="flex items-center gap-2">
-                              {(rental.clientPhone || rental.phone) && (
-                                <a
-                                  href={`https://wa.me/${(rental.clientPhone || rental.phone).replace(/\D/g, '')}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest hover:text-emerald-600 transition-colors bg-emerald-50 px-2 py-0.5 rounded-full"
-                                >
-                                  <Phone size={8} /> WhatsApp
-                                </a>
-                              )}
-                            </div>
-                          </div>
+                      {/* Financials & Dates */}
+                      <div className="bg-neutral-50/50 border border-neutral-100/70 p-4 rounded-2xl space-y-3 mb-6">
+                        <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-wider text-neutral-400">
+                          <span>Acordo Financeiro</span>
+                          <span>Período</span>
                         </div>
                         
-                        {rental.status === 'Ativo' && dates.remaining <= 3 && !hasDevolucao && (
-                          <button 
-                            onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })} 
-                            className="w-full py-1.5 bg-red-500 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg animate-pulse border-2 border-white flex items-center justify-center gap-1"
+                        <div className="flex justify-between items-baseline">
+                          <span className="text-lg font-black text-neutral-900 leading-none">
+                            {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
+                            <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">/ sem</span>
+                          </span>
+                          <span className="text-xs font-black text-[#C5A059] uppercase tracking-wide">
+                            {rental.durationWeeks ? `${rental.durationWeeks} sem` : (rental.period || 'Curto Prazo')}
+                          </span>
+                        </div>
+
+                        <div className="pt-2.5 border-t border-neutral-100 flex justify-between text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                          <span>Início: {dates.start.toLocaleDateString('pt-BR')}</span>
+                          <span>Fim: {dates.end.toLocaleDateString('pt-BR')}</span>
+                        </div>
+                      </div>
+
+                      {/* Operational Alerts / Pending Inspections */}
+                      {!isClosed && (!hasEntrega || (dates.remaining <= 3 && !hasDevolucao)) && (
+                        <div className="flex gap-2.5 mb-5">
+                          {rental.status === 'Ativo' && !hasEntrega && (
+                            <button 
+                              onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })} 
+                              className="flex-1 py-2 bg-[#C5A059] text-white text-[8px] font-black uppercase tracking-widest rounded-xl shadow-sm flex items-center justify-center gap-1 border border-white/10 hover:bg-[#C5A059]/95 transition-all"
+                            >
+                              <ShieldCheck size={11} /> Realizar Entrega
+                            </button>
+                          )}
+                          
+                          {rental.status === 'Ativo' && dates.remaining <= 3 && !hasDevolucao && (
+                            <button 
+                              onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })} 
+                              className="flex-1 py-2 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest rounded-xl shadow-sm animate-pulse border border-white/10 hover:bg-red-700 transition-all flex items-center justify-center gap-1"
+                            >
+                              <Clock size={11} /> Vistoria Devolução
+                            </button>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Card Footer: Main Actions */}
+                      <div className="flex items-center gap-2 pt-2 border-t border-neutral-100/50">
+                        {/* Terminate button */}
+                        {rental.status === 'Ativo' && (
+                          <button
+                            onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })}
+                            className="flex-1 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1"
+                            title="Encerrar Contrato"
                           >
-                            <Clock size={10} /> Vistoria Devolução
+                            <X size={12} /> Encerrar
                           </button>
                         )}
                         
-                        {rental.status === 'Ativo' && !hasEntrega && (
-                           <button 
-                            onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })} 
-                            className="w-full py-1.5 bg-[#C5A059] text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-lg flex items-center justify-center gap-1 border-2 border-white transition-transform hover:scale-105"
-                           >
-                             <ShieldCheck size={10} /> Realizar Entrega
-                           </button>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Financial Column */}
-                    <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
-                      <div className="pl-2 xl:pl-4 border-l-2 xl:border-l-4 border-[#C5A059]/20 space-y-1">
-                        <span className="text-[8px] xl:text-[10px] font-black text-neutral-400 uppercase tracking-widest block">Semanal</span>
-                        <div className="flex items-baseline gap-1">
-                          <span className="text-sm xl:text-xl 2xl:text-2xl font-black text-neutral-900 tracking-tighter">
-                            {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
-                          </span>
-                        </div>
-                        <p className="text-[8px] xl:text-[9px] text-[#C5A059] font-black uppercase tracking-[0.2em]">
-                          {rental.durationWeeks ? `${rental.durationWeeks} semanas` : (rental.period || 'Curto Prazo')}
-                        </p>
-                      </div>
-                    </td>
-
-                    {/* Schedule Column */}
-                    <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
-                      <div className="flex flex-col items-center gap-1.5 xl:gap-2">
-                        <div className={`px-2.5 py-1 xl:px-4 xl:py-2 rounded-2xl text-[8px] xl:text-[10px] font-black uppercase tracking-widest shadow-xl border transition-all duration-700 group-hover:scale-110 ${
-                            dates.isClosed ? 'bg-neutral-100 text-neutral-500 border-neutral-200' :
-                            dates.remaining <= 2 ? 'bg-red-50 text-red-600 border-red-100' :
-                            dates.remaining <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                            'bg-emerald-50 text-emerald-600 border-emerald-100'
-                          }`}>
-                          {dates.isClosed ? 'Encerrado' : dates.remaining > 0 ? `Restam ${dates.remaining} dias` : 'Encerrado'}
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <span className="text-[7px] xl:text-[8px] text-neutral-400 font-black uppercase tracking-[0.2em] mb-1">
-                            {dates.isClosed ? 'Encerrado em' : 'Término em'}
-                          </span>
-                          <span className="text-[8px] xl:text-[10px] text-neutral-900 font-black tracking-tight bg-neutral-50 px-2 py-0.5 xl:px-3 xl:py-1 rounded-lg border border-neutral-100">
-                            {dates.end.toLocaleDateString('pt-BR')}
-                          </span>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Actions Column */}
-                    <td className="px-2 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border border-neutral-100 rounded-r-[1.5rem] xl:rounded-r-[2rem] 2xl:rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right">
-                      <div className="flex justify-end gap-1.5 xl:gap-2 pr-2">
                         <button
                           onClick={() => {
                             setSelectedRental(rental);
                             setShowRentalDetailModal(true);
                           }}
-                          className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-neutral-900 text-white rounded-lg xl:rounded-2xl hover:bg-[#C5A059] transition-all flex items-center justify-center shadow-xl hover:shadow-[#C5A059]/30 group/btn active:scale-95"
+                          className="px-4 py-2.5 bg-neutral-950 text-white text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-1.5 shadow-sm active:scale-95"
                           title="Dossiê Completo"
                         >
-                          <ClipboardList size={14} className="group-hover/btn:scale-110 transition-transform" />
+                          <ClipboardList size={13} /> Ficha
                         </button>
+                        
                         <button
                           onClick={() => {
                             setSelectedRental(rental);
@@ -455,225 +449,39 @@ const AdminLocacoes = ({
                             setIsEditingRental(true);
                             setShowAddForm(true);
                           }}
-                          className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-white text-neutral-400 border border-neutral-200 rounded-lg xl:rounded-2xl hover:border-[#C5A059] hover:text-[#C5A059] transition-all flex items-center justify-center shadow-sm hover:shadow-lg active:scale-95"
+                          className="p-2.5 bg-white text-neutral-400 border border-neutral-200 rounded-xl hover:border-[#C5A059] hover:text-[#C5A059] transition-all flex items-center justify-center shadow-sm active:scale-95"
                           title="Editar"
                         >
-                          <Pencil size={14} />
+                          <Pencil size={13} />
                         </button>
+                        
                         <button
                           onClick={() => {
                             setItemToDelete(rental);
                             setDeleteType('rental');
                             setShowDeleteAuthModal(true);
                           }}
-                          className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-white text-neutral-400 border border-neutral-200 rounded-lg xl:rounded-2xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm hover:shadow-lg active:scale-95"
-                          title="Encerrar"
+                          className="p-2.5 bg-white text-neutral-400 border border-neutral-200 rounded-xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm active:scale-95"
+                          title="Excluir"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
-                    </td>
-                  </tr>
-                );
+                    </div>
+                  );
                 } catch (e) {
-                  console.error('Error rendering rental row:', e);
+                  console.error('Error rendering rental card:', e);
                   return null;
                 }
               })}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Mobile/Tablet Card View */}
-        <div className="lg:hidden p-4 md:p-6 space-y-4">
-          {filteredRentals.map((rental) => {
-            try {
-              const hasEntrega = inspections.some(ins => 
-                ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && 
-                ins.type === 'Entrega' && 
-                new Date(ins.date) >= new Date(rental.startDate || rental.date)
-              );
-              
-              const dates = (() => {
-                try {
-                  const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
-                  const startDate = new Date(rawDate + 'T12:00:00');
-                  if (isNaN(startDate.getTime())) throw new Error('Invalid Start');
-                  
-                  const periodValue = parseInt(rental.durationWeeks || rental.period) || 1;
-                  const isWeekly = String(rental.rentalType || rental.period || '').includes('sem') || String(rental.rentalType || rental.period || '').includes('weekly');
-                  const totalDays = isWeekly ? periodValue * 7 : periodValue;
-                  
-                  const endDate = new Date(startDate.getTime());
-                  endDate.setDate(startDate.getDate() + totalDays);
-                  
-                  const isClosed = rental.status === 'Encerrado';
-                  if (isClosed) {
-                    const closedDate = rental.endDate ? new Date(rental.endDate + 'T12:00:00') : endDate;
-                    return { start: startDate, end: closedDate, remaining: 0, isClosed: true };
-                  }
-                  
-                  const now = new Date();
-                  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                  const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-                  const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                  return { start: startDate, end: endDate, remaining: diffDays, isClosed: false };
-                } catch (e) {
-                  return { start: new Date(), end: new Date(), remaining: 0, isClosed: false };
-                }
-              })();
-
-              const hasDevolucao = inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.startDate || rental.date));
-
-              return (
-                <div key={rental.id} className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-sm space-y-4 hover:border-[#C5A059]/30 transition-all duration-300">
-                  {/* Header: Photo and Info */}
-                  <div className="flex gap-4">
-                    <div className="w-24 h-16 rounded-xl overflow-hidden bg-neutral-100 shrink-0 border border-neutral-150 shadow-sm">
-                      <img 
-                        src={getPublicUrl(rental.image) || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} 
-                        alt={rental.vehicle} 
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <div className="min-w-0 space-y-1">
-                      <p className="text-[8px] font-black uppercase tracking-widest text-[#C5A059]">Modelo Selecionado</p>
-                      <h6 className="text-sm font-black text-neutral-900 uppercase tracking-tighter truncate leading-none">
-                        {rental.vehicleModel || rental.vehicle || 'Veículo Indefinido'}
-                      </h6>
-                      <div className="flex flex-col w-20 h-9 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-md scale-90 origin-left">
-                        <div className="h-2.5 bg-[#003399] flex items-center justify-center">
-                          <span className="text-[5px] text-white font-black tracking-[0.3em]">BRASIL</span>
-                        </div>
-                        <div className="flex-1 flex items-center justify-center bg-white">
-                          <span className="text-[9px] font-black tracking-tight text-neutral-900">
-                            {(rental.vehiclePlate || rental.plate || '').replace('-', '') || 'S/ PLACA'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Profile and WhatsApp */}
-                  <div className="bg-neutral-50 p-3 rounded-2xl border border-neutral-100 flex flex-col gap-2">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059] shadow-sm shrink-0">
-                        <User size={16} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-black text-neutral-900 truncate leading-none mb-0.5">{rental.userName || rental.user}</p>
-                        {rental.clientPhone || rental.phone ? (
-                          <a
-                            href={`https://wa.me/${(rental.clientPhone || rental.phone).replace(/\D/g, '')}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-full hover:bg-emerald-100"
-                          >
-                            <Phone size={8} /> WhatsApp
-                          </a>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {/* Vistoria Technical Buttons */}
-                    <div className="flex gap-2 mt-1">
-                      {rental.status === 'Ativo' && dates.remaining <= 3 && !hasDevolucao && (
-                        <button 
-                          onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })} 
-                          className="flex-1 py-2 bg-red-500 text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-sm animate-pulse border border-white flex items-center justify-center gap-1.5"
-                        >
-                          <Clock size={10} /> Vistoria Devolução
-                        </button>
-                      )}
-                      
-                      {rental.status === 'Ativo' && !hasEntrega && (
-                         <button 
-                          onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })} 
-                          className="flex-1 py-2 bg-[#C5A059] text-white text-[8px] font-black uppercase tracking-widest rounded-full shadow-sm flex items-center justify-center gap-1.5 border border-white transition-transform hover:scale-105"
-                         >
-                           <ShieldCheck size={10} /> Realizar Entrega
-                         </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Financial & Schedule Data */}
-                  <div className="grid grid-cols-2 gap-4 py-3 border-t border-b border-neutral-50 text-xs">
-                    <div className="space-y-0.5">
-                      <span className="text-[8px] font-black text-neutral-400 uppercase tracking-widest block">Acordo Financeiro</span>
-                      <span className="text-sm font-black text-neutral-900">
-                        {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
-                      </span>
-                      <span className="text-[7px] text-[#C5A059] font-black uppercase block tracking-wider">
-                        {rental.durationWeeks ? `${rental.durationWeeks} sem` : (rental.period || 'Curto Prazo')}
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className={`px-3 py-1 rounded-2xl text-[8px] font-black uppercase tracking-widest border transition-all text-center w-fit ${
-                          dates.isClosed ? 'bg-neutral-100 text-neutral-500 border-neutral-200' :
-                          dates.remaining <= 2 ? 'bg-red-50 text-red-600 border-red-100' :
-                          dates.remaining <= 5 ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                          'bg-emerald-50 text-emerald-600 border-emerald-100'
-                        }`}>
-                        {dates.isClosed ? 'Encerrado' : dates.remaining > 0 ? `Restam ${dates.remaining} d` : 'Encerrado'}
-                      </div>
-                      <div className="text-[8px]">
-                        <span className="text-neutral-400 font-bold uppercase tracking-wider block">Término:</span>
-                        <span className="font-bold text-neutral-900">{dates.end.toLocaleDateString('pt-BR')}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-2 pt-1 justify-end">
-                    <button
-                      onClick={() => {
-                        setSelectedRental(rental);
-                        setShowRentalDetailModal(true);
-                      }}
-                      className="flex-1 py-3 bg-neutral-900 text-white text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-1.5 shadow-md active:scale-95"
-                      title="Dossiê Completo"
-                    >
-                      <ClipboardList size={14} /> Ficha
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedRental(rental);
-                        setRentalForm({
-                          ...rental,
-                          user: rental.user || rental.userName || '',
-                          durationWeeks: rental.durationWeeks || (rental.period ? parseInt(rental.period) : '4'),
-                          startDate: rental.startDate || rental.date,
-                          docs: rental.docs || { cnh: null, residence: null, appPrints: [], signedContract: null }
-                        });
-                        setIsEditingRental(true);
-                        setShowAddForm(true);
-                      }}
-                      className="w-10 h-10 bg-white text-neutral-400 border border-neutral-200 rounded-xl hover:border-[#C5A059] hover:text-[#C5A059] transition-all flex items-center justify-center shadow-sm active:scale-95"
-                      title="Editar"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        setItemToDelete(rental);
-                        setDeleteType('rental');
-                        setShowDeleteAuthModal(true);
-                      }}
-                      className="w-10 h-10 bg-white text-neutral-400 border border-neutral-200 rounded-xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm active:scale-95"
-                      title="Excluir/Encerrar"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-              );
-            } catch (e) {
-              console.error('Error rendering mobile rental card:', e);
-              return null;
-            }
-          })}
+            </div>
+          ) : (
+            <div className="p-20 text-center bg-white border border-neutral-100 rounded-3xl shadow-sm max-w-md mx-auto">
+              <ClipboardList size={36} className="mx-auto mb-4 text-neutral-200" />
+              <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tighter mb-1">Nenhuma locação encontrada</h4>
+              <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest leading-none">Não encontramos registros para os filtros selecionados</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus,
 import { formatCPF } from '../../../utils/cpfFormatter';
 import InvestorPayoutModal from '../modals/InvestorPayoutModal.jsx';
 import { getPayoutsForInvestor, formatReferenceMonth } from '../../../utils/investorPayouts.js';
-
+import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminInvestidores = ({
   investors,
@@ -62,7 +62,7 @@ const AdminInvestidores = ({
            if (isRespInvestor) {
              monthlyNet[monthKey] -= val;
            }
-        }
+         }
       } catch (e) {}
     });
 
@@ -126,7 +126,7 @@ const AdminInvestidores = ({
   }, [isEditing]);
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* Modal de repasse */}
       {payoutModal && (
         <InvestorPayoutModal
@@ -164,7 +164,7 @@ const AdminInvestidores = ({
                value={debtPaymentInput}
                onChange={(e) => setDebtPaymentInput(e.target.value)}
                placeholder="Ex: 150.00"
-               className="w-full bg-neutral-50 border-none p-5 text-lg rounded-2xl mt-2 mb-6 outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-neutral-900"
+               className="w-full bg-neutral-50 border border-neutral-150 p-5 text-lg rounded-2xl mt-2 mb-6 outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-neutral-900 shadow-inner"
             />
             
             <button 
@@ -188,7 +188,7 @@ const AdminInvestidores = ({
                    setDebtPaymentModal(null);
                  }
               }}
-              className="w-full py-5 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-lg"
+              className="w-full py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-lg active:scale-95 duration-200"
             >
                Confirmar Pagamento
             </button>
@@ -198,409 +198,453 @@ const AdminInvestidores = ({
 
       {!showForm ? (
         <>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
-            <div>
-              <h3 className="text-3xl font-black uppercase tracking-tighter">Investidores</h3>
-              <p className="text-neutral-400 text-sm font-light mt-1">Gerencie os parceiros e proprietários dos ativos da frota.</p>
+          {/* Header */}
+          <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-8 xl:mb-12">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+                <EditorialLabel className="text-[#C5A059] tracking-[0.3em]">Gestão de Ativos e Cotas</EditorialLabel>
+              </div>
+              <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Investidores</h3>
+              <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Painel de parceiros proprietários de ativos e controle financeiro de repasses.</p>
             </div>
             
-            {/* Próximo Pagamento Info */}
-            <div className="flex bg-neutral-900 p-4 rounded-2xl border border-[#C5A059]/20 shadow-xl items-center gap-6">
-              <div className="w-12 h-12 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-lg shadow-[#C5A059]/20">
-                <Calendar size={20} />
-              </div>
-              <div>
-                <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black mb-1">Próximo Repasse (5º Dia Útil)</p>
-                <p className="text-sm font-black text-white">
-                  {(() => {
-                    const getFifthBusinessDay = (date = new Date()) => {
-                      const year = date.getFullYear();
-                      const month = date.getMonth();
-                      let count = 0;
-                      let day = 1;
-                      while (count < 5) {
-                        const d = new Date(year, month, day);
-                        const dayOfWeek = d.getDay();
-                        if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
-                        if (count < 5) day++;
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full xl:w-auto shrink-0">
+              {/* Próximo Pagamento Info */}
+              <div className="flex bg-neutral-900 px-6 py-4 rounded-2xl border border-neutral-800 shadow-xl items-center gap-4">
+                <div className="w-10 h-10 bg-[#C5A059]/10 text-[#C5A059] rounded-xl flex items-center justify-center shrink-0">
+                  <Calendar size={18} />
+                </div>
+                <div>
+                  <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black mb-0.5">Próximo Repasse (5º Dia Útil)</p>
+                  <p className="text-xs font-black text-white font-mono">
+                    {(() => {
+                      const getFifthBusinessDay = (date = new Date()) => {
+                        const year = date.getFullYear();
+                        const month = date.getMonth();
+                        let count = 0;
+                        let day = 1;
+                        while (count < 5) {
+                          const d = new Date(year, month, day);
+                          const dayOfWeek = d.getDay();
+                          if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+                          if (count < 5) day++;
+                        }
+                        return new Date(year, month, day);
+                      };
+                      const today = new Date();
+                      const payoutDate = getFifthBusinessDay(new Date(today.getFullYear(), today.getMonth()));
+                      if (today > payoutDate) {
+                        return getFifthBusinessDay(new Date(today.getFullYear(), today.getMonth() + 1)).toLocaleDateString('pt-BR');
                       }
-                      return new Date(year, month, day);
-                    };
-                    const today = new Date();
-                    const payoutDate = getFifthBusinessDay(new Date(today.getFullYear(), today.getMonth()));
-                    // Se o dia útil do mês atual já passou, mostra o do próximo mês
-                    if (today > payoutDate) {
-                      return getFifthBusinessDay(new Date(today.getFullYear(), today.getMonth() + 1)).toLocaleDateString('pt-BR');
-                    }
-                    return payoutDate.toLocaleDateString('pt-BR');
-                  })()}
-                </p>
+                      return payoutDate.toLocaleDateString('pt-BR');
+                    })()}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <button
-              onClick={() => {
-                setInvestorForm({
-                  name: '', email: '', phone: '', cpf: '', address: '',
-                  password: '', status: 'Ativo', bank: '', pix: ''
-                });
-                setIsEditing(false);
-                setShowForm(true);
-              }}
-              className="flex items-center gap-3 px-8 py-4 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl group"
-            >
-              <Plus size={16} className="text-[#C5A059] group-hover:text-white transition-colors" />
-              Cadastrar Investidor
-            </button>
+              <button
+                onClick={() => {
+                  setInvestorForm({
+                    name: '', email: '', phone: '', cpf: '', address: '',
+                    password: '', status: 'Ativo', bank: '', pix: ''
+                  });
+                  setIsEditing(false);
+                  setShowForm(true);
+                }}
+                className="flex items-center justify-center gap-3 px-8 py-4 bg-neutral-950 text-[#C5A059] text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-neutral-950/10 group whitespace-nowrap"
+              >
+                <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
+                Novo Investidor
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {investors.map((investor) => (
-              <div key={investor.id} className="bg-white p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md hover:border-[#C5A059]/30 transition-all group">
-                <div className="flex justify-between items-start mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xl shadow-lg">
-                      {investor.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-lg font-black text-neutral-900">{investor.name}</p>
-                      <div className="flex items-center gap-2">
-                        <span className={`w-2 h-2 rounded-full ${investor.status === 'Ativo' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                        <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{investor.status}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setInvestorForm(investor);
-                        setIsEditing(true);
-                        setShowForm(true);
-                      }}
-                      className="w-10 h-10 bg-neutral-50 text-neutral-400 rounded-xl flex items-center justify-center hover:bg-neutral-900 hover:text-white transition-all"
-                      title="Editar"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => onDeleteInvestor(investor.id)}
-                      className="w-10 h-10 bg-red-50 text-red-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all"
-                      title="Excluir"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
+            {investors.map((investor) => {
+              const { payout, currentMonthNet, carriedDebt } = calculateInvestorPayout(investor);
+              const invVehs = (vehicles || []).filter(v => {
+                const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
+                const invIdMatch = v.investorId === investor.id;
+                return invNameMatch || invIdMatch;
+              });
 
-                <div className="space-y-4 pt-6 border-t border-neutral-50">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Documento</span>
-                    <p className="text-xs font-bold text-neutral-700">{investor.cpf}</p>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Dados Bancários / PIX</span>
-                    <p className="text-xs text-neutral-700 font-semibold leading-tight">
-                      {investor.bank ? `${investor.bank} | ` : ''} PIX: <span className="text-[#C5A059]">{investor.pix || 'Não Informado'}</span>
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Contato</span>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-2 text-xs text-neutral-600 font-medium">
-                        <Mail size={12} className="text-[#C5A059]" /> {investor.email}
+              return (
+                <div key={investor.id} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">
+                  {/* Background ambient light */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16 animate-pulse" />
+                  
+                  <div>
+                    {/* Card Top: Profile and quick actions */}
+                    <div className="flex justify-between items-start mb-5 pb-4 border-b border-neutral-100/60">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-12 h-12 bg-neutral-950 text-[#C5A059] rounded-2xl flex items-center justify-center font-black text-lg shadow-md shrink-0 group-hover:scale-105 transition-transform duration-300 select-none">
+                          {investor.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-base font-black text-neutral-900 uppercase tracking-tight truncate" title={investor.name}>
+                            {investor.name}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${investor.status === 'Ativo' ? 'bg-emerald-500' : 'bg-red-500'}`} />
+                            <span className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">{investor.status}</span>
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-neutral-600 font-medium">
-                        <Phone size={12} className="text-[#C5A059]" /> {investor.phone}
+                      
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button
+                          onClick={() => {
+                            setInvestorForm(investor);
+                            setIsEditing(true);
+                            setShowForm(true);
+                          }}
+                          className="w-8 h-8 bg-neutral-50 text-neutral-400 border border-neutral-200/50 rounded-lg flex items-center justify-center hover:border-[#C5A059] hover:text-[#C5A059] hover:bg-white transition-all shadow-sm active:scale-95"
+                          title="Editar"
+                        >
+                          <Pencil size={12} />
+                        </button>
+                        <button
+                          onClick={() => onDeleteInvestor(investor.id)}
+                          className="w-8 h-8 bg-red-50/50 text-red-400 border border-red-100/50 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                          title="Excluir"
+                        >
+                          <Trash2 size={12} />
+                        </button>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Dynamic monthly payout calculation */}
-                  {(() => {
-                    const { payout, currentMonthNet, carriedDebt } = calculateInvestorPayout(investor);
-                    const invVehs = (vehicles || []).filter(v => {
-                      const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
-                      const invIdMatch = v.investorId === investor.id;
-                      return invNameMatch || invIdMatch;
-                    });
-                    
-                    return (
-                      <div className="mt-6 pt-6 border-t border-neutral-50 space-y-4">
-                        <div className="flex justify-between items-center bg-neutral-50/50 p-4 rounded-2xl border border-neutral-100">
-                          <div>
-                            <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-black">Repasse Mês Atual</span>
-                            <p className="text-base font-black text-neutral-900 leading-none mt-1 font-mono">
-                              R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
-                            {carriedDebt < 0 && (
-                              <p className="text-[9px] text-amber-600 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1">
-                                <span className="bg-amber-100 text-amber-700 px-1 rounded">- R$ {Math.abs(carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span> de meses anteriores
-                              </p>
-                            )}
-                            {payout < 0 && (
-                              <p className="text-[9px] text-red-500 font-bold uppercase tracking-widest mt-1.5 flex items-center gap-1">
-                                Saldo devedor para próx. mês: R$ {Math.abs(payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                              </p>
-                            )}
+
+                    {/* Personal & Bank info block */}
+                    <div className="bg-neutral-50/50 border border-neutral-100/70 p-4 rounded-2xl space-y-3.5 mb-5">
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-neutral-400">
+                          <span>Identificação</span>
+                          <span>Contatos</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="min-w-0">
+                            <p className="text-[8px] uppercase text-neutral-400 font-black">CPF</p>
+                            <p className="text-xs font-mono font-bold text-neutral-800 truncate">{investor.cpf || 'Não Informado'}</p>
                           </div>
-                          <span className={`text-[8px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${payout > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-neutral-100 text-neutral-400'}`}>
-                            {payout > 0 ? 'A Repassar' : (payout < 0 ? 'Devendo' : 'Sem Ganhos')}
+                          <div className="text-right min-w-0">
+                            <p className="text-[8px] uppercase text-neutral-400 font-black">Telefone / E-mail</p>
+                            <p className="text-[11px] font-bold text-neutral-800 truncate">{investor.phone}</p>
+                            <p className="text-[9px] font-medium text-neutral-400 truncate" title={investor.email}>{investor.email}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-3 border-t border-neutral-100/80 space-y-1">
+                        <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-black">Dados para Payout / PIX</span>
+                        <p className="text-xs text-neutral-800 font-bold leading-tight truncate">
+                          {investor.bank ? `${investor.bank}` : 'Banco N/I'}
+                        </p>
+                        <p className="text-[10px] font-semibold text-neutral-500 truncate">
+                          Chave PIX: <span className="text-[#C5A059] font-bold">{investor.pix || 'Não Informada'}</span>
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Financial details container */}
+                    <div className="bg-[#C5A059]/5 border border-[#C5A059]/10 p-4 rounded-2xl space-y-4 mb-6">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">Saldo Repasse (Líquido)</span>
+                          <h4 className="text-xl font-mono font-black text-neutral-900 leading-none mt-1">
+                            R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </h4>
+                          
+                          {carriedDebt < 0 && (
+                            <div className="mt-1.5 flex items-center gap-1">
+                              <span className="bg-red-50 border border-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
+                                Débito: - R$ {Math.abs(carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              </span>
+                            </div>
+                          )}
+                          
+                          {payout < 0 && (
+                            <p className="text-[8px] text-red-500 font-black uppercase tracking-wider mt-1.5">
+                              Déficit acumulado para próximo ciclo: R$ {Math.abs(payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                        </div>
+                        
+                        <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
+                          payout > 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 
+                          payout < 0 ? 'bg-red-50 text-red-600 border-red-100/50' : 
+                          'bg-neutral-50 text-neutral-400 border-neutral-200/50'
+                        }`}>
+                          {payout > 0 ? 'A Repassar' : (payout < 0 ? 'Em Débito' : 'Sem Saldo')}
+                        </span>
+                      </div>
+
+                      {/* Associated Vehicles & ADM Taxes */}
+                      <div className="pt-3 border-t border-[#C5A059]/10 space-y-2">
+                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-[#C5A059]">
+                          <span>Ativos Sob Gestão ({invVehs.length})</span>
+                          <span>Taxa Adm</span>
+                        </div>
+                        
+                        {invVehs.length > 0 ? (
+                          <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
+                            {invVehs.map(v => (
+                              <div key={v.id} className="flex justify-between items-center text-[10px] text-neutral-700 font-bold bg-white/60 px-2.5 py-1 rounded-lg border border-neutral-100">
+                                <span className="truncate max-w-[130px]">{v.model} <span className="font-mono text-[9px] text-neutral-400">({v.plate})</span></span>
+                                <span className="font-black text-neutral-900">{v.adminTax || 15}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="text-[9px] text-neutral-400 font-bold italic uppercase">Nenhum veículo associado</p>
+                        )}
+                        
+                        <div className="flex justify-between items-center text-[9px] text-neutral-400 font-bold uppercase pt-1.5">
+                          <span>Seguro Franquia Total (Fixo)</span>
+                          <span className="font-mono text-neutral-800">
+                            R$ {(39.90 * invVehs.length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
+                      </div>
 
-                        <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2">
-                          <span>Veículos Associados:</span>
-                          <span className="font-black text-neutral-950">{invVehs.length} ativo(s)</span>
-                        </div>
+                      {/* Payout status for current reference month */}
+                      {(() => {
+                        const now = new Date();
+                        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                        const currentPayoutRecord = (payoutHistory[investor.id] || []).find(p => p.reference_month === currentMonthKey);
+                        
+                        const getFifthBusinessDay = (date = new Date()) => {
+                          const year = date.getFullYear();
+                          const month = date.getMonth();
+                          let count = 0;
+                          let day = 1;
+                          while (count < 5) {
+                            const d = new Date(year, month, day);
+                            const dayOfWeek = d.getDay();
+                            if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+                            if (count < 5) day++;
+                          }
+                          return new Date(year, month, day);
+                        };
+                        const forecastDate = getFifthBusinessDay(now).toLocaleDateString('pt-BR');
 
-                        {invVehs.length > 0 && (
-                          <div className="space-y-1 bg-neutral-50 p-3 rounded-2xl border border-neutral-100 text-[10px]">
-                            <p className="font-black text-neutral-400 uppercase tracking-widest text-[8px] mb-1">Veículos & Taxas ADM</p>
-                            {invVehs.map(v => (
-                              <div key={v.id} className="flex justify-between text-neutral-600 font-medium">
-                                <span>{v.model} ({v.plate})</span>
-                                <span className="font-black text-neutral-900">Taxa: {v.adminTax || 15}%</span>
+                        return (
+                          <div className="pt-3 border-t border-[#C5A059]/10 flex justify-between items-center text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                            <span>Status Repasse:</span>
+                            <div className="text-right">
+                              <span className={`inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${currentPayoutRecord ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                {currentPayoutRecord ? 'Pago' : 'Pendente'}
+                              </span>
+                              <p className="text-[7.5px] text-neutral-400 mt-1 font-bold">
+                                {currentPayoutRecord 
+                                  ? `Data: ${new Date(currentPayoutRecord.paid_at).toLocaleDateString('pt-BR')}`
+                                  : `Previsão: ${forecastDate}`
+                                }
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Actions Area */}
+                  <div className="space-y-4">
+                    {payout > 0 ? (
+                      <button
+                        onClick={() => setPayoutModal({ investor, amount: payout })}
+                        className="w-full py-3.5 bg-neutral-950 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 group shadow-sm active:scale-95 duration-200"
+                      >
+                        <SendHorizonal size={12} className="group-hover:translate-x-0.5 transition-transform" />
+                        Registrar Repasse
+                      </button>
+                    ) : payout < 0 ? (
+                      <button
+                        onClick={() => {
+                          setDebtPaymentInput(Math.abs(payout).toString());
+                          setDebtPaymentModal({ investor, debtAmount: Math.abs(payout) });
+                        }}
+                        className="w-full py-3.5 bg-amber-500 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-amber-600 transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-200"
+                      >
+                        Pagar Débitos Pendentes
+                      </button>
+                    ) : null}
+
+                    {/* Payout History Collapsible list */}
+                    {(payoutHistory[investor.id] || []).length > 0 && (
+                      <div className="border-t border-neutral-100/80 pt-3">
+                        <button
+                          onClick={() => setExpandedHistory(prev => ({ ...prev, [investor.id]: !prev[investor.id] }))}
+                          className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors py-1"
+                        >
+                          <span className="flex items-center gap-1.5"><History size={11} /> Histórico de Repasses</span>
+                          {expandedHistory[investor.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                        </button>
+
+                        {expandedHistory[investor.id] && (
+                          <div className="space-y-2 mt-2 max-h-36 overflow-y-auto pr-1 animate-in fade-in slide-in-from-top-1 duration-300">
+                            {(payoutHistory[investor.id] || []).map(p => (
+                              <div key={p.id} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
+                                <div className="min-w-0">
+                                  <p className="text-[9px] font-black text-neutral-950 uppercase">{formatReferenceMonth(p.reference_month)}</p>
+                                  <p className="text-[8px] text-neutral-400 font-bold uppercase truncate">
+                                    {new Date(p.paid_at).toLocaleDateString('pt-BR')} — PIX: {p.pix_key || '—'}
+                                  </p>
+                                  {p.notes && <p className="text-[8px] text-neutral-400 italic mt-0.5">{p.notes}</p>}
+                                </div>
+                                <span className="text-[10px] font-black text-emerald-600 whitespace-nowrap ml-4">
+                                  R$ {parseFloat(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </span>
                               </div>
                             ))}
                           </div>
                         )}
-
-                        <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2">
-                          <span>Seguro Franquia Total (Fixo):</span>
-                          <span className="font-mono text-neutral-900 font-black">
-                            R$ {(39.90 * invVehs.length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                        </div>
-
-                        {(() => {
-                          const now = new Date();
-                          const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                          const currentPayoutRecord = (payoutHistory[investor.id] || []).find(p => p.reference_month === currentMonthKey);
-                          
-                          const getFifthBusinessDay = (date = new Date()) => {
-                            const year = date.getFullYear();
-                            const month = date.getMonth();
-                            let count = 0;
-                            let day = 1;
-                            while (count < 5) {
-                              const d = new Date(year, month, day);
-                              const dayOfWeek = d.getDay();
-                              if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
-                              if (count < 5) day++;
-                            }
-                            return new Date(year, month, day);
-                          };
-                          const forecastDate = getFifthBusinessDay(now).toLocaleDateString('pt-BR');
-
-                          return (
-                            <div className="flex justify-between items-center text-[10px] text-neutral-500 font-medium px-2 pt-3 border-t border-neutral-50">
-                              <span>Status do Repasse Mês Atual:</span>
-                              <div className="text-right">
-                                <span className={`inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${currentPayoutRecord ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                                  {currentPayoutRecord ? 'Pago' : 'Pendente'}
-                                </span>
-                                <p className="text-[8px] text-neutral-400 mt-1 font-bold">
-                                  {currentPayoutRecord 
-                                    ? `Pago em: ${new Date(currentPayoutRecord.paid_at).toLocaleDateString('pt-BR')}`
-                                    : `Previsão: ${forecastDate}`
-                                  }
-                                </p>
-                              </div>
-                            </div>
-                          );
-                        })()}
-
-                        {/* Botão registrar repasse ou Quitar Débito */}
-                        {payout > 0 ? (
-                          <button
-                            onClick={() => setPayoutModal({ investor, amount: payout })}
-                            className="w-full py-4 bg-neutral-900 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#C5A059] hover:text-neutral-900 transition-all flex items-center justify-center gap-2 group">
-                            <SendHorizonal size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                            Registrar Repasse
-                          </button>
-                        ) : payout < 0 ? (
-                          <button
-                            onClick={() => {
-                              setDebtPaymentInput(Math.abs(payout).toString());
-                              setDebtPaymentModal({ investor, debtAmount: Math.abs(payout) });
-                            }}
-                            className="w-full py-4 bg-red-50 text-red-600 border border-red-100 text-[9px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-red-100 transition-all flex items-center justify-center gap-2">
-                            Pagar Débitos Pendentes
-                          </button>
-                        ) : null}
-
-                        {/* Histórico de repasses */}
-                        {(payoutHistory[investor.id] || []).length > 0 && (
-                          <div className="border-t border-neutral-50 pt-4">
-                            <button
-                              onClick={() => setExpandedHistory(prev => ({ ...prev, [investor.id]: !prev[investor.id] }))}
-                              className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors mb-3">
-                              <span className="flex items-center gap-1.5"><History size={11} /> Histórico de Repasses</span>
-                              {expandedHistory[investor.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                            </button>
-
-                            {expandedHistory[investor.id] && (
-                              <div className="space-y-2">
-                                {(payoutHistory[investor.id] || []).map(p => (
-                                  <div key={p.id} className="flex items-center justify-between py-2 border-b border-neutral-50 last:border-0">
-                                    <div>
-                                      <p className="text-[9px] font-black text-neutral-900">{formatReferenceMonth(p.reference_month)}</p>
-                                      <p className="text-[8px] text-neutral-400 font-medium">
-                                        {new Date(p.paid_at).toLocaleDateString('pt-BR')} — PIX: {p.pix_key || '—'}
-                                      </p>
-                                      {p.notes && <p className="text-[8px] text-neutral-400 italic mt-0.5">{p.notes}</p>}
-                                    </div>
-                                    <span className="text-[10px] font-black text-emerald-600 whitespace-nowrap ml-4">
-                                      R$ {parseFloat(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                    </span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
-                    );
-                  })()}
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {investors.length === 0 && (
               <div className="col-span-full py-20 flex flex-col items-center justify-center text-neutral-400 space-y-4 bg-white rounded-[2.5rem] border border-dashed border-neutral-200">
-                <Users size={48} className="text-neutral-200" />
-                <p className="font-light tracking-wide">Nenhum investidor cadastrado ainda.</p>
+                <Users size={36} className="text-neutral-200" />
+                <p className="text-[10px] font-black uppercase tracking-widest text-neutral-300">Nenhum investidor cadastrado ainda.</p>
               </div>
             )}
           </div>
         </>
       ) : (
         <>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
+          {/* Add/Edit Form */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 xl:mb-12">
             <div>
-              <div className="flex items-center gap-3 mb-2">
-                <button 
-                  onClick={() => {
-                    setShowForm(false);
-                    setIsEditing(false);
-                  }}
-                  className="text-neutral-400 hover:text-neutral-900 transition-colors"
-                >
-                  <Search size={18} />
-                </button>
-                <h3 className="text-3xl font-black uppercase tracking-tighter">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
                   {isEditing ? 'Editar Investidor' : 'Cadastro de Investidor'}
                 </h3>
               </div>
-              <p className="text-neutral-400 text-sm font-light">Preencha os dados abaixo para {isEditing ? 'atualizar o' : 'registrar um novo'} parceiro.</p>
+              <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Preencha os dados abaixo para {isEditing ? 'atualizar' : 'cadastrar'} o parceiro no ecossistema.</p>
             </div>
+            
             <button
               onClick={() => {
                 setShowForm(false);
                 setIsEditing(false);
               }}
-              className="px-8 py-4 bg-neutral-100 text-neutral-600 text-[10px] uppercase tracking-[0.2em] font-bold rounded-2xl hover:bg-neutral-200 transition-all"
+              className="flex items-center gap-2 px-6 py-4 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-[10px] uppercase tracking-[0.2em] font-bold rounded-2xl transition-all"
             >
-              Voltar para Listagem
+              <X size={14} /> Voltar para Listagem
             </button>
           </div>
 
-          <div className="bg-white p-10 rounded-[2.5rem] border border-neutral-100 shadow-sm">
-            <form className="space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Nome Completo</label>
-                  <div className="relative">
-                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
+          <div className="bg-white p-8 xl:p-12 rounded-[2rem] xl:rounded-[3rem] border border-neutral-100 shadow-2xl shadow-neutral-900/5">
+            <form className="space-y-10" onSubmit={e => e.preventDefault()}>
+              
+              {/* Seção 1: Dados Cadastrais */}
+              <div className="space-y-6">
+                <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
+                  <User size={14} className="text-[#C5A059]" /> Informações Cadastrais
+                </h5>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-8">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nome Completo</label>
+                    <div className="relative group">
+                      <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
+                      <input 
+                        type="text" 
+                        value={investorForm.name} 
+                        onChange={e => setInvestorForm({ ...investorForm, name: e.target.value })} 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+                        placeholder="Nome do parceiro investidor" 
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">CPF</label>
                     <input 
                       type="text" 
-                      value={investorForm.name} 
-                      onChange={e => setInvestorForm({ ...investorForm, name: e.target.value })} 
-                      className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
-                      placeholder="Nome do investidor" 
+                      value={investorForm.cpf} 
+                      onChange={e => setInvestorForm({ ...investorForm, cpf: formatCPF(e.target.value) })} 
+                      className="w-full bg-neutral-50 border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+                      placeholder="000.000.000-00" 
                     />
                   </div>
-                </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">CPF</label>
-                  <input 
-                    type="text" 
-                    value={investorForm.cpf} 
-                    onChange={e => setInvestorForm({ ...investorForm, cpf: formatCPF(e.target.value) })} 
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
-                    placeholder="000.000.000-00" 
-                  />
-                </div>
-
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">E-mail</label>
-                  <div className="relative">
-                    <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-                    <input 
-                      type="email" 
-                      value={investorForm.email} 
-                      onChange={e => setInvestorForm({ ...investorForm, email: e.target.value })} 
-                      className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
-                      placeholder="email@exemplo.com" 
-                    />
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">E-mail Comercial</label>
+                    <div className="relative group">
+                      <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
+                      <input 
+                        type="email" 
+                        value={investorForm.email} 
+                        onChange={e => setInvestorForm({ ...investorForm, email: e.target.value })} 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+                        placeholder="exemplo@laveiculos.com.br" 
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Telefone / Whats</label>
-                  <div className="relative">
-                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-                    <input 
-                      type="text" 
-                      value={investorForm.phone} 
-                      onChange={e => setInvestorForm({ ...investorForm, phone: e.target.value })} 
-                      className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
-                      placeholder="(00) 00000-0000" 
-                    />
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Contato Telefônico</label>
+                    <div className="relative group">
+                      <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
+                      <input 
+                        type="text" 
+                        value={investorForm.phone} 
+                        onChange={e => setInvestorForm({ ...investorForm, phone: e.target.value })} 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+                        placeholder="(00) 99999-9999" 
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="md:col-span-2 space-y-3">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Endereço Residencial</label>
-                  <div className="relative">
-                    <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-                    <input 
-                      type="text" 
-                      value={investorForm.address} 
-                      onChange={e => setInvestorForm({ ...investorForm, address: e.target.value })} 
-                      className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
-                      placeholder="Endereço completo" 
-                    />
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Endereço Residencial Completo</label>
+                    <div className="relative group">
+                      <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
+                      <input 
+                        type="text" 
+                        value={investorForm.address} 
+                        onChange={e => setInvestorForm({ ...investorForm, address: e.target.value })} 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+                        placeholder="Rua, Número, Bairro, Cidade, Estado" 
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="h-[1px] bg-neutral-100" />
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="space-y-8">
-                  <h5 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
-                    <Key size={18} className="text-[#C5A059]" />
-                    Acesso ao Portal
+              {/* Seções de Payout e Acesso lado a lado */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12 pt-4">
+                
+                {/* Seção 2: Acesso ao Portal */}
+                <div className="space-y-6 bg-neutral-50/50 p-6 rounded-3xl border border-neutral-100">
+                  <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
+                    <Key size={14} className="text-[#C5A059]" /> Acesso ao Portal
                   </h5>
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Senha de Acesso</label>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Senha do Portal</label>
                       <input 
                         type="text" 
                         value={investorForm.password} 
                         onChange={e => setInvestorForm({ ...investorForm, password: e.target.value })} 
-                        className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold tracking-widest" 
-                        placeholder="Senha segura" 
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner font-mono tracking-widest" 
+                        placeholder="Senha segura de acesso" 
                       />
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Status da Conta</label>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status da Conta</label>
                       <select 
                         value={investorForm.status} 
                         onChange={e => setInvestorForm({ ...investorForm, status: e.target.value })} 
-                        className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
                       >
                         <option value="Ativo">Ativo</option>
                         <option value="Inativo">Inativo</option>
@@ -609,37 +653,41 @@ const AdminInvestidores = ({
                   </div>
                 </div>
 
-                <div className="space-y-8">
-                  <h5 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
-                    <Landmark size={18} className="text-[#C5A059]" />
-                    Dados para Repasse
+                {/* Seção 3: Dados de Repasse */}
+                <div className="space-y-6 bg-neutral-50/50 p-6 rounded-3xl border border-neutral-100">
+                  <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
+                    <Landmark size={14} className="text-[#C5A059]" /> Dados para Repasse
                   </h5>
-                  <div className="space-y-6">
-                    <div className="space-y-3">
-                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Banco / Agência / Conta</label>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dados Bancários Completos</label>
                       <input 
                         type="text" 
                         value={investorForm.bank} 
                         onChange={e => setInvestorForm({ ...investorForm, bank: e.target.value })} 
-                        className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light" 
-                        placeholder="Ex: Nubank / 0001 / 12345-6" 
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+                        placeholder="Banco, Agência e Conta Corrente" 
                       />
                     </div>
-                    <div className="space-y-3">
-                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Chave PIX</label>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Chave PIX Oficial</label>
                       <input 
                         type="text" 
                         value={investorForm.pix} 
                         onChange={e => setInvestorForm({ ...investorForm, pix: e.target.value })} 
-                        className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-[#C5A059]" 
-                        placeholder="E-mail, CPF, Telefone ou Chave" 
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner text-[#C5A059]" 
+                        placeholder="Celular, CPF/CNPJ, E-mail ou Chave Aleatória" 
                       />
                     </div>
                   </div>
                 </div>
+
               </div>
 
-              <div className="flex justify-end gap-6 pt-8">
+              {/* Botões do Formulário */}
+              <div className="flex justify-end gap-6 pt-6 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => {
@@ -650,12 +698,13 @@ const AdminInvestidores = ({
                     });
                     setShowForm(false);
                   }}
-                  className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 hover:text-neutral-900 transition-colors"
+                  className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400 hover:text-neutral-900 transition-colors"
                 >
                   Cancelar
                 </button>
+                
                 <button
-                  type="button"
+                  type="submit"
                   onClick={async (e) => {
                     e.preventDefault();
                     if (isEditing) {
@@ -682,11 +731,12 @@ const AdminInvestidores = ({
                     });
                     setShowForm(false);
                   }}
-                  className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-[2rem] hover:bg-[#C5A059] transition-all shadow-xl"
+                  className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#C5A059] transition-all shadow-xl active:scale-95 duration-200"
                 >
-                  {isEditing ? 'Salvar Alterações' : 'Cadastrar Investidor'}
+                  {isEditing ? 'Salvar Alterações' : 'Confirmar Cadastro'}
                 </button>
               </div>
+
             </form>
           </div>
         </>

@@ -9,10 +9,37 @@ import { formatCPF } from '../../../utils/cpfFormatter';
 
 const RentalFormModal = ({ 
   isOpen, onClose, currentRentalStep, setCurrentRentalStep, totalRentalSteps, 
-  rentalForm, setRentalForm, vehicles, clients = [], onSubmit 
+  rentalForm, setRentalForm, vehicles, clients = [], fines = [], onSubmit 
 }) => {
   const [isProcessingFiles, setIsProcessingFiles] = React.useState(false);
   const [conductorType, setConductorType] = React.useState('cadastrar');
+
+  const blockStatus = React.useMemo(() => {
+    if (!fines || fines.length === 0) return { blocked: false, activeFinesCount: 0 };
+    const name = (rentalForm.user || '').trim().toLowerCase();
+    const id = rentalForm.clientId;
+    if (!name && !id) return { blocked: false, activeFinesCount: 0 };
+
+    const driverFines = fines.filter(f => {
+      return (id && f.driverId === id) || 
+             (name && (f.driverName || '').trim().toLowerCase() === name);
+    });
+
+    const activeFines = driverFines.filter(f => f.status !== 'Paga');
+    const activeFinesCount = activeFines.length;
+
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const hasBlockingFine = activeFines.some(f => {
+      if (!f.date) return false;
+      const fineDate = new Date(f.date);
+      return fineDate < thirtyDaysAgo;
+    });
+
+    return { blocked: hasBlockingFine, activeFinesCount };
+  }, [fines, rentalForm.user, rentalForm.clientId]);
+
   if (!isOpen) return null;
 
   const fillTestData = () => {
@@ -363,6 +390,28 @@ const RentalFormModal = ({
                   </div>
                 </div>
               </div>
+              {blockStatus.blocked && (
+                <div className="p-6 bg-red-50 border border-red-100 rounded-3xl flex items-start gap-4 mt-6">
+                  <AlertTriangle className="text-red-500 shrink-0 mt-1" size={24} />
+                  <div>
+                    <h5 className="text-sm font-black text-red-900 uppercase tracking-tight">Condutor Bloqueado</h5>
+                    <p className="text-xs text-red-600 font-medium mt-1">
+                      Este condutor possui multas pendentes de pagamento com mais de 30 dias desde a data da infração. A criação de novas locações para este condutor está bloqueada até a regularização dos débitos.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {!blockStatus.blocked && blockStatus.activeFinesCount > 3 && (
+                <div className="p-6 bg-amber-50 border border-amber-100 rounded-3xl flex items-start gap-4 mt-6">
+                  <AlertTriangle className="text-amber-500 shrink-0 mt-1" size={24} />
+                  <div>
+                    <h5 className="text-sm font-black text-amber-900 uppercase tracking-tight">Aviso: Alto Índice de Infrações</h5>
+                    <p className="text-xs text-amber-600 font-medium mt-1">
+                      Este condutor possui {blockStatus.activeFinesCount} multas pendentes no sistema. Fique atento ao acúmulo de débitos e limite de pontuação na CNH.
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -664,8 +713,8 @@ const RentalFormModal = ({
               <button 
                 type="button"
                 onClick={() => setCurrentRentalStep(currentRentalStep + 1)}
-                disabled={currentRentalStep === 1 && !rentalForm.plate}
-                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${currentRentalStep === 1 && !rentalForm.plate ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked)}
+                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Próximo Passo
               </button>
@@ -673,7 +722,8 @@ const RentalFormModal = ({
               <button 
                 type="button"
                 onClick={onSubmit}
-                className="bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10"
+                disabled={blockStatus.blocked}
+                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${blockStatus.blocked ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Finalizar e Ativar
               </button>
