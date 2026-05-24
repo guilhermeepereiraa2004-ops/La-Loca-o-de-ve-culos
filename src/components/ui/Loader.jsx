@@ -34,29 +34,23 @@ const Loader = ({ onComplete }) => {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(197,160,89,0.08)_0%,rgba(7,7,7,0)_70%)] animate-pulse duration-[4000ms]" />
 
       <div className="relative flex flex-col items-center justify-center text-center">
-        {/* Circle spinner & monogram */}
-        <div className="w-24 h-24 mb-8 relative flex items-center justify-center">
+        {/* Circle spinner & logo */}
+        <div className="w-32 h-32 mb-12 relative flex items-center justify-center">
           {/* Static thin gold ring */}
-          <div className="absolute inset-0 border border-[#C5A059]/10 rounded-full scale-95" />
+          <div className="absolute inset-0 border-2 border-[#C5A059]/10 rounded-full" />
           
           {/* Animated spinning gold segment */}
-          <div className="absolute inset-0 border border-t-[#C5A059]/80 border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin duration-[4000ms]" />
+          <div className="absolute inset-0 border-2 border-t-[#C5A059] border-r-transparent border-b-transparent border-l-transparent rounded-full animate-spin duration-[1500ms]" />
           
-          {/* Monogram brand text */}
-          <div className="absolute inset-0 flex items-center justify-center font-serif text-3xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-white via-[#E5C07B] to-[#C5A059] pl-1 select-none">
-            LA
+          {/* Company Logo Image */}
+          <div className="absolute inset-3 flex items-center justify-center bg-[#070707] rounded-full overflow-hidden">
+            <img 
+              src="/logo.png" 
+              alt="LA" 
+              className="w-16 h-16 object-contain select-none brightness-0 invert opacity-90" 
+            />
           </div>
         </div>
-
-        {/* Text name */}
-        <h1 className="text-xl md:text-2xl font-black uppercase tracking-[0.4em] mb-2 text-transparent bg-clip-text bg-gradient-to-r from-white via-[#F4E3C1] to-[#C5A059] pl-[0.4em] select-none">
-          LA Locação
-        </h1>
-
-        {/* Subtitle */}
-        <p className="text-[8px] md:text-[9px] font-black uppercase tracking-[0.6em] text-neutral-500 pl-[0.6em] mb-12 select-none">
-          Mobilidade Premium
-        </p>
 
         {/* Linear progress bar */}
         <div className="w-48 h-[1px] bg-neutral-900 rounded-full overflow-hidden relative">

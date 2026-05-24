@@ -21,6 +21,7 @@ import RentalDetailModal from './modals/RentalDetailModal';
 import InspectionDetailModal from './modals/InspectionDetailModal';
 import ContractClosureModal from './modals/ContractClosureModal';
 import TerminationTermModal from './modals/TerminationTermModal';
+import AdminLogs from './tabs/AdminLogs';
 import VehicleDetailModal from './modals/VehicleDetailModal';
 import AdminSuccessModal from './modals/AdminSuccessModal';
 import ImageViewer from '../ui/ImageViewer';
@@ -51,7 +52,8 @@ const AdminDashboard = ({
   onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onSeed, onGoHome, onViewVehicleDetail,
-  selectedImage, setSelectedImage
+  selectedImage, setSelectedImage,
+  logs = []
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -273,7 +275,7 @@ const AdminDashboard = ({
           onNavigate={setActiveTab}
         />
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-12">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 xl:p-8 2xl:p-12">
           {activeTab === 'bi' && <AdminBI stats={biData.mainStats} chartData={biData.chartData} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
           {activeTab === 'leads' && (
             <AdminLeads 
@@ -373,6 +375,9 @@ const AdminDashboard = ({
               systemUsers={systemUsers} onAddUser={onAddSystemUser}
               onUpdateUser={onUpdateSystemUser} onDeleteUser={onDeleteSystemUser}
             />
+          )}
+          {activeTab === 'logs' && isAdmin && (
+            <AdminLogs logs={logs} />
           )}
           {activeTab === 'oficina' && (
             <AdminOficina

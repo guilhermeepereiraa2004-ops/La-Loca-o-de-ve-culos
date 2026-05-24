@@ -63,7 +63,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
       <div className="bg-white w-full max-w-6xl h-full md:h-auto md:max-h-[95vh] md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
         
         {/* Header */}
-        <div className="bg-neutral-900 p-6 md:p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 sticky top-0 z-30">
+        <div className="bg-neutral-900 p-6 md:p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-900 shadow-lg shadow-[#C5A059]/20">
               <FileText size={24} />

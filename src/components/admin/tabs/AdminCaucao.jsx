@@ -34,23 +34,23 @@ const AdminCaucao = ({
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
       {/* Premium Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-12">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-6 xl:mb-8 2xl:mb-12">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-emerald-50 rounded-full animate-pulse" />
             <EditorialLabel className="text-emerald-600 tracking-[0.3em]">Gestão de Ativos em Custódia</EditorialLabel>
           </div>
-          <h3 className="text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Caução</h3>
+          <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Caução</h3>
           <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Monitoramento de garantias contratuais e fluxos de recebimento.</p>
         </div>
       </div>
 
       {/* Editorial Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-        <div className="p-10 bg-white rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6 2xl:gap-8 mb-8 xl:mb-10 2xl:mb-16">
+        <div className="p-6 xl:p-8 2xl:p-10 bg-white rounded-[2rem] xl:rounded-[2.5rem] 2xl:rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
-          <div className="flex items-center gap-4 mb-10 relative">
-            <div className="w-12 h-12 bg-neutral-900 text-emerald-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
+          <div className="flex items-center gap-4 mb-6 xl:mb-8 2xl:mb-10 relative">
+            <div className="w-10 h-10 xl:w-12 xl:h-12 bg-neutral-900 text-emerald-500 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
               <ShieldCheck size={24} />
             </div>
             <div>
@@ -59,19 +59,19 @@ const AdminCaucao = ({
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-2xl font-black text-emerald-600 tracking-tighter">R$</span>
-            <h4 className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">
+            <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-emerald-600 tracking-tighter">R$</span>
+            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-neutral-900 tracking-tighter leading-none">
               {totalCustodia.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
           </div>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Saldo Recebido</p>
         </div>
 
-        <div className="p-10 bg-white rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+        <div className="p-6 xl:p-8 2xl:p-10 bg-white rounded-[2rem] xl:rounded-[2.5rem] 2xl:rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
-          <div className="flex items-center gap-4 mb-10 relative">
-            <div className="w-12 h-12 bg-neutral-900 text-amber-500 rounded-2xl flex items-center justify-center shadow-lg group-hover:-rotate-12 transition-transform">
-              <Clock size={24} />
+          <div className="flex items-center gap-4 mb-6 xl:mb-8 2xl:mb-10 relative">
+            <div className="w-10 h-10 xl:w-12 xl:h-12 bg-neutral-900 text-amber-500 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:-rotate-12 transition-transform">
+              <Clock size={20} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Expectativa</p>
@@ -79,19 +79,19 @@ const AdminCaucao = ({
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-2xl font-black text-amber-600 tracking-tighter">R$</span>
-            <h4 className="text-5xl font-black text-neutral-900 tracking-tighter leading-none">
+            <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-amber-600 tracking-tighter">R$</span>
+            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-neutral-900 tracking-tighter leading-none">
               {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
           </div>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Parcelas Pendentes</p>
         </div>
 
-        <div className="p-10 bg-neutral-900 rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+        <div className="p-6 xl:p-8 2xl:p-10 bg-neutral-900 rounded-[2rem] xl:rounded-[2.5rem] 2xl:rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 w-48 h-48 bg-[#C5A059]/10 blur-[100px] -mr-24 -mt-24" />
-          <div className="flex items-center gap-4 mb-10 relative">
-            <div className="w-12 h-12 bg-[#C5A059] text-neutral-900 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-              <Landmark size={24} />
+          <div className="flex items-center gap-4 mb-6 xl:mb-8 2xl:mb-10 relative">
+            <div className="w-10 h-10 xl:w-12 xl:h-12 bg-[#C5A059] text-neutral-900 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+              <Landmark size={20} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Garantia Total</p>
@@ -99,8 +99,8 @@ const AdminCaucao = ({
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-2xl font-black text-[#C5A059] tracking-tighter">R$</span>
-            <h4 className="text-5xl font-black text-white tracking-tighter leading-none">
+            <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-[#C5A059] tracking-tighter">R$</span>
+            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-white tracking-tighter leading-none">
               {totalContratado.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
           </div>
@@ -109,8 +109,8 @@ const AdminCaucao = ({
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-[4rem] border border-neutral-50 shadow-2xl shadow-neutral-900/5 overflow-hidden">
-        <div className="px-12 py-10 border-b border-neutral-50 bg-white flex flex-col lg:flex-row justify-between items-center gap-8">
+      <div className="bg-white rounded-[2rem] xl:rounded-[3rem] 2xl:rounded-[4rem] border border-neutral-50 shadow-2xl shadow-neutral-900/5 overflow-hidden">
+        <div className="px-6 py-5 xl:px-8 xl:py-6 2xl:px-12 2xl:py-10 border-b border-neutral-50 bg-white flex flex-col lg:flex-row justify-between items-center gap-6 xl:gap-8">
           <div className="space-y-1">
             <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black">Detalhamento Financeiro</h5>
             <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-widest">Controle individual de garantias contratuais</p>
@@ -129,16 +129,16 @@ const AdminCaucao = ({
         </div>
 
         <div className="overflow-x-auto overflow-y-hidden">
-          <table className="w-full text-left border-separate border-spacing-y-4 px-8 pb-8">
+          <table className="w-full text-left border-separate border-spacing-y-2 xl:border-spacing-y-3 2xl:border-spacing-y-4 px-4 pb-4 xl:px-6 xl:pb-6 2xl:px-8 2xl:pb-8 min-w-[1000px]">
             <thead>
               <tr className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-black">
-                <th className="px-8 py-6">Condutor & Veículo</th>
-                <th className="px-8 py-6 text-center">Vencimento</th>
-                <th className="px-8 py-6 text-center">Total Contratado</th>
-                <th className="px-8 py-6 text-center">Saldo Recebido</th>
-                <th className="px-8 py-6 text-center">Restante</th>
-                <th className="px-8 py-6 text-center">Ações</th>
-                <th className="px-8 py-6 text-right">Status</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6">Condutor & Veículo</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Vencimento</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Total Contratado</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Saldo Recebido</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Restante</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Ações</th>
+                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="font-light">
@@ -162,14 +162,14 @@ const AdminCaucao = ({
                   return (
                     <tr key={rental.id} className="group transition-all duration-500">
                       {/* Conductor Column */}
-                      <td className="px-2 py-4 bg-white border border-neutral-100 rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
-                        <div className="flex items-center gap-6 pl-6 min-w-[280px]">
-                          <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-sm shadow-xl group-hover:rotate-6 transition-transform">
+                      <td className="px-2 py-2 xl:py-3 2xl:py-4 bg-white border border-neutral-100 rounded-l-[1.5rem] xl:rounded-l-[2rem] 2xl:rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
+                        <div className="flex items-center gap-4 xl:gap-6 pl-4 xl:pl-6 min-w-[240px] xl:min-w-[280px]">
+                          <div className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-neutral-900 rounded-xl xl:rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xs xl:text-sm shadow-xl group-hover:rotate-6 transition-transform shrink-0">
                             {(rental.userName || rental.user || '?').charAt(0)}
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <p className="text-base font-black text-neutral-900 tracking-tight">{rental.userName || rental.user || 'Desconhecido'}</p>
+                              <p className="text-sm xl:text-base font-black text-neutral-900 tracking-tight">{rental.userName || rental.user || 'Desconhecido'}</p>
                               {isDueToday && (
                                 <span className="bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
                                   <AlertTriangle size={8} /> Hoje
@@ -182,9 +182,9 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Due Date Column */}
-                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1.5">
-                          <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-2xl border transition-all ${isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
+                          <span className={`text-[9px] xl:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 xl:px-4 xl:py-2 rounded-2xl border transition-all ${isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
                               'bg-neutral-50 text-neutral-900 border-neutral-100'
                             }`}>
                             {rental.paymentDay || '---'}
@@ -199,25 +199,25 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Total Column */}
-                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
-                        <span className="text-base font-black text-neutral-900 tracking-tight">
+                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <span className="text-sm xl:text-base font-black text-neutral-900 tracking-tight">
                           R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </td>
 
                       {/* Received Column */}
-                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
-                        <div className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 inline-block">
-                          <span className="text-base font-black text-emerald-600 tracking-tight">
+                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <div className="bg-emerald-50 px-3 py-1.5 xl:px-4 xl:py-2 rounded-2xl border border-emerald-100 inline-block">
+                          <span className="text-sm xl:text-base font-black text-emerald-600 tracking-tight">
                             R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                         </div>
                       </td>
 
                       {/* Remaining Column */}
-                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1">
-                          <span className={`text-base font-black tracking-tight ${remaining > 0 ? 'text-amber-600' : 'text-neutral-300'}`}>
+                          <span className={`text-sm xl:text-base font-black tracking-tight ${remaining > 0 ? 'text-amber-600' : 'text-neutral-300'}`}>
                             R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
                           {rental.depositInstallments > 1 && remaining > 0 && (
@@ -229,16 +229,16 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Actions Column */}
-                      <td className="px-8 py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         {remaining > 0 ? (
                           <button
                             onClick={() => handleOpenPayModal(rental)}
-                            className="px-6 py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
+                            className="px-4 py-2.5 xl:px-6 xl:py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
                           >
                             <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
                           </button>
                         ) : (
-                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100">
+                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-3 py-1.5 xl:px-4 xl:py-2 rounded-2xl border border-emerald-100">
                             <FileCheck size={16} />
                             <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
                           </div>
@@ -246,7 +246,7 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Status Column */}
-                      <td className="px-8 py-4 bg-white border border-neutral-100 rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-12">
+                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border border-neutral-100 rounded-r-[1.5rem] xl:rounded-r-[2rem] 2xl:rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-4 xl:pr-8 2xl:pr-12">
                         <span className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 transition-all duration-700 ${remaining <= 0
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-500/10'
                           : 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm shadow-amber-500/10 group-hover:scale-105'

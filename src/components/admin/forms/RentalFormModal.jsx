@@ -45,41 +45,41 @@ const RentalFormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-6 py-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
       <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-7xl h-full max-h-[95vh] rounded-[3.5rem] shadow-2xl animate-in zoom-in-95 duration-500 flex flex-col overflow-hidden">
+      <div className="relative bg-white w-full max-w-7xl h-full md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
         {/* Header / Steps Indicator */}
-        <div className="p-12 pb-8 border-b border-neutral-50 shrink-0 bg-neutral-50/50">
-          <div className="flex justify-between items-center mb-10">
+        <div className="p-6 md:p-12 pb-6 md:pb-8 border-b border-neutral-50 shrink-0 bg-neutral-50/50">
+          <div className="flex justify-between items-center mb-6 md:mb-10">
             <div>
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
                 <EditorialLabel className="text-[#C5A059]">Fluxo de Nova Locação</EditorialLabel>
               </div>
-              <h3 className="text-4xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
+              <h3 className="text-2xl md:text-4xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
                 {currentRentalStep === 1 ? 'Seleção do Veículo' : 
                  currentRentalStep === 2 ? 'Dados do Condutor' : 
                  currentRentalStep === 3 ? 'Termos Financeiros' : 'Gestão de Contrato'}
               </h3>
             </div>
-            <button onClick={onClose} className="w-12 h-12 bg-white border border-neutral-100 rounded-2xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm">
+            <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 bg-white border border-neutral-100 rounded-xl md:rounded-2xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm">
               <X size={20} />
             </button>
           </div>
           
-          <div className="flex items-center gap-1">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-1">
             {['Veículo', 'Condutor', 'Financeiro', 'Contrato'].map((step, idx) => {
               const isActive = currentRentalStep === idx + 1;
               const isCompleted = currentRentalStep > idx + 1;
               return (
                 <div key={step} className="flex items-center">
-                  <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl transition-all duration-500 ${isActive ? 'bg-neutral-900 shadow-xl shadow-neutral-900/10' : ''}`}>
-                    <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black transition-all ${isActive ? 'bg-[#C5A059] text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-neutral-200 text-neutral-400'}`}>
-                      {isCompleted ? <Check size={12} /> : idx + 1}
+                  <div className={`flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-500 ${isActive ? 'bg-neutral-900 shadow-xl shadow-neutral-900/10' : ''}`}>
+                    <div className={`w-5 h-5 sm:w-6 sm:h-6 rounded-md sm:rounded-lg flex items-center justify-center text-[9px] sm:text-[10px] font-black transition-all ${isActive ? 'bg-[#C5A059] text-white' : isCompleted ? 'bg-emerald-500 text-white' : 'bg-neutral-200 text-neutral-400'}`}>
+                      {isCompleted ? <Check size={10} /> : idx + 1}
                     </div>
-                    <span className={`text-[10px] uppercase tracking-[0.2em] font-black ${isActive ? 'text-white' : 'text-neutral-400'}`}>{step}</span>
+                    <span className={`text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black hidden sm:block ${isActive ? 'text-white' : 'text-neutral-400'}`}>{step}</span>
                   </div>
-                  {idx < 3 && <div className="w-12 h-px bg-neutral-200 mx-2" />}
+                  {idx < 3 && <div className="w-6 sm:w-12 h-px bg-neutral-200 mx-1 sm:mx-2" />}
                 </div>
               );
             })}
@@ -87,7 +87,7 @@ const RentalFormModal = ({
         </div>
         
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-12 pt-10">
+        <div className="flex-1 overflow-y-auto p-6 md:p-12 pt-6 md:pt-10">
           {currentRentalStep === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="flex items-center gap-3 mb-10">
@@ -649,7 +649,7 @@ const RentalFormModal = ({
         </div>
         
         {/* Footer */}
-        <div className="p-10 md:p-12 border-t border-neutral-50 bg-neutral-50/30 flex justify-between shrink-0">
+        <div className="p-6 md:p-12 border-t border-neutral-50 bg-neutral-50/30 flex justify-between shrink-0">
           <button 
             type="button"
             onClick={() => setCurrentRentalStep(Math.max(1, currentRentalStep - 1))}

@@ -8,24 +8,24 @@ const VehicleFormModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
       <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={onClose} />
-      <div className="relative bg-white w-full max-w-6xl rounded-[3rem] shadow-2xl animate-in zoom-in duration-300 max-h-[95vh] overflow-hidden flex flex-col">
+      <div className="relative bg-white w-full max-w-6xl h-full md:h-auto md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden animate-in zoom-in duration-300">
         {/* Header */}
-        <div className="p-10 md:p-12 pb-6 border-b border-neutral-50 shrink-0 flex justify-between items-center">
+        <div className="p-6 md:p-12 pb-6 border-b border-neutral-50 shrink-0 flex justify-between items-center">
           <div>
             <EditorialLabel className="text-[#C5A059] mb-1">{isEditing ? 'Gestão de Ativo' : 'Novo Ativo de Frota'}</EditorialLabel>
-            <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">
+            <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
               {isEditing ? 'Editar Veículo' : 'Cadastrar Veículo'}
             </h3>
           </div>
-          <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400">
+          <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 bg-neutral-50 flex items-center justify-center rounded-xl md:rounded-full hover:bg-neutral-100 transition-all text-neutral-400">
             <X size={24} />
           </button>
         </div>
         
         {/* Body */}
-        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-10 md:p-12 pt-8 space-y-12">
+        <form onSubmit={onSubmit} className="flex-1 overflow-y-auto p-6 md:p-12 pt-6 md:pt-8 space-y-8 md:space-y-12">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             
             {/* Column 1: Basic & Technical */}
@@ -428,7 +428,7 @@ const VehicleFormModal = ({
         </form>
         
         {/* Footer */}
-        <div className="p-10 md:p-12 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
+        <div className="p-6 md:p-12 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
           <button 
             type="submit"
             onClick={onSubmit}

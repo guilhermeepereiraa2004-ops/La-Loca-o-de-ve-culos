@@ -21,7 +21,10 @@ const AdminSidebar = ({
     { id: 'manutencaoAdmin', label: 'Manutenção', icon: Wrench },
     { id: 'vistoria',      label: 'Vistoria', icon: ClipboardList },
     { id: 'oficina',       label: 'Oficina', icon: Wrench },
-    ...(isAdmin ? [{ id: 'usuarios', label: 'Usuários', icon: Users }] : []),
+    ...(isAdmin ? [
+      { id: 'usuarios', label: 'Usuários', icon: Users },
+      { id: 'logs', label: 'Logs do Sistema', icon: ClipboardList }
+    ] : []),
   ];
 
   return (

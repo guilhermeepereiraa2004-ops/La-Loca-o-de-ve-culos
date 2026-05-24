@@ -68,7 +68,7 @@ const AdminFinanceiro = ({
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h3 className="text-4xl font-black uppercase tracking-tighter">Controle Financeiro</h3>
+          <h3 className="text-2xl xl:text-3xl 2xl:text-4xl font-black uppercase tracking-tighter">Controle Financeiro</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Gestão de fluxo de caixa, conciliação e histórico de lançamentos.</p>
         </div>
         
@@ -99,29 +99,29 @@ const AdminFinanceiro = ({
           </h4>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-10 rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md transition-all">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6 2xl:gap-8">
+          <div className="bg-white p-6 xl:p-8 2xl:p-10 rounded-[1.5rem] xl:rounded-[2rem] 2xl:rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md transition-all">
             <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-4 flex items-center gap-2">
               <ArrowDownLeft size={14} className="text-emerald-500" /> Total de Entradas
             </p>
-            <p className="text-4xl font-black text-neutral-900">
+            <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-neutral-900">
               R$ {totalIn.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-neutral-300 font-bold mt-4 uppercase tracking-widest">Baseado em lançamentos reais</p>
           </div>
-          <div className="bg-white p-10 rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md transition-all">
+          <div className="bg-white p-6 xl:p-8 2xl:p-10 rounded-[1.5rem] xl:rounded-[2rem] 2xl:rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md transition-all">
             <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-4 flex items-center gap-2">
               <ArrowUpRight size={14} className="text-red-500" /> Total de Saídas
             </p>
-            <p className="text-4xl font-black text-neutral-900">
+            <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-neutral-900">
               R$ {totalOut.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-neutral-300 font-bold mt-4 uppercase tracking-widest">Fluxo de despesas atual</p>
           </div>
-          <div className="bg-neutral-950 p-10 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
+          <div className="bg-neutral-950 p-6 xl:p-8 2xl:p-10 rounded-[1.5rem] xl:rounded-[2rem] 2xl:rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
             <div className="relative z-10">
               <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black mb-4">Saldo em Caixa (Net)</p>
-              <p className="text-4xl font-black text-[#C5A059]">
+              <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-[#C5A059]">
                 R$ {netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <div className="mt-6 flex gap-2">
@@ -170,7 +170,7 @@ const AdminFinanceiro = ({
         {/* Transactions Table */}
         <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left">
+            <table className="w-full text-left min-w-[900px]">
               <thead>
                 <tr className="bg-neutral-50/50 border-b border-neutral-100">
                   <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Descrição / Data</th>
@@ -249,10 +249,10 @@ const AdminFinanceiro = ({
 
       {/* Modal de Novo Lançamento Financeiro */}
       {showFinanceForm && (
-        <div className="fixed inset-0 z-[300] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[300] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-xl" onClick={() => setShowFinanceForm(false)} />
-          <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
-            <div className="p-10 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+          <div className="bg-white w-full max-w-2xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
+            <div className="p-6 md:p-10 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50 shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-lg">
                   <Plus size={24} />
@@ -267,134 +267,136 @@ const AdminFinanceiro = ({
               </button>
             </div>
 
-            <form onSubmit={handleSaveTransaction} className="p-10 space-y-8 overflow-y-auto max-h-[70vh]">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data</label>
-                  <input
-                    type="date"
-                    required
-                    value={financeForm.date}
-                    onChange={e => setFinanceForm({ ...financeForm, date: e.target.value })}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900"
-                  />
+            <form onSubmit={handleSaveTransaction} className="flex-1 flex flex-col overflow-hidden">
+              <div className="p-6 md:p-10 space-y-6 md:space-y-8 overflow-y-auto flex-1">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data</label>
+                    <input
+                      type="date"
+                      required
+                      value={financeForm.date}
+                      onChange={e => setFinanceForm({ ...financeForm, date: e.target.value })}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Tipo</label>
+                    <select
+                      value={financeForm.type}
+                      onChange={e => setFinanceForm({ ...financeForm, type: e.target.value })}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
+                    >
+                      <option value="in">Entrada (+)</option>
+                      <option value="out">Saída (-)</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Tipo</label>
-                  <select
-                    value={financeForm.type}
-                    onChange={e => setFinanceForm({ ...financeForm, type: e.target.value })}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 earance-none cursor-pointer"
-                  >
-                    <option value="in">Entrada (+)</option>
-                    <option value="out">Saída (-)</option>
-                  </select>
-                </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor (R$)</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="0,00"
+                      value={financeForm.val}
+                      onChange={e => setFinanceForm({ ...financeForm, val: e.target.value })}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-[#C5A059] text-xl"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Categoria</label>
+                    <select
+                      value={financeForm.cat}
+                      onChange={e => setFinanceForm({ ...financeForm, cat: e.target.value })}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
+                    >
+                      <option value="Aluguel">Aluguel</option>
+                      <option value="manutenção">Manutenção</option>
+                      <option value="taxa ADM">Taxa ADM</option>
+                      <option value="proteção veicular">Proteção Veicular</option>
+                      <option value="multa">Multa</option>
+                      <option value="juros">Juros</option>
+                      <option value="taxa de pneus">Taxa de Pneus</option>
+                      <option value="Taxa Gateway / Asaas">Taxa Gateway / Asaas</option>
+                      <option value="Outros">Outros</option>
+                    </select>
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor (R$)</label>
+                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição Detalhada</label>
                   <input
                     type="text"
                     required
-                    placeholder="0,00"
-                    value={financeForm.val}
-                    onChange={e => setFinanceForm({ ...financeForm, val: e.target.value })}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-[#C5A059] text-xl"
+                    placeholder="Ex: Pagamento semanal André Matos"
+                    value={financeForm.desc}
+                    onChange={e => setFinanceForm({ ...financeForm, desc: e.target.value })}
+                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Categoria</label>
-                  <select
-                    value={financeForm.cat}
-                    onChange={e => setFinanceForm({ ...financeForm, cat: e.target.value })}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 earance-none cursor-pointer"
-                  >
-                    <option value="Aluguel">Aluguel</option>
-                    <option value="manutenção">Manutenção</option>
-                    <option value="taxa ADM">Taxa ADM</option>
-                    <option value="proteção veicular">Proteção Veicular</option>
-                    <option value="multa">Multa</option>
-                    <option value="juros">Juros</option>
-                    <option value="taxa de pneus">Taxa de Pneus</option>
-                    <option value="Taxa Gateway / Asaas">Taxa Gateway / Asaas</option>
-                    <option value="Outros">Outros</option>
-                  </select>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Veículo (Opcional)</label>
+                    <select
+                      value={financeForm.vehiclePlate}
+                      onChange={e => setFinanceForm({ ...financeForm, vehiclePlate: e.target.value })}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
+                    >
+                      <option value="">Nenhum</option>
+                      {vehicles.map(v => (
+                        <option key={v.id} value={v.plate}>{v.model} ({v.plate})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Responsável</label>
+                    <select
+                      value={financeForm.responsible.startsWith('Investidor') ? 'Investidor' : 'Administradora'}
+                      onChange={e => {
+                        const val = e.target.value;
+                        if (val === 'Investidor') {
+                          setFinanceForm({ ...financeForm, responsible: 'Investidor', investorName: '' });
+                        } else {
+                          setFinanceForm({ ...financeForm, responsible: 'Administradora', investorName: '' });
+                        }
+                      }}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
+                    >
+                      <option value="Administradora">Administradora</option>
+                      <option value="Investidor">Investidor</option>
+                    </select>
+                  </div>
                 </div>
+
+                {financeForm.responsible.startsWith('Investidor') && (
+                  <div className="space-y-2 animate-in fade-in duration-300">
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Investidor Responsável</label>
+                    <select
+                      required
+                      value={financeForm.investorName || ''}
+                      onChange={e => {
+                        const selectedInvName = e.target.value;
+                        setFinanceForm({ 
+                          ...financeForm, 
+                          investorName: selectedInvName,
+                          responsible: selectedInvName ? `Investidor: ${selectedInvName}` : 'Investidor'
+                        });
+                      }}
+                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
+                    >
+                      <option value="">Selecione um Investidor...</option>
+                      {investors.map(inv => (
+                        <option key={inv.id} value={inv.name}>{inv.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição Detalhada</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Pagamento semanal André Matos"
-                  value={financeForm.desc}
-                  onChange={e => setFinanceForm({ ...financeForm, desc: e.target.value })}
-                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Veículo (Opcional)</label>
-                  <select
-                    value={financeForm.vehiclePlate}
-                    onChange={e => setFinanceForm({ ...financeForm, vehiclePlate: e.target.value })}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
-                  >
-                    <option value="">Nenhum</option>
-                    {vehicles.map(v => (
-                      <option key={v.id} value={v.plate}>{v.model} ({v.plate})</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Responsável</label>
-                  <select
-                    value={financeForm.responsible.startsWith('Investidor') ? 'Investidor' : 'Administradora'}
-                    onChange={e => {
-                      const val = e.target.value;
-                      if (val === 'Investidor') {
-                        setFinanceForm({ ...financeForm, responsible: 'Investidor', investorName: '' });
-                      } else {
-                        setFinanceForm({ ...financeForm, responsible: 'Administradora', investorName: '' });
-                      }
-                    }}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
-                  >
-                    <option value="Administradora">Administradora</option>
-                    <option value="Investidor">Investidor</option>
-                  </select>
-                </div>
-              </div>
-
-              {financeForm.responsible.startsWith('Investidor') && (
-                <div className="space-y-2 animate-in fade-in duration-300">
-                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Investidor Responsável</label>
-                  <select
-                    required
-                    value={financeForm.investorName || ''}
-                    onChange={e => {
-                      const selectedInvName = e.target.value;
-                      setFinanceForm({ 
-                        ...financeForm, 
-                        investorName: selectedInvName,
-                        responsible: selectedInvName ? `Investidor: ${selectedInvName}` : 'Investidor'
-                      });
-                    }}
-                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 appearance-none cursor-pointer"
-                  >
-                    <option value="">Selecione um Investidor...</option>
-                    {investors.map(inv => (
-                      <option key={inv.id} value={inv.name}>{inv.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div className="pt-6">
+              <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
                 <button type="submit" className="w-full py-6 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.4em] font-black hover:bg-[#C5A059] transition-all rounded-2xl shadow-xl">
                   Confirmar Lançamento
                 </button>

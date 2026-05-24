@@ -5,7 +5,7 @@ const AdminSuccessModal = ({ data, onClose }) => {
   if (!data.show) return null;
 
   return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center px-6">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center px-6">
       <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={onClose} />
       <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl animate-in zoom-in duration-300">
         <button 

@@ -142,10 +142,10 @@ const AdminOficina = ({
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setShowForm(false)} />
-          <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-500">
-            <div className="p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
+          <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+            <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Wrench size={22} /></div>
                 <div>
@@ -156,7 +156,7 @@ const AdminOficina = ({
               <button onClick={() => setShowForm(false)} className="text-neutral-300 hover:text-neutral-900 transition-colors"><X size={24} /></button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-8">
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
               <form onSubmit={handleSubmit} id="os-form" className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
@@ -193,8 +193,8 @@ const AdminOficina = ({
                   <div className="space-y-3">
                     {form.parts.map((part, i) => (
                       <div key={i} className="grid grid-cols-12 gap-3 items-center bg-neutral-50 p-4 rounded-xl">
-                        <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-6 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
-                        <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100 text-center" />
+                        <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-12 sm:col-span-6 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
+                        <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-4 sm:col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100 text-center" />
                         <input 
                           type="text" 
                           value={part.unitValue} 
@@ -204,9 +204,9 @@ const AdminOficina = ({
                             updatePart(i, 'unitValue', v);
                           }} 
                           placeholder="Valor unit." 
-                          className="col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
+                          className="col-span-6 sm:col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
                         />
-                        <button type="button" onClick={() => removePart(i)} className="col-span-1 text-neutral-300 hover:text-red-500 transition-colors flex justify-center"><X size={14} /></button>
+                        <button type="button" onClick={() => removePart(i)} className="col-span-2 sm:col-span-1 text-neutral-300 hover:text-red-500 transition-colors flex justify-center items-center h-10 sm:h-auto"><X size={14} /></button>
                       </div>
                     ))}
                   </div>
@@ -284,7 +284,7 @@ const AdminOficina = ({
               </form>
             </div>
 
-            <div className="p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end gap-4 shrink-0">
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end gap-4 shrink-0">
               <button type="button" onClick={() => setShowForm(false)} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all">Cancelar</button>
               <button form="os-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl">Abrir O.S.</button>
             </div>
@@ -293,10 +293,10 @@ const AdminOficina = ({
       )}
 
       {viewingOS && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setViewingOS(null)} />
-          <div className="bg-white w-full max-w-3xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-500">
-            <div className="p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
+          <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+            <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${viewingOS.status === 'Concluída' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
                   {viewingOS.status === 'Concluída' ? <CheckCircle2 size={22} /> : <Clock size={22} />}
@@ -309,7 +309,7 @@ const AdminOficina = ({
               <button onClick={() => setViewingOS(null)} className="text-neutral-300 hover:text-neutral-900"><X size={24} /></button>
             </div>
 
-            <div id="os-print-area" className="flex-1 overflow-y-auto p-10 space-y-8">
+            <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[['Data', viewingOS.date], ['KM', `${viewingOS.km} km`], ['Responsável', viewingOS.responsible], ['Prestador', viewingOS.provider || '---']].map(([label, val]) => (
                   <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
@@ -325,14 +325,16 @@ const AdminOficina = ({
               {viewingOS.parts?.length > 0 && (
                 <div>
                   <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-3">Peças Utilizadas</p>
-                  <table className="w-full text-left text-xs">
-                    <thead><tr className="border-b border-neutral-100"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
-                    <tbody className="divide-y divide-neutral-50">
-                      {viewingOS.parts.map((p, i) => (
-                        <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseFloat(p.unitValue || 0).toFixed(2)}</td><td className="py-3 text-right font-black">R$ {(p.qty * parseFloat(p.unitValue || 0)).toFixed(2)}</td></tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[500px]">
+                      <thead><tr className="border-b border-neutral-100"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
+                      <tbody className="divide-y divide-neutral-50">
+                        {viewingOS.parts.map((p, i) => (
+                          <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseFloat(p.unitValue || 0).toFixed(2)}</td><td className="py-3 text-right font-black">R$ {(p.qty * parseFloat(p.unitValue || 0)).toFixed(2)}</td></tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
               <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
@@ -347,7 +349,7 @@ const AdminOficina = ({
               </div>
             </div>
 
-            <div className="p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0">
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0">
               <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-200 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all flex items-center gap-2">
                 <Printer size={14} /> Imprimir / PDF
               </button>

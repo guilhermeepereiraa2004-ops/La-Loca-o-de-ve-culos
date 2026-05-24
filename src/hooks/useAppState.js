@@ -32,7 +32,7 @@ export const useAppState = () => {
     }
     const savedAdmin = localStorage.getItem('la_admin_auth');
     if (savedAdmin === 'true') {
-      return { role: 'administrador', modules: null };
+      return { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
     }
     return null;
   });
@@ -41,6 +41,85 @@ export const useAppState = () => {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [selectedVehicleForInterest, setSelectedVehicleForInterest] = useState(null);
   const [interestForm, setInterestForm] = useState({ name: '', phone: '', email: '', observation: '' });
+
+  const [logs, setLogs] = useState([]);
+
+  const loadLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('system_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        setLogs(mapToCamel(data, 'system_logs'));
+        return;
+      }
+    } catch (e) {
+      console.warn("Supabase system_logs table not found, falling back to localStorage", e);
+    }
+    
+    try {
+      const localLogs = localStorage.getItem('la_system_logs');
+      if (localLogs) {
+        setLogs(JSON.parse(localLogs));
+      }
+    } catch (e) {
+      console.error("Error loading local logs:", e);
+    }
+  };
+
+  const logActivity = async (action, targetType, targetId, description, details = null) => {
+    const today = new Date().toISOString();
+    const uName = currentUser?.name || currentUser?.nome || (currentUser?.role === 'administrador' ? 'Admin Master' : 'Sistema');
+    const uEmail = currentUser?.email || (currentUser?.role === 'administrador' ? 'Laveiculos@gmail.com' : 'system@la.com');
+
+    const logEntry = {
+      createdAt: today,
+      userName: uName,
+      userEmail: uEmail,
+      action,
+      targetType,
+      targetId: String(targetId || ''),
+      description,
+      details
+    };
+
+    try {
+      const snakePayload = mapToSnake(logEntry, 'system_logs');
+      snakePayload['created_at'] = today;
+      const { data, error } = await supabase.from('system_logs').insert([snakePayload]).select();
+      if (!error && data) {
+        const camelData = mapToCamel(data, 'system_logs')[0];
+        setLogs(prev => [camelData, ...prev]);
+        return;
+      }
+    } catch (e) {
+      console.warn("Could not log to Supabase system_logs:", e);
+    }
+
+    try {
+      const localLogsStr = localStorage.getItem('la_system_logs') || '[]';
+      const localLogs = JSON.parse(localLogsStr);
+      const localEntry = { ...logEntry, id: Date.now() };
+      const updatedLogs = [localEntry, ...localLogs].slice(0, 1000);
+      localStorage.setItem('la_system_logs', JSON.stringify(updatedLogs));
+      setLogs(updatedLogs);
+    } catch (e) {
+      console.error("Failed to write local log:", e);
+    }
+  };
+
+  // Track logins
+  useEffect(() => {
+    if (currentUser) {
+      const hasLoggedKey = `la_logged_${currentUser.email || 'master'}_${new Date().toDateString()}`;
+      if (!sessionStorage.getItem(hasLoggedKey)) {
+        sessionStorage.setItem(hasLoggedKey, 'true');
+        logActivity('Login', 'Auth', null, `Login realizado com sucesso no painel administrativo`);
+      }
+    }
+  }, [currentUser]);
 
 
   // Robust Mapping System for Portuguese Database Schema (Audited from Supabase)
@@ -153,10 +232,13 @@ export const useAppState = () => {
   const mapToCamel = (data, tableName) => {
     if (!data) return [];
     const mappings = TABLE_MAPPINGS[tableName] || {};
-    // Create reverse mapping
+    // Create reverse mapping where a snake_case key can map to multiple camelCase keys
     const reverseMap = {};
     Object.entries(mappings).forEach(([camel, snake]) => {
-      reverseMap[snake] = camel;
+      if (!reverseMap[snake]) {
+        reverseMap[snake] = [];
+      }
+      reverseMap[snake].push(camel);
     });
 
     return data.map(item => {
@@ -165,7 +247,9 @@ export const useAppState = () => {
       // Pass 1: explicit mappings take priority
       for (const key in item) {
         if (reverseMap[key]) {
-          newItem[reverseMap[key]] = item[key];
+          reverseMap[key].forEach(camelKey => {
+            newItem[camelKey] = item[key];
+          });
         }
       }
       
@@ -354,6 +438,9 @@ export const useAppState = () => {
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
       }
+      
+      // Carregar os logs do sistema
+      await loadLogs();
     };
 
     loadData();
@@ -361,17 +448,26 @@ export const useAppState = () => {
 
   const handleAddSystemUser = async (user) => {
     const { data, error } = await supabase.from('system_users').insert([mapToSnake(user)]).select();
-    if (!error && data) setSystemUsers(prev => [...prev, mapToCamel(data)[0]]);
+    if (!error && data) {
+      setSystemUsers(prev => [...prev, mapToCamel(data)[0]]);
+      logActivity('Criar', 'Usuário', data[0].id, `Criou o usuário ${user.name} (${user.email})`);
+    }
   };
 
   const handleUpdateSystemUser = async (updated) => {
     const { error } = await supabase.from('system_users').update(mapToSnake(updated)).eq('id', updated.id);
-    if (!error) setSystemUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+    if (!error) {
+      setSystemUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
+      logActivity('Atualizar', 'Usuário', updated.id, `Atualizou o usuário ${updated.name}`);
+    }
   };
 
   const handleDeleteSystemUser = async (id) => {
     const { error } = await supabase.from('system_users').delete().eq('id', id);
-    if (!error) setSystemUsers(prev => prev.filter(u => u.id !== id));
+    if (!error) {
+      setSystemUsers(prev => prev.filter(u => u.id !== id));
+      logActivity('Apagar', 'Usuário', id, `Excluiu o usuário ID ${id}`);
+    }
   };
 
   const handleAddLead = async (lead) => {
@@ -387,12 +483,18 @@ export const useAppState = () => {
       date: new Date().toLocaleDateString('pt-BR') 
     };
     const { data, error } = await supabase.from('leads').insert([mapToSnake(newLead)]).select();
-    if (!error && data) setLeads(prev => [mapToCamel(data)[0], ...prev]);
+    if (!error && data) {
+      setLeads(prev => [mapToCamel(data)[0], ...prev]);
+      logActivity('Criar', 'Lead', data[0].id, `Criou novo lead: ${newLead.name} para o modelo ${newLead.vehicleModel || 'não especificado'}`);
+    }
   };
 
   const handleUpdateLeadStatus = async (id, status, updatedBy) => {
     const { error } = await supabase.from('leads').update({ status, updated_by: updatedBy }).eq('id', id);
-    if (!error) setLeads(prev => prev.map(l => l.id === id ? { ...l, status, updatedBy } : l));
+    if (!error) {
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, status, updatedBy } : l));
+      logActivity('Atualizar', 'Lead', id, `Atualizou status do lead ID ${id} para ${status}`);
+    }
   };
 
   const handleAddRental = async (rental) => {
@@ -557,6 +659,7 @@ export const useAppState = () => {
           plate: vehicle?.plate || rental.vehiclePlate || rental.plate
         };
         setRentals(prev => [enrichedRental, ...prev]);
+        logActivity('Criar', 'Locação', newRental.id, `Criou locação para ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate || enrichedRental.plate}`);
       }
       
       await handleUpdateVehicle({ id: rental.vehicleId, status: 'Alugado' });
@@ -575,8 +678,9 @@ export const useAppState = () => {
     const rental = rentals.find(r => r.id === id);
     const { error } = await supabase.from('rentals').delete().eq('id', id);
     if (!error) {
-      if (rental) await handleUpdateVehicle({ id: rental.vehicleId, status: 'Dispon\u00edvel' });
+      if (rental) await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
       setRentals(prev => prev.filter(r => r.id !== id));
+      logActivity('Apagar', 'Locação', id, `Excluiu a locação de ${rental?.userName || rental?.user || 'desconhecido'} (Veículo ID: ${rental?.vehicleId})`);
     }
   };
 
@@ -586,6 +690,7 @@ export const useAppState = () => {
     const { error } = await supabase.from('clients').update(payload).eq('id', updatedClient.id);
     if (!error) {
       setClients(prev => prev.map(c => c.id === updatedClient.id ? updatedClient : c));
+      logActivity('Atualizar', 'Cliente', updatedClient.id, `Atualizou dados do cliente ${updatedClient.nome || updatedClient.name}`);
     }
     return { success: !error, error };
   };
@@ -704,7 +809,7 @@ export const useAppState = () => {
         }));
       }
       setRentals(prev => prev.map(r => r.id === finalRental.id ? { ...finalRental } : r));
-      alert('Contrato atualizado com sucesso!');
+      logActivity('Atualizar', 'Locação', finalRental.id, `Atualizou a locação de ${finalRental.userName || finalRental.user}`);
       return { success: true };
     } catch (error) {
       console.error("Erro ao atualizar loca\u00e7\u00e3o:", error);
@@ -721,6 +826,7 @@ export const useAppState = () => {
       if (data && data.length > 0) {
         const camelData = mapToCamel(data, 'investors')[0];
         setInvestors(prev => [camelData, ...prev]);
+        logActivity('Criar', 'Investidor', camelData.id, `Cadastrou o investidor ${camelData.name}`);
         return { success: true, data: camelData };
       }
       return { success: false, error: new Error('Nenhum dado retornado do servidor') };
@@ -737,6 +843,7 @@ export const useAppState = () => {
       const { error } = await supabase.from('investors').update(payload).eq('id', updatedInvestor.id);
       if (error) throw error;
       setInvestors(prev => prev.map(i => i.id === updatedInvestor.id ? updatedInvestor : i));
+      logActivity('Atualizar', 'Investidor', updatedInvestor.id, `Atualizou os dados do investidor ${updatedInvestor.name}`);
       return { success: true };
     } catch (err) {
       console.error("Erro ao atualizar investidor:", err);
@@ -746,8 +853,12 @@ export const useAppState = () => {
   };
 
   const handleDeleteInvestor = async (id) => {
+    const investor = investors.find(i => i.id === id);
     const { error } = await supabase.from('investors').delete().eq('id', id);
-    if (!error) setInvestors(prev => prev.filter(i => i.id !== id));
+    if (!error) {
+      setInvestors(prev => prev.filter(i => i.id !== id));
+      logActivity('Apagar', 'Investidor', id, `Excluiu o investidor ${investor?.name || 'ID: ' + id}`);
+    }
   };
 
   const handleAddVehicle = async (vehicle) => {
@@ -792,19 +903,24 @@ export const useAppState = () => {
     dbVehicle['investor_id'] = investorId;
 
     const { data, error } = await supabase.from('vehicles').insert([dbVehicle]).select();
-    if (!error && data) setVehicles(prev => [mapToCamel(data, 'vehicles')[0], ...prev]);
-    else if (error) {
-      console.error("Erro ao adicionar ve\u00edculo:", error);
-      alert(`Erro ao salvar ve\u00edculo: ${error.message}`);
+    if (!error && data) {
+      const newV = mapToCamel(data, 'vehicles')[0];
+      setVehicles(prev => [newV, ...prev]);
+      logActivity('Criar', 'Veículo', newV.id, `Cadastrou o veículo ${newV.model} (${newV.plate})`);
+    } else if (error) {
+      console.error("Erro ao adicionar veículo:", error);
+      alert(`Erro ao salvar veículo: ${error.message}`);
     }
   };
 
   const handleUpdateVehicle = async (vehicle, imageFile) => {
-    // Se for uma atualiza\u00e7\u00e3o simples de status (ex: vindo de loca\u00e7\u00e3o)
+    // Se for uma atualização simples de status (ex: vindo de locação)
     if (Object.keys(vehicle).length <= 2 && vehicle.id && vehicle.status) {
       const { error } = await supabase.from('vehicles').update({ status: vehicle.status }).eq('id', vehicle.id);
       if (!error) {
         setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: vehicle.status } : v));
+        const v = vehicles.find(x => x.id === vehicle.id);
+        logActivity('Atualizar', 'Veículo', vehicle.id, `Atualizou status do veículo ${v?.model || 'ID: ' + vehicle.id} (${v?.plate || ''}) para: ${vehicle.status}`);
       }
       return;
     }
@@ -844,27 +960,39 @@ export const useAppState = () => {
 
     const { error } = await supabase.from('vehicles').update(dbVehicle).eq('id', vehicle.id);
     if (!error) {
-      setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...vehicle, ...mapToCamel([dbVehicle], 'vehicles')[0] } : v));
+      const updatedCamel = { ...vehicle, ...mapToCamel([dbVehicle], 'vehicles')[0] };
+      setVehicles(prev => prev.map(v => v.id === vehicle.id ? updatedCamel : v));
+      logActivity('Atualizar', 'Veículo', vehicle.id, `Atualizou os dados do veículo ${updatedCamel.model} (${updatedCamel.plate})`);
     } else {
-      console.error("Erro detalhado ao atualizar ve\u00edculo:", error);
+      console.error("Erro detalhado ao atualizar veículo:", error);
       alert(`Erro ao salvar: ${error.message}`);
     }
   };
 
   const handleDeleteVehicle = async (id) => {
+    const vehicle = vehicles.find(v => v.id === id);
     const { error } = await supabase.from('vehicles').delete().eq('id', id);
-    if (!error) setVehicles(prev => prev.filter(v => v.id !== id));
+    if (!error) {
+      setVehicles(prev => prev.filter(v => v.id !== id));
+      logActivity('Apagar', 'Veículo', id, `Excluiu o veículo ${vehicle?.model || 'ID: ' + id} (${vehicle?.plate || ''})`);
+    }
   };
 
   const handleAddTransaction = async (transaction) => {
     const { data, error } = await supabase.from('transactions').insert([mapToSnake(transaction, 'transactions')]).select();
-    if (!error && data) setTransactions(prev => [mapToCamel(data, 'transactions')[0], ...prev]);
+    if (!error && data) {
+      const newTx = mapToCamel(data, 'transactions')[0];
+      setTransactions(prev => [newTx, ...prev]);
+      logActivity('Criar', 'Financeiro', newTx.id, `Lançou transação de ${newTx.type === 'in' ? 'Recebimento' : 'Pagamento'}: R$ ${newTx.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - Desc: ${newTx.desc}`);
+    }
   };
 
   const handleUpdateTransactionStatus = async (id, status) => {
+    const tx = transactions.find(t => t.id === id);
     const { error } = await supabase.from('transactions').update({ status }).eq('id', id);
     if (!error) {
       setTransactions(prev => prev.map(t => t.id === id ? { ...t, status } : t));
+      logActivity('Atualizar', 'Financeiro', id, `Atualizou status da transação de R$ ${tx?.val} (${tx?.desc}) para: ${status}`);
     } else {
       console.error("Erro ao atualizar status da transação:", error);
       alert("Erro ao atualizar o status da transação.");
@@ -876,6 +1004,7 @@ export const useAppState = () => {
     if (!error && data && data.length > 0) {
       const inserted = mapToCamel(data)[0];
       setMaintenances(prev => [inserted, ...prev]);
+      logActivity('Criar', 'Manutenção', inserted.id, `Lançou manutenção para o veículo ${maintenance.vehiclePlate} - Tipo: ${maintenance.serviceType} - R$ ${maintenance.value}`);
 
       // Sincronizar com o financeiro (lançamento automático)
       try {
@@ -911,6 +1040,7 @@ export const useAppState = () => {
     const { error } = await supabase.from('maintenances').update(mapToSnake(updatedMaintenance)).eq('id', updatedMaintenance.id);
     if (!error) {
       setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? updatedMaintenance : m));
+      logActivity('Atualizar', 'Manutenção', updatedMaintenance.id, `Atualizou dados de manutenção do veículo ${updatedMaintenance.vehiclePlate} - Tipo: ${updatedMaintenance.serviceType}`);
 
       // Sincronizar transação existente ou criar uma nova se não existir
       try {
@@ -956,6 +1086,7 @@ export const useAppState = () => {
     const { error } = await supabase.from('maintenances').delete().eq('id', id);
     if (!error) {
       setMaintenances(prev => prev.filter(m => m.id !== id));
+      logActivity('Apagar', 'Manutenção', id, `Excluiu a manutenção ID ${id}`);
 
       // Deletar transação correspondente no financeiro
       try {
@@ -1018,7 +1149,7 @@ export const useAppState = () => {
           date: today,
           type: 'out',
           val: Math.min(closureData.totalDebts, closureData.caucaoAvailable),
-          desc: `Dedução de Caução (Rescisão) - ${rental.user}`,
+          desc: `Dedução de Caução (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`,
           cat: 'Caução',
           vehiclePlate: rental.plate,
           status: 'Pago',
@@ -1033,7 +1164,7 @@ export const useAppState = () => {
           date: today,
           type: 'out',
           val: closureData.balance,
-          desc: `Caução a Devolver (Rescisão) - ${rental.user}`,
+          desc: `Caução a Devolver (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`,
           cat: 'Caução',
           vehiclePlate: rental.plate,
           status: 'Pendente',
@@ -1045,7 +1176,7 @@ export const useAppState = () => {
           date: today,
           type: 'in',
           val: closureData.balance,
-          desc: `Cobrança Final (Rescisão) - ${rental.user}`,
+          desc: `Cobrança Final (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`,
           cat: 'Aluguel',
           vehiclePlate: rental.plate,
           status: 'Pendente',
@@ -1058,6 +1189,7 @@ export const useAppState = () => {
           await handleAddTransaction(trans);
         }
       }
+      logActivity('Encerrar Contrato', 'Locação', rentalId, `Encerrou o contrato de locação de ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate}`);
       return { success: true };
     } catch (error) {
       console.error("Erro ao encerrar contrato:", error);
@@ -1273,7 +1405,9 @@ export const useAppState = () => {
       if (error) throw error;
       
       if (data) {
-        setInspections(prev => [mapToCamel(data)[0], ...prev]);
+        const newInsp = mapToCamel(data)[0];
+        setInspections(prev => [newInsp, ...prev]);
+        logActivity('Criar', 'Vistoria', newInsp.id, `Realizou vistoria de ${newInsp.type} para o veículo ${newInsp.vehiclePlate}`);
       }
     } catch (err) {
       console.error('Erro ao salvar vistoria com arquivos:', err.message);
@@ -1282,21 +1416,27 @@ export const useAppState = () => {
   };
 
   const handleDeleteInspection = async (id) => {
+    const inspection = inspections.find(ins => ins.id === id);
     const { error } = await supabase.from('inspections').delete().eq('id', id);
-    if (!error) setInspections(prev => prev.filter(ins => ins.id !== id));
+    if (!error) {
+      setInspections(prev => prev.filter(ins => ins.id !== id));
+      logActivity('Apagar', 'Vistoria', id, `Excluiu a vistoria de ${inspection?.type || 'ID: ' + id} do veículo ${inspection?.vehiclePlate || ''}`);
+    }
   };
 
   const handleCloseServiceOrder = async (os, mode, replacementCarPlate) => {
     if (mode === 'open') {
       const { data, error } = await supabase.from('service_orders').insert([mapToSnake({ ...os, status: 'Aberta' })]).select();
       if (!error && data) {
-        setServiceOrders(prev => [mapToCamel(data)[0], ...prev]);
+        const newOs = mapToCamel(data)[0];
+        setServiceOrders(prev => [newOs, ...prev]);
         await handleUpdateVehicle({ id: os.vehicleId, status: 'Manutenção' });
+        logActivity('Criar', 'Ordem Serviço', newOs.id, `Abriu O.S. #${newOs.id} para veículo ${os.plate} - Resp: ${os.responsible}`);
 
         if (replacementCarPlate) {
           const rental = rentals.find(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
           if (rental) {
-            const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.user, startDate: new Date().toISOString().split('T')[0], dailyRate: 80, status: 'Ativo' };
+            const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toISOString().split('T')[0], dailyRate: 80, status: 'Ativo' };
             const { data: rcData, error: rcError } = await supabase.from('replacement_contracts').insert([mapToSnake(rc)]).select();
             if (!rcError && rcData) {
               setReplacementContracts(prev => [mapToCamel(rcData)[0], ...prev]);
@@ -1323,6 +1463,7 @@ export const useAppState = () => {
       }
 
       await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: os.date, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
+      logActivity('Encerrar OS', 'Manutenção', os.id, `Concluiu a ordem de serviço #${os.id} para o veículo ${os.plate} - Valor: R$ ${os.total}`);
     }
   };
 
@@ -1337,7 +1478,7 @@ export const useAppState = () => {
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, clients, replacementContracts,
-    currentUser, setCurrentUser, selectedImage, setSelectedImage,
+    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
