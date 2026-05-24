@@ -20,7 +20,6 @@ const RentalDetailModal = ({
   onGoToVistorias, 
   onPayCaucao 
 }) => {
-  if (!rental) return null;
   const [localSelectedImage, setLocalSelectedImage] = useState(null);
   const setSelectedImage = setGlobalSelectedImage || setLocalSelectedImage;
 
@@ -48,6 +47,7 @@ const RentalDetailModal = ({
   };
 
   const dates = useMemo(() => {
+    if (!rental) return { start: '---', end: '---', remaining: 0, progress: 0, totalDays: 0, weekday: '', isClosed: false };
     const startStr = rental.startDate || rental.date;
     if (!startStr) return { start: '---', end: '---', remaining: 0, progress: 0, totalDays: 0, weekday: '', isClosed: false };
     
@@ -93,13 +93,15 @@ const RentalDetailModal = ({
   }, [rental]);
 
   const rentalInspections = useMemo(() => {
-    if (!rental.plate && !rental.vehiclePlate) return [];
+    if (!rental || (!rental.plate && !rental.vehiclePlate)) return [];
     return inspections.filter(ins => 
       (ins.vehiclePlate === rental.plate || ins.vehiclePlate === rental.vehiclePlate) && 
       new Date(ins.date) >= new Date(rental.startDate || rental.date) &&
       ins.type !== 'Coleta'
     ).sort((a, b) => new Date(b.date) - new Date(a.date));
   }, [inspections, rental]);
+
+  if (!rental) return null;
 
   const formatCurrency = (val) => {
     if (val === undefined || val === null) return 'R$ 0,00';

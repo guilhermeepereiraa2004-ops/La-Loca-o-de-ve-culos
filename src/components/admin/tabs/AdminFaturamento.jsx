@@ -428,7 +428,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                       <p className="text-[9px] text-neutral-400 font-medium uppercase tracking-widest">Compensações e débitos do ciclo</p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-10">
                       <div className="space-y-5">
                         <div className="flex justify-between items-center">
                           <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest">Aluguel Base</span>

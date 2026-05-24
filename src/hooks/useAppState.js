@@ -2,6 +2,170 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { uploadFile } from '../utils/supabaseStorage';
 
+// Robust Mapping System for Portuguese Database Schema (Audited from Supabase)
+const TABLE_MAPPINGS = {
+  rentals: {
+    id: 'id',
+    vehicleId: 'id_veiculo',
+    clientId: 'id_cliente',
+    startDate: 'start_date',
+    date: 'start_date', // Fallback para compatibilidade
+    endDate: 'end_date',
+    value: 'value',
+    tireTax: 'imposto_de_pneus',
+    status: 'status',
+    createdAt: 'created_at',
+    cnhRegisterNumber: 'registro_cnh',
+    cnh: 'cnh_number',
+    cnhNumber: 'cnh_number',
+    birthDate: 'data_de_nascimento',
+    user: 'user_name',
+    userName: 'user_name',
+    phone: 'client_phone',
+    clientPhone: 'client_phone',
+    email: 'e-mail',
+    cnhValidity: 'cnh_validity',
+    cnhSecurityCode: 'cnh_c\u00f3digo_de_seguran\u00e7a',
+    vehicle: 'modelo',
+    vehicleModel: 'modelo',
+    plate: 'placa',
+    vehiclePlate: 'placa',
+    rentalType: 'tipo',
+    durationWeeks: 'semanas',
+    depositTotal: 'total do dep\u00f3sito',
+    depositPaid: 'cau\u00e7\u00e3o_paga',
+    depositInstallments: 'deposit_installments',
+    lateFine: 'multa_tardia',
+    dailyInterest: 'juros_di\u00e1rios',
+    observations: 'observa\u00e7\u00f5es',
+    docs: 'documentos',
+    signedContract: 'contrato_assinado'
+  },
+  vehicles: {
+    model: 'model',
+    plate: 'plate',
+    year: 'year',
+    renavam: 'renavam',
+    initialKm: 'initial_km',
+    km: 'km',
+    fipeValue: 'fipe_value',
+    investorId: 'investor_id',
+    adminTax: 'admin_tax',
+    investorTax: 'investor_tax',
+    hasProtection: 'has_protection',
+    protectionCompany: 'protection_company',
+    protectionValue: 'protection_value',
+    franchiseInsurance: 'franchise_insurance',
+    hasSpareKey: 'has_spare_key',
+    lastBeltChangeKm: 'last_belt_change_km',
+    beltChangeIntervalKm: 'belt_change_interval_km',
+    image: 'image',
+    weeklyRental: 'weekly_rental',
+    investmentValue: 'investment_value',
+    preventiveMaintenance: 'preventive_maintenance',
+    entryDate: 'entry_date',
+    isFavorite: 'is_favorite',
+    status: 'status',
+    dividend: 'dividend'
+  },
+  clients: {
+    id: 'id',
+    name: 'nome',
+    nome: 'nome',
+    email: 'e-mail',
+    phone: 'telefone',
+    cpf: 'cpf',
+    address: 'address',
+    cnh: 'cnh_number',
+    cnhNumber: 'cnh_number',
+    cnhExpiration: 'cnh_validity',
+    birthDate: 'data_de_nascimento',
+    cnhRegisterNumber: 'registro_cnh',
+    docs: 'documentos',
+    status: 'status'
+  },
+  investors: {
+    id: 'id',
+    name: 'name',
+    email: 'email',
+    phone: 'phone',
+    cpf: 'cpf',
+    address: 'address',
+    password: 'password',
+    status: 'status',
+    bank: 'bank',
+    pix: 'pix'
+  },
+  transactions: {
+    id: 'id',
+    type: 'type',
+    val: 'val',
+    cat: 'cat',
+    desc: 'desc',
+    date: 'date',
+    vehiclePlate: 'vehicle_plate',
+    responsible: 'responsible',
+    status: 'status'
+  }
+};
+
+const mapToCamel = (data, tableName) => {
+  if (!data) return [];
+  const mappings = TABLE_MAPPINGS[tableName] || {};
+  // Create reverse mapping where a snake_case key can map to multiple camelCase keys
+  const reverseMap = {};
+  Object.entries(mappings).forEach(([camel, snake]) => {
+    if (!reverseMap[snake]) {
+      reverseMap[snake] = [];
+    }
+    reverseMap[snake].push(camel);
+  });
+
+  return data.map(item => {
+    const newItem = {};
+    
+    // Pass 1: explicit mappings take priority
+    for (const key in item) {
+      if (reverseMap[key]) {
+        reverseMap[key].forEach(camelKey => {
+          newItem[camelKey] = item[key];
+        });
+      }
+    }
+    
+    // Pass 2: fallback to auto camelCase only if key is not already defined
+    for (const key in item) {
+      if (!reverseMap[key]) {
+        const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+        if (newItem[camelKey] === undefined) {
+          newItem[camelKey] = item[key];
+        }
+      }
+    }
+
+    // Specific join handlers
+    if (item.investors?.name) newItem.investor = item.investors.name;
+    
+    return newItem;
+  });
+};
+
+const mapToSnake = (obj, tableName) => {
+  const mappings = TABLE_MAPPINGS[tableName] || {};
+  const newObj = {};
+  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor', 'investors', 'adminTax'];
+  for (const key in obj) {
+    if (skipKeys.includes(key)) continue;
+    if (mappings[key]) {
+      newObj[mappings[key]] = obj[key];
+    } else {
+      const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+      newObj[snakeKey] = obj[key];
+    }
+  }
+  return newObj;
+};
+
 export const useAppState = () => {
   const [view, setView] = useState(() => {
     const savedAdmin = localStorage.getItem('la_admin_auth');
@@ -132,169 +296,7 @@ export const useAppState = () => {
   }, [currentUser]);
 
 
-  // Robust Mapping System for Portuguese Database Schema (Audited from Supabase)
-  const TABLE_MAPPINGS = {
-    rentals: {
-      id: 'id',
-      vehicleId: 'id_veiculo',
-      clientId: 'id_cliente',
-      startDate: 'start_date',
-      date: 'start_date', // Fallback para compatibilidade
-      endDate: 'end_date',
-      value: 'value',
-      tireTax: 'imposto_de_pneus',
-      status: 'status',
-      createdAt: 'created_at',
-      cnhRegisterNumber: 'registro_cnh',
-      cnh: 'cnh_number',
-      cnhNumber: 'cnh_number',
-      birthDate: 'data_de_nascimento',
-      user: 'user_name',
-      userName: 'user_name',
-      phone: 'client_phone',
-      clientPhone: 'client_phone',
-      email: 'e-mail',
-      cnhValidity: 'cnh_validity',
-      cnhSecurityCode: 'cnh_c\u00f3digo_de_seguran\u00e7a',
-      vehicle: 'modelo',
-      vehicleModel: 'modelo',
-      plate: 'placa',
-      vehiclePlate: 'placa',
-      rentalType: 'tipo',
-      durationWeeks: 'semanas',
-      depositTotal: 'total do dep\u00f3sito',
-      depositPaid: 'cau\u00e7\u00e3o_paga',
-      depositInstallments: 'deposit_installments',
-      lateFine: 'multa_tardia',
-      dailyInterest: 'juros_di\u00e1rios',
-      observations: 'observa\u00e7\u00f5es',
-      docs: 'documentos',
-      signedContract: 'contrato_assinado'
-    },
-    vehicles: {
-      model: 'model',
-      plate: 'plate',
-      year: 'year',
-      renavam: 'renavam',
-      initialKm: 'initial_km',
-      km: 'km',
-      fipeValue: 'fipe_value',
-      investorId: 'investor_id',
-      adminTax: 'admin_tax',
-      investorTax: 'investor_tax',
-      hasProtection: 'has_protection',
-      protectionCompany: 'protection_company',
-      protectionValue: 'protection_value',
-      franchiseInsurance: 'franchise_insurance',
-      hasSpareKey: 'has_spare_key',
-      lastBeltChangeKm: 'last_belt_change_km',
-      beltChangeIntervalKm: 'belt_change_interval_km',
-      image: 'image',
-      weeklyRental: 'weekly_rental',
-      investmentValue: 'investment_value',
-      preventiveMaintenance: 'preventive_maintenance',
-      entryDate: 'entry_date',
-      isFavorite: 'is_favorite',
-      status: 'status',
-      dividend: 'dividend'
-    },
-    clients: {
-      id: 'id',
-      name: 'nome',
-      nome: 'nome',
-      email: 'e-mail',
-      phone: 'telefone',
-      cpf: 'cpf',
-      address: 'address',
-      cnh: 'cnh_number',
-      cnhNumber: 'cnh_number',
-      cnhExpiration: 'cnh_validity',
-      birthDate: 'data_de_nascimento',
-      cnhRegisterNumber: 'registro_cnh',
-      docs: 'documentos',
-      status: 'status'
-    },
-    investors: {
-      id: 'id',
-      name: 'name',
-      email: 'email',
-      phone: 'phone',
-      cpf: 'cpf',
-      address: 'address',
-      password: 'password',
-      status: 'status',
-      bank: 'bank',
-      pix: 'pix'
-    },
-    transactions: {
-      id: 'id',
-      type: 'type',
-      val: 'val',
-      cat: 'cat',
-      desc: 'desc',
-      date: 'date',
-      vehiclePlate: 'vehicle_plate',
-      responsible: 'responsible',
-      status: 'status'
-    }
-  };
 
-  const mapToCamel = (data, tableName) => {
-    if (!data) return [];
-    const mappings = TABLE_MAPPINGS[tableName] || {};
-    // Create reverse mapping where a snake_case key can map to multiple camelCase keys
-    const reverseMap = {};
-    Object.entries(mappings).forEach(([camel, snake]) => {
-      if (!reverseMap[snake]) {
-        reverseMap[snake] = [];
-      }
-      reverseMap[snake].push(camel);
-    });
-
-    return data.map(item => {
-      const newItem = {};
-      
-      // Pass 1: explicit mappings take priority
-      for (const key in item) {
-        if (reverseMap[key]) {
-          reverseMap[key].forEach(camelKey => {
-            newItem[camelKey] = item[key];
-          });
-        }
-      }
-      
-      // Pass 2: fallback to auto camelCase only if key is not already defined
-      for (const key in item) {
-        if (!reverseMap[key]) {
-          const camelKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-          if (newItem[camelKey] === undefined) {
-            newItem[camelKey] = item[key];
-          }
-        }
-      }
-
-      // Specific join handlers
-      if (item.investors?.name) newItem.investor = item.investors.name;
-      
-      return newItem;
-    });
-  };
-
-  const mapToSnake = (obj, tableName) => {
-    const mappings = TABLE_MAPPINGS[tableName] || {};
-    const newObj = {};
-    const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor', 'investors', 'adminTax'];
-    for (const key in obj) {
-      if (skipKeys.includes(key)) continue;
-      if (mappings[key]) {
-        newObj[mappings[key]] = obj[key];
-      } else {
-        const snakeKey = key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-        newObj[snakeKey] = obj[key];
-      }
-    }
-    return newObj;
-  };
 
   // Load Data from Supabase
   useEffect(() => {
@@ -1258,12 +1260,25 @@ export const useAppState = () => {
     if (!rental) return;
 
     const vehicle = vehicles.find(v => v.id === rental.vehicleId);
-    const adminTaxPercent = parseFloat(vehicle?.adminTax || 15) / 100;
+    const mainAdminTaxPercent = parseFloat(vehicle?.adminTax || 15) / 100;
     
-    // Calcula o aluguel efetivo (com abatimento e carro reserva)
-    const effectiveRent = (billingData.weeklyRate || 0) - (billingData.abatimento || 0) + (billingData.replacementCharge || 0);
-    const adminRevenue = effectiveRent * adminTaxPercent;
+    // Identificar a placa do carro reserva vinculado neste ciclo
+    const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === rental.plate && rc.status === 'Ativo');
+    const replacementPlate = activeRC?.replacementVehiclePlate || 
+      replacementContracts.find(rc => rc.mainVehiclePlate === rental.plate)?.replacementVehiclePlate;
+
+    const mainRent = (billingData.weeklyRate || 0) - (billingData.abatimento || 0);
+    const repRent = billingData.replacementCharge || 0;
     
+    const mainAdminRevenue = mainRent > 0 ? mainRent * mainAdminTaxPercent : 0;
+    
+    let repAdminRevenue = 0;
+    if (repRent > 0 && replacementPlate) {
+      const repVehicle = vehicles.find(v => v.plate === replacementPlate);
+      const repAdminTaxPercent = parseFloat(repVehicle?.adminTax || 15) / 100;
+      repAdminRevenue = repRent * repAdminTaxPercent;
+    }
+
     // Busca a taxa do gateway (Pix ou Boleto) na tabela asaas_payments
     let fee = 0;
     let methodLabel = '';
@@ -1285,7 +1300,6 @@ export const useAppState = () => {
           methodLabel = 'Boleto';
         }
       } else {
-        // Fallback padrão se não houver registro gerado
         fee = 0.99;
         methodLabel = 'PIX';
       }
@@ -1298,12 +1312,12 @@ export const useAppState = () => {
     const todayStr = new Date().toISOString().split('T')[0];
     const trans = [];
 
-    // 1. Pagamento de Aluguel (Entrada - base do investidor)
-    if (effectiveRent > 0) {
+    // 1a. Pagamento de Aluguel Carro Principal (Entrada - base do investidor principal)
+    if (mainRent > 0) {
       trans.push({
         date: todayStr,
         type: 'in',
-        val: effectiveRent,
+        val: mainRent,
         desc: `Pagamento Aluguel - ${rental.user}`,
         cat: 'Aluguel',
         vehiclePlate: rental.plate,
@@ -1312,15 +1326,43 @@ export const useAppState = () => {
       });
     }
 
-    // 2. Taxa de Administração (Entrada - Empresa)
-    if (adminRevenue > 0) {
+    // 1b. Pagamento de Aluguel Carro Reserva (Entrada - base do investidor reserva)
+    if (repRent > 0 && replacementPlate) {
       trans.push({
         date: todayStr,
         type: 'in',
-        val: adminRevenue,
+        val: repRent,
+        desc: `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`,
+        cat: 'Aluguel',
+        vehiclePlate: replacementPlate,
+        status: 'pago',
+        responsible: ''
+      });
+    }
+
+    // 2a. Taxa de Administração - Carro Principal (Entrada - Empresa)
+    if (mainAdminRevenue > 0) {
+      trans.push({
+        date: todayStr,
+        type: 'in',
+        val: mainAdminRevenue,
         desc: `Taxa Adm - ${rental.user}`,
         cat: 'Taxa Adm',
         vehiclePlate: rental.plate,
+        status: 'pago',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 2b. Taxa de Administração - Carro Reserva (Entrada - Empresa)
+    if (repAdminRevenue > 0 && replacementPlate) {
+      trans.push({
+        date: todayStr,
+        type: 'in',
+        val: repAdminRevenue,
+        desc: `Taxa Adm Reserva - ${rental.user}`,
+        cat: 'Taxa Adm',
+        vehiclePlate: replacementPlate,
         status: 'pago',
         responsible: 'Administradora'
       });

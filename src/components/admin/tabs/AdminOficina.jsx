@@ -11,7 +11,7 @@ const parseBrValue = (val) => {
 const EMPTY_FORM = {
   plate: '', model: '', km: '', date: new Date().toISOString().split('T')[0],
   description: '', parts: [{ name: '', qty: 1, unitValue: '' }],
-  laborValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta'
+  laborValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta', vehicleId: ''
 };
 
 const AdminOficina = ({ 
@@ -33,7 +33,7 @@ const AdminOficina = ({
   useEffect(() => {
     if (form.plate) {
       const v = vehicles.find(v => v.plate === form.plate);
-      if (v) setForm(prev => ({ ...prev, model: v.model, responsible: 'Administradora' }));
+      if (v) setForm(prev => ({ ...prev, model: v.model, vehicleId: v.id, responsible: 'Administradora' }));
       
       const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
       setIsRented(!!rental);
