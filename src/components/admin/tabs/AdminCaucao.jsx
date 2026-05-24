@@ -128,17 +128,17 @@ const AdminCaucao = ({
           </div>
         </div>
 
-        <div className="overflow-x-auto overflow-y-hidden">
-          <table className="w-full text-left border-separate border-spacing-y-2 xl:border-spacing-y-3 2xl:border-spacing-y-4 px-4 pb-4 xl:px-6 xl:pb-6 2xl:px-8 2xl:pb-8 min-w-[1000px]">
+        <div className="hidden lg:block overflow-x-auto overflow-y-hidden">
+          <table className="w-full text-left border-separate border-spacing-y-2 xl:border-spacing-y-3 2xl:border-spacing-y-4 px-4 pb-4 xl:px-6 xl:pb-6 2xl:px-8 2xl:pb-8 min-w-full">
             <thead>
               <tr className="text-[9px] uppercase tracking-[0.3em] text-neutral-400 font-black">
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6">Condutor & Veículo</th>
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Vencimento</th>
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Total Contratado</th>
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Saldo Recebido</th>
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Restante</th>
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-center">Ações</th>
-                <th className="px-4 py-3 xl:px-6 xl:py-4 2xl:px-8 2xl:py-6 text-right">Status</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4">Condutor & Veículo</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-center">Vencimento</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-center">Total Contratado</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-center">Saldo Recebido</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-center">Restante</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-center">Ações</th>
+                <th className="px-3 py-2.5 xl:px-4 xl:py-3 2xl:px-6 2xl:py-4 text-right">Status</th>
               </tr>
             </thead>
             <tbody className="font-light">
@@ -162,8 +162,8 @@ const AdminCaucao = ({
                   return (
                     <tr key={rental.id} className="group transition-all duration-500">
                       {/* Conductor Column */}
-                      <td className="px-2 py-2 xl:py-3 2xl:py-4 bg-white border border-neutral-100 rounded-l-[1.5rem] xl:rounded-l-[2rem] 2xl:rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
-                        <div className="flex items-center gap-4 xl:gap-6 pl-4 xl:pl-6 min-w-[240px] xl:min-w-[280px]">
+                      <td className="px-2 py-2 xl:py-2.5 2xl:py-3 bg-white border border-neutral-100 rounded-l-[1.5rem] xl:rounded-l-[2rem] 2xl:rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
+                        <div className="flex items-center gap-2 xl:gap-3 pl-2 xl:pl-3">
                           <div className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-neutral-900 rounded-xl xl:rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xs xl:text-sm shadow-xl group-hover:rotate-6 transition-transform shrink-0">
                             {(rental.userName || rental.user || '?').charAt(0)}
                           </div>
@@ -182,9 +182,9 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Due Date Column */}
-                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1.5">
-                          <span className={`text-[9px] xl:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 xl:px-4 xl:py-2 rounded-2xl border transition-all ${isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
+                          <span className={`text-[9px] xl:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border transition-all ${isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
                               'bg-neutral-50 text-neutral-900 border-neutral-100'
                             }`}>
                             {rental.paymentDay || '---'}
@@ -199,15 +199,15 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Total Column */}
-                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <span className="text-sm xl:text-base font-black text-neutral-900 tracking-tight">
                           R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </td>
 
                       {/* Received Column */}
-                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
-                        <div className="bg-emerald-50 px-3 py-1.5 xl:px-4 xl:py-2 rounded-2xl border border-emerald-100 inline-block">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <div className="bg-emerald-50 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100 inline-block">
                           <span className="text-sm xl:text-base font-black text-emerald-600 tracking-tight">
                             R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
@@ -215,7 +215,7 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Remaining Column */}
-                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className={`text-sm xl:text-base font-black tracking-tight ${remaining > 0 ? 'text-amber-600' : 'text-neutral-300'}`}>
                             R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -229,16 +229,16 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Actions Column */}
-                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         {remaining > 0 ? (
                           <button
                             onClick={() => handleOpenPayModal(rental)}
-                            className="px-4 py-2.5 xl:px-6 xl:py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
+                            className="px-4 py-2.5 xl:px-4 xl:py-2.5 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
                           >
                             <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
                           </button>
                         ) : (
-                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-3 py-1.5 xl:px-4 xl:py-2 rounded-2xl border border-emerald-100">
+                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100">
                             <FileCheck size={16} />
                             <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
                           </div>
@@ -246,8 +246,8 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Status Column */}
-                      <td className="px-4 py-2 xl:px-6 xl:py-3 2xl:px-8 2xl:py-4 bg-white border border-neutral-100 rounded-r-[1.5rem] xl:rounded-r-[2rem] 2xl:rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-4 xl:pr-8 2xl:pr-12">
-                        <span className={`px-5 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest border-2 transition-all duration-700 ${remaining <= 0
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border border-neutral-100 rounded-r-[1.5rem] xl:rounded-r-[2rem] 2xl:rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-4 xl:pr-6 2xl:pr-8">
+                        <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border-2 transition-all duration-700 ${remaining <= 0
                           ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-500/10'
                           : 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm shadow-amber-500/10 group-hover:scale-105'
                           }`}>
@@ -274,6 +274,110 @@ const AdminCaucao = ({
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile/Tablet Card View */}
+        <div className="lg:hidden p-4 md:p-6 space-y-4">
+          {filteredRentals.length > 0 ? (
+            filteredRentals.map((rental) => {
+              const total = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
+              const received = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+              const remaining = total - received;
+
+              // Calculate Next Due Date
+              const paidCount = (rental.paidInstallments || []).length;
+              const startDate = rental.date || rental.startDate ? new Date((rental.date || rental.startDate) + 'T12:00:00') : new Date();
+              const nextDueDate = new Date(startDate.getTime());
+              nextDueDate.setDate(startDate.getDate() + (paidCount * 7));
+
+              const today = new Date();
+              today.setHours(12, 0, 0, 0);
+              const isDueToday = nextDueDate.toDateString() === today.toDateString();
+              const isOverdue = nextDueDate < today && remaining > 0;
+
+              return (
+                <div key={rental.id} className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-sm space-y-4 hover:border-[#C5A059]/30 transition-all duration-300">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059] font-black text-sm shrink-0">
+                        {(rental.userName || rental.user || '?').charAt(0)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <p className="text-sm font-black text-neutral-900 truncate">{rental.userName || rental.user || 'Desconhecido'}</p>
+                          {isDueToday && (
+                            <span className="bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1 shrink-0">
+                              <AlertTriangle size={8} /> Hoje
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest truncate">{rental.vehicleModel || rental.vehicle || 'S/ veículo'} • {rental.vehiclePlate || rental.plate || 'S/ placa'}</p>
+                      </div>
+                    </div>
+                    <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border shrink-0 ${remaining <= 0
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      : 'bg-amber-50 text-amber-600 border-amber-100'
+                      }`}>
+                      {remaining <= 0 ? 'Garantido' : 'Pendente'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 py-3 border-t border-b border-neutral-50 text-xs">
+                    <div className="space-y-0.5">
+                      <p className="text-[8px] uppercase text-neutral-400 font-black">Vencimento</p>
+                      <p className={`font-bold ${isOverdue || isDueToday ? 'text-red-500' : 'text-neutral-800'}`}>
+                        {rental.paymentDay || '---'} {remaining > 0 && `(${nextDueDate.toLocaleDateString('pt-BR')})`}
+                      </p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[8px] uppercase text-neutral-400 font-black">Total Contratado</p>
+                      <p className="font-bold text-neutral-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[8px] uppercase text-neutral-400 font-black">Saldo Recebido</p>
+                      <p className="font-bold text-emerald-600">R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                    </div>
+                    <div className="space-y-0.5">
+                      <p className="text-[8px] uppercase text-neutral-400 font-black">Restante</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`font-black ${remaining > 0 ? 'text-amber-600' : 'text-neutral-300'}`}>
+                          R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        {rental.depositInstallments > 1 && remaining > 0 && (
+                          <span className="text-[7px] uppercase font-black text-neutral-400 shrink-0">
+                            ({(rental.paidInstallments || []).length}/{rental.depositInstallments} parc)
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-1">
+                    {remaining > 0 ? (
+                      <button
+                        onClick={() => handleOpenPayModal(rental)}
+                        className="w-full py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 shadow-md group/btn active:scale-95"
+                      >
+                        <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 py-3 rounded-2xl border border-emerald-100">
+                        <FileCheck size={16} />
+                        <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-16 text-center bg-white border border-neutral-100 rounded-3xl">
+              <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-200 mx-auto mb-4">
+                <Landmark size={32} />
+              </div>
+              <p className="text-sm font-black uppercase tracking-tighter text-neutral-900">Nenhum Ativo Encontrado</p>
+            </div>
+          )}
         </div>
       </div>
 

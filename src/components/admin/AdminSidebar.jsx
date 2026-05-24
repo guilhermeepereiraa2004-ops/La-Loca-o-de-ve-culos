@@ -36,16 +36,16 @@ const AdminSidebar = ({
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
-      <aside className={`bg-neutral-900 text-white flex flex-col fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
-        <div className={`p-6 md:p-7 2xl:p-8 border-b border-neutral-800 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+      <aside className={`bg-neutral-900 text-white flex flex-col fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-48' : '-translate-x-full w-0 opacity-0 xl:w-16 xl:translate-x-0 xl:opacity-100'}`}>
+        <div className={`p-4 md:p-5 border-b border-neutral-800 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
           <div className="flex items-center gap-2">
             <span className="text-xl font-black text-white">LA</span>
             <span className="text-xl font-black text-[#C5A059]">LOCAÇÃO</span>
           </div>
         </div>
 
-        <nav className="flex-1 p-5 md:p-6 space-y-1 md:space-y-2 overflow-y-auto custom-scrollbar no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto custom-scrollbar no-scrollbar" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className={`text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
             Gerenciamento
           </div>
 
@@ -60,7 +60,7 @@ const AdminSidebar = ({
                   setActiveTab(item.id);
                   if (window.innerWidth < 1280) setIsSidebarOpen(false);
                 }}
-                className={`w-full flex items-center gap-3 text-sm font-medium p-3 rounded-xl transition-all relative ${
+                className={`w-full flex items-center gap-2.5 text-[13px] font-medium p-2.5 rounded-xl transition-all relative ${
                   isActive ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-white/5'
                 }`}
                 title={item.label}
@@ -90,10 +90,10 @@ const AdminSidebar = ({
           })}
         </nav>
 
-        <div className="p-5 md:p-6 border-t border-neutral-800 space-y-3">
+        <div className="p-4 border-t border-neutral-800 space-y-2">
           <button
             onClick={onGoHome}
-            className="flex items-center gap-3 text-sm font-medium text-neutral-400 hover:text-white transition-colors w-full p-3 group"
+            className="flex items-center gap-2.5 text-[13px] font-medium text-neutral-400 hover:text-white transition-colors w-full p-2.5 group"
           >
             <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#C5A059]/20 group-hover:text-[#C5A059] transition-all">
               <Eye size={14} />
@@ -102,7 +102,7 @@ const AdminSidebar = ({
           </button>
           <button
             onClick={onLogout}
-            className="flex items-center gap-3 text-sm font-medium text-red-400 hover:text-red-300 transition-colors w-full p-3 group"
+            className="flex items-center gap-2.5 text-[13px] font-medium text-red-400 hover:text-red-300 transition-colors w-full p-2.5 group"
           >
             <div className="w-8 h-8 rounded-full bg-red-400/10 flex items-center justify-center group-hover:bg-red-400/20 transition-all">
               <X size={14} />

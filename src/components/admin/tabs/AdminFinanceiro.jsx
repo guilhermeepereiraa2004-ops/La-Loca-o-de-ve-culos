@@ -169,15 +169,15 @@ const AdminFinanceiro = ({
 
         {/* Transactions Table */}
         <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left min-w-[900px]">
+          <div className="hidden lg:block overflow-x-auto">
+            <table className="w-full text-left min-w-full">
               <thead>
                 <tr className="bg-neutral-50/50 border-b border-neutral-100">
-                  <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Descrição / Data</th>
-                  <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Categoria</th>
-                  <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Origem / Responsável</th>
-                  <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400 text-right">Valor</th>
-                  <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Status</th>
+                  <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Descrição / Data</th>
+                  <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Categoria</th>
+                  <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Origem / Responsável</th>
+                  <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400 text-right">Valor</th>
+                  <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-50">
@@ -197,7 +197,7 @@ const AdminFinanceiro = ({
                 ) : (
                   filteredTransactions.map((t, i) => (
                     <tr key={i} className="group hover:bg-neutral-50/50 transition-colors">
-                      <td className="px-10 py-8">
+                      <td className="px-4 py-3 xl:px-6 xl:py-4">
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
                             {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
@@ -208,19 +208,19 @@ const AdminFinanceiro = ({
                           </div>
                         </div>
                       </td>
-                      <td className="px-10 py-8">
+                      <td className="px-4 py-3 xl:px-6 xl:py-4">
                         <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-3 py-1 rounded-full">{t.cat}</span>
                       </td>
-                      <td className="px-10 py-8">
+                      <td className="px-4 py-3 xl:px-6 xl:py-4">
                         <p className="text-xs font-bold text-neutral-900">{t.vehiclePlate || 'N/A'}</p>
                         <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">{t.responsible}</p>
                       </td>
-                      <td className="px-10 py-8 text-right">
+                      <td className="px-4 py-3 xl:px-6 xl:py-4 text-right">
                         <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
                           {t.type === 'in' ? '+' : '-'} R$ {Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </td>
-                      <td className="px-10 py-8">
+                      <td className="px-4 py-3 xl:px-6 xl:py-4">
                         <div className="flex items-center gap-3">
                           <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${t.status === 'Concluído' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                             {t.status}
@@ -243,6 +243,68 @@ const AdminFinanceiro = ({
                 )}
               </tbody>
             </table>
+          </div>
+
+          {/* Mobile/Tablet Card View */}
+          <div className="lg:hidden divide-y divide-neutral-100">
+            {filteredTransactions.length === 0 ? (
+              <div className="p-10 text-center text-neutral-300">
+                <button
+                  onClick={() => setShowFinanceForm(true)}
+                  className="text-[9px] text-[#C5A059] font-black uppercase underline tracking-widest hover:text-neutral-900 transition-colors"
+                >
+                  Iniciar Fluxo de Caixa
+                </button>
+              </div>
+            ) : (
+              filteredTransactions.map((t, i) => (
+                <div key={i} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                        {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{new Date(t.date).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    </div>
+                    <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 py-2 border-t border-b border-neutral-50 text-xs">
+                    <div>
+                      <p className="text-[8px] uppercase text-neutral-400 font-black">Origem / Placa</p>
+                      <p className="font-bold text-neutral-800 truncate">{t.vehiclePlate || 'N/A'}</p>
+                      <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black truncate">{t.responsible}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[8px] uppercase text-neutral-400 font-black">Valor</p>
+                      <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
+                        {t.type === 'in' ? '+' : '-'} R$ {Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${t.status === 'Concluído' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+                      {t.status}
+                    </span>
+                    {t.status !== 'Concluído' && onUpdateTransactionStatus && (
+                      <button
+                        onClick={() => {
+                          onUpdateTransactionStatus(t.id, 'Concluído');
+                          alert('Transação marcada como Concluída / Paga com sucesso!');
+                        }}
+                        className="px-4 py-2 bg-neutral-900 text-white hover:bg-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 shrink-0"
+                      >
+                        Pagar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>
