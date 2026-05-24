@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Database, Copy, Check, Clock, User, Filter, Activity, Eye, X, ShieldAlert } from 'lucide-react';
 
-const AdminLogs = ({ logs = [] }) => {
+const AdminLogs = ({ logs = [], isDbConnected = false }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [actionFilter, setActionFilter] = useState('all');
   const [moduleFilter, setModuleFilter] = useState('all');
@@ -73,50 +73,70 @@ CREATE POLICY "Allow public read and write access" ON public.system_logs
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-10">
       {/* Title */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6">
         <div>
           <h3 className="text-4xl font-black uppercase tracking-tighter">Logs do Sistema</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Audit trail e histórico de movimentações dos administradores.</p>
         </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {isDbConnected ? (
+            <div className="flex items-center gap-2 px-4 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              Nuvem Ativa (Supabase)
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 border border-amber-100 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <span className="relative flex h-2 w-2">
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+              Modo Local
+            </div>
+          )}
+        </div>
       </div>
 
       {/* SQL Setup Notice banner if not connected to database */}
-      <div className="bg-neutral-50 border border-neutral-100 rounded-[2.5rem] p-8 md:p-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center">
-        <div className="space-y-4 max-w-xl">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#C5A059]/10 text-[#C5A059] rounded-2xl flex items-center justify-center">
-              <Database size={20} />
+      {!isDbConnected && (
+        <div className="bg-neutral-50 border border-neutral-100 rounded-[2.5rem] p-8 md:p-10 flex flex-col lg:flex-row gap-8 items-start lg:items-center">
+          <div className="space-y-4 max-w-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-[#C5A059]/10 text-[#C5A059] rounded-2xl flex items-center justify-center">
+                <Database size={20} />
+              </div>
+              <h4 className="font-black text-neutral-900 text-sm uppercase tracking-wider">Persistência em Nuvem (Supabase)</h4>
             </div>
-            <h4 className="font-black text-neutral-900 text-sm uppercase tracking-wider">Persistência em Nuvem (Supabase)</h4>
+            <p className="text-xs text-neutral-500 leading-relaxed font-sans">
+              Os logs do sistema estão sendo salvos localmente neste navegador. Para que todo o histórico seja compartilhado e sincronizado em tempo real entre todos os funcionários e administradores na nuvem, crie a tabela de logs no console do seu Supabase.
+            </p>
           </div>
-          <p className="text-xs text-neutral-500 leading-relaxed font-sans">
-            Os logs do sistema estão sendo salvos localmente neste navegador. Para que todo o histórico seja compartilhado e sincronizado em tempo real entre todos os funcionários e administradores na nuvem, crie a tabela de logs no console do seu Supabase.
-          </p>
-        </div>
-        
-        <div className="w-full lg:flex-1 bg-neutral-900 rounded-3xl p-6 relative overflow-hidden group">
-          <div className="flex justify-between items-center mb-4">
-            <span className="text-[8px] font-black tracking-widest text-[#C5A059] uppercase">Scripts SQL para Console do Supabase</span>
-            <button 
-              onClick={handleCopySql}
-              className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors bg-white/5 px-3 py-2 rounded-xl"
-            >
-              {copied ? (
-                <>
-                  <Check size={10} className="text-emerald-400" /> Copiado!
-                </>
-              ) : (
-                <>
-                  <Copy size={10} /> Copiar SQL
-                </>
-              )}
-            </button>
+          
+          <div className="w-full lg:flex-1 bg-neutral-900 rounded-3xl p-6 relative overflow-hidden group">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-[8px] font-black tracking-widest text-[#C5A059] uppercase">Scripts SQL para Console do Supabase</span>
+              <button 
+                onClick={handleCopySql}
+                className="flex items-center gap-2 text-[8px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors bg-white/5 px-3 py-2 rounded-xl"
+              >
+                {copied ? (
+                  <>
+                    <Check size={10} className="text-emerald-400" /> Copiado!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={10} /> Copiar SQL
+                  </>
+                )}
+              </button>
+            </div>
+            <pre className="text-[9px] font-mono text-neutral-300 overflow-x-auto max-h-32 custom-scrollbar pr-2 leading-relaxed">
+              {sqlCode}
+            </pre>
           </div>
-          <pre className="text-[9px] font-mono text-neutral-300 overflow-x-auto max-h-32 custom-scrollbar pr-2 leading-relaxed">
-            {sqlCode}
-          </pre>
         </div>
-      </div>
+      )}
 
       {/* Filters Toolbar */}
       <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm flex flex-col md:flex-row gap-6 items-center">

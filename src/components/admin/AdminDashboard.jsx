@@ -53,7 +53,8 @@ const AdminDashboard = ({
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onSeed, onGoHome, onViewVehicleDetail,
   selectedImage, setSelectedImage,
-  logs = []
+  logs = [],
+  isLogsDbConnected
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -377,7 +378,7 @@ const AdminDashboard = ({
             />
           )}
           {activeTab === 'logs' && isAdmin && (
-            <AdminLogs logs={logs} />
+            <AdminLogs logs={logs} isDbConnected={isLogsDbConnected} />
           )}
           {activeTab === 'oficina' && (
             <AdminOficina

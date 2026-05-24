@@ -43,6 +43,7 @@ export const useAppState = () => {
   const [interestForm, setInterestForm] = useState({ name: '', phone: '', email: '', observation: '' });
 
   const [logs, setLogs] = useState([]);
+  const [isLogsDbConnected, setIsLogsDbConnected] = useState(false);
 
   const loadLogs = async () => {
     try {
@@ -53,12 +54,17 @@ export const useAppState = () => {
       
       if (!error && data) {
         setLogs(mapToCamel(data, 'system_logs'));
+        setIsLogsDbConnected(true);
         return;
+      }
+      if (error) {
+        console.warn("Supabase system_logs query returned error, falling back to localStorage:", error);
       }
     } catch (e) {
       console.warn("Supabase system_logs table not found, falling back to localStorage", e);
     }
     
+    setIsLogsDbConnected(false);
     try {
       const localLogs = localStorage.getItem('la_system_logs');
       if (localLogs) {
@@ -92,7 +98,11 @@ export const useAppState = () => {
       if (!error && data) {
         const camelData = mapToCamel(data, 'system_logs')[0];
         setLogs(prev => [camelData, ...prev]);
+        setIsLogsDbConnected(true);
         return;
+      }
+      if (error) {
+        console.warn("Supabase system_logs insert returned error, falling back to localStorage:", error);
       }
     } catch (e) {
       console.warn("Could not log to Supabase system_logs:", e);
@@ -1478,7 +1488,7 @@ export const useAppState = () => {
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, clients, replacementContracts,
-    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs,
+    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,

@@ -21,7 +21,7 @@ const App = () => {
     view, setView,
     leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, clients, replacementContracts,
-    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs,
+    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
@@ -92,6 +92,7 @@ const App = () => {
         currentUser={currentUser}
         systemUsers={systemUsers}
         logs={logs}
+        isLogsDbConnected={isLogsDbConnected}
         onAddSystemUser={handleAddSystemUser}
         onUpdateSystemUser={handleUpdateSystemUser}
         onDeleteSystemUser={handleDeleteSystemUser}
