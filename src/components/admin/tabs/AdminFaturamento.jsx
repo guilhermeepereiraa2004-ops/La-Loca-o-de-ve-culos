@@ -178,9 +178,20 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     setErrors(prev => ({ ...prev, [rental.id]: null }));
 
     try {
-      const client = (clients || []).find(c =>
-        (c.nome || c.name || '').toLowerCase() === (rental.user || rental.userName || '').toLowerCase()
+      let client = (clients || []).find(c =>
+        (rental.clientId && c.id === rental.clientId) ||
+        (rental.id_cliente && c.id === rental.id_cliente) ||
+        (rental.idCliente && c.id === rental.idCliente)
       );
+      if (!client && (rental.cpf || rental.cpfCnpj)) {
+        const queryCpf = rental.cpf || rental.cpfCnpj;
+        client = (clients || []).find(c => c.cpf && queryCpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, ''));
+      }
+      if (!client) {
+        client = (clients || []).find(c => 
+          (c.nome || c.name || '').toLowerCase() === (rental.user || rental.userName || '').toLowerCase()
+        );
+      }
 
       const customerData = {
         name: rental.user || rental.userName || 'Condutor',

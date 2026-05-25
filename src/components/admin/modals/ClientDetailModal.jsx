@@ -11,12 +11,47 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(client || {});
+  const [errorModal, setErrorModal] = useState(null);
 
   if (!client) return null;
 
   const handleSave = async () => {
     if (onUpdate) {
-      await onUpdate(editForm);
+      const res = await onUpdate(editForm);
+      if (res && !res.success) {
+        const errorMsg = res.error?.message || '';
+        const errorCode = res.error?.code || '';
+        
+        if (errorCode === '23505' || errorMsg.toLowerCase().includes('unique') || errorMsg.toLowerCase().includes('duplicate')) {
+          if (errorMsg.includes('cpf')) {
+            setErrorModal({
+              title: 'CPF Duplicado',
+              message: 'Este CPF já está cadastrado para outro cliente no sistema.'
+            });
+          } else if (errorMsg.includes('cnh_number') || errorMsg.includes('cnh')) {
+            setErrorModal({
+              title: 'CNH Duplicada',
+              message: 'Este número de CNH já está cadastrado para outro cliente.'
+            });
+          } else if (errorMsg.includes('email') || errorMsg.includes('e-mail')) {
+            setErrorModal({
+              title: 'E-mail em Uso',
+              message: 'Este endereço de e-mail já está cadastrado para outro cliente.'
+            });
+          } else {
+            setErrorModal({
+              title: 'Dados Duplicados',
+              message: 'Já existe um cadastro no sistema com esses mesmos dados únicos (CPF, CNH ou E-mail).'
+            });
+          }
+        } else {
+          setErrorModal({
+            title: 'Erro ao Salvar',
+            message: res.error?.message || 'Ocorreu um erro inesperado ao salvar os dados.'
+          });
+        }
+        return; // Keep editing mode active so they don't lose progress
+      }
     }
     setIsEditing(false);
   };
@@ -263,6 +298,33 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
           </div>
         </div>
       </div>
+
+      {errorModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center px-6 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-sm" onClick={() => setErrorModal(null)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl animate-in zoom-in-95 duration-300">
+            <button 
+              onClick={() => setErrorModal(null)}
+              className="absolute top-8 right-8 text-neutral-400 hover:text-neutral-900 transition-colors"
+            >
+              <X size={20} />
+            </button>
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+              <AlertTriangle size={40} />
+            </div>
+            <h3 className="text-2xl font-black uppercase tracking-tighter text-neutral-900 mb-4">{errorModal.title}</h3>
+            <p className="text-neutral-500 font-light mb-10 leading-relaxed text-sm">
+              {errorModal.message}
+            </p>
+            <button 
+              onClick={() => setErrorModal(null)}
+              className="w-full py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all active:scale-95 duration-200 shadow-lg"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

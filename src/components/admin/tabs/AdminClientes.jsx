@@ -225,6 +225,7 @@ const AdminClientes = ({ clients = [], onUpdateClient }) => {
               if (res && res.success) {
                 setSelectedClient(updatedData);
               }
+              return res;
             }
           }}
         />

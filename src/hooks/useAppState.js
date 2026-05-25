@@ -397,11 +397,16 @@ export const useAppState = () => {
 
               mappedData = mappedData.map(rental => {
                 const vehicle = allVehicles.find(v => v.id === rental.vehicleId);
-                const client = currentClients.find(c => {
-                  if (rental.idCliente && c.id === rental.idCliente) return true;
-                  if (rental.cpf && c.cpf && rental.cpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, '')) return true;
-                  return (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase();
-                });
+                let client = currentClients.find(c => 
+                   (rental.clientId && c.id === rental.clientId) || 
+                   (rental.idCliente && c.id === rental.idCliente)
+                 );
+                 if (!client && rental.cpf) {
+                   client = currentClients.find(c => c.cpf && rental.cpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, ''));
+                 }
+                 if (!client) {
+                   client = currentClients.find(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+                 }
                 return {
                   ...rental,
                   image: vehicle?.image || rental.image,
