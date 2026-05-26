@@ -946,6 +946,31 @@ export const useAppState = () => {
     }
   };
 
+  const handleRenewRental = async (rentalId, additionalWeeks) => {
+    try {
+      const rental = rentals.find(r => r.id === rentalId);
+      if (!rental) throw new Error('Locação não encontrada');
+
+      const currentWeeks = parseInt(rental.durationWeeks || rental.period || 0) || 4;
+      const newWeeks = currentWeeks + additionalWeeks;
+
+      const { error } = await supabase
+        .from('rentals')
+        .update({ semanas: String(newWeeks) })
+        .eq('id', rentalId);
+
+      if (error) throw error;
+
+      setRentals(prev => prev.map(r => r.id === rentalId ? { ...r, durationWeeks: String(newWeeks) } : r));
+      logActivity('Renovação', 'Locação', rentalId, `Renovou o contrato do veículo ${rental.plate || rental.vehiclePlate} de ${rental.user || rental.userName} por mais ${additionalWeeks} semanas (Total: ${newWeeks} semanas)`);
+      return { success: true };
+    } catch (error) {
+      console.error("Erro ao renovar locação:", error);
+      alert(`Erro ao renovar: ${error.message}`);
+      return { success: false, error };
+    }
+  };
+
   const handleAddInvestor = async (investor) => {
     try {
       const payload = mapToSnake(investor, 'investors');
@@ -1273,11 +1298,16 @@ export const useAppState = () => {
 
       // 1. Registro de descontos da caução (se houver débitos)
       if (closureData.totalDebts > 0) {
+        const isEarly = closureData.earlyTerminationPenalty > 0;
+        const descStr = isEarly 
+          ? `Perda de Caução (Rescisão Antecipada) - ${rental.userName || rental.user || 'Condutor'}`
+          : `Dedução de Caução (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`;
+
         transactionsToAdd.push({
           date: today,
           type: 'out',
           val: Math.min(closureData.totalDebts, closureData.caucaoAvailable),
-          desc: `Dedução de Caução (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`,
+          desc: descStr,
           cat: 'Caução',
           vehiclePlate: rental.plate,
           status: 'Pago',
@@ -1725,7 +1755,13 @@ export const useAppState = () => {
 
   const handleCloseServiceOrder = async (os, mode, replacementCarPlate) => {
     if (mode === 'open') {
-      const { data, error } = await supabase.from('service_orders').insert([mapToSnake({ ...os, status: 'Aberta' })]).select();
+      const cleanOs = { ...os };
+      if (cleanOs.km === '' || cleanOs.km === undefined || cleanOs.km === null) {
+        cleanOs.km = null;
+      } else {
+        cleanOs.km = Number(cleanOs.km);
+      }
+      const { data, error } = await supabase.from('service_orders').insert([mapToSnake({ ...cleanOs, status: 'Aberta' })]).select();
       if (!error && data) {
         const newOs = mapToCamel(data)[0];
         setServiceOrders(prev => [newOs, ...prev]);
@@ -1757,12 +1793,77 @@ export const useAppState = () => {
       const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
       if (activeRC) {
         await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: new Date().toISOString() }).eq('id', activeRC.id);
+        setReplacementContracts(prev => prev.map(rc => 
+          rc.id === activeRC.id 
+            ? { ...rc, status: 'Encerrado', endDate: new Date().toISOString().split('T')[0] } 
+            : rc
+        ));
         const repV = vehicles.find(v => v.plate === activeRC.replacementVehiclePlate);
         if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Disponível' });
       }
 
       await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: os.date, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
       logActivity('Encerrar OS', 'Manutenção', os.id, `Concluiu a ordem de serviço #${os.id} para o veículo ${os.plate} - Valor: R$ ${os.total}`);
+    }
+  };
+
+  const handleUpdateServiceOrder = async (updatedOs) => {
+    try {
+      const cleanOs = { ...updatedOs };
+      if (cleanOs.km === '' || cleanOs.km === undefined || cleanOs.km === null) {
+        cleanOs.km = null;
+      } else {
+        cleanOs.km = Number(cleanOs.km);
+      }
+
+      const payload = mapToSnake(cleanOs);
+      delete payload.id;
+      delete payload.total;
+      
+      const { error } = await supabase.from('service_orders').update(payload).eq('id', cleanOs.id);
+      if (error) throw error;
+
+      setServiceOrders(prev => prev.map(o => o.id === cleanOs.id ? cleanOs : o));
+      logActivity('Atualizar', 'Ordem Serviço', cleanOs.id, `Atualizou O.S. #${cleanOs.id} para veículo ${cleanOs.plate}`);
+      return { success: true };
+    } catch (err) {
+      console.error("Erro ao atualizar ordem de serviço:", err);
+      alert(`Erro ao atualizar ordem de serviço: ${err.message}`);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteServiceOrder = async (id) => {
+    const os = serviceOrders.find(o => o.id === id);
+    if (!os) return;
+    
+    const { error } = await supabase.from('service_orders').delete().eq('id', id);
+    if (!error) {
+      setServiceOrders(prev => prev.filter(o => o.id !== id));
+      
+      // Se a OS estava aberta, restaura o status do veículo
+      if (os.status === 'Aberta' && os.vehicleId) {
+        const wasRented = rentals.some(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
+        await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Disponível' });
+      }
+      
+      // Se havia um carro reserva ativo para esta OS, encerra o contrato e libera o carro reserva
+      const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
+      if (activeRC) {
+        await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: new Date().toISOString() }).eq('id', activeRC.id);
+        setReplacementContracts(prev => prev.map(rc => 
+          rc.id === activeRC.id 
+            ? { ...rc, status: 'Encerrado', endDate: new Date().toISOString().split('T')[0] } 
+            : rc
+        ));
+        const repV = vehicles.find(v => v.plate === activeRC.replacementVehiclePlate);
+        if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Disponível' });
+      }
+
+      logActivity('Apagar', 'Ordem Serviço', id, `Excluiu a ordem de serviço #${id} para o veículo ${os.plate || 'desconhecido'}`);
+    } else {
+      console.error("Erro ao apagar ordem de serviço:", error);
+      alert(`Erro ao apagar ordem de serviço: ${error.message}`);
     }
   };
 
@@ -1784,12 +1885,12 @@ export const useAppState = () => {
     interestForm, setInterestForm,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleAddLead, handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
-    handleUpdateRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
+    handleUpdateRental, handleRenewRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleAddTransaction,
     handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
-    handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
+    handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
     handleInterestSubmit,
     handleAddFine, handleUpdateFine, handleDeleteFine,
     seedData: () => console.log('Seed data is no longer available.')

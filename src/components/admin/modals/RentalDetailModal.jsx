@@ -4,7 +4,7 @@ import {
   Download, Car, Calendar, Landmark, AlertTriangle, 
   FileText, TrendingUp, Phone, Mail, Image as ImageIcon,
   FileDown, ChevronRight, MapPin, Hash, ShieldCheck,
-  CheckCircle2, ArrowUpRight, DollarSign, Receipt
+  CheckCircle2, ArrowUpRight, DollarSign, Receipt, RefreshCw
 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { generateRentalContract } from '../../../utils/contractGenerator';
@@ -18,7 +18,8 @@ const RentalDetailModal = ({
   onUpdate, 
   setSelectedImage: setGlobalSelectedImage, 
   onGoToVistorias, 
-  onPayCaucao 
+  onPayCaucao,
+  onRenewContract
 }) => {
   const [localSelectedImage, setLocalSelectedImage] = useState(null);
   const setSelectedImage = setGlobalSelectedImage || setLocalSelectedImage;
@@ -471,7 +472,7 @@ const RentalDetailModal = ({
                   {onGoToVistorias && !inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Entrega') && (
                     <button 
                       onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })}
-                      className="w-full flex items-center gap-4 p-5 bg-[#C5A059] text-white rounded-[2rem] hover:bg-neutral-900 transition-all shadow-xl shadow-[#C5A059]/20"
+                      className="w-full flex items-center gap-4 p-5 bg-[#C5A059] text-white rounded-[2rem] hover:bg-neutral-950 transition-all shadow-xl shadow-[#C5A059]/20"
                     >
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
                         <ShieldCheck size={20} />
@@ -479,6 +480,21 @@ const RentalDetailModal = ({
                       <div className="text-left">
                         <span className="text-[10px] font-black uppercase tracking-widest block">Liberar Entrega</span>
                         <span className="text-[8px] font-bold uppercase opacity-80">Realizar Vistoria Obrigatória</span>
+                      </div>
+                    </button>
+                  )}
+
+                  {rental.status === 'Ativo' && onRenewContract && (
+                    <button 
+                      onClick={() => onRenewContract(rental)}
+                      className="w-full flex items-center gap-4 p-5 bg-neutral-900 text-[#C5A059] rounded-[2rem] hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-neutral-900/10"
+                    >
+                      <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                        <RefreshCw size={20} className="text-[#C5A059]" />
+                      </div>
+                      <div className="text-left">
+                        <span className="text-[10px] font-black uppercase tracking-widest block">Renovar Contrato</span>
+                        <span className="text-[8px] font-bold uppercase opacity-80">Adicionar semanas à vigência</span>
                       </div>
                     </button>
                   )}

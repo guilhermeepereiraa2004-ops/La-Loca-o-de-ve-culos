@@ -1,5 +1,5 @@
 import React from 'react';
-import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2, Calendar, X } from 'lucide-react';
+import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2, Calendar, X, RefreshCw } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getPublicUrl } from '../../../utils/supabaseStorage';
 
@@ -17,7 +17,8 @@ const AdminLocacoes = ({
   setDeleteType,
   setShowDeleteAuthModal,
   onGoToVistorias,
-  setRentalForm
+  setRentalForm,
+  onRenewContract
 }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
   const [dateStart, setDateStart] = React.useState('');
@@ -416,13 +417,23 @@ const AdminLocacoes = ({
                       <div className="flex items-center gap-2 pt-2 border-t border-neutral-100/50">
                         {/* Terminate button */}
                         {rental.status === 'Ativo' && (
-                          <button
-                            onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })}
-                            className="flex-1 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1"
-                            title="Encerrar Contrato"
-                          >
-                            <X size={12} /> Encerrar
-                          </button>
+                          <>
+                            <button
+                              onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })}
+                              className="flex-1 py-2.5 bg-red-50 text-red-600 hover:bg-red-100 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1"
+                              title="Encerrar Contrato"
+                            >
+                              <X size={12} /> Encerrar
+                            </button>
+                            
+                            <button
+                              onClick={() => onRenewContract(rental)}
+                              className="flex-1 py-2.5 bg-[#C5A059]/10 text-[#C5A059] hover:bg-[#C5A059]/20 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1"
+                              title="Renovar Contrato"
+                            >
+                              <RefreshCw size={11} /> Renovar
+                            </button>
+                          </>
                         )}
                         
                         <button

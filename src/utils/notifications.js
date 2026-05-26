@@ -92,7 +92,7 @@ export function computeNotifications(params = {}) {
       module: 'caucao',
       label: 'Caução',
       count: openDeposits.length,
-      message: `${openDeposits.length} caução${openDeposits.length > 1 ? 'ções' : ''} com parcelas em aberto`,
+      message: `${openDeposits.length} ${openDeposits.length > 1 ? 'cauções' : 'caução'} com parcelas em aberto`,
       color: 'orange',
     });
   }

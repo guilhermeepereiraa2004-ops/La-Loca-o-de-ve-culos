@@ -13,7 +13,8 @@ ADD COLUMN IF NOT EXISTS parts jsonb,
 ADD COLUMN IF NOT EXISTS labor_value text,
 ADD COLUMN IF NOT EXISTS provider text,
 ADD COLUMN IF NOT EXISTS observations text,
-ADD COLUMN IF NOT EXISTS opened_at text;
+ADD COLUMN IF NOT EXISTS opened_at text,
+ADD COLUMN IF NOT EXISTS closed_at text;
 
 -- Garante que haja uma política de acesso público para leitura/escrita em service_orders caso o RLS esteja ativo
 ALTER TABLE public.service_orders ENABLE ROW LEVEL SECURITY;
@@ -50,3 +51,35 @@ ALTER TABLE public.system_users
 ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];
 
 
+-- 6. CRIAÇÃO E CONFIGURAÇÃO DA TABELA DE LOGS DO SISTEMA (system_logs)
+CREATE TABLE IF NOT EXISTS public.system_logs (
+    id bigint PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    created_at text,
+    user_name text,
+    user_email text,
+    action text,
+    target_type text,
+    target_id text,
+    description text,
+    details jsonb
+);
+
+ALTER TABLE public.system_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow public read and write access on system_logs" ON public.system_logs;
+CREATE POLICY "Allow public read and write access on system_logs" ON public.system_logs
+  FOR ALL USING (true) WITH CHECK (true);
+
+
+-- 7. CONCESSÕES DE ACESSO (GRANTs) PARA AS TABELAS AUXILIARES E SISTEMA
+-- Garante que a chave anônima (anon) e usuários autenticados consigam interagir com as tabelas
+GRANT ALL ON TABLE public.service_orders TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.system_logs TO anon, authenticated, service_role;
+GRANT ALL ON TABLE public.system_fines TO anon, authenticated, service_role;
+
+
+-- 8. CONFIGURAÇÃO DE TIMEZONE PARA HORÁRIO DE BRASÍLIA
+-- Garante que o banco de dados e as conexões do app (anon/authenticated) utilizem o fuso horário de Brasília
+ALTER DATABASE postgres SET timezone TO 'America/Sao_Paulo';
+ALTER ROLE postgres SET timezone TO 'America/Sao_Paulo';
+ALTER ROLE anon SET timezone TO 'America/Sao_Paulo';
+ALTER ROLE authenticated SET timezone TO 'America/Sao_Paulo';

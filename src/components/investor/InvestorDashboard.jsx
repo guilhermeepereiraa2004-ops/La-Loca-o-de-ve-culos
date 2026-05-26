@@ -6,6 +6,16 @@ import {
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '---';
+  const cleanDate = dateStr.split('T')[0];
+  const parts = cleanDate.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+};
+
 const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
@@ -614,7 +624,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                               </div>
                               <div>
                                 <p className="text-sm font-black text-neutral-900">{m.type}</p>
-                                <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{new Date(m.date).toLocaleDateString('pt-BR')}</p>
+                                <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{formatDate(m.date)}</p>
                               </div>
                             </div>
                           </td>

@@ -29,11 +29,11 @@ const App = () => {
     seedData,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
-    handleUpdateRental, handleUpdateClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
+    handleUpdateRental, handleRenewRental, handleUpdateClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
-    handleAddInspection, handleDeleteInspection, handleCloseServiceOrder,
+    handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
     handleInterestSubmit,
     handleAddFine, handleUpdateFine, handleDeleteFine
   } = useAppState();
@@ -72,6 +72,8 @@ const App = () => {
         serviceOrders={serviceOrders}
         replacementContracts={replacementContracts}
         onCloseServiceOrder={handleCloseServiceOrder}
+        onUpdateServiceOrder={handleUpdateServiceOrder}
+        onDeleteServiceOrder={handleDeleteServiceOrder}
         onCompleteClosure={handleCompleteClosure}
         onPayCaucaoInstallment={handlePayCaucaoInstallment}
         onAddTransaction={handleAddTransaction}
@@ -80,6 +82,7 @@ const App = () => {
         onAddRental={handleAddRental}
         onDeleteRental={handleDeleteRental}
         onUpdateRental={handleUpdateRental}
+        onRenewRental={handleRenewRental}
         onUpdateClient={handleUpdateClient}
         onAddInvestor={handleAddInvestor}
         onUpdateInvestor={handleUpdateInvestor}

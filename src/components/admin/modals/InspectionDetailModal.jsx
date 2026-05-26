@@ -1,10 +1,40 @@
 import React, { useState } from 'react';
 import { X, ClipboardCheck, Calendar, Car, Gauge, Fuel, Camera, Play, Eye, Download, AlertTriangle, FileText, Ban } from 'lucide-react';
 
-const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
+const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals = [] }) => {
   const [selectedMedia, setSelectedMedia] = useState(null);
 
   if (!inspection) return null;
+
+  const hasActiveRental = rentals.some(r => {
+    if (r.status !== 'Ativo') return false;
+    const samePlate = (r.vehiclePlate || r.plate || '').toLowerCase() === (inspection.vehiclePlate || '').toLowerCase();
+    if (!samePlate) return false;
+    
+    // Compara apenas a data (YYYY-MM-DD) para evitar problemas de fuso horário
+    const getJustDateStr = (val) => {
+      if (!val) return '';
+      if (val instanceof Date) {
+        return val.toISOString().split('T')[0];
+      }
+      const str = String(val);
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        return str.substring(0, 10);
+      }
+      try {
+        const d = new Date(str);
+        if (!isNaN(d.getTime())) {
+          return d.toISOString().split('T')[0];
+        }
+      } catch (e) {}
+      return str;
+    };
+    
+    const insDate = getJustDateStr(inspection.date);
+    const rentalStart = getJustDateStr(r.startDate || r.date);
+    
+    return insDate && rentalStart && insDate >= rentalStart;
+  });
 
   return (
     <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
@@ -275,7 +305,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract }) => {
         </div>
 
         {/* Footer */}
-        {inspection.type === 'Devolução' && (
+        {inspection.type === 'Devolução' && hasActiveRental && (
           <div className="p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
             <button 
               onClick={() => onCloseContract(inspection)}

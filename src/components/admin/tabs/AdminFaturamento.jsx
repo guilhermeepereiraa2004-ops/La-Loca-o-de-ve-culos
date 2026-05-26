@@ -279,10 +279,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     const rentalDriver = rental.user || rental.userName;
 
     const matchedRCs = Array.isArray(replacementContracts)
-      ? replacementContracts.filter(rc => 
-          (rc.mainVehiclePlate && rentalPlate && rc.mainVehiclePlate.toLowerCase() === rentalPlate.toLowerCase()) ||
-          (rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase())
-        )
+      ? replacementContracts.filter(rc => {
+          if (rc.mainVehiclePlate && rentalPlate) {
+            return rc.mainVehiclePlate.toLowerCase() === rentalPlate.toLowerCase();
+          }
+          return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase();
+        })
       : [];
 
     let totalDaysInMaintenance = 0;

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Wrench, Car, X, Check, Printer, Package, User, ChevronDown, Eye, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Wrench, Car, X, Check, Printer, Package, User, ChevronDown, Eye, Clock, CheckCircle2, AlertTriangle, Trash2, Pencil } from 'lucide-react';
 
 const parseBrValue = (val) => {
   if (typeof val === 'number') return val;
@@ -8,8 +8,18 @@ const parseBrValue = (val) => {
   return parseFloat(cleanVal) || 0;
 };
 
+const formatDate = (dateStr) => {
+  if (!dateStr) return '---';
+  const cleanDate = dateStr.split('T')[0];
+  const parts = cleanDate.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+};
+
 const EMPTY_FORM = {
-  plate: '', model: '', km: '', date: new Date().toISOString().split('T')[0],
+  plate: '', model: '', km: '', date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
   description: '', parts: [{ name: '', qty: 1, unitValue: '' }],
   laborValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta', vehicleId: ''
 };
@@ -21,26 +31,40 @@ const AdminOficina = ({
   replacementContracts = [],
   onAddMaintenance, 
   onCloseServiceOrder, 
+  onUpdateServiceOrder,
+  onDeleteServiceOrder,
   serviceOrders = [] 
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewingOS, setViewingOS] = useState(null);
+  const [editingOS, setEditingOS] = useState(null);
   const [replacementCarPlate, setReplacementCarPlate] = useState('');
   const [isRented, setIsRented] = useState(false);
 
   useEffect(() => {
     if (form.plate) {
       const v = vehicles.find(v => v.plate === form.plate);
-      if (v) setForm(prev => ({ ...prev, model: v.model, vehicleId: v.id, responsible: 'Administradora' }));
+      if (v) {
+        setForm(prev => {
+          if (editingOS) return prev;
+          return { 
+            ...prev, 
+            model: v.model, 
+            vehicleId: v.id, 
+            responsible: prev.responsible || 'Administradora',
+            km: prev.km || v.km || '' 
+          };
+        });
+      }
       
       const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
       setIsRented(!!rental);
     } else {
       setIsRented(false);
     }
-  }, [form.plate, vehicles, rentals]);
+  }, [form.plate, vehicles, rentals, editingOS]);
 
   // Opções de responsável: somente investidor do veículo selecionado + Administradora
   const selectedVehicle = vehicles.find(v => v.plate === form.plate);
@@ -57,10 +81,26 @@ const AdminOficina = ({
     return { ...prev, parts };
   });
 
+  const handleEditOS = (os) => {
+    setEditingOS(os);
+    setForm({
+      ...os,
+      parts: os.parts && os.parts.length > 0 ? os.parts : [{ name: '', qty: 1, unitValue: '' }]
+    });
+    setViewingOS(null);
+    setShowForm(true);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const os = { ...form, id: Date.now(), openedAt: new Date().toISOString(), total: totalOS };
-    onCloseServiceOrder(os, 'open', replacementCarPlate);
+    if (editingOS) {
+      const os = { ...form, total: totalOS };
+      onUpdateServiceOrder(os);
+      setEditingOS(null);
+    } else {
+      const os = { ...form, id: Date.now(), openedAt: new Date().toISOString(), total: totalOS };
+      onCloseServiceOrder(os, 'open', replacementCarPlate);
+    }
     setShowForm(false);
     setForm(EMPTY_FORM);
     setReplacementCarPlate('');
@@ -71,11 +111,15 @@ const AdminOficina = ({
     setViewingOS(null);
   };
 
-  const filtered = serviceOrders.filter(os =>
-    os.plate?.toLowerCase().includes(search.toLowerCase()) ||
-    os.model?.toLowerCase().includes(search.toLowerCase()) ||
-    os.description?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = serviceOrders.filter(os => {
+    if (!search) return true;
+    const term = search.toLowerCase();
+    return (
+      (os.plate || '').toLowerCase().includes(term) ||
+      (os.model || '').toLowerCase().includes(term) ||
+      (os.description || '').toLowerCase().includes(term)
+    );
+  });
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12">
@@ -121,7 +165,7 @@ const AdminOficina = ({
               <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${os.status === 'Concluída' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                 {os.status}
               </span>
-              <span className="text-[9px] font-bold text-neutral-300 uppercase">{new Date(os.date).toLocaleDateString('pt-BR')}</span>
+              <span className="text-[9px] font-bold text-neutral-300 uppercase">{formatDate(os.date)}</span>
             </div>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Car size={22} /></div>
@@ -141,26 +185,52 @@ const AdminOficina = ({
                 <p className="text-sm font-black text-neutral-900">{(os.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
               </div>
             </div>
-            <button onClick={() => setViewingOS(os)} className="mt-4 w-full py-3 bg-neutral-50 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2">
-              <Eye size={14} /> Ver Detalhes
-            </button>
+            <div className="mt-4 flex gap-3">
+              <button onClick={() => setViewingOS(os)} className="flex-1 py-3 bg-neutral-50 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2">
+                <Eye size={14} /> Ver Detalhes
+              </button>
+              {os.status === 'Aberta' && (
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditOS(os);
+                  }}
+                  className="px-4 py-3 bg-[#C5A059]/10 text-[#C5A059] hover:bg-[#C5A059] hover:text-neutral-950 rounded-xl transition-all flex items-center justify-center active:scale-95 animate-in fade-in"
+                  title="Editar O.S."
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (window.confirm(`Deseja realmente excluir permanentemente a O.S. do veículo ${os.plate || 'desconhecido'}?`)) {
+                    onDeleteServiceOrder(os.id);
+                  }
+                }} 
+                className="px-4 py-3 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center active:scale-95"
+                title="Excluir O.S."
+              >
+                <Trash2 size={14} />
+              </button>
+            </div>
           </div>
         ))}
       </div>
 
       {showForm && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} />
           <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
             <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Wrench size={22} /></div>
                 <div>
-                  <h4 className="text-xl font-black uppercase tracking-tighter">Abrir Ordem de Serviço</h4>
+                  <h4 className="text-xl font-black uppercase tracking-tighter">{editingOS ? 'Editar Ordem de Serviço' : 'Abrir Ordem de Serviço'}</h4>
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">Oficina integrada à frota</p>
                 </div>
               </div>
-              <button onClick={() => setShowForm(false)} className="text-neutral-300 hover:text-neutral-900 transition-colors"><X size={24} /></button>
+              <button onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} className="text-neutral-300 hover:text-neutral-900 transition-colors"><X size={24} /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
@@ -168,7 +238,7 @@ const AdminOficina = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Veículo (Placa) *</label>
-                    <select value={form.plate} onChange={e => setForm({ ...form, plate: e.target.value })} required className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm">
+                    <select disabled={!!editingOS} value={form.plate} onChange={e => setForm({ ...form, plate: e.target.value })} required className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm disabled:opacity-50">
                       <option value="">Selecione</option>
                       {vehicles.map(v => <option key={v.id} value={v.plate}>{v.plate} — {v.model}</option>)}
                     </select>
@@ -178,8 +248,8 @@ const AdminOficina = ({
                     <input type="text" readOnly value={form.model} className="w-full bg-neutral-100 p-4 rounded-xl font-bold text-sm text-neutral-500" placeholder="Selecionado automaticamente" />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM na Abertura *</label>
-                    <input type="number" required value={form.km} onChange={e => setForm({ ...form, km: e.target.value })} placeholder="Ex: 35000" className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM na Abertura</label>
+                    <input type="number" value={form.km} onChange={e => setForm({ ...form, km: e.target.value })} placeholder="Ex: 35000" className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data</label>
@@ -188,8 +258,8 @@ const AdminOficina = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição do Serviço *</label>
-                  <textarea required value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Descreva o serviço a ser realizado..." rows={3} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-medium text-sm" />
+                  <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição do Serviço</label>
+                  <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Descreva o serviço a ser realizado..." rows={3} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-medium text-sm" />
                 </div>
 
                 <div className="space-y-4">
@@ -253,6 +323,10 @@ const AdminOficina = ({
                       </button>
                     ))}
                   </div>
+                  <p className="text-[9px] text-neutral-400 font-medium leading-relaxed mt-2 pl-1">
+                    * <strong>Administradora:</strong> O custo é pago pela locadora e não afeta o faturamento/repasse do investidor.<br />
+                    * <strong>Investidor:</strong> O custo da manutenção é descontado do saldo e dos repasses do investidor (proprietário do veículo).
+                  </p>
                 </div>
 
                 {isRented && (
@@ -292,8 +366,10 @@ const AdminOficina = ({
             </div>
 
             <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end gap-4 shrink-0">
-              <button type="button" onClick={() => setShowForm(false)} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all">Cancelar</button>
-              <button form="os-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl">Abrir O.S.</button>
+              <button type="button" onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all">Cancelar</button>
+              <button form="os-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl">
+                {editingOS ? 'Salvar Alterações' : 'Abrir O.S.'}
+              </button>
             </div>
           </div>
         </div>
@@ -318,7 +394,7 @@ const AdminOficina = ({
 
             <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[['Data', viewingOS.date], ['KM', `${viewingOS.km} km`], ['Responsável', viewingOS.responsible], ['Prestador', viewingOS.provider || '---']].map(([label, val]) => (
+                {[['Data', formatDate(viewingOS.date)], ['KM', `${viewingOS.km} km`], ['Responsável', viewingOS.responsible], ['Prestador', viewingOS.provider || '---']].map(([label, val]) => (
                   <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
                     <p className="text-[8px] uppercase text-neutral-400 font-black">{label}</p>
                     <p className="text-sm font-black text-neutral-900 mt-1">{val}</p>
@@ -361,9 +437,14 @@ const AdminOficina = ({
                 <Printer size={14} /> Imprimir / PDF
               </button>
               {viewingOS.status === 'Aberta' && (
-                <button onClick={() => handleCloseOS(viewingOS)} className="px-10 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl">
-                  <Check size={16} /> Fechar e Concluir O.S.
-                </button>
+                <div className="flex gap-3">
+                  <button onClick={() => handleEditOS(viewingOS)} className="px-8 py-4 bg-[#C5A059] text-neutral-950 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059]/80 transition-all flex items-center gap-2 shadow-xl active:scale-95">
+                    <Pencil size={14} /> Editar O.S.
+                  </button>
+                  <button onClick={() => handleCloseOS(viewingOS)} className="px-8 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">
+                    <Check size={16} /> Fechar e Concluir O.S.
+                  </button>
+                </div>
               )}
             </div>
           </div>

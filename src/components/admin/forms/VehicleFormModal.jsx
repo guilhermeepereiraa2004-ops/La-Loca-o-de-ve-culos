@@ -237,7 +237,7 @@ const VehicleFormModal = ({
                       </div>
                     </div>
                     
-                    {vehicleForm.hasProtection && (
+                    {vehicleForm.hasProtection ? (
                       <div className="animate-in slide-in-from-top-2 duration-300 pt-4 border-t border-neutral-200/50 space-y-4">
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Empresa da Proteção</label>
@@ -279,6 +279,19 @@ const VehicleFormModal = ({
                               />
                             </div>
                           </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="animate-in slide-in-from-top-2 duration-300 pt-4 border-t border-neutral-200/50 space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Empresa da Proteção (Paga por Fora)</label>
+                          <input 
+                            type="text" 
+                            value={vehicleForm.protectionCompany} 
+                            onChange={e => setVehicleForm({...vehicleForm, protectionCompany: e.target.value})} 
+                            className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
+                            placeholder="Ex: APVS, Gol Plus, etc."
+                          />
                         </div>
                       </div>
                     )}

@@ -19,6 +19,7 @@ import AdminMultas from './tabs/AdminMultas';
 
 // Modals
 import RentalDetailModal from './modals/RentalDetailModal';
+import RentalRenewalModal from './modals/RentalRenewalModal';
 import InspectionDetailModal from './modals/InspectionDetailModal';
 import ContractClosureModal from './modals/ContractClosureModal';
 import TerminationTermModal from './modals/TerminationTermModal';
@@ -49,7 +50,7 @@ const AdminDashboard = ({
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
   inspections, onAddInspection, onDeleteInspection,
-  serviceOrders, replacementContracts, onCloseServiceOrder,
+  serviceOrders, replacementContracts, onCloseServiceOrder, onUpdateServiceOrder, onDeleteServiceOrder,
   onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onSeed, onGoHome, onViewVehicleDetail,
@@ -60,7 +61,8 @@ const AdminDashboard = ({
   isFinesDbConnected = false,
   onAddFine,
   onUpdateFine,
-  onDeleteFine
+  onDeleteFine,
+  onRenewRental
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -81,6 +83,26 @@ const AdminDashboard = ({
     vehicleForm, setVehicleForm, financeForm, setFinanceForm,
     rentalForm, setRentalForm, isAdmin, canAccess
   } = useAdminState(currentUser);
+
+  const [showRenewalModal, setShowRenewalModal] = React.useState(false);
+  const [rentalToRenew, setRentalToRenew] = React.useState(null);
+
+  const handleTriggerRenewal = (rental) => {
+    setRentalToRenew(rental);
+    setShowRenewalModal(true);
+  };
+
+  const handleConfirmRenewal = async (rentalId, additionalWeeks) => {
+    const result = await onRenewRental(rentalId, additionalWeeks);
+    if (result?.success) {
+      setShowAdminSuccess({
+        show: true,
+        title: 'Contrato Renovado',
+        message: `O contrato foi estendido por mais ${additionalWeeks} semanas com sucesso.`
+      });
+      setShowRentalDetailModal(false);
+    }
+  };
 
   const totalRentalSteps = 4;
 
@@ -325,6 +347,7 @@ const AdminDashboard = ({
               setRentalForm={setRentalForm}
               setDeleteType={setDeleteType} setShowDeleteAuthModal={setShowDeleteAuthModal}
               onGoToVistorias={(data) => { if (data) setPendingInspection(data); setActiveTab('vistoria'); }}
+              onRenewContract={handleTriggerRenewal}
             />
           )}
           {activeTab === 'clientes' && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
@@ -403,6 +426,8 @@ const AdminDashboard = ({
               vehicles={vehicles} investors={investors} rentals={rentals}
               serviceOrders={serviceOrders} replacementContracts={replacementContracts}
               onAddMaintenance={onAddMaintenance} onCloseServiceOrder={onCloseServiceOrder}
+              onUpdateServiceOrder={onUpdateServiceOrder}
+              onDeleteServiceOrder={onDeleteServiceOrder}
             />
           )}
         </div>
@@ -478,6 +503,7 @@ const AdminDashboard = ({
             setActiveTab('vistoria');
             setShowRentalDetailModal(false);
           }}
+          onRenewContract={handleTriggerRenewal}
         />
       )}
       {showInspectionDetailModal && (
@@ -496,6 +522,7 @@ const AdminDashboard = ({
               alert('Não foi possível encontrar um contrato ativo para este veículo.');
             }
           }}
+          rentals={rentals}
         />
       )}
       
@@ -552,6 +579,14 @@ const AdminDashboard = ({
               alert("Ocorreu um erro inesperado ao finalizar o encerramento.");
             }
           }}
+        />
+      )}
+
+      {showRenewalModal && (
+        <RentalRenewalModal 
+          rental={rentalToRenew}
+          onClose={() => setShowRenewalModal(false)}
+          onConfirm={handleConfirmRenewal}
         />
       )}
 

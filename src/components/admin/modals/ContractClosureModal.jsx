@@ -10,7 +10,9 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
     totalDebts: 0,
     caucaoAvailable: 0,
     balance: 0,
-    type: 'return' // 'return' or 'debt'
+    type: 'return', // 'return' or 'debt'
+    earlyTerminationPenalty: 0,
+    scheduledEndDate: ''
   });
 
   useEffect(() => {
@@ -33,7 +35,49 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       const paidCaucao = parseFloat(String(rental.depositPaid || rental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
       const unpaidCaucao = totalCaucao - paidCaucao;
 
-      const totalDebts = inspectionDebts + unpaidFines + unpaidRentals;
+      // Comparação de datas YYYY-MM-DD para verificar se é rescisão antecipada
+      const getJustDateStr = (val) => {
+        if (!val) return '';
+        if (val instanceof Date) {
+          return val.toISOString().split('T')[0];
+        }
+        const str = String(val);
+        if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+          return str.substring(0, 10);
+        }
+        try {
+          const d = new Date(str);
+          if (!isNaN(d.getTime())) {
+            return d.toISOString().split('T')[0];
+          }
+        } catch (e) {}
+        return str;
+      };
+
+      const todayStr = getJustDateStr(new Date());
+      
+      // Se não há data final real (pois ainda está ativo), calcula a data final planejada
+      let scheduledEndStr = getJustDateStr(rental.endDate);
+      if (!scheduledEndStr) {
+        const startStr = rental.startDate || rental.date;
+        if (startStr) {
+          try {
+            const startDate = new Date(startStr + 'T12:00:00');
+            const weeks = parseInt(rental.durationWeeks || rental.period || 1);
+            const totalDays = weeks * 7;
+            const expectedEndDate = new Date(startDate.getTime());
+            expectedEndDate.setDate(startDate.getDate() + totalDays);
+            scheduledEndStr = expectedEndDate.toISOString().split('T')[0];
+          } catch (e) {
+            console.error("Erro ao calcular data prevista de término:", e);
+          }
+        }
+      }
+
+      const isEarlyTermination = scheduledEndStr && todayStr < scheduledEndStr;
+      const earlyTerminationPenalty = isEarlyTermination ? paidCaucao : 0;
+
+      const totalDebts = inspectionDebts + unpaidFines + unpaidRentals + earlyTerminationPenalty;
       const caucaoAvailable = paidCaucao;
       const balance = caucaoAvailable - totalDebts;
 
@@ -45,7 +89,9 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         totalDebts,
         caucaoAvailable,
         balance: Math.abs(balance),
-        type: balance >= 0 ? 'return' : 'debt'
+        type: balance >= 0 ? 'return' : 'debt',
+        earlyTerminationPenalty,
+        scheduledEndDate: scheduledEndStr
       });
     }
   }, [inspection, rental, transactions]);
@@ -75,6 +121,21 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10">
+          {closureData.earlyTerminationPenalty > 0 && (
+            <div className="p-6 bg-amber-50 border border-amber-200 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top-4 duration-500">
+              <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg">
+                <AlertTriangle size={24} />
+              </div>
+              <div>
+                <h5 className="text-sm font-black uppercase text-amber-900 mb-1">Rescisão Antecipada Detectada</h5>
+                <p className="text-xs text-amber-700/80 leading-relaxed font-bold">
+                  O contrato está sendo encerrado antes do término planejado ({closureData.scheduledEndDate ? new Date(closureData.scheduledEndDate + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não Informado'}). 
+                  Como consequência, o condutor perde integralmente o valor de sua caução (R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}), retida como multa de rescisão.
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Step 1: Consolidation */}
           <section className="space-y-6">
             <div className="flex items-center gap-3">
@@ -108,6 +169,13 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                       <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Cobranças</td>
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
+                    {closureData.earlyTerminationPenalty > 0 && (
+                      <tr className="bg-amber-50/50">
+                        <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-amber-950 uppercase">Multa Rescisão Antecipada</td>
+                        <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-amber-700 uppercase tracking-tight">Perda Integral da Caução</td>
+                        <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-amber-600 text-right">R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      </tr>
+                    )}
 
                     <tr className="bg-neutral-900">
                       <td colSpan={2} className="px-6 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-[#C5A059] uppercase tracking-widest">Total de Débitos Consolidados</td>

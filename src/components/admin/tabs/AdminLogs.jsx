@@ -150,7 +150,7 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
                 </thead>
                 <tbody className="divide-y divide-neutral-100 text-[11px] font-medium text-neutral-700">
                   {filteredLogs.map((log, idx) => (
-                    <tr key={log.id || idx} className="hover:bg-neutral-50/50 transition-colors">
+                    <tr key={`${log.id || 'log'}-${idx}`} className="hover:bg-neutral-50/50 transition-colors">
                       {/* Timestamp */}
                       <td className="px-4 py-3 xl:px-5 xl:py-3.5 shrink-0 whitespace-nowrap text-neutral-400 font-bold">
                         {formatLogDate(log.createdAt || log.created_at)}
@@ -214,7 +214,7 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
             {/* Mobile/Tablet Card View */}
             <div className="lg:hidden divide-y divide-neutral-100">
               {filteredLogs.map((log, idx) => (
-                <div key={log.id || idx} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
+                <div key={`${log.id || 'log'}-${idx}`} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
                   <div className="flex justify-between items-start gap-4">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-neutral-900 text-[#C5A059] flex items-center justify-center font-black text-xs shrink-0 uppercase">
