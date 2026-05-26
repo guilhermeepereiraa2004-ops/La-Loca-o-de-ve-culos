@@ -35,9 +35,9 @@ const AdminSidebar = ({
     { id: 'vistoria',      label: 'Vistoria', icon: ClipboardList },
     { id: 'multas',        label: 'Multas', icon: ShieldAlert },
     { id: 'oficina',       label: 'Oficina', icon: Wrench },
+    { id: 'logs',          label: 'Logs do Sistema',  icon: ClipboardList },
     ...(isAdmin ? [
-      { id: 'usuarios', label: 'Usuários', icon: Users },
-      { id: 'logs', label: 'Logs do Sistema', icon: ClipboardList }
+      { id: 'usuarios', label: 'Usuários', icon: Users }
     ] : []),
   ];
 

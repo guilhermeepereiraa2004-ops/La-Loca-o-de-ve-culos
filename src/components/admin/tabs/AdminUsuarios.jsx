@@ -11,6 +11,8 @@ const ALL_MODULES = [
   { id: 'caucao',        label: 'Caução',           icon: '🔐' },
   { id: 'manutencaoAdmin', label: 'Manutenção',     icon: '🔧' },
   { id: 'vistoria',      label: 'Vistoria',         icon: '📷' },
+  { id: 'multas',        label: 'Multas',           icon: '🚨' },
+  { id: 'logs',          label: 'Logs do Sistema',  icon: '📜' },
 ];
 
 const EMPTY_FORM = {

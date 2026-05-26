@@ -383,7 +383,7 @@ const AdminDashboard = ({
               onUpdateUser={onUpdateSystemUser} onDeleteUser={onDeleteSystemUser}
             />
           )}
-          {activeTab === 'logs' && isAdmin && (
+          {activeTab === 'logs' && canAccess('logs') && (
             <AdminLogs logs={logs} isDbConnected={isLogsDbConnected} />
           )}
           {activeTab === 'multas' && (

@@ -43,3 +43,10 @@ CREATE POLICY "Allow public read and write access on investor_payouts" ON public
 ALTER TABLE public.leads
 ADD COLUMN IF NOT EXISTS updated_by text;
 
+
+-- 5. CORREÇÃO DA TABELA DE USUÁRIOS (system_users)
+-- Adiciona a coluna modules para permissões de acesso
+ALTER TABLE public.system_users
+ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];
+
+

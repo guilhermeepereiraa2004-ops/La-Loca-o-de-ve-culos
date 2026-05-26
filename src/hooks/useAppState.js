@@ -529,6 +529,13 @@ export const useAppState = () => {
     if (!error && data) {
       setSystemUsers(prev => [...prev, mapToCamel(data)[0]]);
       logActivity('Criar', 'Usuário', data[0].id, `Criou o usuário ${user.name} (${user.email})`);
+    } else if (error) {
+      console.error("Erro ao criar usuário:", error);
+      if (error.message?.includes('modules') || error.code === 'PGRST204') {
+        alert(`ERRO NO BANCO DE DADOS: A coluna 'modules' está faltando na tabela 'system_users'.\n\nPor favor, execute o script abaixo no SQL Editor do Supabase para corrigir:\n\nALTER TABLE public.system_users ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];`);
+      } else {
+        alert(`Erro ao criar usuário: ${error.message}`);
+      }
     }
   };
 
@@ -537,6 +544,13 @@ export const useAppState = () => {
     if (!error) {
       setSystemUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
       logActivity('Atualizar', 'Usuário', updated.id, `Atualizou o usuário ${updated.name}`);
+    } else if (error) {
+      console.error("Erro ao atualizar usuário:", error);
+      if (error.message?.includes('modules') || error.code === 'PGRST204') {
+        alert(`ERRO NO BANCO DE DADOS: A coluna 'modules' está faltando na tabela 'system_users'.\n\nPor favor, execute o script abaixo no SQL Editor do Supabase para corrigir:\n\nALTER TABLE public.system_users ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];`);
+      } else {
+        alert(`Erro ao atualizar usuário: ${error.message}`);
+      }
     }
   };
 
