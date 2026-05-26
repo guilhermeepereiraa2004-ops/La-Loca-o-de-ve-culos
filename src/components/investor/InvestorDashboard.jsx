@@ -285,11 +285,18 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
   const nextPaymentDate = getFifthBusinessDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1));
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'alugado': return <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">Alugado</span>;
-      case 'manutenção': return <span className="px-3 py-1 bg-orange-50 text-orange-600 text-[9px] font-black uppercase tracking-widest rounded-full">Manutenção</span>;
-      case 'disponível': return <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[9px] font-black uppercase tracking-widest rounded-full">Disponível</span>;
-      default: return null;
+    switch (status?.toLowerCase()) {
+      case 'alugado': 
+      case 'alugado (reserva)':
+        return <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span>;
+      case 'manutenção': 
+        return <span className="px-3 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-full">Manutenção</span>;
+      case 'indisponível': 
+        return <span className="px-3 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-full">Indisponível</span>;
+      case 'disponível': 
+        return <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">Disponível</span>;
+      default: 
+        return status ? <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span> : null;
     }
   };
 

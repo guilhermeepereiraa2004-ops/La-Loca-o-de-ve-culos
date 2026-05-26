@@ -82,8 +82,12 @@ const FleetPage = ({ vehicles = [], onBack, onInterest }) => {
                     alt={car.model}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className={`absolute top-6 right-6 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 ${
-                    car.status === 'Disponível' ? 'bg-emerald-500/80' : 'bg-neutral-900/80'
+                   <div className={`absolute top-6 right-6 backdrop-blur-md text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 ${
+                    car.status === 'Disponível' 
+                      ? 'bg-emerald-500/80' 
+                      : (car.status === 'Alugado' || car.status === 'Alugado (Reserva)')
+                        ? 'bg-amber-500/80'
+                        : 'bg-red-500/80'
                   }`}>
                     {car.status}
                   </div>
@@ -104,14 +108,14 @@ const FleetPage = ({ vehicles = [], onBack, onInterest }) => {
                     </div>
                     <button 
                       onClick={() => onInterest(car)}
-                      disabled={car.status === 'Alugado'}
+                      disabled={['Alugado', 'Alugado (Reserva)'].includes(car.status)}
                       className={`w-full py-4 text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl transition-all ${
-                        car.status === 'Alugado' 
+                        ['Alugado', 'Alugado (Reserva)'].includes(car.status)
                         ? 'bg-neutral-100 text-neutral-300 cursor-not-allowed' 
                         : 'bg-neutral-100 text-neutral-900 hover:bg-neutral-900 hover:text-white'
                       }`}
                     >
-                      {car.status === 'Alugado' ? 'Indisponível' : 'Alugar Agora'}
+                      {['Alugado', 'Alugado (Reserva)'].includes(car.status) ? 'Indisponível' : 'Alugar Agora'}
                     </button>
                   </div>
                 </div>

@@ -96,22 +96,22 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                     <tr>
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Itens de Vistoria</td>
                       <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Vistoria de Devolução</td>
-                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.inspectionDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.inspectionDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                     <tr>
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Multas Pendentes</td>
                       <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Multas</td>
-                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidFines.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidFines.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                     <tr>
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Aluguéis Vencidos</td>
                       <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Cobranças</td>
-                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
 
                     <tr className="bg-neutral-900">
                       <td colSpan={2} className="px-6 md:px-8 py-5 text-[9px] md:text-[10px] font-black text-[#C5A059] uppercase tracking-widest">Total de Débitos Consolidados</td>
-                      <td className="px-6 md:px-8 py-5 text-base md:text-lg font-black text-white text-right">R$ {closureData.totalDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                      <td className="px-6 md:px-8 py-5 text-base md:text-lg font-black text-white text-right">R$ {closureData.totalDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -130,7 +130,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
               <div className="bg-neutral-50 p-6 md:p-8 rounded-[1.5rem] md:rounded-[2rem] border border-neutral-100 flex flex-col justify-between">
                 <div>
                   <p className="text-[8px] md:text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Caução Líquida Disponível</p>
-                  <h6 className="text-2xl md:text-3xl font-black text-emerald-600 tracking-tighter">R$ {closureData.caucaoAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h6>
+                  <h6 className="text-2xl md:text-3xl font-black text-emerald-600 tracking-tighter">R$ {closureData.caucaoAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h6>
                 </div>
                 <p className="text-[7px] md:text-[8px] text-neutral-400 font-bold uppercase mt-4 italic">Valor já pago pelo motorista e retido pela locadora.</p>
               </div>
@@ -141,7 +141,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                     {closureData.type === 'return' ? 'Saldo a Devolver' : 'Saldo Devedor Final'}
                   </p>
                   <h6 className={`text-2xl md:text-3xl font-black tracking-tighter ${closureData.type === 'return' ? 'text-emerald-900' : 'text-amber-900'}`}>
-                    R$ {closureData.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    R$ {closureData.balance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </h6>
                 </div>
                 <div className="flex items-center gap-2 mt-4">

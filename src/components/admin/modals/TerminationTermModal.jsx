@@ -219,13 +219,13 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                             <td className="py-2 text-[10px] text-neutral-600 font-sans">{item.description || '-'}</td>
                             <td className="py-2 text-center text-[10px] font-sans">{item.isProportional ? 'Sim' : 'Não'}</td>
                             <td className="py-2 text-[10px] font-mono text-neutral-900 text-right">
-                              R$ {parseFloat(item.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {parseFloat(item.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </td>
                           </tr>
                         ))}
                         <tr className="font-bold bg-neutral-50">
                           <td colSpan={3} className="py-2 pl-2 text-[9px] uppercase tracking-widest text-neutral-900 font-sans">Total Descontos Vistoria</td>
-                          <td className="py-2 pr-2 text-[10px] font-mono text-neutral-900 text-right">R$ {deductionsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                          <td className="py-2 pr-2 text-[10px] font-mono text-neutral-900 text-right">R$ {deductionsTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         </tr>
                       </tbody>
                     </table>
@@ -240,26 +240,26 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                   <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-100 space-y-2 text-[11px]">
                     <div className="flex justify-between text-neutral-600">
                       <span>Total de Débitos Consolidados (Vistoria, Multas, Aluguéis, Caução pendente):</span>
-                      <span className="font-mono text-neutral-950 font-bold">R$ {closureData.totalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-mono text-neutral-950 font-bold">R$ {closureData.totalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-neutral-600">
                       <span>Caução Total Pago/Disponível:</span>
-                      <span className="font-mono text-emerald-600 font-bold">R$ {closureData.caucaoAvailable?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-mono text-emerald-600 font-bold">R$ {closureData.caucaoAvailable?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-neutral-600 border-t border-neutral-200/60 pt-2">
                       <span>Valor total descontado da caução:</span>
-                      <span className="font-mono text-red-500 font-bold">R$ {amountChargedFromDeposit.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                      <span className="font-mono text-red-500 font-bold">R$ {amountChargedFromDeposit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     
                     {closureData.type === 'return' ? (
                       <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
                         <span>VALOR A DEVOLVER AO MOTORISTA:</span>
-                        <span className="font-mono text-emerald-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-emerald-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     ) : (
                       <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
                         <span>VALOR TOTAL AINDA DEVIDO (Boleto Avulso):</span>
-                        <span className="font-mono text-red-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-red-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
                   </div>

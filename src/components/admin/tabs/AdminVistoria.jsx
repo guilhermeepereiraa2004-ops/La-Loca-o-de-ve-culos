@@ -72,7 +72,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
     
     return vehicles
-      .filter(v => v.status === 'Alugado')
+      .filter(v => v.status === 'Alugado' || v.status === 'Alugado (Reserva)')
       .map(v => {
         const recentPeriodicInspections = inspections.filter(ins => 
           ins.vehiclePlate === v.plate && 

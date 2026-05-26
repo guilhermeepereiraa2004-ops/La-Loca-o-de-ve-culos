@@ -93,6 +93,82 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[asaas-webhook] Pagamento ${payment.id} atualizado para ${newStatus}`);
 
+    // Se o pagamento foi confirmado, registra no financeiro a entrada do aluguel e a saída da taxa
+    if (CONFIRMED_EVENTS.has(event)) {
+      try {
+        const { data: payRecord, error: payError } = await supabase
+          .from('asaas_payments')
+          .select('rental_id, billing_type, value')
+          .eq('asaas_payment_id', payment.id)
+          .maybeSingle();
+
+        if (payError) {
+          console.error('[asaas-webhook] Erro ao buscar pagamento no Supabase:', payError);
+        }
+
+        if (payRecord && payRecord.rental_id) {
+          const { data: rentalRecord, error: rentalError } = await supabase
+            .from('rentals')
+            .select('user_name, placa')
+            .eq('id', payRecord.rental_id)
+            .maybeSingle();
+
+          if (rentalError) {
+            console.error('[asaas-webhook] Erro ao buscar locação no Supabase:', rentalError);
+          }
+
+          const driverName = rentalRecord?.user_name || 'Motorista';
+          const plate = rentalRecord?.placa || '';
+          const methodLabel = payRecord.billing_type || 'PIX';
+          const paidValue = payment.value || payRecord.value || 0;
+
+          // Calcula a taxa cobrada pelo Asaas (diferença entre o valor pago e o valor líquido recebido)
+          // Se netValue não vier no payload, a taxa padrão é 0.99
+          const fee = payment.netValue && payment.value 
+            ? Number((payment.value - payment.netValue).toFixed(2)) 
+            : 0.99;
+
+          const todayStr = paidAt ? paidAt.split('T')[0] : new Date().toISOString().split('T')[0];
+
+          // Cria a transação de entrada (Recebimento do Aluguel)
+          const incomeTrans = {
+            date: todayStr,
+            type: 'in',
+            val: paidValue,
+            desc: `Recebimento Aluguel (${methodLabel}) - ${driverName}`,
+            cat: 'Aluguel',
+            vehicle_plate: plate,
+            status: 'Concluído',
+            responsible: ''
+          };
+
+          // Cria a transação de saída (Taxa do Asaas)
+          const feeTrans = {
+            date: todayStr,
+            type: 'out',
+            val: -fee,
+            desc: `Taxa Asaas - ${methodLabel} ${driverName}`,
+            cat: 'Taxa Gateway / Asaas',
+            vehicle_plate: plate,
+            status: 'Concluído',
+            responsible: 'Administradora'
+          };
+
+          const { error: transError } = await supabase
+            .from('transactions')
+            .insert([incomeTrans, feeTrans]);
+
+          if (transError) {
+            console.error('[asaas-webhook] Erro ao inserir transações financeiras:', transError);
+          } else {
+            console.log('[asaas-webhook] Transações de faturamento e taxa registradas no financeiro.');
+          }
+        }
+      } catch (transErr) {
+        console.error('[asaas-webhook] Erro inesperado ao registrar transações no financeiro:', transErr);
+      }
+    }
+
     return new Response(
       JSON.stringify({ ok: true, paymentId: payment.id, newStatus }),
       { headers: { 'Content-Type': 'application/json' } },

@@ -36,3 +36,10 @@ ALTER TABLE public.investor_payouts ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Allow public read and write access on investor_payouts" ON public.investor_payouts;
 CREATE POLICY "Allow public read and write access on investor_payouts" ON public.investor_payouts
   FOR ALL USING (true) WITH CHECK (true);
+
+
+-- 4. CORREÇÃO DA TABELA DE LEADS
+-- Adiciona a coluna updated_by caso ela esteja faltando
+ALTER TABLE public.leads
+ADD COLUMN IF NOT EXISTS updated_by text;
+

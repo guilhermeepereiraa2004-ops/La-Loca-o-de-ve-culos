@@ -564,16 +564,31 @@ export const useAppState = () => {
     if (!error && data) {
       setLeads(prev => [mapToCamel(data)[0], ...prev]);
       logActivity('Criar', 'Lead', data[0].id, `Criou novo lead: ${newLead.name} para o modelo ${newLead.vehicleModel || 'não especificado'}`);
+    } else if (error) {
+      console.error("Erro ao criar lead:", error);
+      alert(`Erro ao criar lead: ${error.message}`);
     }
   };
 
   const handleUpdateLeadStatus = async (id, status, updatedBy) => {
-    const { error } = await supabase.from('leads').update({ status, updated_by: updatedBy }).eq('id', id);
+    let { error } = await supabase.from('leads').update({ status, updated_by: updatedBy }).eq('id', id);
+    
+    // Se a coluna updated_by não existir no banco (erro PGRST204 ou mensagem relacionada), atualiza apenas o status
+    if (error && (error.code === 'PGRST204' || error.message?.includes('updated_by') || error.message?.includes('column'))) {
+      console.warn("Coluna 'updated_by' não encontrada na tabela 'leads'. Atualizando apenas o status.");
+      const retry = await supabase.from('leads').update({ status }).eq('id', id);
+      error = retry.error;
+    }
+
     if (!error) {
       setLeads(prev => prev.map(l => l.id === id ? { ...l, status, updatedBy } : l));
       logActivity('Atualizar', 'Lead', id, `Atualizou status do lead ID ${id} para ${status}`);
+    } else {
+      console.error("Erro ao atualizar status do lead:", error);
+      alert(`Erro ao atualizar status do lead: ${error.message}`);
     }
   };
+
 
   const handleAddRental = async (rental) => {
     try {
@@ -1503,35 +1518,7 @@ export const useAppState = () => {
       repAdminRevenue = repRent * repAdminTaxPercent;
     }
 
-    // Busca a taxa do gateway (Pix ou Boleto) na tabela asaas_payments
-    let fee = 0;
-    let methodLabel = '';
-    try {
-      const { data: payData } = await supabase
-        .from('asaas_payments')
-        .select('billing_type')
-        .eq('rental_id', String(rentalId))
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (payData && payData.length > 0) {
-        const bType = payData[0].billing_type?.toUpperCase();
-        if (bType === 'PIX') {
-          fee = 0.99;
-          methodLabel = 'PIX';
-        } else if (bType === 'BOLETO') {
-          fee = 1.99;
-          methodLabel = 'Boleto';
-        }
-      } else {
-        fee = 0.99;
-        methodLabel = 'PIX';
-      }
-    } catch (e) {
-      console.warn("Erro ao ler asaas_payments:", e);
-      fee = 0.99;
-      methodLabel = 'PIX';
-    }
+    // A taxa do Asaas agora é lançada automaticamente via Webhook apenas quando o boleto/pix for pago.
 
     const todayStr = new Date().toISOString().split('T')[0];
     const trans = [];
@@ -1620,19 +1607,7 @@ export const useAppState = () => {
       });
     }
 
-    // 5. Custo da Taxa do Gateway (Saída - Custo Administradora)
-    if (fee > 0) {
-      trans.push({
-        date: todayStr,
-        type: 'out',
-        val: -fee,
-        desc: `Taxa Asaas - ${methodLabel} ${rental.user}`,
-        cat: 'Taxa Gateway / Asaas',
-        vehiclePlate: rental.plate,
-        status: 'pago',
-        responsible: 'Administradora'
-      });
-    }
+    // A taxa do gateway agora é lançada no webhook quando paga.
 
     if (trans.length > 0) {
       const { data, error } = await supabase.from('transactions').insert(trans.map(t => mapToSnake(t, 'transactions'))).select();

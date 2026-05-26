@@ -47,7 +47,7 @@ const BoletoResultModal = ({ result, onClose }) => {
                 {result.type === 'pix' ? 'Pix Gerado' : 'Boleto Gerado'}
               </p>
               <h4 className="text-white font-black text-lg tracking-tight">
-                R$ {parseFloat(result.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                R$ {parseFloat(result.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </h4>
             </div>
           </div>
@@ -467,7 +467,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                           <span className="text-xs font-black text-neutral-900 uppercase tracking-tight">{rental.vehicleModel || rental.vehicle}</span>
                           <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 uppercase">{rental.plate || rental.vehiclePlate}</span>
                         </div>
-                        <p className="text-[10px] text-neutral-400 font-bold">Base: R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} / sem</p>
+                        <p className="text-[10px] text-neutral-400 font-bold">Base: R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / sem</p>
                       </div>
                     </div>
 
@@ -479,12 +479,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                         <div className="space-y-3">
                           <div className="flex justify-between items-center text-xs font-medium text-neutral-500">
                             <span>Aluguel Base</span>
-                            <span className="font-bold text-neutral-800">R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="font-bold text-neutral-800">R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                           
                           <div className="flex justify-between items-center text-xs font-medium text-neutral-500">
                             <span>Taxa de Pneus</span>
-                            <span className="font-bold text-neutral-800">R$ {calc.tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="font-bold text-neutral-800">R$ {calc.tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
 
                           {calc.daysInMaintenance > 0 && (
@@ -493,7 +493,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                                 <p className="font-black uppercase text-[8px] tracking-wider">Abatimento Oficina</p>
                                 <p className="text-[8px] text-red-500 font-bold">{calc.daysInMaintenance} dias de oficina</p>
                               </div>
-                              <span className="font-black">- R$ {calc.abatimento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                              <span className="font-black">- R$ {calc.abatimento.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
 
@@ -506,7 +506,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                                     <p className="font-bold text-neutral-800 line-clamp-1">{fd.infraction}</p>
                                     <p className="text-[8px] text-neutral-400 uppercase tracking-tighter">Parcela {fd.installment}</p>
                                   </div>
-                                  <span className="font-black text-neutral-900">R$ {fd.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  <span className="font-black text-neutral-900">R$ {fd.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               ))}
                             </div>
@@ -545,7 +545,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                                       </p>
                                     </div>
                                   </div>
-                                  <span className="text-[11px] font-bold text-neutral-355">+ R$ {rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  <span className="text-[11px] font-bold text-neutral-355">+ R$ {rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               ))}
                             </div>
@@ -561,7 +561,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                         {calc.replacementCharge > 0 && (
                           <div className="flex justify-between items-center pt-3 border-t border-neutral-800 mt-4">
                             <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Total Adicional</span>
-                            <span className="text-sm font-black text-[#C5A059]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                            <span className="text-sm font-black text-[#C5A059]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                         )}
                       </div>
@@ -586,7 +586,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                                   {p.billing_type === 'PIX' ? <QrCode size={11} /> : <Receipt size={11} />}
                                 </div>
                                 <div>
-                                  <p className="text-[9px] font-black text-neutral-800 uppercase tracking-tight">R$ {parseFloat(p.value).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                                  <p className="text-[9px] font-black text-neutral-800 uppercase tracking-tight">R$ {parseFloat(p.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                                   <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider">Venc: {new Date(p.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
                                 </div>
                               </div>
@@ -618,7 +618,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                           <div className="flex items-baseline gap-1">
                             <span className="text-base text-[#C5A059] font-black">R$</span>
                             <span className="text-3xl font-black text-white tracking-tighter leading-none">
-                              {calc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              {calc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                           <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Aluguel + Ajustes + Reserva</p>

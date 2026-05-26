@@ -375,7 +375,7 @@ const AdminLocacoes = ({
                         
                         <div className="flex justify-between items-baseline">
                           <span className="text-lg font-black text-neutral-900 leading-none">
-                            {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
+                            {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
                             <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">/ sem</span>
                           </span>
                           <span className="text-xs font-black text-[#C5A059] uppercase tracking-wide">

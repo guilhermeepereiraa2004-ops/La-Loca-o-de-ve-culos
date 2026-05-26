@@ -352,20 +352,20 @@ const AdminInvestidores = ({
                         <div>
                           <span className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">Saldo Repasse (Líquido)</span>
                           <h4 className="text-xl font-mono font-black text-neutral-900 leading-none mt-1">
-                            R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </h4>
                           
                           {carriedDebt < 0 && (
                             <div className="mt-1.5 flex items-center gap-1">
                               <span className="bg-red-50 border border-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
-                                Débito: - R$ {Math.abs(carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                Débito: - R$ {Math.abs(carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
                           )}
                           
                           {payout < 0 && (
                             <p className="text-[8px] text-red-500 font-black uppercase tracking-wider mt-1.5">
-                              Déficit acumulado para próximo ciclo: R$ {Math.abs(payout).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              Déficit acumulado para próximo ciclo: R$ {Math.abs(payout).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </p>
                           )}
                         </div>
@@ -402,7 +402,7 @@ const AdminInvestidores = ({
                         <div className="flex justify-between items-center text-[9px] text-neutral-400 font-bold uppercase pt-1.5">
                           <span>Seguro Franquia Total (Fixo)</span>
                           <span className="font-mono text-neutral-800">
-                            R$ {(39.90 * invVehs.length).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            R$ {(39.90 * invVehs.length).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
                       </div>
@@ -493,7 +493,7 @@ const AdminInvestidores = ({
                                   {p.notes && <p className="text-[8px] text-neutral-400 italic mt-0.5">{p.notes}</p>}
                                 </div>
                                 <span className="text-[10px] font-black text-emerald-600 whitespace-nowrap ml-4">
-                                  R$ {parseFloat(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                  R$ {parseFloat(p.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
                               </div>
                             ))}

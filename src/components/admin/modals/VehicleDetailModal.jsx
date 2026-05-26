@@ -35,10 +35,9 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
               </h3>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-             <div className={`px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] ${
-                vehicle.status === 'Alugado' ? 'bg-amber-50 border-amber-200 text-amber-600' :
-                vehicle.status === 'Indisponível' ? 'bg-red-50 border-red-200 text-red-600' :
+          <div className="flex items-center gap-4">             <div className={`px-6 py-2 rounded-full border text-[10px] font-black uppercase tracking-[0.2em] ${
+                (vehicle.status === 'Alugado' || vehicle.status === 'Alugado (Reserva)') ? 'bg-amber-50 border-amber-200 text-amber-600' :
+                (vehicle.status === 'Manutenção' || vehicle.status === 'Indisponível') ? 'bg-red-50 border-red-200 text-red-600' :
                 'bg-emerald-50 border-emerald-200 text-emerald-600'
               }`}>
                 {vehicle.status || 'Disponível'}
@@ -170,7 +169,7 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
                             <ClipboardCheck size={18} className="text-[#C5A059]" />
                             <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Histórico de Vistorias</h4>
                         </div>
-                        {vehicle.status !== 'Alugado' && (
+                        {!['Alugado', 'Alugado (Reserva)'].includes(vehicle.status) && (
                             <button 
                                 onClick={() => onGoToVistorias({ vehiclePlate: vehicle.plate, type: 'Coleta' })}
                                 className="text-[9px] font-black uppercase tracking-widest text-[#C5A059] hover:text-neutral-900 transition-colors"

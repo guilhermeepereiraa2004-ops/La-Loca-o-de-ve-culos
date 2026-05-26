@@ -130,13 +130,14 @@ const AdminFrota = ({
                         <span className="text-[10px] font-black tracking-tighter text-neutral-900">{(car.plate || '').replace('-', '') || 'S/ PLACA'}</span>
                       </div>
                     </div>
-                    <div className={`px-3 py-1.5 rounded-lg border backdrop-blur-md flex items-center gap-2 shadow-lg w-fit ${car.status === 'Alugado'
-                      ? 'bg-amber-500/90 border-amber-400 text-white'
-                      : car.status === 'Indisponível'
-                        ? 'bg-red-500/90 border-red-400 text-white'
-                        : 'bg-emerald-500/90 border-emerald-400 text-white'
+                    <div className={`px-3 py-1.5 rounded-lg border backdrop-blur-md flex items-center gap-2 shadow-lg w-fit ${
+                      (car.status === 'Alugado' || car.status === 'Alugado (Reserva)')
+                        ? 'bg-amber-500/90 border-amber-400 text-white'
+                        : (car.status === 'Manutenção' || car.status === 'Indisponível')
+                          ? 'bg-red-500/90 border-red-400 text-white'
+                          : 'bg-emerald-500/90 border-emerald-400 text-white'
                       }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${car.status === 'Alugado' ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${(car.status === 'Alugado' || car.status === 'Alugado (Reserva)') ? 'bg-white animate-pulse' : 'bg-white'}`} />
                       <span className="text-[8px] font-black uppercase tracking-widest">{car.status || 'Disponível'}</span>
                     </div>
                   </div>

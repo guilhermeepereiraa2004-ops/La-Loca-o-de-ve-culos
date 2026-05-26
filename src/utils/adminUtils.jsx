@@ -22,7 +22,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   const netProfit = monthlyRevenue - monthlyExpenses;
   
-  const activeVehicles = vehicles.filter(v => v.status === 'Alugado').length;
+  const activeVehicles = vehicles.filter(v => v.status === 'Alugado' || v.status === 'Alugado (Reserva)').length;
   const availableVehicles = vehicles.filter(v => v.status === 'Disponível').length;
   const maintenanceVehicles = vehicles.filter(v => v.status === 'Manutenção').length;
   const totalVehicles = vehicles.length || 1;
@@ -81,9 +81,9 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   return {
     mainStats: [
-      { label: 'Veículos Ativos', value: activeVehicles, icon: <Car size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-      { label: 'Disponíveis', value: availableVehicles, icon: <Car size={20} />, color: 'text-blue-600', bg: 'bg-blue-50' },
-      { label: 'Em Manutenção', value: maintenanceVehicles, icon: <Wrench size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+      { label: 'Veículos Ativos', value: activeVehicles, icon: <Car size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+      { label: 'Disponíveis', value: availableVehicles, icon: <Car size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+      { label: 'Em Manutenção', value: maintenanceVehicles, icon: <Wrench size={20} />, color: 'text-red-600', bg: 'bg-red-50' },
       { label: 'Receita (Mês)', value: `R$ ${monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: <TrendingUp size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
       { label: 'Despesa (Mês)', value: `R$ ${monthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: <TrendingUp size={20} className="transform rotate-180" />, color: 'text-red-600', bg: 'bg-red-50' },
       { label: 'Saldo Acumulado', value: `R$ ${saldoAcumulado.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: <Landmark size={20} />, color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
@@ -147,7 +147,7 @@ export const getDynamicAlerts = (vehicles, maintenances, inspections, clients) =
       beltCount++;
     }
 
-    if (v.status === 'Alugado') {
+    if (v.status === 'Alugado' || v.status === 'Alugado (Reserva)') {
       const lastMonthInspections = (inspections || []).filter(ins => 
         ins.vehiclePlate === v.plate && 
         ins.type === 'Periódica' &&
