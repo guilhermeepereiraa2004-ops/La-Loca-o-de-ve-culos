@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, User, Shield, Trash2, Edit, Check, X, Eye, EyeOff, Users, Key, Lock } from 'lucide-react';
+import { Plus, User, Shield, Trash2, Edit, Check, X, Eye, EyeOff, Users, Key, Lock, ShieldCheck } from 'lucide-react';
 
 const ALL_MODULES = [
   { id: 'bi',             label: 'Painel BI',       icon: '📊' },
@@ -25,6 +25,20 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
   const [editingUser, setEditingUser] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [targetDeleteId, setTargetDeleteId] = useState(null);
+
+  const handleConfirmDelete = () => {
+    if (passwordInput === 'Lareferencia') {
+      onDeleteUser(targetDeleteId);
+      setShowPasswordModal(false);
+      setPasswordInput('');
+      setTargetDeleteId(null);
+    } else {
+      alert('Senha incorreta!');
+    }
+  };
 
   const handleOpenAdd = () => {
     setForm(EMPTY_FORM);
@@ -116,7 +130,10 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                 <button onClick={() => handleOpenEdit(user)} className="w-8 h-8 bg-neutral-50 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition-all">
                   <Edit size={14} />
                 </button>
-                <button onClick={() => onDeleteUser(user.id)} className="w-8 h-8 bg-neutral-50 rounded-lg flex items-center justify-center text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all">
+                <button onClick={() => {
+                  setTargetDeleteId(user.id);
+                  setShowPasswordModal(true);
+                }} className="w-8 h-8 bg-neutral-50 rounded-lg flex items-center justify-center text-neutral-300 hover:text-red-500 hover:bg-red-50 transition-all">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -285,6 +302,51 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
               <button form="user-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl">
                 {editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Password Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center gap-4 mb-8">
+              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center">
+                <ShieldCheck size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Segurança Exigida</h3>
+                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira a senha mestre para excluir este usuário</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <input 
+                type="password"
+                placeholder="Senha Mestre"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-black text-center tracking-widest"
+                autoFocus
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirmDelete()}
+              />
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordInput('');
+                  }}
+                  className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={handleConfirmDelete}
+                  className="flex-1 py-4 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-lg"
+                >
+                  Confirmar Exclusão
+                </button>
+              </div>
             </div>
           </div>
         </div>
