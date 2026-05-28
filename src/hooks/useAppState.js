@@ -183,6 +183,8 @@ const mapToSnake = (obj, tableName) => {
   return newObj;
 };
 
+let isGeneratingTransactions = false;
+
 export const useAppState = () => {
   const [view, setView] = useState(() => {
     const savedView = localStorage.getItem('la_current_view');
@@ -463,99 +465,106 @@ export const useAppState = () => {
         try {
           const now = new Date();
           const currentYear = now.getFullYear();
-          const currentMonth = now.getMonth();
+          const currentMonth = now.getMonth(); // 0-indexed (4 = Maio, 5 = Junho)
           const currentDay = now.getDate();
+          
+          // Regra de negócio: Contabilizar apenas a partir de Junho de 2026 em diante (mês que vem)
+          const startAccounting = currentYear > 2026 || (currentYear === 2026 && currentMonth >= 5); // >= 5 é Junho em diante
           
           let newTransactionsToInsert = [];
           
-          for (const v of allVehicles) {
-            if (!v.plate) continue;
-
-            // 1. Proteção Veicular (Vence todo dia 01, entra como receita da empresa)
-            const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
-            const protVal = parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+          if (startAccounting && !isGeneratingTransactions) {
+            isGeneratingTransactions = true;
             
-            if (hasProt && protVal > 0) {
-              const paymentDayProt = 1; // Padrão dia 01 de cada mês
-              if (currentDay >= paymentDayProt) {
-                const alreadyExists = loadedTransactions.some(t => {
-                  if (t.vehiclePlate !== v.plate) return false;
-                  const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
-                  if (!isProtection) return false;
-                  
-                  try {
-                    const tDate = new Date(t.date + 'T12:00:00');
-                    return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
-                  } catch (e) {
-                    return false;
-                  }
-                });
-                
-                if (!alreadyExists) {
-                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
-                  newTransactionsToInsert.push({
-                    type: 'in', // Receita para a empresa
-                    val: protVal, // Valor positivo
-                    cat: 'Proteção Veicular',
-                    desc: `Proteção Veicular - ${v.model} (${v.plate})`,
-                    date: dateStr,
-                    vehicle_plate: v.plate,
-                    responsible: 'Administradora',
-                    status: 'Pendente'
-                  });
-                }
-              }
-            }
+            for (const v of allVehicles) {
+              if (!v.plate) continue;
 
-            // 2. Seguro Franquia (Vence todo dia 10, entra como receita da empresa)
-            const hasFranchise = v.franchiseInsurance === true || String(v.franchiseInsurance) === 'true';
-            const franchiseVal = 39.90; // Padrão R$ 39,90/mês
-            
-            if (hasFranchise) {
-              const paymentDayFranchise = 10; // Padrão dia 10 de cada mês
-              if (currentDay >= paymentDayFranchise) {
-                const alreadyExists = loadedTransactions.some(t => {
-                  if (t.vehiclePlate !== v.plate) return false;
-                  const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
-                  if (!isInsurance) return false;
-                  
-                  try {
-                    const tDate = new Date(t.date + 'T12:00:00');
-                    return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
-                  } catch (e) {
-                    return false;
-                  }
-                });
-                
-                if (!alreadyExists) {
-                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-                  newTransactionsToInsert.push({
-                    type: 'in', // Receita para a empresa
-                    val: franchiseVal, // Valor positivo
-                    cat: 'Seguro Franquia',
-                    desc: `Seguro Franquia - ${v.model} (${v.plate})`,
-                    date: dateStr,
-                    vehicle_plate: v.plate,
-                    responsible: 'Administradora',
-                    status: 'Pendente'
-                  });
-                }
-              }
-            }
-          }
-          
-          if (newTransactionsToInsert.length > 0) {
-            const { data: insertedData, error: insertError } = await supabase
-              .from('transactions')
-              .insert(newTransactionsToInsert)
-              .select();
+              // 1. Proteção Veicular (Vence todo dia 01, entra como receita da empresa)
+              const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
+              const protVal = parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
               
-            if (!insertError && insertedData) {
-              const mappedInserted = mapToCamel(insertedData, 'transactions');
-              const finalTransactions = [...mappedInserted, ...loadedTransactions];
-              setTransactions(finalTransactions);
-            } else if (insertError) {
-              console.error("Erro ao inserir transações automáticas:", insertError);
+              if (hasProt && protVal > 0) {
+                const paymentDayProt = 1; // Padrão dia 01 de cada mês
+                if (currentDay >= paymentDayProt) {
+                  const alreadyExists = loadedTransactions.some(t => {
+                    if (t.vehiclePlate !== v.plate) return false;
+                    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+                    if (!isProtection) return false;
+                    
+                    try {
+                      const tDate = new Date(t.date + 'T12:00:00');
+                      return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
+                    } catch (e) {
+                      return false;
+                    }
+                  });
+                  
+                  if (!alreadyExists) {
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+                    newTransactionsToInsert.push({
+                      type: 'in', // Receita para a empresa
+                      val: protVal, // Valor positivo
+                      cat: 'Proteção Veicular',
+                      desc: `Proteção Veicular - ${v.model} (${v.plate})`,
+                      date: dateStr,
+                      vehicle_plate: v.plate,
+                      responsible: 'Administradora',
+                      status: 'Pendente'
+                    });
+                  }
+                }
+              }
+
+              // 2. Seguro Franquia (Vence todo dia 10, entra como receita da empresa)
+              const hasFranchise = v.franchiseInsurance === true || String(v.franchiseInsurance) === 'true';
+              const franchiseVal = 39.90; // Padrão R$ 39,90/mês
+              
+              if (hasFranchise) {
+                const paymentDayFranchise = 10; // Padrão dia 10 de cada mês
+                if (currentDay >= paymentDayFranchise) {
+                  const alreadyExists = loadedTransactions.some(t => {
+                    if (t.vehiclePlate !== v.plate) return false;
+                    const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
+                    if (!isInsurance) return false;
+                    
+                    try {
+                      const tDate = new Date(t.date + 'T12:00:00');
+                      return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
+                    } catch (e) {
+                      return false;
+                    }
+                  });
+                  
+                  if (!alreadyExists) {
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
+                    newTransactionsToInsert.push({
+                      type: 'in', // Receita para a empresa
+                      val: franchiseVal, // Valor positivo
+                      cat: 'Seguro Franquia',
+                      desc: `Seguro Franquia - ${v.model} (${v.plate})`,
+                      date: dateStr,
+                      vehicle_plate: v.plate,
+                      responsible: 'Administradora',
+                      status: 'Pendente'
+                    });
+                  }
+                }
+              }
+            }
+            
+            if (newTransactionsToInsert.length > 0) {
+              const { data: insertedData, error: insertError } = await supabase
+                .from('transactions')
+                .insert(newTransactionsToInsert)
+                .select();
+                
+              if (!insertError && insertedData) {
+                const mappedInserted = mapToCamel(insertedData, 'transactions');
+                const finalTransactions = [...mappedInserted, ...loadedTransactions];
+                setTransactions(finalTransactions);
+              } else if (insertError) {
+                console.error("Erro ao inserir transações automáticas:", insertError);
+              }
             }
           }
         } catch (autoErr) {
