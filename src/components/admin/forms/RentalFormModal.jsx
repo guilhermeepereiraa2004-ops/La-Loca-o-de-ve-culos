@@ -312,21 +312,21 @@ const RentalFormModal = ({
                       <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Nome Completo</label>
                       <div className="relative group">
                         <User className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
-                        <input type="text" required value={rentalForm.user} onChange={e => setRentalForm({...rentalForm, user: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="Ex: João Silva" />
+                        <input type="text" required value={rentalForm.user || ''} onChange={e => setRentalForm({...rentalForm, user: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="Ex: João Silva" />
                       </div>
                     </div>
                     <div className="space-y-3">
                       <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">WhatsApp de Contato</label>
                       <div className="relative group">
                         <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
-                        <input type="text" required value={rentalForm.clientPhone} onChange={e => setRentalForm({...rentalForm, clientPhone: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="(79) 99999-9999" />
+                        <input type="text" required value={rentalForm.clientPhone || ''} onChange={e => setRentalForm({...rentalForm, clientPhone: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="(79) 99999-9999" />
                       </div>
                     </div>
                     <div className="space-y-3">
                       <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">E-mail Principal</label>
                       <div className="relative group">
                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
-                        <input type="email" required value={rentalForm.email} onChange={e => setRentalForm({...rentalForm, email: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="exemplo@email.com" />
+                        <input type="email" required value={rentalForm.email || ''} onChange={e => setRentalForm({...rentalForm, email: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="exemplo@email.com" />
                       </div>
                     </div>
                     <div className="space-y-3">
@@ -340,7 +340,7 @@ const RentalFormModal = ({
                       <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Data de Nascimento</label>
                       <div className="relative group">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
-                        <input type="date" required value={rentalForm.birthDate} onChange={e => setRentalForm({...rentalForm, birthDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
+                        <input type="date" required value={rentalForm.birthDate || ''} onChange={e => setRentalForm({...rentalForm, birthDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
                       </div>
                     </div>
                   </div>
@@ -350,15 +350,15 @@ const RentalFormModal = ({
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-3">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Número CNH</label>
-                        <input type="text" required value={rentalForm.cnhNumber} onChange={e => setRentalForm({...rentalForm, cnhNumber: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: 123456789" />
+                        <input type="text" required value={rentalForm.cnhNumber || ''} onChange={e => setRentalForm({...rentalForm, cnhNumber: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: 123456789" />
                       </div>
                       <div className="space-y-3">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nº Registro</label>
-                        <input type="text" required value={rentalForm.cnhRegisterNumber} onChange={e => setRentalForm({...rentalForm, cnhRegisterNumber: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: 987654321" />
+                        <input type="text" required value={rentalForm.cnhRegisterNumber || ''} onChange={e => setRentalForm({...rentalForm, cnhRegisterNumber: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: 987654321" />
                       </div>
                       <div className="space-y-3">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Validade</label>
-                        <input type="date" required value={rentalForm.cnhValidity} onChange={e => setRentalForm({...rentalForm, cnhValidity: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs text-neutral-600" />
+                        <input type="date" required value={rentalForm.cnhValidity || ''} onChange={e => setRentalForm({...rentalForm, cnhValidity: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs text-neutral-600" />
                       </div>
                     </div>
                   </div>
@@ -607,7 +607,7 @@ const RentalFormModal = ({
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor Aluguel ({rentalForm.rentalType === 'weekly' ? 'Semana' : 'Dia'})</label>
                           <div className="relative group">
                             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-[#C5A059] transition-colors">R$</span>
-                            <input type="text" required value={rentalForm.value} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, value: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
+                            <input type="text" required value={rentalForm.value || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, value: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
                           </div>
                         </div>
 
@@ -615,7 +615,7 @@ const RentalFormModal = ({
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Taxa de Pneus (Extra)</label>
                           <div className="relative group">
                             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-[#C5A059] transition-colors">R$</span>
-                            <input type="text" value={rentalForm.tireTax} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, tireTax: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
+                            <input type="text" value={rentalForm.tireTax || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, tireTax: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
                           </div>
                         </div>
                       </div>
@@ -628,13 +628,13 @@ const RentalFormModal = ({
                         <div className="grid grid-cols-1 gap-6">
                           <div className="space-y-3">
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data de Início do Contrato</label>
-                            <input type="date" required value={rentalForm.startDate} onChange={e => setRentalForm({...rentalForm, startDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
+                            <input type="date" required value={rentalForm.startDate || ''} onChange={e => setRentalForm({...rentalForm, startDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
                           </div>
                           <div className="space-y-3">
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Vigência (Nº de Semanas)</label>
                             <div className="flex items-center bg-neutral-50 rounded-2xl p-2 h-[64px] border border-neutral-100 shadow-inner">
                               <button type="button" onClick={() => setRentalForm({...rentalForm, durationWeeks: Math.max(1, (parseInt(rentalForm.durationWeeks) || 1) - 1).toString()})} className="w-12 h-12 flex items-center justify-center bg-white border border-neutral-200 rounded-xl text-neutral-600 hover:bg-neutral-900 hover:text-white transition-all shadow-sm">-</button>
-                              <input type="text" value={rentalForm.durationWeeks} onChange={e => setRentalForm({...rentalForm, durationWeeks: e.target.value.replace(/\D/g, '')})} className="flex-1 bg-transparent border-none text-center outline-none font-black text-xl text-neutral-900 tracking-tighter" />
+                              <input type="text" value={rentalForm.durationWeeks || ''} onChange={e => setRentalForm({...rentalForm, durationWeeks: e.target.value.replace(/\D/g, '')})} className="flex-1 bg-transparent border-none text-center outline-none font-black text-xl text-neutral-900 tracking-tighter" />
                               <button type="button" onClick={() => setRentalForm({...rentalForm, durationWeeks: ((parseInt(rentalForm.durationWeeks) || 1) + 1).toString()})} className="w-12 h-12 flex items-center justify-center bg-white border border-neutral-200 rounded-xl text-neutral-600 hover:bg-neutral-900 hover:text-white transition-all shadow-sm"><Plus size={16} /></button>
                             </div>
                           </div>
@@ -654,20 +654,20 @@ const RentalFormModal = ({
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor Total da Caução</label>
                             <div className="relative group">
                               <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-[#C5A059] transition-colors">R$</span>
-                              <input type="text" required value={rentalForm.depositTotal} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, depositTotal: v}); }} className="w-full bg-white border border-neutral-200 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-black text-lg tracking-tight" placeholder="0,00" />
+                              <input type="text" required value={rentalForm.depositTotal || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, depositTotal: v}); }} className="w-full bg-white border border-neutral-200 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-black text-lg tracking-tight" placeholder="0,00" />
                             </div>
                           </div>
                           <div className="space-y-3">
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor de Entrada (Ato)</label>
                             <div className="relative group">
                               <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-emerald-500 transition-colors">R$</span>
-                              <input type="text" required value={rentalForm.depositPaid} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, depositPaid: v}); }} className="w-full bg-white border border-neutral-200 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-lg tracking-tight text-emerald-600" placeholder="0,00" />
+                              <input type="text" required value={rentalForm.depositPaid || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, depositPaid: v}); }} className="w-full bg-white border border-neutral-200 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all font-black text-lg tracking-tight text-emerald-600" placeholder="0,00" />
                             </div>
                           </div>
                           <div className="space-y-3">
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Parcelamento do Saldo Devedor</label>
                             <div className="relative group">
-                              <input type="number" min="1" max="12" value={rentalForm.depositInstallments} onChange={e => setRentalForm({...rentalForm, depositInstallments: e.target.value})} className="w-full bg-white border border-neutral-200 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-black text-base" />
+                              <input type="number" min="1" max="12" value={rentalForm.depositInstallments || ''} onChange={e => setRentalForm({...rentalForm, depositInstallments: e.target.value})} className="w-full bg-white border border-neutral-200 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-black text-base" />
                               <span className="absolute right-5 top-1/2 -translate-y-1/2 text-[10px] font-black uppercase tracking-widest text-neutral-400">Semanas</span>
                             </div>
                           </div>
@@ -682,11 +682,11 @@ const RentalFormModal = ({
                         <div className="grid grid-cols-2 gap-6">
                           <div className="space-y-2">
                             <label className="text-[9px] uppercase tracking-widest text-red-900/40 font-black ml-1">Multa Atraso (%)</label>
-                            <input type="number" value={rentalForm.lateFine} onChange={e => setRentalForm({...rentalForm, lateFine: e.target.value})} className="w-full bg-white border border-red-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all font-black text-sm text-red-600" />
+                            <input type="number" value={rentalForm.lateFine || ''} onChange={e => setRentalForm({...rentalForm, lateFine: e.target.value})} className="w-full bg-white border border-red-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all font-black text-sm text-red-600" />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[9px] uppercase tracking-widest text-red-900/40 font-black ml-1">Juros Dia (%)</label>
-                            <input type="number" value={rentalForm.dailyInterest} onChange={e => setRentalForm({...rentalForm, dailyInterest: e.target.value})} className="w-full bg-white border border-red-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all font-black text-sm text-red-600" />
+                            <input type="number" value={rentalForm.dailyInterest || ''} onChange={e => setRentalForm({...rentalForm, dailyInterest: e.target.value})} className="w-full bg-white border border-red-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all font-black text-sm text-red-600" />
                           </div>
                         </div>
                       </div>
