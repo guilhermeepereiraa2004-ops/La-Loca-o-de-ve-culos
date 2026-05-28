@@ -709,7 +709,7 @@ const RentalFormModal = ({
                       <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${rentalForm.docs?.signedContract ? 'text-emerald-600' : 'text-neutral-900'}`}>Anexar Assinado</span>
                       <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">{rentalForm.docs?.signedContract ? 'CONTRATO VINCULADO' : 'PDF OU IMAGEM'}</span>
                     </div>
-                    <input type="file" className="hidden" accept="image/*,application/pdf" onChange={async (e) => {
+                    <input type="file" className="hidden" onChange={async (e) => {
                       const file = e.target.files[0];
                       if (file) {
                         try {
