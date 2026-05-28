@@ -1,26 +1,91 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Mail, Star } from 'lucide-react';
+import { ChevronRight, Mail, Star, ShieldAlert, Clock } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
+import * as rateLimiter from '../../lib/rateLimiter';
+
+const ACTION = 'admin_login';
 
 const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(0);
+
+  // Verifica o status de bloqueio ao montar o componente
+  useEffect(() => {
+    const status = rateLimiter.getStatus(ACTION);
+    if (status.isBlocked) {
+      const remaining = Math.ceil((status.unblockAt - Date.now()) / 1000);
+      setIsBlocked(true);
+      setRetryAfterSeconds(remaining);
+    }
+  }, []);
+
+  // Contador regressivo de desbloqueio
+  useEffect(() => {
+    if (!isBlocked || retryAfterSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setRetryAfterSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsBlocked(false);
+          setError('');
+          rateLimiter.reset(ACTION);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isBlocked, retryAfterSeconds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setError('');
+
+    // ── Rate Limit: verificar antes de processar ──────────────────────────────
+    const limitCheck = rateLimiter.check(ACTION);
+    if (!limitCheck.allowed) {
+      setIsBlocked(true);
+      setRetryAfterSeconds(limitCheck.retryAfterSeconds || 60);
+      setError(limitCheck.reason);
+      return;
+    }
+
+    // ── Tentativa de login ────────────────────────────────────────────────────
     // Master admin
     if (email === 'Laveiculos@gmail.com' && password === '123456') {
+      rateLimiter.reset(ACTION); // Reseta o contador em caso de sucesso
       onLoginSuccess(null); // null = full admin
       return;
     }
+
     // Employee lookup
     const employee = systemUsers.find(u => u.email === email && u.password === password);
     if (employee) {
+      rateLimiter.reset(ACTION); // Reseta o contador em caso de sucesso
       onLoginSuccess(employee);
       return;
     }
-    setError('Credenciais inválidas. Verifique seu e-mail e senha.');
+
+    // ── Falha: registra tentativa ─────────────────────────────────────────────
+    rateLimiter.record(ACTION);
+    const statusAfter = rateLimiter.getStatus(ACTION);
+    const remaining = statusAfter.maxAttempts - statusAfter.currentAttempts;
+
+    if (remaining > 0) {
+      setError(
+        `Credenciais inválidas. Verifique seu e-mail e senha. ` +
+        `(${remaining} tentativa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''})`
+      );
+    } else {
+      // A próxima chamada a check() vai bloquear
+      const nextCheck = rateLimiter.check(ACTION);
+      setIsBlocked(true);
+      setRetryAfterSeconds(nextCheck.retryAfterSeconds || 60);
+      setError(nextCheck.reason);
+    }
   };
 
   useEffect(() => {
@@ -29,6 +94,13 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
       onLoginSuccess(null);
     }
   }, [onLoginSuccess]);
+
+  // Formata o tempo restante para exibição
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  };
 
   return (
     <div className="min-h-screen bg-white flex overflow-hidden">
@@ -52,7 +124,29 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
-            {error && (
+            {/* Mensagem de bloqueio */}
+            {isBlocked && (
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 flex items-start gap-3">
+                <ShieldAlert size={18} className="text-orange-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-orange-800 text-[10px] uppercase tracking-widest font-black mb-1">
+                    Acesso temporariamente bloqueado
+                  </p>
+                  <p className="text-orange-600 text-xs font-light">
+                    Muitas tentativas inválidas detectadas. Por segurança, o acesso foi bloqueado.
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <Clock size={12} className="text-orange-500" />
+                    <span className="text-orange-700 text-[11px] font-bold">
+                      Tente novamente em {formatTime(retryAfterSeconds)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mensagem de erro (sem bloqueio) */}
+            {error && !isBlocked && (
               <div className="bg-red-50 border-l-2 border-red-500 p-4 text-red-600 text-[10px] uppercase tracking-widest font-bold">
                 {error}
               </div>
@@ -67,9 +161,10 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-neutral-50 border-b border-neutral-200 p-4 focus:border-[#C5A059] outline-none transition-all placeholder:text-neutral-300 font-light text-sm"
+                className="w-full bg-neutral-50 border-b border-neutral-200 p-4 focus:border-[#C5A059] outline-none transition-all placeholder:text-neutral-300 font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="Laveiculos@gmail.com"
                 required
+                disabled={isBlocked}
               />
             </div>
 
@@ -82,17 +177,19 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-neutral-50 border-b border-neutral-200 p-4 focus:border-[#C5A059] outline-none transition-all placeholder:text-neutral-300 font-light text-sm"
+                className="w-full bg-neutral-50 border-b border-neutral-200 p-4 focus:border-[#C5A059] outline-none transition-all placeholder:text-neutral-300 font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 placeholder="••••••••"
                 required
+                disabled={isBlocked}
               />
             </div>
 
             <button
               type="submit"
-              className="w-full py-6 bg-neutral-900 text-white font-black uppercase tracking-[0.5em] text-[10px] hover:bg-[#C5A059] transition-all shadow-2xl hover:shadow-[#C5A059]/20"
+              disabled={isBlocked}
+              className="w-full py-6 bg-neutral-900 text-white font-black uppercase tracking-[0.5em] text-[10px] hover:bg-[#C5A059] transition-all shadow-2xl hover:shadow-[#C5A059]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
             >
-              Entrar no Sistema
+              {isBlocked ? `Bloqueado — ${formatTime(retryAfterSeconds)}` : 'Entrar no Sistema'}
             </button>
           </form>
 

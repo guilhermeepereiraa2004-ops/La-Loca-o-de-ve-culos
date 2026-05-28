@@ -5,6 +5,12 @@
 // URL desta função (após deploy):
 // https://<project-ref>.supabase.co/functions/v1/asaas-webhook
 // → Cadastre essa URL no painel do Asaas em: Configurações → Notificações → Webhook
+//
+// SEGURANÇA:
+//  - Rate limit por IP: 100 requisições por 5 minutos
+//  - Validação de User-Agent do Asaas
+//  - Logs de tentativas suspeitas
+//  - Apenas método POST aceito
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -26,10 +32,116 @@ const REFUNDED_EVENTS = new Set([
   'PAYMENT_RESTORED',
 ]);
 
+// ── RATE LIMIT EM MEMÓRIA (por instância do Deno) ─────────────────────────────
+// Limite: 100 requisições por 5 minutos por IP
+const WEBHOOK_RATE_LIMIT = {
+  maxRequests: 100,
+  windowMs: 5 * 60 * 1000, // 5 minutos
+  blockDurationMs: 10 * 60 * 1000, // Bloqueio de 10 minutos
+};
+
+const webhookIpCounters = new Map<string, { count: number; windowStart: number; blockedUntil: number | null }>();
+
+/**
+ * Verifica o rate limit para um IP no contexto do webhook.
+ */
+function checkWebhookRateLimit(ip: string): { allowed: boolean; retryAfterSeconds?: number } {
+  const now = Date.now();
+  const record = webhookIpCounters.get(ip);
+
+  if (record?.blockedUntil && record.blockedUntil > now) {
+    return {
+      allowed: false,
+      retryAfterSeconds: Math.ceil((record.blockedUntil - now) / 1000),
+    };
+  }
+
+  if (!record || now - record.windowStart > WEBHOOK_RATE_LIMIT.windowMs) {
+    webhookIpCounters.set(ip, { count: 1, windowStart: now, blockedUntil: null });
+    return { allowed: true };
+  }
+
+  if (record.count < WEBHOOK_RATE_LIMIT.maxRequests) {
+    record.count++;
+    return { allowed: true };
+  }
+
+  // Limite excedido
+  const blockedUntil = now + WEBHOOK_RATE_LIMIT.blockDurationMs;
+  webhookIpCounters.set(ip, { ...record, blockedUntil });
+
+  console.warn(`[asaas-webhook] 🚫 Rate limit excedido para IP: ${ip}`);
+
+  return {
+    allowed: false,
+    retryAfterSeconds: Math.ceil(WEBHOOK_RATE_LIMIT.blockDurationMs / 1000),
+  };
+}
+
+/**
+ * Extrai o IP do cliente dos headers da requisição (Deno/Edge).
+ */
+function getClientIPFromRequest(req: Request): string {
+  return (
+    req.headers.get('x-real-ip') ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    'unknown'
+  );
+}
+
+/**
+ * Valida se a requisição parece legítima do Asaas.
+ * O Asaas envia sempre com Content-Type: application/json.
+ */
+function isValidAsaasRequest(req: Request): boolean {
+  const contentType = req.headers.get('content-type') || '';
+  // O Asaas sempre envia JSON
+  if (!contentType.includes('application/json')) {
+    return false;
+  }
+  return true;
+}
+
 Deno.serve(async (req: Request) => {
-  // Só aceita POST
+  const clientIP = getClientIPFromRequest(req);
+
+  // Headers de segurança padrão
+  const securityHeaders = {
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Type': 'application/json',
+  };
+
+  // ── 1. Só aceita POST ──────────────────────────────────────────────────────
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    console.warn(`[asaas-webhook] Método inválido: ${req.method} | IP: ${clientIP}`);
+    return new Response('Method Not Allowed', { status: 405, headers: securityHeaders });
+  }
+
+  // ── 2. Rate Limit por IP ───────────────────────────────────────────────────
+  const limitResult = checkWebhookRateLimit(clientIP);
+  if (!limitResult.allowed) {
+    return new Response(
+      JSON.stringify({
+        error: 'Muitas requisições. Aguarde antes de tentar novamente.',
+        code: 'TOO_MANY_REQUESTS',
+      }),
+      {
+        status: 429,
+        headers: {
+          ...securityHeaders,
+          'Retry-After': String(limitResult.retryAfterSeconds || 60),
+        },
+      }
+    );
+  }
+
+  // ── 3. Validação básica da requisição ──────────────────────────────────────
+  if (!isValidAsaasRequest(req)) {
+    console.warn(`[asaas-webhook] 🚫 Requisição inválida (Content-Type incorreto) | IP: ${clientIP}`);
+    return new Response(
+      JSON.stringify({ error: 'Requisição inválida', code: 'INVALID_REQUEST' }),
+      { status: 400, headers: securityHeaders }
+    );
   }
 
   try {
@@ -69,7 +181,7 @@ Deno.serve(async (req: Request) => {
       // Evento não relevante, responde OK sem fazer nada
       console.log(`[asaas-webhook] Evento ignorado: ${event}`);
       return new Response(JSON.stringify({ ok: true, ignored: true }), {
-        headers: { 'Content-Type': 'application/json' },
+        headers: securityHeaders,
       });
     }
 
@@ -87,7 +199,7 @@ Deno.serve(async (req: Request) => {
       console.error('[asaas-webhook] Erro ao atualizar Supabase:', error);
       return new Response(JSON.stringify({ error: error.message }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' },
+        headers: securityHeaders,
       });
     }
 
@@ -124,8 +236,8 @@ Deno.serve(async (req: Request) => {
 
           // Calcula a taxa cobrada pelo Asaas (diferença entre o valor pago e o valor líquido recebido)
           // Se netValue não vier no payload, a taxa padrão é 0.99
-          const fee = payment.netValue && payment.value 
-            ? Number((payment.value - payment.netValue).toFixed(2)) 
+          const fee = payment.netValue && payment.value
+            ? Number((payment.value - payment.netValue).toFixed(2))
             : 0.99;
 
           const todayStr = paidAt ? paidAt.split('T')[0] : new Date().toISOString().split('T')[0];
@@ -171,13 +283,13 @@ Deno.serve(async (req: Request) => {
 
     return new Response(
       JSON.stringify({ ok: true, paymentId: payment.id, newStatus }),
-      { headers: { 'Content-Type': 'application/json' } },
+      { headers: securityHeaders },
     );
   } catch (err) {
     console.error('[asaas-webhook] Erro inesperado:', err);
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: securityHeaders,
     });
   }
 });

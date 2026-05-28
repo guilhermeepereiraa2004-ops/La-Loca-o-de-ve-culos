@@ -1,11 +1,44 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, ShieldAlert, Clock } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
+import * as rateLimiter from '../../lib/rateLimiter';
+
+const ACTION = 'investor_login';
 
 const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [retryAfterSeconds, setRetryAfterSeconds] = useState(0);
+
+  // Verifica bloqueio ao montar o componente
+  useEffect(() => {
+    const status = rateLimiter.getStatus(ACTION);
+    if (status.isBlocked) {
+      const remaining = Math.ceil((status.unblockAt - Date.now()) / 1000);
+      setIsBlocked(true);
+      setRetryAfterSeconds(remaining);
+    }
+  }, []);
+
+  // Contador regressivo de desbloqueio
+  useEffect(() => {
+    if (!isBlocked || retryAfterSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setRetryAfterSeconds(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setIsBlocked(false);
+          setError('');
+          rateLimiter.reset(ACTION);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isBlocked, retryAfterSeconds]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -16,6 +49,16 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
       return;
     }
 
+    // ── Rate Limit: verificar antes de processar ──────────────────────────────
+    const limitCheck = rateLimiter.check(ACTION);
+    if (!limitCheck.allowed) {
+      setIsBlocked(true);
+      setRetryAfterSeconds(limitCheck.retryAfterSeconds || 60);
+      setError(limitCheck.reason);
+      return;
+    }
+
+    // ── Tentativa de login ────────────────────────────────────────────────────
     const found = investors.find(i => {
       const emailMatch = i.email?.toLowerCase().trim() === email.toLowerCase().trim();
       let pwdMatch = false;
@@ -35,10 +78,35 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
     });
 
     if (found) {
+      rateLimiter.reset(ACTION); // Reseta contador em caso de sucesso
       onLoginSuccess(found);
-    } else {
-      setError('Credenciais inválidas. Verifique seu e-mail e senha.');
+      return;
     }
+
+    // ── Falha: registra tentativa ─────────────────────────────────────────────
+    rateLimiter.record(ACTION);
+    const statusAfter = rateLimiter.getStatus(ACTION);
+    const remaining = statusAfter.maxAttempts - statusAfter.currentAttempts;
+
+    // Mensagem genérica intencional — não revela se o e-mail existe (evita enumeração)
+    if (remaining > 0) {
+      setError(
+        `Credenciais inválidas. Verifique seu e-mail e senha. ` +
+        `(${remaining} tentativa${remaining !== 1 ? 's' : ''} restante${remaining !== 1 ? 's' : ''})`
+      );
+    } else {
+      const nextCheck = rateLimiter.check(ACTION);
+      setIsBlocked(true);
+      setRetryAfterSeconds(nextCheck.retryAfterSeconds || 60);
+      setError(nextCheck.reason);
+    }
+  };
+
+  // Formata o tempo restante para exibição
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
   };
 
   return (
@@ -55,7 +123,29 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
+            {/* Mensagem de bloqueio */}
+            {isBlocked && (
+              <div className="bg-orange-50 border-l-4 border-orange-500 p-4 rounded-xl flex items-start gap-3">
+                <ShieldAlert size={18} className="text-orange-500 mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-orange-800 text-[10px] uppercase tracking-widest font-black mb-1">
+                    Acesso temporariamente bloqueado
+                  </p>
+                  <p className="text-orange-600 text-xs font-light">
+                    Muitas tentativas inválidas detectadas. Por segurança, o acesso foi bloqueado.
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-2">
+                    <Clock size={12} className="text-orange-500" />
+                    <span className="text-orange-700 text-[11px] font-bold">
+                      Tente novamente em {formatTime(retryAfterSeconds)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Mensagem de erro (sem bloqueio) */}
+            {error && !isBlocked && (
               <div className="bg-red-50 border-l-2 border-red-500 p-4 text-red-600 text-[10px] uppercase tracking-widest font-bold">
                 {error}
               </div>
@@ -68,8 +158,9 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
                 placeholder="investidor@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white border border-neutral-200 p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm"
+                className="w-full bg-white border border-neutral-200 p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 required
+                disabled={isBlocked}
               />
             </div>
             <div className="space-y-2">
@@ -79,15 +170,17 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white border border-neutral-200 p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm"
+                className="w-full bg-white border border-neutral-200 p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 required
+                disabled={isBlocked}
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-neutral-950 text-white py-6 rounded-2xl text-xs uppercase tracking-[0.4em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
+              disabled={isBlocked}
+              className="w-full bg-neutral-950 text-white py-6 rounded-2xl text-xs uppercase tracking-[0.4em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-950"
             >
-              Entrar no Portal
+              {isBlocked ? `Bloqueado — ${formatTime(retryAfterSeconds)}` : 'Entrar no Portal'}
             </button>
           </form>
 

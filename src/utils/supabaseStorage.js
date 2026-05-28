@@ -1,15 +1,32 @@
 import { supabase } from '../lib/supabase';
+import * as rateLimiter from '../lib/rateLimiter';
+
+const UPLOAD_ACTION = 'upload_file';
 
 /**
- * Faz upload de um arquivo para o Supabase Storage e retorna a URL pública
+ * Faz upload de um arquivo para o Supabase Storage e retorna a URL pública.
+ * Inclui proteção de rate limit para evitar flood de uploads.
+ *
  * @param {File} file O arquivo a ser enviado
  * @param {string} folder Pasta dentro do bucket (ex: 'veiculos' ou 'vistorias')
  * @returns {Promise<string>} A URL pública do arquivo
+ * @throws {Error} Se o rate limit for excedido ou o upload falhar
  */
 export const uploadFile = async (file, folder) => {
   if (!file) return null;
 
+  // ── Rate Limit: verificar antes de iniciar o upload ─────────────────────────
+  const limitCheck = rateLimiter.check(UPLOAD_ACTION);
+  if (!limitCheck.allowed) {
+    throw new Error(
+      `Upload bloqueado temporariamente. ${limitCheck.reason || 'Aguarde antes de tentar novamente.'}`
+    );
+  }
+
   try {
+    // Registra a tentativa de upload
+    rateLimiter.record(UPLOAD_ACTION);
+
     // Gerar um nome único para o arquivo
     const fileExt = file.name ? file.name.split('.').pop() : 'jpg';
     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
@@ -44,7 +61,7 @@ export const uploadFile = async (file, folder) => {
  */
 export const getPublicUrl = (path) => {
   if (!path || path === '') return null;
-  
+
   // Handle object format (like {preview: 'url'})
   if (typeof path === 'object') {
     if (path.preview) return path.preview;
@@ -55,11 +72,10 @@ export const getPublicUrl = (path) => {
   if (typeof path !== 'string') return null;
   if (path === '[object Object]') return null;
   if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
-  
+
   const { data: { publicUrl } } = supabase.storage
     .from('La-locacao')
     .getPublicUrl(path);
-    
+
   return publicUrl;
 };
-
