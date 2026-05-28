@@ -94,7 +94,7 @@ const AdminClientes = ({ clients = [], onUpdateClient }) => {
               if (!dateVal) return { label: 'Não informado', days: 0, isExpired: false };
               const diff = new Date(dateVal).getTime() - new Date().getTime();
               const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-              const formattedDate = new Date(dateVal).toLocaleDateString('pt-BR');
+              const formattedDate = dateVal && dateVal.includes('-') ? dateVal.substring(0, 10).split('-').reverse().join('/') : dateVal || '—';
               return {
                 label: `Validade: ${formattedDate}`,
                 days: days,

@@ -249,23 +249,30 @@ const AdminDashboard = ({
     });
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
+    console.log("ADMIN_DASHBOARD: Confirmação de exclusão acionada. Tipo:", deleteType, "Item:", itemToDelete);
     if (deletePassword === 'Lareferencia') {
-      if (deleteType === 'rental') onDeleteRental(itemToDelete.id);
-      else if (deleteType === 'vehicle') onDeleteVehicle(itemToDelete.id);
-      else if (deleteType === 'investor') onDeleteInvestor(itemToDelete.id);
+      console.log("ADMIN_DASHBOARD: Senha master correta. Executando exclusão...");
+      let success = false;
+      if (deleteType === 'rental') success = await onDeleteRental(itemToDelete.id);
+      else if (deleteType === 'vehicle') success = await onDeleteVehicle(itemToDelete.id);
+      else if (deleteType === 'investor') success = await onDeleteInvestor(itemToDelete.id);
       
-      setShowDeleteAuthModal(false);
-      setItemToDelete(null);
-      setDeleteType(null);
-      setDeletePassword('');
-      
-      setShowAdminSuccess({
-        show: true,
-        title: 'Excluído com Sucesso',
-        message: 'O registro foi removido permanentemente do sistema.'
-      });
+      console.log("ADMIN_DASHBOARD: Resultado da exclusão:", success);
+      if (success) {
+        setShowDeleteAuthModal(false);
+        setItemToDelete(null);
+        setDeleteType(null);
+        setDeletePassword('');
+        
+        setShowAdminSuccess({
+          show: true,
+          title: 'Excluído com Sucesso',
+          message: 'O registro foi removido permanentemente do sistema.'
+        });
+      }
     } else {
+      console.log("ADMIN_DASHBOARD: Senha incorreta.");
       alert('Senha incorreta. Ação não autorizada.');
     }
   };
@@ -356,7 +363,10 @@ const AdminDashboard = ({
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}
               isEditing={isEditing} setIsEditing={setIsEditing} onAddInvestor={onAddInvestor}
-              onUpdateInvestor={onUpdateInvestor} onDeleteInvestor={onDeleteInvestor}
+              onUpdateInvestor={onUpdateInvestor}
+              setItemToDelete={setItemToDelete}
+              setDeleteType={setDeleteType}
+              setShowDeleteAuthModal={setShowDeleteAuthModal}
               setShowAdminSuccess={setShowAdminSuccess}
               vehicles={vehicles}
               transactions={transactions}

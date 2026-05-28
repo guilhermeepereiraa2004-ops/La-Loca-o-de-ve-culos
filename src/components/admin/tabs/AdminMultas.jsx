@@ -203,62 +203,9 @@ const AdminMultas = ({
     }, 1200);
   };
 
-  // API Sync Simulation
+  // API Sync
   const handleApiSync = () => {
-    setSyncLoading(true);
-    setTimeout(() => {
-      // Pick a random plate from the fleet
-      if (vehicles.length === 0) {
-        alert('Nenhum veículo cadastrado na frota para simular a varredura de multas.');
-        setSyncLoading(false);
-        return;
-      }
-      
-      const randomVehicle = vehicles[Math.floor(Math.random() * vehicles.length)];
-      const plate = randomVehicle.plate;
-
-      // Find if there is an active rental for this vehicle
-      const matchedRental = rentals.find(r => 
-        r.status === 'Ativo' && 
-        (r.plate || r.vehiclePlate || '').replace('-', '').toLowerCase() === plate.replace('-', '').toLowerCase()
-      );
-
-      let targetDate = new Date();
-      if (matchedRental && matchedRental.startDate) {
-        const rentalStart = new Date(matchedRental.startDate);
-        rentalStart.setDate(rentalStart.getDate() + 1);
-        targetDate = rentalStart;
-      } else {
-        targetDate.setDate(targetDate.getDate() - 5);
-      }
-
-      const dateStr = targetDate.toISOString().split('T')[0];
-
-      const simulatedFines = [
-        { infraction: 'Avançar o sinal vermelho do semáforo, exceto onde houver sinalização de livre conversão à direita', value: 293.47, code: '605-01', location: 'Av. Paulista, 1000 - São Paulo/SP' },
-        { infraction: 'Transitar em velocidade superior à máxima permitida em mais de 20% até 50%', value: 195.23, code: '746-30', location: 'Av. Brigadeiro Luís Antônio, 2500 - São Paulo/SP' },
-        { infraction: 'Dirigir o veículo manuseando telefone celular', value: 293.47, code: '763-32', location: 'Rua da Consolação, 150 - São Paulo/SP' }
-      ];
-
-      const selectedSim = simulatedFines[Math.floor(Math.random() * simulatedFines.length)];
-
-      const newSimulatedFine = {
-        vehiclePlate: plate,
-        infraction: selectedSim.infraction,
-        date: dateStr,
-        value: selectedSim.value,
-        location: selectedSim.location,
-        code: selectedSim.code
-      };
-
-      onAddFine(newSimulatedFine).then((res) => {
-        setSyncLoading(false);
-        if (res && res.success) {
-          alert(`Sincronização Concluída!\n\nUma nova multa foi detectada para o veículo ${plate} em ${new Date(dateStr + 'T12:00:00').toLocaleDateString('pt-BR')}.\n\nMotorista Vinculado: ${res.data.driverName}`);
-        }
-      });
-
-    }, 1800);
+    alert('Integração com API real de multas em desenvolvimento. As multas podem ser cadastradas manualmente no momento.');
   };
 
   // Submit manual addition
@@ -681,7 +628,7 @@ const AdminMultas = ({
                       <div className="p-4 bg-white rounded-2xl border border-neutral-100 space-y-2">
                         <div className="flex items-center gap-2 text-neutral-500 text-[10px] font-bold">
                           <Calendar size={14} className="text-neutral-400 shrink-0" />
-                          <span>{fine.date ? new Date(fine.date).toLocaleDateString('pt-BR') : '—'}</span>
+                          <span>{fine.date && fine.date.includes('-') ? fine.date.substring(0, 10).split('-').reverse().join('/') : fine.date || '—'}</span>
                           {fine.date && fine.date.includes('T') && (
                             <span className="bg-neutral-100 px-2 py-0.5 rounded text-[8px] font-bold">{fine.date.split('T')[1].substring(0, 5)}</span>
                           )}
@@ -1114,7 +1061,7 @@ const AdminMultas = ({
                   <div>
                     <span className="text-[8px] font-black text-neutral-400 uppercase block">Data / Hora</span>
                     <span className="font-bold">
-                      {indicationFine.date ? new Date(indicationFine.date).toLocaleDateString('pt-BR') : '—'} 
+                      {indicationFine.date && indicationFine.date.includes('-') ? indicationFine.date.substring(0, 10).split('-').reverse().join('/') : indicationFine.date || '—'} 
                       {indicationFine.date && indicationFine.date.includes('T') ? ` às ${indicationFine.date.split('T')[1].substring(0, 5)}` : ''}
                     </span>
                   </div>
@@ -1211,7 +1158,7 @@ const AdminMultas = ({
             </div>
 
             <p className="text-xs text-neutral-500 font-light leading-relaxed">
-              Selecione o condutor responsável pela multa do veículo <span className="font-bold text-neutral-900">{assigningFine.vehiclePlate}</span> ocorrida em <span className="font-bold text-neutral-900">{assigningFine.date ? new Date(assigningFine.date).toLocaleDateString('pt-BR') : '—'}</span>.
+              Selecione o condutor responsável pela multa do veículo <span className="font-bold text-neutral-900">{assigningFine.vehiclePlate}</span> ocorrida em <span className="font-bold text-neutral-900">{assigningFine.date && assigningFine.date.includes('-') ? assigningFine.date.substring(0, 10).split('-').reverse().join('/') : assigningFine.date || '—'}</span>.
             </p>
 
             <div className="space-y-2">

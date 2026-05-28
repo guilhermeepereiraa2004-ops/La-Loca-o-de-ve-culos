@@ -793,12 +793,18 @@ export const useAppState = () => {
   };
 
   const handleDeleteRental = async (id) => {
-    const rental = rentals.find(r => r.id === id);
-    const { error } = await supabase.from('rentals').delete().eq('id', id);
-    if (!error) {
+    try {
+      const rental = rentals.find(r => r.id === id);
+      const { error } = await supabase.from('rentals').delete().eq('id', id);
+      if (error) throw error;
       if (rental) await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
       setRentals(prev => prev.filter(r => r.id !== id));
       logActivity('Apagar', 'Locação', id, `Excluiu a locação de ${rental?.userName || rental?.user || 'desconhecido'} (Veículo ID: ${rental?.vehicleId})`);
+      return true;
+    } catch (err) {
+      console.error("Erro ao apagar locação:", err);
+      alert(`Erro ao apagar locação: ${err.message || err.details || 'Erro desconhecido'}`);
+      return false;
     }
   };
 
@@ -1006,11 +1012,17 @@ export const useAppState = () => {
   };
 
   const handleDeleteInvestor = async (id) => {
-    const investor = investors.find(i => i.id === id);
-    const { error } = await supabase.from('investors').delete().eq('id', id);
-    if (!error) {
+    try {
+      const investor = investors.find(i => i.id === id);
+      const { error } = await supabase.from('investors').delete().eq('id', id);
+      if (error) throw error;
       setInvestors(prev => prev.filter(i => i.id !== id));
       logActivity('Apagar', 'Investidor', id, `Excluiu o investidor ${investor?.name || 'ID: ' + id}`);
+      return true;
+    } catch (err) {
+      console.error("Erro ao apagar investidor:", err);
+      alert(`Erro ao apagar investidor: ${err.message || err.details || 'Erro desconhecido'}`);
+      return false;
     }
   };
 
@@ -1123,11 +1135,17 @@ export const useAppState = () => {
   };
 
   const handleDeleteVehicle = async (id) => {
-    const vehicle = vehicles.find(v => v.id === id);
-    const { error } = await supabase.from('vehicles').delete().eq('id', id);
-    if (!error) {
+    try {
+      const vehicle = vehicles.find(v => v.id === id);
+      const { error } = await supabase.from('vehicles').delete().eq('id', id);
+      if (error) throw error;
       setVehicles(prev => prev.filter(v => v.id !== id));
       logActivity('Apagar', 'Veículo', id, `Excluiu o veículo ${vehicle?.model || 'ID: ' + id} (${vehicle?.plate || ''})`);
+      return true;
+    } catch (err) {
+      console.error("Erro ao apagar veículo:", err);
+      alert(`Erro ao apagar veículo: ${err.message || err.details || 'Erro desconhecido'}`);
+      return false;
     }
   };
 
@@ -1576,7 +1594,7 @@ export const useAppState = () => {
         desc: `Pagamento Aluguel - ${rental.user}`,
         cat: 'Aluguel',
         vehiclePlate: rental.plate,
-        status: 'pago',
+        status: 'Concluído',
         responsible: ''
       });
     }
@@ -1590,7 +1608,7 @@ export const useAppState = () => {
         desc: `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`,
         cat: 'Aluguel',
         vehiclePlate: replacementPlate,
-        status: 'pago',
+        status: 'Concluído',
         responsible: ''
       });
     }
@@ -1604,7 +1622,7 @@ export const useAppState = () => {
         desc: `Taxa Adm - ${rental.user}`,
         cat: 'Taxa Adm',
         vehiclePlate: rental.plate,
-        status: 'pago',
+        status: 'Concluído',
         responsible: 'Administradora'
       });
     }
@@ -1618,7 +1636,7 @@ export const useAppState = () => {
         desc: `Taxa Adm Reserva - ${rental.user}`,
         cat: 'Taxa Adm',
         vehiclePlate: replacementPlate,
-        status: 'pago',
+        status: 'Concluído',
         responsible: 'Administradora'
       });
     }
@@ -1632,7 +1650,7 @@ export const useAppState = () => {
         desc: `Taxa de Pneus - ${rental.user}`,
         cat: 'taxa de pneus',
         vehiclePlate: rental.plate,
-        status: 'pago',
+        status: 'Concluído',
         responsible: 'Administradora'
       });
     }
@@ -1646,7 +1664,7 @@ export const useAppState = () => {
         desc: `Multa por atraso - ${rental.user}`,
         cat: 'multa',
         vehiclePlate: rental.plate,
-        status: 'pago',
+        status: 'Concluído',
         responsible: 'Administradora'
       });
     }
@@ -1681,7 +1699,7 @@ export const useAppState = () => {
             desc: `Cobrança Multa (${fine.infraction} - parc. ${fd.installment}) - ${rental.user}`,
             cat: 'multa',
             vehiclePlate: rental.plate,
-            status: 'pago',
+            status: 'Concluído',
             responsible: 'Administradora'
           };
           const { data: tfData, error: tfError } = await supabase.from('transactions').insert([mapToSnake(newFineTrans, 'transactions')]).select();

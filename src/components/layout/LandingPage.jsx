@@ -165,7 +165,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 ))}
               </div>
               <Reveal delay="reveal-delay-5">
-                <a href="https://wa.me/5579999999999" target="_blank" className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500">
+                <a href="https://wa.me/5579999094631" target="_blank" className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500">
                   Consultar Condições <ArrowRight size={14} />
                 </a>
               </Reveal>
@@ -316,28 +316,6 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               </Reveal>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* ═══ CONTATO ════════════════════════════════════════════ */}
-      <section id="contato" className="py-24 md:py-36 bg-neutral-950 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(197,160,89,0.04),transparent_50%)]" />
-        <div className="max-w-3xl mx-auto px-6 md:px-12 text-center relative z-10">
-          <Reveal>
-            <div className="w-16 h-16 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center mx-auto mb-8">
-              <Phone size={28} className="text-[#C5A059]" />
-            </div>
-            <Label light>Entre em Contato</Label>
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-white mb-6">Fale Conosco</h2>
-            <p className="text-white/40 font-light mb-12 text-base leading-relaxed">
-              Reserve seu veículo ou agende uma reunião para conhecer o modelo de investimento.
-            </p>
-          </Reveal>
-          <Reveal delay="reveal-delay-1">
-            <a href="https://wa.me/5579999999999" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500 group">
-              <Phone size={16} className="group-hover:scale-110 transition-transform" /> WhatsApp LA Locação
-            </a>
-          </Reveal>
         </div>
       </section>
 

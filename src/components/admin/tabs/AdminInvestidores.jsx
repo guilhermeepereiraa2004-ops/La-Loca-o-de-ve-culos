@@ -13,7 +13,9 @@ const AdminInvestidores = ({
   setIsEditing,
   onAddInvestor,
   onUpdateInvestor,
-  onDeleteInvestor,
+  setItemToDelete,
+  setDeleteType,
+  setShowDeleteAuthModal,
   setShowAdminSuccess,
   vehicles = [],
   transactions = [],
@@ -272,7 +274,7 @@ const AdminInvestidores = ({
               return (
                 <div key={investor.id} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">
                   {/* Background ambient light */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16 animate-pulse" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16 animate-pulse pointer-events-none" />
                   
                   <div>
                     {/* Card Top: Profile and quick actions */}
@@ -305,7 +307,12 @@ const AdminInvestidores = ({
                           <Pencil size={12} />
                         </button>
                         <button
-                          onClick={() => onDeleteInvestor(investor.id)}
+                          onClick={() => {
+                            console.log("ADMIN_INVESTIDORES: Clique no botão de excluir investidor:", investor);
+                            setItemToDelete(investor);
+                            setDeleteType('investor');
+                            setShowDeleteAuthModal(true);
+                          }}
                           className="w-8 h-8 bg-red-50/50 text-red-400 border border-red-100/50 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
                           title="Excluir"
                         >

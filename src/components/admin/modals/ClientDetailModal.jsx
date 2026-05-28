@@ -175,7 +175,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                       <input type="date" value={editForm.birthDate || ''} onChange={e => setEditForm({...editForm, birthDate: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
                     ) : (
                       <p className="text-sm font-black text-neutral-900 leading-tight">
-                        {client.birthDate ? new Date(client.birthDate).toLocaleDateString('pt-BR') : '---'}
+                        {client.birthDate && client.birthDate.includes('-') ? client.birthDate.substring(0, 10).split('-').reverse().join('/') : client.birthDate || '---'}
                       </p>
                     )}
                   </div>

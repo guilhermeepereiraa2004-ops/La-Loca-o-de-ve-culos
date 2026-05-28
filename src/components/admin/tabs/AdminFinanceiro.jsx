@@ -204,7 +204,7 @@ const AdminFinanceiro = ({
                           </div>
                           <div>
                             <p className="text-sm font-black text-neutral-900">{t.desc}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{new Date(t.date).toLocaleDateString('pt-BR')}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
                           </div>
                         </div>
                       </td>
@@ -266,7 +266,7 @@ const AdminFinanceiro = ({
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{new Date(t.date).toLocaleDateString('pt-BR')}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
                       </div>
                     </div>
                     <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>

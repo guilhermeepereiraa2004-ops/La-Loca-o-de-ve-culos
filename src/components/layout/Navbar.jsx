@@ -16,6 +16,8 @@ const Navbar = ({ onSetView }) => {
     if (item === 'Frota') {
       onSetView('fleet');
       window.scrollTo(0, 0);
+    } else if (item === 'Contato') {
+      window.open('https://wa.me/5579999094631', '_blank');
     } else {
       onSetView('home');
       setTimeout(() => {

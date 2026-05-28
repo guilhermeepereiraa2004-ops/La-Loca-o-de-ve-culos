@@ -28,3 +28,5 @@ dist-ssr
 
 .vercel
 scratch/
+backup_prod_schema_and_data.sql
+

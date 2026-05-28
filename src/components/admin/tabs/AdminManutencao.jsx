@@ -376,7 +376,7 @@ const AdminManutencao = ({
                         <div className="space-y-1">
                           <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Data</p>
                           <div className="flex items-center gap-2 text-xs font-bold text-neutral-700">
-                            <Calendar size={12} className="text-[#C5A059]" /> {new Date(m.date).toLocaleDateString('pt-BR')}
+                            <Calendar size={12} className="text-[#C5A059]" /> {m.date && m.date.includes('-') ? m.date.substring(0, 10).split('-').reverse().join('/') : m.date || '—'}
                           </div>
                         </div>
                         <div className="space-y-1">

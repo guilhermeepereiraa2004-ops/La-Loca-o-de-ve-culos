@@ -16,7 +16,7 @@ const FleetPage = ({ vehicles = [], onBack, onInterest }) => {
   return (
     <div className="min-h-screen bg-white font-sans pb-20">
       {/* Header */}
-      <header className="bg-neutral-950 text-white py-12 relative overflow-hidden">
+      <header className="bg-neutral-950 text-white pt-28 pb-12 relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&q=80')] bg-cover bg-center opacity-10" />
         <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12">
           <button 
