@@ -562,7 +562,7 @@ const AdminInvestidores = ({
                       <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="text" 
-                        value={investorForm.name} 
+                        value={investorForm.name || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, name: e.target.value })} 
                         className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="Nome do parceiro investidor" 
@@ -574,7 +574,7 @@ const AdminInvestidores = ({
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">CPF</label>
                     <input 
                       type="text" 
-                      value={investorForm.cpf} 
+                      value={investorForm.cpf || ''} 
                       onChange={e => setInvestorForm({ ...investorForm, cpf: formatCPF(e.target.value) })} 
                       className="w-full bg-neutral-50 border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                       placeholder="000.000.000-00" 
@@ -587,7 +587,7 @@ const AdminInvestidores = ({
                       <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="email" 
-                        value={investorForm.email} 
+                        value={investorForm.email || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, email: e.target.value })} 
                         className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="exemplo@laveiculos.com.br" 
@@ -601,7 +601,7 @@ const AdminInvestidores = ({
                       <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="text" 
-                        value={investorForm.phone} 
+                        value={investorForm.phone || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, phone: e.target.value })} 
                         className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="(00) 99999-9999" 
@@ -615,7 +615,7 @@ const AdminInvestidores = ({
                       <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="text" 
-                        value={investorForm.address} 
+                        value={investorForm.address || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, address: e.target.value })} 
                         className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="Rua, Número, Bairro, Cidade, Estado" 
@@ -639,7 +639,7 @@ const AdminInvestidores = ({
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Senha do Portal</label>
                       <input 
                         type="text" 
-                        value={investorForm.password} 
+                        value={investorForm.password || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, password: e.target.value })} 
                         className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner font-mono tracking-widest" 
                         placeholder="Senha segura de acesso" 
@@ -649,7 +649,7 @@ const AdminInvestidores = ({
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status da Conta</label>
                       <select 
-                        value={investorForm.status} 
+                        value={investorForm.status || 'Ativo'} 
                         onChange={e => setInvestorForm({ ...investorForm, status: e.target.value })} 
                         className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
                       >
@@ -671,7 +671,7 @@ const AdminInvestidores = ({
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dados Bancários Completos</label>
                       <input 
                         type="text" 
-                        value={investorForm.bank} 
+                        value={investorForm.bank || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, bank: e.target.value })} 
                         className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="Banco, Agência e Conta Corrente" 
@@ -682,7 +682,7 @@ const AdminInvestidores = ({
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Chave PIX Oficial</label>
                       <input 
                         type="text" 
-                        value={investorForm.pix} 
+                        value={investorForm.pix || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, pix: e.target.value })} 
                         className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner text-[#C5A059]" 
                         placeholder="Celular, CPF/CNPJ, E-mail ou Chave Aleatória" 

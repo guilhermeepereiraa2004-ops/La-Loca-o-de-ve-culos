@@ -199,7 +199,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nome Completo</label>
                     <input
                       type="text" required
-                      value={form.name}
+                      value={form.name || ''}
                       onChange={e => setForm({ ...form, name: e.target.value })}
                       placeholder="Ex: Maria Santos"
                       className="w-full bg-neutral-50 border-none p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
@@ -209,7 +209,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">E-mail de Acesso</label>
                     <input
                       type="email" required
-                      value={form.email}
+                      value={form.email || ''}
                       onChange={e => setForm({ ...form, email: e.target.value })}
                       placeholder="funcionario@lalocacao.com"
                       className="w-full bg-neutral-50 border-none p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
@@ -223,7 +223,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                     <div className="relative">
                       <input
                         type={showPassword ? 'text' : 'password'} required={!editingUser}
-                        value={form.password}
+                        value={form.password || ''}
                         onChange={e => setForm({ ...form, password: e.target.value })}
                         placeholder={editingUser ? '(Deixe em branco para manter)' : 'Senha de acesso'}
                         className="w-full bg-neutral-50 border-none p-4 pr-12 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
