@@ -673,23 +673,6 @@ const RentalFormModal = ({
                           </div>
                         </div>
                       </div>
-
-                      <div className="p-8 bg-red-50/30 rounded-[2.5rem] border border-red-100 space-y-6">
-                        <div className="flex items-center gap-3">
-                          <AlertTriangle size={16} className="text-red-500" />
-                          <span className="text-[11px] font-black uppercase tracking-[0.2em] text-red-900">Multas e Penalidades</span>
-                        </div>
-                        <div className="grid grid-cols-2 gap-6">
-                          <div className="space-y-2">
-                            <label className="text-[9px] uppercase tracking-widest text-red-900/40 font-black ml-1">Multa Atraso (%)</label>
-                            <input type="number" value={rentalForm.lateFine || ''} onChange={e => setRentalForm({...rentalForm, lateFine: e.target.value})} className="w-full bg-white border border-red-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all font-black text-sm text-red-600" />
-                          </div>
-                          <div className="space-y-2">
-                            <label className="text-[9px] uppercase tracking-widest text-red-900/40 font-black ml-1">Juros Dia (%)</label>
-                            <input type="number" value={rentalForm.dailyInterest || ''} onChange={e => setRentalForm({...rentalForm, dailyInterest: e.target.value})} className="w-full bg-white border border-red-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-red-500/10 focus:border-red-500 transition-all font-black text-sm text-red-600" />
-                          </div>
-                        </div>
-                      </div>
                     </div>
                   </div>
                 </div>
