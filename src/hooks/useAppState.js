@@ -459,7 +459,7 @@ export const useAppState = () => {
           }
         }
 
-        // --- AUTO-GERAÇÃO DE PROTEÇÃO VEICULAR ---
+        // --- AUTO-GERAÇÃO DE COBRANÇAS (PROTEÇÃO E SEGURO FRANQUIA) ---
         try {
           const now = new Date();
           const currentYear = now.getFullYear();
@@ -469,14 +469,15 @@ export const useAppState = () => {
           let newTransactionsToInsert = [];
           
           for (const v of allVehicles) {
+            if (!v.plate) continue;
+
+            // 1. Proteção Veicular (Vence todo dia 01, entra como receita da empresa)
             const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
             const protVal = parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
-            const paymentDay = parseInt(v.protectionPaymentDay) || 10;
             
-            if (hasProt && protVal > 0 && v.plate) {
-              // Se hoje já chegou ou passou o dia do vencimento da proteção
-              if (currentDay >= paymentDay) {
-                // Verifica se já existe transação de proteção para esse veículo no mês/ano atual
+            if (hasProt && protVal > 0) {
+              const paymentDayProt = 1; // Padrão dia 01 de cada mês
+              if (currentDay >= paymentDayProt) {
                 const alreadyExists = loadedTransactions.some(t => {
                   if (t.vehiclePlate !== v.plate) return false;
                   const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
@@ -491,12 +492,48 @@ export const useAppState = () => {
                 });
                 
                 if (!alreadyExists) {
-                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(paymentDay).padStart(2, '0')}`;
+                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
                   newTransactionsToInsert.push({
-                    type: 'out',
-                    val: -protVal,
+                    type: 'in', // Receita para a empresa
+                    val: protVal, // Valor positivo
                     cat: 'Proteção Veicular',
                     desc: `Proteção Veicular - ${v.model} (${v.plate})`,
+                    date: dateStr,
+                    vehicle_plate: v.plate,
+                    responsible: 'Administradora',
+                    status: 'Pendente'
+                  });
+                }
+              }
+            }
+
+            // 2. Seguro Franquia (Vence todo dia 10, entra como receita da empresa)
+            const hasFranchise = v.franchiseInsurance === true || String(v.franchiseInsurance) === 'true';
+            const franchiseVal = 39.90; // Padrão R$ 39,90/mês
+            
+            if (hasFranchise) {
+              const paymentDayFranchise = 10; // Padrão dia 10 de cada mês
+              if (currentDay >= paymentDayFranchise) {
+                const alreadyExists = loadedTransactions.some(t => {
+                  if (t.vehiclePlate !== v.plate) return false;
+                  const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
+                  if (!isInsurance) return false;
+                  
+                  try {
+                    const tDate = new Date(t.date + 'T12:00:00');
+                    return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
+                  } catch (e) {
+                    return false;
+                  }
+                });
+                
+                if (!alreadyExists) {
+                  const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
+                  newTransactionsToInsert.push({
+                    type: 'in', // Receita para a empresa
+                    val: franchiseVal, // Valor positivo
+                    cat: 'Seguro Franquia',
+                    desc: `Seguro Franquia - ${v.model} (${v.plate})`,
                     date: dateStr,
                     vehicle_plate: v.plate,
                     responsible: 'Administradora',
@@ -518,7 +555,7 @@ export const useAppState = () => {
               const finalTransactions = [...mappedInserted, ...loadedTransactions];
               setTransactions(finalTransactions);
             } else if (insertError) {
-              console.error("Erro ao inserir transações de proteção automática:", insertError);
+              console.error("Erro ao inserir transações automáticas:", insertError);
             }
           }
         } catch (autoErr) {

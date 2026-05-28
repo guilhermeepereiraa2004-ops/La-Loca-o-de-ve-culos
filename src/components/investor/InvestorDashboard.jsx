@@ -60,7 +60,14 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       const cat = t.cat?.toLowerCase().trim() || '';
       const val = Math.abs(t.val || 0);
 
-      if (t.type === 'in') {
+      const isSeguro = cat.includes('seguro') || cat.includes('franquia');
+      const isProtecao = cat.includes('prote') || cat.includes('veicular');
+
+      if (isSeguro) {
+        insuranceSum += val;
+      } else if (isProtecao) {
+        protectionSum += val;
+      } else if (t.type === 'in') {
         if (t.responsible === 'Administradora') return;
         if (cat === 'taxa adm') {
           adminTaxSum += val;
@@ -73,10 +80,6 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
         if (t.responsible === 'Administradora') return;
         if (cat.includes('manuten')) {
           maintenanceSum += val;
-        } else if (cat.includes('prote') || cat.includes('veicular')) {
-          protectionSum += val;
-        } else if (cat.includes('seguro')) {
-          insuranceSum += val;
         }
       }
     });
@@ -97,6 +100,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
 
   // Calcular ganhos e despesas reais do investidor a partir das transações
   const investorTransactions = transactions.filter(t => {
+    const cat = t.cat?.toLowerCase().trim() || '';
+    const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+    
+    if (isSpecialAutoTrans && t.vehiclePlate && myVehicles.some(v => v.plate === t.vehiclePlate)) {
+      return true;
+    }
+
     if (t.responsible === 'Administradora') return false;
     return myVehicles.some(v => v.plate === t.vehiclePlate) || 
       (t.responsible?.toLowerCase().startsWith('investidor:') && t.responsible.split(':')[1]?.trim().toLowerCase() === investor.name?.toLowerCase().trim()) ||
@@ -104,11 +114,19 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
   });
 
   const realInvestorRevenue = investorTransactions
-    .filter(t => t.type === 'in')
+    .filter(t => {
+      const cat = t.cat?.toLowerCase().trim() || '';
+      const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+      return t.type === 'in' && !isSpecialAutoTrans;
+    })
     .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
 
   const realInvestorExpenses = investorTransactions
-    .filter(t => t.type === 'out')
+    .filter(t => {
+      const cat = t.cat?.toLowerCase().trim() || '';
+      const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+      return t.type === 'out' || isSpecialAutoTrans;
+    })
     .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
 
   // Maintenance history from transactions
@@ -156,7 +174,16 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       const cat = t.cat?.toLowerCase().trim() || '';
       const val = Math.abs(t.val || 0);
       
-      if (t.type === 'in') {
+      const isSeguroFranquia = cat.includes('seguro') || cat.includes('franquia');
+      const isProtecaoVeicular = cat.includes('prote') || cat.includes('veicular');
+
+      if (isSeguroFranquia) {
+        monthlyPerformance[monthKey].insurance += val;
+        monthlyPerformance[monthKey].net -= val;
+      } else if (isProtecaoVeicular) {
+        monthlyPerformance[monthKey].protection += val;
+        monthlyPerformance[monthKey].net -= val;
+      } else if (t.type === 'in') {
         if (cat === 'taxa adm') {
           monthlyPerformance[monthKey].adminTax += val;
           monthlyPerformance[monthKey].net -= val;
@@ -173,10 +200,6 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
         monthlyPerformance[monthKey].net -= val;
         if (cat.includes('manuten')) {
           monthlyPerformance[monthKey].maintenance += val;
-        } else if (cat.includes('prote') || cat.includes('veicular')) {
-          monthlyPerformance[monthKey].protection += val;
-        } else if (cat.includes('seguro')) {
-          monthlyPerformance[monthKey].insurance += val;
         } else {
           monthlyPerformance[monthKey].other += val;
         }
