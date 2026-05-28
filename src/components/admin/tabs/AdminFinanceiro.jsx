@@ -195,26 +195,33 @@ const AdminFinanceiro = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((t, i) => (
-                    <tr key={i} className="group hover:bg-neutral-50/50 transition-colors">
-                      <td className="px-4 py-3 xl:px-6 xl:py-4">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
-                            {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                  filteredTransactions.map((t, i) => {
+                    const veh = t.vehiclePlate ? (vehicles || []).find(v => v.plate === t.vehiclePlate) : null;
+                    return (
+                      <tr key={i} className="group hover:bg-neutral-50/50 transition-colors">
+                        <td className="px-4 py-3 xl:px-6 xl:py-4">
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                              {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                            </div>
+                            <div>
+                              <p className="text-sm font-black text-neutral-900">{t.desc}</p>
+                              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-black text-neutral-900">{t.desc}</p>
-                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
+                        </td>
+                        <td className="px-4 py-3 xl:px-6 xl:py-4">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-3 py-1 rounded-full">{t.cat}</span>
+                        </td>
+                        <td className="px-4 py-3 xl:px-6 xl:py-4">
+                          <p className="text-xs font-bold text-neutral-900">{t.vehiclePlate || 'N/A'}</p>
+                          <div className="flex flex-col">
+                            <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">{t.responsible}</p>
+                            {veh?.investor && (
+                              <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">Inv: {veh.investor}</p>
+                            )}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 xl:px-6 xl:py-4">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-3 py-1 rounded-full">{t.cat}</span>
-                      </td>
-                      <td className="px-4 py-3 xl:px-6 xl:py-4">
-                        <p className="text-xs font-bold text-neutral-900">{t.vehiclePlate || 'N/A'}</p>
-                        <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">{t.responsible}</p>
-                      </td>
+                        </td>
                       <td className="px-4 py-3 xl:px-6 xl:py-4 text-right">
                         <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
                           {t.type === 'in' ? '+' : '-'} R$ {Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -257,27 +264,31 @@ const AdminFinanceiro = ({
                 </button>
               </div>
             ) : (
-              filteredTransactions.map((t, i) => (
-                <div key={i} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
-                        {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+              filteredTransactions.map((t, i) => {
+                const veh = t.vehiclePlate ? (vehicles || []).find(v => v.plate === t.vehiclePlate) : null;
+                return (
+                  <div key={i} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
+                          {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
+                        </div>
                       </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
-                        <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
-                      </div>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>
                     </div>
-                    <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>
-                  </div>
 
-                  <div className="grid grid-cols-2 gap-4 py-2 border-t border-b border-neutral-50 text-xs">
-                    <div>
-                      <p className="text-[8px] uppercase text-neutral-400 font-black">Origem / Placa</p>
-                      <p className="font-bold text-neutral-800 truncate">{t.vehiclePlate || 'N/A'}</p>
-                      <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black truncate">{t.responsible}</p>
-                    </div>
+                    <div className="grid grid-cols-2 gap-4 py-2 border-t border-b border-neutral-50 text-xs">
+                      <div>
+                        <p className="text-[8px] uppercase text-neutral-400 font-black">Origem / Placa</p>
+                        <p className="font-bold text-neutral-800 truncate">{t.vehiclePlate || 'N/A'}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black truncate">
+                          {t.responsible} {veh?.investor ? `| Inv: ${veh.investor}` : ''}
+                        </p>
+                      </div>
                     <div className="text-right">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Valor</p>
                       <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
