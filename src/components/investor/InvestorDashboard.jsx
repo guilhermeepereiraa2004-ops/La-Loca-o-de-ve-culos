@@ -17,9 +17,18 @@ const formatDate = (dateStr) => {
 };
 
 const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogout }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem('la_investor_active_tab');
+    return savedTab || 'dashboard';
+  });
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
   const [realPayouts, setRealPayouts] = useState([]);
+
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('la_investor_active_tab', activeTab);
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (investor?.id) {
@@ -498,7 +507,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                     {myVehicles.filter(v => v.currentYield > 0).map((v) => (
                       <div key={v.id} className="flex items-center gap-4 group">
                         <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 shrink-0">
-                          <img src={v.image} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt={v.model} />
+                          <img
+                            src={v.image || '/logo-new.png'}
+                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
+                            alt={v.model}
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
+                            style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: '#000000' } : {}}
+                          />
                         </div>
                         <div className="flex-1">
                           <p className="text-[10px] font-black uppercase tracking-tight text-neutral-900">{v.model}</p>
@@ -524,7 +539,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                 <div key={idx} className="bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm group hover:shadow-2xl transition-all duration-500 relative overflow-hidden">
                   <div className="flex flex-col md:flex-row gap-10">
                     <div className="w-full md:w-48 h-48 rounded-3xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700 shadow-lg">
-                      <img src={v.image} className="w-full h-full object-cover" alt={v.model} />
+                      <img
+                        src={v.image || '/logo-new.png'}
+                        className="w-full h-full object-cover"
+                        alt={v.model}
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '1.5rem'; e.currentTarget.style.background = '#000000'; }}
+                        style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '1.5rem', background: '#000000' } : {}}
+                      />
                     </div>
                     <div className="flex-1 space-y-6">
                       <div className="flex justify-between items-start">

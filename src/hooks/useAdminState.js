@@ -2,7 +2,16 @@ import { useState, useEffect } from 'react';
 
 export const useAdminState = (currentUser) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [activeTab, setActiveTab] = useState('bi');
+  const [activeTab, setActiveTab] = useState(() => {
+    const savedTab = localStorage.getItem('la_admin_active_tab');
+    return savedTab || 'bi';
+  });
+
+  useEffect(() => {
+    if (activeTab) {
+      localStorage.setItem('la_admin_active_tab', activeTab);
+    }
+  }, [activeTab]);
   const [showAddForm, setShowAddForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [isEditingRental, setIsEditingRental] = useState(false);

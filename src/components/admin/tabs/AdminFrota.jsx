@@ -97,7 +97,13 @@ const AdminFrota = ({
                 )}
 
                 <div className="aspect-[16/9] relative overflow-hidden">
-                  <img src={getPublicUrl(car.image)} alt={car.model} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <img
+                    src={getPublicUrl(car.image) || '/logo-new.png'}
+                    alt={car.model}
+                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '1.5rem'; e.currentTarget.style.background = '#000000'; }}
+                    style={car.image === '/logo-new.png' ? { objectFit: 'contain', padding: '1.5rem', background: '#000000' } : {}}
+                  />
                   
                   {/* Favorite Toggle */}
                   <button
@@ -232,7 +238,7 @@ const AdminFrota = ({
 
                   {car.investmentValue && (
                     <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center">
-                      <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black">Investimento Motorista</p>
+                      <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black">Valor de Investimento</p>
                       <p className="text-xs font-black text-emerald-700">
                         {(typeof car.investmentValue === 'string' ? parseFloat(car.investmentValue.replace(/\./g, '').replace(',', '.')) : car.investmentValue)
                           .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}

@@ -40,20 +40,7 @@ const App = () => {
 
 
 
-  React.useEffect(() => {
-    const savedInvestor = localStorage.getItem('la_investor_auth');
-    if (savedInvestor) {
-      try {
-        const parsed = JSON.parse(savedInvestor);
-        if (parsed) {
-          setCurrentUser(parsed);
-          setView('investor');
-        }
-      } catch (e) {
-        console.error("Error parsing saved investor auth:", e);
-      }
-    }
-  }, [setCurrentUser, setView]);
+
 
   // Admin View
   if (view === 'admin') {
@@ -108,6 +95,8 @@ const App = () => {
         onDeleteSystemUser={handleDeleteSystemUser}
         onLogout={() => {
           localStorage.removeItem('la_admin_auth');
+          localStorage.removeItem('la_current_view');
+          localStorage.removeItem('la_admin_active_tab');
           setCurrentUser(null);
           setView('home');
         }}
@@ -129,6 +118,8 @@ const App = () => {
         vehicles={vehicles}
         onLogout={() => {
           localStorage.removeItem('la_investor_auth');
+          localStorage.removeItem('la_current_view');
+          localStorage.removeItem('la_investor_active_tab');
           setCurrentUser(null);
           setView('home');
         }}

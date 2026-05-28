@@ -185,12 +185,26 @@ const mapToSnake = (obj, tableName) => {
 
 export const useAppState = () => {
   const [view, setView] = useState(() => {
+    const savedView = localStorage.getItem('la_current_view');
     const savedAdmin = localStorage.getItem('la_admin_auth');
     const savedInvestor = localStorage.getItem('la_investor_auth');
+    
+    if (savedView) {
+      if (savedView === 'admin' && savedAdmin === 'true') return 'admin';
+      if (savedView === 'investor' && savedInvestor) return 'investor';
+      if (savedView !== 'admin' && savedView !== 'investor') return savedView;
+    }
+
     if (savedAdmin === 'true') return 'admin';
     if (savedInvestor) return 'investor';
     return 'home';
   });
+
+  useEffect(() => {
+    if (view) {
+      localStorage.setItem('la_current_view', view);
+    }
+  }, [view]);
   const [leads, setLeads] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [investors, setInvestors] = useState([]);

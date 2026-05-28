@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera, FileDown, User, Phone, Mail, Smartphone, Download, Loader2 } from 'lucide-react';
+import { X, Check, Car, TrendingUp, Calendar, Wallet, Landmark, AlertTriangle, Plus, FileText, Camera, FileDown, User, Phone, Mail, Smartphone, Download, Loader2, Search } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { generateRentalContract } from '../../../utils/contractGenerator';
@@ -13,6 +13,7 @@ const RentalFormModal = ({
 }) => {
   const [isProcessingFiles, setIsProcessingFiles] = React.useState(false);
   const [conductorType, setConductorType] = React.useState('cadastrar');
+  const [vehicleSearch, setVehicleSearch] = React.useState('');
 
   const blockStatus = React.useMemo(() => {
     if (!fines || fines.length === 0) return { blocked: false, activeFinesCount: 0 };
@@ -39,6 +40,19 @@ const RentalFormModal = ({
 
     return { blocked: hasBlockingFine, activeFinesCount };
   }, [fines, rentalForm.user, rentalForm.clientId]);
+
+  const filteredVehicles = React.useMemo(() => {
+    return (vehicles || []).filter(v => {
+      const isAvailable = v.status === 'Disponível';
+      if (!isAvailable) return false;
+      if (!vehicleSearch) return true;
+      const searchLower = vehicleSearch.toLowerCase();
+      return (
+        v.model?.toLowerCase().includes(searchLower) ||
+        v.plate?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [vehicles, vehicleSearch]);
 
   if (!isOpen) return null;
 
@@ -117,62 +131,94 @@ const RentalFormModal = ({
         <div className="flex-1 overflow-y-auto p-6 md:p-12 pt-6 md:pt-10">
           {currentRentalStep === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
-              <div className="flex items-center gap-3 mb-10">
-                <div className="w-1 h-8 bg-[#C5A059] rounded-full" />
-                <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Escolha na frota ativa o veículo para o novo contrato.</p>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-1.5 h-8 bg-[#C5A059] rounded-full" />
+                  <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Escolha na frota ativa o veículo para o novo contrato.</p>
+                </div>
+                
+                <div className="relative w-full md:w-80 group">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#C5A059] transition-colors" size={18} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por placa ou veículo..."
+                    value={vehicleSearch}
+                    onChange={(e) => setVehicleSearch(e.target.value)}
+                    className="w-full bg-neutral-50 border border-neutral-100 pl-11 pr-4 py-3 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-xs text-neutral-900"
+                  />
+                  {vehicleSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setVehicleSearch('')}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {vehicles.filter(v => v.status === 'Disponível').map(v => (
-                  <button
-                    key={v.id}
-                    type="button"
-                    onClick={() => setRentalForm({
-                      ...rentalForm, 
-                      plate: v.plate, 
-                      vehicle: v.model,
-                      vehicleId: v.id,
-                      value: v.weeklyRental || ''
-                    })}
-                    className={`relative p-8 rounded-[3rem] border-2 text-left transition-all duration-500 group overflow-hidden ${rentalForm.plate === v.plate ? 'border-neutral-900 bg-neutral-900 text-white shadow-2xl shadow-neutral-900/20' : 'border-neutral-100 bg-white hover:border-[#C5A059]/30 hover:shadow-xl'}`}
-                  >
-                    <div className="h-44 rounded-[2rem] overflow-hidden mb-6 bg-neutral-100 relative">
-                      <img src={v.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} alt={v.model} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
-                      <div className="absolute top-4 right-4 px-4 py-2 bg-black/50 backdrop-blur-md rounded-xl border border-white/20">
-                        <span className="text-[10px] font-black text-white tracking-[0.2em] uppercase">{v.plate}</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <h4 className={`text-xl font-black uppercase tracking-tighter leading-none transition-colors ${rentalForm.plate === v.plate ? 'text-[#C5A059]' : 'text-neutral-900'}`}>{v.model}</h4>
-                        <p className={`text-[10px] font-bold tracking-widest uppercase mt-2 ${rentalForm.plate === v.plate ? 'text-neutral-400' : 'text-neutral-400'}`}>Frota Própria / LA Locadora</p>
-                      </div>
-
-                      <div className={`p-5 rounded-2xl flex justify-between items-center transition-colors ${rentalForm.plate === v.plate ? 'bg-white/5 border border-white/10' : 'bg-neutral-50 border border-neutral-100'}`}>
-                        <div className="flex flex-col">
-                          <span className="text-[8px] uppercase tracking-widest font-black opacity-50 mb-1">Valor Semanal</span>
-                          <span className={`text-lg font-black tracking-tight ${rentalForm.plate === v.plate ? 'text-white' : 'text-neutral-900'}`}>
-                            {(v.weeklyRental ? 
-                              (typeof v.weeklyRental === 'string' ? parseFloat(v.weeklyRental.replace(/\./g, '').replace(',', '.')) : v.weeklyRental)
-                                .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
-                              : 'Sob Consulta')}
-                          </span>
-                        </div>
-                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${rentalForm.plate === v.plate ? 'bg-[#C5A059] text-white' : 'bg-white text-[#C5A059]'}`}>
-                          <Car size={18} />
+              {filteredVehicles.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                  {filteredVehicles.map(v => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setRentalForm({
+                        ...rentalForm, 
+                        plate: v.plate, 
+                        vehicle: v.model,
+                        vehicleId: v.id,
+                        value: v.weeklyRental || ''
+                      })}
+                      className={`relative p-8 rounded-[3rem] border-2 text-left transition-all duration-500 group overflow-hidden ${rentalForm.plate === v.plate ? 'border-neutral-900 bg-neutral-900 text-white shadow-2xl shadow-neutral-900/20' : 'border-neutral-100 bg-white hover:border-[#C5A059]/30 hover:shadow-xl'}`}
+                    >
+                      <div className="h-44 rounded-[2rem] overflow-hidden mb-6 bg-neutral-100 relative">
+                        <img src={v.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} alt={v.model} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" />
+                        <div className="absolute top-4 right-4 px-4 py-2 bg-black/50 backdrop-blur-md rounded-xl border border-white/20">
+                          <span className="text-[10px] font-black text-white tracking-[0.2em] uppercase">{v.plate}</span>
                         </div>
                       </div>
-                    </div>
 
-                    {rentalForm.plate === v.plate && (
-                      <div className="absolute top-6 left-6 w-10 h-10 bg-[#C5A059] rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
-                        <Check size={20} className="text-white" />
+                      <div className="space-y-4">
+                        <div>
+                          <h4 className={`text-xl font-black uppercase tracking-tighter leading-none transition-colors ${rentalForm.plate === v.plate ? 'text-[#C5A059]' : 'text-neutral-900'}`}>{v.model}</h4>
+                          <p className={`text-[10px] font-bold tracking-widest uppercase mt-2 ${rentalForm.plate === v.plate ? 'text-neutral-400' : 'text-neutral-400'}`}>Frota Própria / LA Locadora</p>
+                        </div>
+
+                        <div className={`p-5 rounded-2xl flex justify-between items-center transition-colors ${rentalForm.plate === v.plate ? 'bg-white/5 border border-white/10' : 'bg-neutral-50 border border-neutral-100'}`}>
+                          <div className="flex flex-col">
+                            <span className="text-[8px] uppercase tracking-widest font-black opacity-50 mb-1">Valor Semanal</span>
+                            <span className={`text-lg font-black tracking-tight ${rentalForm.plate === v.plate ? 'text-white' : 'text-neutral-900'}`}>
+                              {(v.weeklyRental ? 
+                                (typeof v.weeklyRental === 'string' ? parseFloat(v.weeklyRental.replace(/\./g, '').replace(',', '.')) : v.weeklyRental)
+                                  .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
+                                : 'Sob Consulta')}
+                            </span>
+                          </div>
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${rentalForm.plate === v.plate ? 'bg-[#C5A059] text-white' : 'bg-white text-[#C5A059]'}`}>
+                            <Car size={18} />
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </button>
-                ))}
-              </div>
+
+                      {rentalForm.plate === v.plate && (
+                        <div className="absolute top-6 left-6 w-10 h-10 bg-[#C5A059] rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+                          <Check size={20} className="text-white" />
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-20 bg-neutral-50 rounded-[3rem] border border-dashed border-neutral-200 animate-in fade-in duration-500">
+                  <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center text-neutral-400 mb-4">
+                    <Car size={32} />
+                  </div>
+                  <h4 className="text-lg font-black uppercase tracking-tighter text-neutral-900 mb-1">Nenhum veículo encontrado</h4>
+                  <p className="text-xs text-neutral-400 font-bold uppercase tracking-wider">Tente buscar por outro termo ou placa.</p>
+                </div>
+              )}
             </div>
           )}
 
