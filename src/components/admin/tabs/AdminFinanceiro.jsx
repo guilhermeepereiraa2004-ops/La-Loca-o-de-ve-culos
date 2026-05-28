@@ -246,7 +246,8 @@ const AdminFinanceiro = ({
                         </div>
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -314,7 +315,8 @@ const AdminFinanceiro = ({
                     )}
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
