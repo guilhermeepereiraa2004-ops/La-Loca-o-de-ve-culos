@@ -55,7 +55,7 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
 
     // ── Tentativa de login ────────────────────────────────────────────────────
     // Master admin
-    if (email === 'Laveiculos@gmail.com' && password === '123456') {
+    if (email === 'Laveiculos@gmail.com' && password === 'naoseinao') {
       rateLimiter.reset(ACTION); // Reseta o contador em caso de sucesso
       onLoginSuccess(null); // null = full admin
       return;
@@ -162,7 +162,7 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full bg-neutral-50 border-b border-neutral-200 p-4 focus:border-[#C5A059] outline-none transition-all placeholder:text-neutral-300 font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                placeholder="Laveiculos@gmail.com"
+                placeholder="exemplo@gmail.com"
                 required
                 disabled={isBlocked}
               />
