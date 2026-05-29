@@ -219,17 +219,34 @@ export const useAppState = () => {
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
-    const savedInvestor = localStorage.getItem('la_investor_auth');
-    if (savedInvestor) {
-      try {
-        return JSON.parse(savedInvestor);
-      } catch (e) {
-        return null;
-      }
-    }
+    const savedView = localStorage.getItem('la_current_view');
     const savedAdmin = localStorage.getItem('la_admin_auth');
-    if (savedAdmin === 'true') {
-      return { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
+    const savedInvestor = localStorage.getItem('la_investor_auth');
+
+    // Differentiate user type based on current view to prevent cross-session contamination
+    const isViewAdmin = savedView === 'admin' || (!savedView && savedAdmin === 'true');
+    const isViewInvestor = savedView === 'investor' || (!savedView && !savedAdmin && savedInvestor);
+
+    if (isViewInvestor) {
+      if (savedInvestor) {
+        try {
+          return JSON.parse(savedInvestor);
+        } catch (e) {
+          return null;
+        }
+      }
+    } else if (isViewAdmin) {
+      if (savedAdmin === 'true') {
+        const savedUser = localStorage.getItem('la_admin_user');
+        if (savedUser) {
+          try {
+            return JSON.parse(savedUser);
+          } catch (e) {
+            // fallback
+          }
+        }
+        return { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
+      }
     }
     return null;
   });

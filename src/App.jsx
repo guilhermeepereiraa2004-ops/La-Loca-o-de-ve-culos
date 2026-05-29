@@ -96,6 +96,7 @@ const App = () => {
         onDeleteSystemUser={handleDeleteSystemUser}
         onLogout={() => {
           localStorage.removeItem('la_admin_auth');
+          localStorage.removeItem('la_admin_user');
           localStorage.removeItem('la_current_view');
           localStorage.removeItem('la_admin_active_tab');
           setCurrentUser(null);
@@ -138,8 +139,10 @@ const App = () => {
         onBack={() => setView('home')}
         systemUsers={systemUsers}
         onLoginSuccess={(user) => {
+          const adminUser = user || { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
           localStorage.setItem('la_admin_auth', 'true');
-          setCurrentUser(user || { role: 'administrador', modules: null });
+          localStorage.setItem('la_admin_user', JSON.stringify(adminUser));
+          setCurrentUser(adminUser);
           setView('admin');
         }}
       />

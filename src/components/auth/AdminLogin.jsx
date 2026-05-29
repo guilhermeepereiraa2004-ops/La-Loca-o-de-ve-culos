@@ -91,6 +91,15 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
   useEffect(() => {
     const savedAuth = localStorage.getItem('la_admin_auth');
     if (savedAuth === 'true') {
+      const savedUser = localStorage.getItem('la_admin_user');
+      if (savedUser) {
+        try {
+          onLoginSuccess(JSON.parse(savedUser));
+          return;
+        } catch (e) {
+          // fallback
+        }
+      }
       onLoginSuccess(null);
     }
   }, [onLoginSuccess]);
