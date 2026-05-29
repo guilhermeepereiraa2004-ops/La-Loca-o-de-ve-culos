@@ -398,7 +398,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       <aside className={`bg-neutral-950 text-white flex flex-col p-8 fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
         <div className={`mb-16 transition-all duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
           <div className="flex items-center gap-3">
-            <img src="/logo.png" className="h-24 w-auto object-contain" alt="LA Locação de Veículos" />
+            <img src="/logo.png" className="h-10 w-auto object-contain" alt="LA Locação de Veículos" />
             <div className="flex flex-col">
               <span className="text-xs font-black uppercase tracking-[0.2em] text-[#C5A059] leading-tight">LA Locação</span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Portal Investidor</span>
