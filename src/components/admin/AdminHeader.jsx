@@ -22,7 +22,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
       usuarios: 'Usuários do Sistema',
       oficina: 'Oficina / O.S.'
     };
-    return titles[tab] || 'Painel LA';
+    return titles[tab] || 'Painel L.A';
   };
 
   // Fecha o painel ao clicar fora
@@ -44,7 +44,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
             <img 
               src="/logo.png" 
               className="h-8 w-auto object-contain" 
-              alt="LA Locação de Veículos" 
+              alt="L.A Locação de Veículos" 
             />
           </div>
         )}
@@ -161,7 +161,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
         </div>
 
         <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-[#C5A059]/30">
-          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'LA'}
+          {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'L.A'}
         </div>
       </div>
     </header>

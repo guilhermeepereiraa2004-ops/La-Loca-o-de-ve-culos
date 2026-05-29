@@ -42,6 +42,15 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
   }, [pendingInspection, onClearPendingInspection]);
 
   const filteredInspections = inspections.filter(ins => {
+    // Exclude Coleta inspections for exempt vehicles (current fleet)
+    if (ins.type === 'Coleta') {
+      const vehicle = vehicles.find(v => (v.plate || '').replace('-', '').toUpperCase() === (ins.vehiclePlate || '').replace('-', '').toUpperCase());
+      const isExempt = vehicle 
+        ? (!vehicle.createdAt || new Date(vehicle.createdAt) < new Date('2026-05-30T00:00:00Z'))
+        : true;
+      if (isExempt) return false;
+    }
+
     const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate);
     const conductorName = (activeRental?.userName || activeRental?.user || '').toLowerCase();
     

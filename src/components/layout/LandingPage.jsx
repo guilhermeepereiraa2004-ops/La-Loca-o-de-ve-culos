@@ -45,7 +45,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12">
           <div className="max-w-3xl">
             <Reveal>
-              <img src="/logo.png" className="h-16 md:h-24 w-auto object-contain mb-8" alt="LA Locação de Veículos" />
+              <img src="/logo.png" className="h-16 md:h-24 w-auto object-contain mb-8" alt="L.A Locação de Veículos" />
             </Reveal>
             <Reveal delay="reveal-delay-1">
               <Label light>Locação Premium em Aracaju</Label>
@@ -93,7 +93,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-28">
             <Reveal className="flex-1 w-full relative">
               <div className="relative z-10 aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl">
-                <img src="/la-inauguracao-14.jpg" alt="Inauguração LA Locação" className="w-full h-full object-cover transition-transform duration-[2500ms] hover:scale-105" />
+                <img src="/la-inauguracao-14.jpg" alt="Inauguração L.A Locação" className="w-full h-full object-cover transition-transform duration-[2500ms] hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/30 to-transparent" />
               </div>
               <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-[#C5A059]/8 rounded-3xl hidden lg:block" />
@@ -111,13 +111,13 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               </Reveal>
               <Reveal delay="reveal-delay-2">
                 <p className="text-neutral-400 font-light text-base leading-[1.8]">
-                  A <span className="font-semibold text-neutral-700">LA Locação de Veículos</span> nasceu para elevar o patamar da mobilidade em Aracaju. Unimos transparência absoluta, veículos de alto padrão e um modelo de negócio que beneficia motoristas e investidores.
+                  A <span className="font-semibold text-neutral-700">L.A Locação de Veículos</span> nasceu para elevar o patamar da mobilidade em Aracaju. Unimos transparência absoluta, veículos de alto padrão e um modelo de negócio que beneficia motoristas e investidores.
                 </p>
               </Reveal>
               <Reveal delay="reveal-delay-3">
                 <div className="grid grid-cols-2 gap-6 pt-4">
                   {[
-                    { icon: <ShieldCheck size={18} />, title: 'Garantia LA', desc: 'Segurança jurídica em todos os contratos.' },
+                    { icon: <ShieldCheck size={18} />, title: 'Garantia L.A', desc: 'Segurança jurídica em todos os contratos.' },
                     { icon: <Wrench size={18} />, title: 'Manutenção', desc: 'Cuidado preventivo contínuo da frota.' }
                   ].map((item, i) => (
                     <div key={i} className="space-y-3">
@@ -341,26 +341,26 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
       <footer className="bg-neutral-950 border-t border-white/5 pt-16 pb-8 text-white">
         <div className="max-w-7xl mx-auto px-6 md:px-12">
           {/* Main Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 pb-12 border-b border-white/5">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-12 md:gap-12 pb-12 border-b border-white/5">
             {/* Column 1: Brand & Slogan */}
-            <div className="space-y-4 md:col-span-2 flex flex-col items-center md:items-start text-center md:text-left">
-              <div className="flex items-center gap-2 justify-center md:justify-start">
-                <span className="text-xl font-black uppercase tracking-[-0.03em] text-white">LA</span>
+            <div className="space-y-4 col-span-2 md:col-span-2 flex flex-col items-start text-left">
+              <div className="flex items-center gap-2">
+                <span className="text-xl font-black uppercase tracking-[-0.03em] text-white">L.A</span>
                 <span className="text-xl font-black uppercase tracking-[-0.03em] text-[#C5A059]">Locação</span>
               </div>
-              <p className="text-xs text-white/40 font-light leading-relaxed max-w-sm mx-auto md:mx-0">
+              <p className="text-xs text-white/40 font-light leading-relaxed max-w-sm">
                 Referência em locação de veículos premium e gestão profissional de frotas em Aracaju/SE. Transparência para motoristas e alta rentabilidade para investidores.
               </p>
             </div>
 
             {/* Column 2: Navigation Links */}
-            <div className="space-y-4 flex flex-col items-center md:items-start text-center md:text-left">
+            <div className="space-y-4 col-span-1 md:col-span-1 flex flex-col items-start text-left">
               <h4 className="text-[10px] uppercase tracking-[0.25em] font-black text-white">Links Rápidos</h4>
-              <ul className="space-y-2.5 text-xs text-white/40 font-medium flex flex-col items-center md:items-start">
+              <ul className="space-y-2.5 text-xs text-white/40 font-medium flex flex-col items-start">
                 <li>
                   <button 
                     onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
-                    className="hover:text-[#C5A059] transition-colors"
+                    className="hover:text-[#C5A059] transition-colors text-left"
                   >
                     Nossa Frota
                   </button>
@@ -368,7 +368,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <li>
                   <button 
                     onClick={() => document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="hover:text-[#C5A059] transition-colors"
+                    className="hover:text-[#C5A059] transition-colors text-left"
                   >
                     Nossos Serviços
                   </button>
@@ -376,7 +376,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <li>
                   <button 
                     onClick={() => document.getElementById('investidores')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="hover:text-[#C5A059] transition-colors"
+                    className="hover:text-[#C5A059] transition-colors text-left"
                   >
                     Seja Investidor
                   </button>
@@ -385,20 +385,20 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
             </div>
 
             {/* Column 3: Contact & Location */}
-            <div className="space-y-4 flex flex-col items-center md:items-start text-center md:text-left">
+            <div className="space-y-4 col-span-1 md:col-span-1 flex flex-col items-start text-left">
               <h4 className="text-[10px] uppercase tracking-[0.25em] font-black text-white">Contato</h4>
-              <ul className="space-y-3 text-xs text-white/40 font-light flex flex-col items-center md:items-start">
-                <li className="flex items-start gap-2.5 justify-center md:justify-start">
+              <ul className="space-y-3 text-xs text-white/40 font-light flex flex-col items-start">
+                <li className="flex items-start gap-2.5 justify-start">
                   <MapPin size={14} className="text-[#C5A059] shrink-0 mt-0.5" />
-                  <span>Aracaju, Sergipe</span>
+                  <span className="text-left">Aracaju, Sergipe</span>
                 </li>
-                <li className="flex items-center gap-2.5 justify-center md:justify-start">
+                <li className="flex items-center gap-2.5 justify-start">
                   <Phone size={14} className="text-[#C5A059] shrink-0" />
-                  <a href="https://wa.me/5579999094631" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                  <a href="https://wa.me/5579999094631" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-left">
                     (79) 99990-94631
                   </a>
                 </li>
-                <li className="pt-2 flex justify-center md:justify-start">
+                <li className="pt-2 flex justify-start">
                   <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#C5A059] text-white/40 hover:text-neutral-950 transition-all duration-300 flex items-center justify-center border border-white/5">
                     <Instagram size={15} />
                   </a>
@@ -408,10 +408,10 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
           </div>
 
           {/* Bottom Tier */}
-          <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-white/30 font-medium">
-            <p>© 2026 LA Locação. Todos os direitos reservados.</p>
+          <div className="pt-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 text-[10px] text-white/30 font-medium">
+            <p>© 2026 L.A. Locação. Todos os direitos reservados.</p>
             <p className="flex items-center gap-1">
-              Desenvolvido por 
+              Desenvolvido por{" "}
               <a 
                 href="https://www.grpsantana.com.br/" 
                 target="_blank" 

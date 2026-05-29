@@ -968,7 +968,7 @@ const AdminMultas = ({
                     className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm text-neutral-900"
                   >
                     <option value="">-- Usar identificação automática do sistema --</option>
-                    <option value="Administradora">LA Locadora (Administradora / Sem Condutor)</option>
+                    <option value="Administradora">L.A Locadora (Administradora / Sem Condutor)</option>
                     {clients.map(c => (
                       <option key={c.id} value={c.id}>{c.nome || c.name} (CPF: {c.cpf || '—'})</option>
                     ))}
@@ -1041,7 +1041,7 @@ const AdminMultas = ({
               
               {/* Document Header */}
               <div className="text-center space-y-2 border-b-2 border-neutral-900 pb-6">
-                <h4 className="text-lg font-black uppercase tracking-widest">LA Locação de Veículos</h4>
+                <h4 className="text-lg font-black uppercase tracking-widest">L.A Locação de Veículos</h4>
                 <p className="text-[10px] font-black uppercase tracking-wider text-neutral-500">Formulário Oficial de Indicação de Condutor Infrator</p>
                 <p className="text-[9px] text-neutral-400">Em conformidade com a Resolução CONTRAN e Art. 257 do CTB</p>
               </div>
@@ -1117,13 +1117,13 @@ const AdminMultas = ({
               {/* Terms and Signatures */}
               <div className="space-y-10 pt-4">
                 <p className="text-[9px] text-neutral-500 leading-relaxed text-justify">
-                  Declaro que as informações acima são verdadeiras e assumo inteira responsabilidade pela pontuação decorrente da infração acima detalhada, nos termos da legislação de trânsito vigente. Autorizo a LA Locação de Veículos a encaminhar esta indicação ao órgão de trânsito autuador competente.
+                  Declaro que as informações acima são verdadeiras e assumo inteira responsabilidade pela pontuação decorrente da infração acima detalhada, nos termos da legislação de trânsito vigente. Autorizo a L.A Locação de Veículos a encaminhar esta indicação ao órgão de trânsito autuador competente.
                 </p>
 
                 <div className="grid grid-cols-2 gap-10 pt-12">
                   <div className="text-center space-y-1">
                     <div className="border-t border-neutral-950 w-full mx-auto" />
-                    <span className="text-[9px] font-black uppercase text-neutral-400">Assinatura do Proprietário (LA Locadora)</span>
+                    <span className="text-[9px] font-black uppercase text-neutral-400">Assinatura do Proprietário (L.A Locadora)</span>
                   </div>
                   <div className="text-center space-y-1">
                     <div className="border-t border-neutral-950 w-full mx-auto" />
@@ -1169,7 +1169,7 @@ const AdminMultas = ({
                 className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-xs text-neutral-900"
               >
                 <option value="">-- Selecione o Motorista --</option>
-                <option value="Administradora">LA Locadora (Administradora / Sem Condutor)</option>
+                <option value="Administradora">L.A Locadora (Administradora / Sem Condutor)</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>{c.nome || c.name} (CPF: {c.cpf || '—'})</option>
                 ))}

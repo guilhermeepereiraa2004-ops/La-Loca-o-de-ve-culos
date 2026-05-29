@@ -732,7 +732,7 @@ const AdminInvestidores = ({
                       setShowAdminSuccess({
                         show: true,
                         title: 'Investidor Cadastrado',
-                        message: 'O novo parceiro foi registrado com sucesso no sistema da LA Locação.'
+                        message: 'O novo parceiro foi registrado com sucesso no sistema da L.A Locação.'
                       });
                     }
                     setInvestorForm({

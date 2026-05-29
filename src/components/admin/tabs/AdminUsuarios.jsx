@@ -98,7 +98,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
             <div className="flex items-center gap-2 mb-1">
               <span className="bg-[#C5A059]/20 text-[#C5A059] text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded">Administrador Master</span>
             </div>
-            <h4 className="text-white font-black text-lg">LA Locação Admin</h4>
+            <h4 className="text-white font-black text-lg">L.A Locação Admin</h4>
             <p className="text-neutral-400 text-[10px] font-bold uppercase tracking-widest">Laveiculos@gmail.com</p>
           </div>
         </div>

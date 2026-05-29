@@ -79,7 +79,8 @@ const AdminFrota = ({
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {filteredVehicles.length > 0 ? (
           filteredVehicles.map((car) => {
-            const hasColeta = inspections.some(ins => ins.vehiclePlate === car.plate && ins.type === 'Coleta');
+            const isExempt = !car.createdAt || new Date(car.createdAt) < new Date('2026-05-30T00:00:00Z');
+            const hasColeta = isExempt || inspections.some(ins => ins.vehiclePlate === car.plate && ins.type === 'Coleta');
 
             return (
               <div key={car.id} className="group bg-white rounded-[2.5rem] border border-neutral-100 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#C5A059]/10 transition-all duration-500 hover:-translate-y-2 relative">

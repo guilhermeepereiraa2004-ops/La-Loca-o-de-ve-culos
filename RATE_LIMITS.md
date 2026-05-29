@@ -1,4 +1,4 @@
-# Rate Limits — LA Locação de Veículos
+# Rate Limits — L.A Locação de Veículos
 
 Documentação completa de todas as proteções de rate limiting implementadas no sistema.
 

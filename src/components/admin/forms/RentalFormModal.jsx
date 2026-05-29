@@ -183,7 +183,7 @@ const RentalFormModal = ({
                       <div className="space-y-4">
                         <div>
                           <h4 className={`text-xl font-black uppercase tracking-tighter leading-none transition-colors ${rentalForm.plate === v.plate ? 'text-[#C5A059]' : 'text-neutral-900'}`}>{v.model}</h4>
-                          <p className={`text-[10px] font-bold tracking-widest uppercase mt-2 ${rentalForm.plate === v.plate ? 'text-neutral-400' : 'text-neutral-400'}`}>Frota Própria / LA Locadora</p>
+                          <p className={`text-[10px] font-bold tracking-widest uppercase mt-2 ${rentalForm.plate === v.plate ? 'text-neutral-400' : 'text-neutral-400'}`}>Frota Própria / L.A Locadora</p>
                         </div>
 
                         <div className={`p-5 rounded-2xl flex justify-between items-center transition-colors ${rentalForm.plate === v.plate ? 'bg-white/5 border border-white/10' : 'bg-neutral-50 border border-neutral-100'}`}>

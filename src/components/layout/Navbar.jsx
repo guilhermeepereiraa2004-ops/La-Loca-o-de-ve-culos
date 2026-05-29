@@ -35,7 +35,7 @@ const Navbar = ({ onSetView }) => {
       <div className="max-w-7xl mx-auto px-6 md:px-12 py-5 md:py-6 flex items-center justify-between">
         {/* Logo */}
         <div className="cursor-pointer flex items-center gap-2" onClick={() => { onSetView('home'); window.scrollTo(0, 0); }}>
-          <span className={`text-xl md:text-2xl font-black uppercase tracking-[-0.05em] transition-colors duration-700 ${scrolled ? 'text-neutral-900' : 'text-white'}`}>LA</span>
+          <span className={`text-xl md:text-2xl font-black uppercase tracking-[-0.05em] transition-colors duration-700 ${scrolled ? 'text-neutral-900' : 'text-white'}`}>L.A</span>
           <span className={`text-xl md:text-2xl font-black uppercase tracking-[-0.05em] transition-colors duration-700 text-[#C5A059]`}>Locação</span>
         </div>
 

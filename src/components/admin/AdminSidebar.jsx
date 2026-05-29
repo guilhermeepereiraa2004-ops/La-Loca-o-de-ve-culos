@@ -66,10 +66,10 @@ const AdminSidebar = ({
             <img 
               src="/logo.png" 
               className="h-10 w-auto object-contain animate-in fade-in duration-300 mx-auto" 
-              alt="LA Locação de Veículos" 
+              alt="L.A Locação de Veículos" 
             />
           ) : (
-            <span className="text-xl font-black text-white shrink-0">LA</span>
+            <span className="text-xl font-black text-white shrink-0">L.A</span>
           )}
         </div>
 

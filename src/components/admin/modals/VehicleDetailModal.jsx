@@ -5,8 +5,11 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rentals = [], onClose, onGoToVistorias }) => {
   if (!vehicle) return null;
 
+  const isExempt = !vehicle.createdAt || new Date(vehicle.createdAt) < new Date('2026-05-30T00:00:00Z');
+
   const vehicleInspections = inspections.filter(ins => 
-    (ins.vehiclePlate || '').replace('-', '').toUpperCase() === (vehicle.plate || '').replace('-', '').toUpperCase()
+    (ins.vehiclePlate || '').replace('-', '').toUpperCase() === (vehicle.plate || '').replace('-', '').toUpperCase() &&
+    (!isExempt || ins.type !== 'Coleta')
   );
   const vehicleMaintenances = maintenances.filter(m => 
     (m.plate || '').replace('-', '').toUpperCase() === (vehicle.plate || '').replace('-', '').toUpperCase()
@@ -171,7 +174,7 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
                         </div>
                         {!['Alugado', 'Alugado (Reserva)'].includes(vehicle.status) && (
                             <button 
-                                onClick={() => onGoToVistorias({ vehiclePlate: vehicle.plate, type: 'Coleta' })}
+                                onClick={() => onGoToVistorias({ vehiclePlate: vehicle.plate, type: isExempt ? 'Entrega' : 'Coleta' })}
                                 className="text-[9px] font-black uppercase tracking-widest text-[#C5A059] hover:text-neutral-900 transition-colors"
                             >
                                 Realizar Nova Vistoria

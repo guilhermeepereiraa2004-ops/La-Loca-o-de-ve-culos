@@ -16,7 +16,7 @@ export const generateRentalContract = async (rental) => {
             new Paragraph({
               children: [
                 new TextRun({ text: "LOCADORA: ", bold: true }),
-                new TextRun("LA LOCAÇÃO DE VEÍCULOS"),
+                new TextRun("L.A LOCAÇÃO DE VEÍCULOS"),
               ],
             }),
             new Paragraph({
@@ -83,7 +83,7 @@ export const generateRentalContract = async (rental) => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Contrato_LA_Locacao_${(rental.user || 'Cliente').replace(/\s+/g, '_')}.docx`;
+    a.download = `Contrato_L.A_Locacao_${(rental.user || 'Cliente').replace(/\s+/g, '_')}.docx`;
     document.body.appendChild(a);
     a.click();
     window.URL.revokeObjectURL(url);

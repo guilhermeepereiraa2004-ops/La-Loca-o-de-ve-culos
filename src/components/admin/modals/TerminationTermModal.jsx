@@ -169,7 +169,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
             <div id="print-term" className="bg-white shadow-2xl mx-auto w-full max-w-[800px] p-8 md:p-16 min-h-[1000px] print:p-0 print:shadow-none font-serif text-neutral-900">
               <div className="border-b-2 border-neutral-900 pb-6 mb-8 flex justify-between items-end">
                 <div>
-                  <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">LA Locação de Veículos</h1>
+                  <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">L.A Locação de Veículos</h1>
                   <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">L.A. LOCAÇÃO E ADMINISTRAÇÃO LTDA</p>
                 </div>
                 <div className="text-right">
