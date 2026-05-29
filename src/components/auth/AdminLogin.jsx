@@ -195,7 +195,7 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
 
           <div className="mt-16 text-center">
             <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-medium">
-              Tecnologia: <span className="text-neutral-900 font-bold">GRUPO SANTANA</span>
+              Tecnologia: <a href="https://www.grpsantana.com.br/" target="_blank" rel="noopener noreferrer" className="text-neutral-900 hover:text-[#C5A059] font-bold transition-colors">GRUPO SANTANA</a>
             </p>
           </div>
         </div>

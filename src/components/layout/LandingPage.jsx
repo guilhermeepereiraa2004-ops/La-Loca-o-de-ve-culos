@@ -413,7 +413,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
             <p className="flex items-center gap-1">
               Desenvolvido por 
               <a 
-                href="https://grpsantana.com.br" 
+                href="https://www.grpsantana.com.br/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
                 className="text-[#C5A059] hover:underline font-black uppercase tracking-wider"
