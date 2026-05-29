@@ -61,13 +61,16 @@ const AdminSidebar = ({
           isExpanded ? 'xl:w-64 xl:shadow-2xl xl:shadow-black/50' : 'xl:w-16'
         }`}
       >
-        <div className={`p-4 md:p-5 border-b border-neutral-800 transition-all duration-300 flex items-center ${isExpanded ? 'justify-start' : 'justify-center'}`}>
-          <div className="flex items-center gap-2">
+        <div className="p-4 md:p-5 border-b border-neutral-800 transition-all duration-300 flex items-center justify-center">
+          {isExpanded ? (
+            <img 
+              src="/logo.png" 
+              className="h-10 w-auto object-contain animate-in fade-in duration-300 mx-auto" 
+              alt="LA Locação de Veículos" 
+            />
+          ) : (
             <span className="text-xl font-black text-white shrink-0">LA</span>
-            {isExpanded && (
-              <span className="text-xl font-black text-[#C5A059] animate-in fade-in duration-300">LOCAÇÃO</span>
-            )}
-          </div>
+          )}
         </div>
 
         <nav className={`flex-1 space-y-1 overflow-y-auto custom-scrollbar no-scrollbar transition-all duration-300 ${

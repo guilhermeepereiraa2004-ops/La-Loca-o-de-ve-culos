@@ -39,7 +39,7 @@ const VehicleFormModal = ({
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Marca / Modelo</label>
-                    <input type="text" required value={vehicleForm.model} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: Chevrolet Onix 1.0 Turbo" />
+                    <input type="text" required value={vehicleForm.model ?? ''} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: Chevrolet Onix 1.0 Turbo" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -48,7 +48,7 @@ const VehicleFormModal = ({
                       <input 
                         type="text" 
                         required 
-                        value={vehicleForm.plate} 
+                        value={vehicleForm.plate ?? ''} 
                         onChange={e => {
                           let v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
                           if (v.length > 3) v = v.slice(0, 3) + '-' + v.slice(3, 7);
@@ -64,7 +64,7 @@ const VehicleFormModal = ({
                       <input 
                         type="text" 
                         required 
-                        value={vehicleForm.year} 
+                        value={vehicleForm.year ?? ''} 
                         onChange={e => {
                           let v = e.target.value.replace(/\D/g, '');
                           if (v.length > 4) v = v.slice(0, 4) + '/' + v.slice(4, 8);
@@ -80,11 +80,11 @@ const VehicleFormModal = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">RENAVAM</label>
-                      <input type="text" required value={vehicleForm.renavam} onChange={e => setVehicleForm({...vehicleForm, renavam: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="00000000000" />
+                      <input type="text" required value={vehicleForm.renavam ?? ''} onChange={e => setVehicleForm({...vehicleForm, renavam: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="00000000000" />
                     </div>
                     <div className="space-y-2">
                       <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
-                      <select value={vehicleForm.status} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
+                      <select value={vehicleForm.status ?? 'Disponível'} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
                         <option value="Disponível">Disponível</option>
                         <option value="Alugado">Alugado</option>
                         <option value="Manutenção">Manutenção</option>
@@ -95,7 +95,7 @@ const VehicleFormModal = ({
 
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM Inicial</label>
-                    <input type="number" required value={vehicleForm.initialKm} onChange={e => setVehicleForm({...vehicleForm, initialKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0" />
+                    <input type="number" required value={vehicleForm.initialKm ?? ''} onChange={e => setVehicleForm({...vehicleForm, initialKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0" />
                   </div>
                 </div>
               </section>
@@ -110,7 +110,7 @@ const VehicleFormModal = ({
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Investidor Dono</label>
-                      <select required value={vehicleForm.investorId} onChange={e => {
+                      <select required value={vehicleForm.investorId ?? ''} onChange={e => {
                         const inv = investors.find(i => i.id.toString() === e.target.value);
                         setVehicleForm({...vehicleForm, investorId: e.target.value, investor: inv ? inv.name : ''});
                       }} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
@@ -126,7 +126,7 @@ const VehicleFormModal = ({
                           <div className="relative">
                             <input 
                               type="number" 
-                              value={vehicleForm.adminTax} 
+                              value={vehicleForm.adminTax ?? ''} 
                               onChange={e => {
                                 const val = e.target.value;
                                 const invVal = 100 - (parseFloat(val) || 0);
@@ -142,7 +142,7 @@ const VehicleFormModal = ({
                           <div className="relative">
                             <input 
                               type="number" 
-                              value={vehicleForm.investorTax} 
+                              value={vehicleForm.investorTax ?? ''} 
                               onChange={e => {
                                 const val = e.target.value;
                                 const admVal = 100 - (parseFloat(val) || 0);
@@ -164,7 +164,7 @@ const VehicleFormModal = ({
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
                       <input 
                         type="text" 
-                        value={vehicleForm.investmentValue} 
+                        value={vehicleForm.investmentValue ?? ''} 
                         onChange={e => {
                           let v = e.target.value.replace(/\D/g, '');
                           v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
@@ -181,7 +181,7 @@ const VehicleFormModal = ({
                         <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
                       <input 
                         type="text" 
-                        value={vehicleForm.fipeValue} 
+                        value={vehicleForm.fipeValue ?? ''} 
                         onChange={e => {
                           let v = e.target.value.replace(/\D/g, '');
                           v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
@@ -214,7 +214,7 @@ const VehicleFormModal = ({
                       <input 
                         type="text" 
                         required 
-                        value={vehicleForm.weeklyRental} 
+                        value={vehicleForm.weeklyRental ?? ''} 
                         onChange={e => {
                           let v = e.target.value.replace(/\D/g, '');
                           v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
@@ -243,7 +243,7 @@ const VehicleFormModal = ({
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Empresa da Proteção</label>
                           <input 
                             type="text" 
-                            value={vehicleForm.protectionCompany} 
+                            value={vehicleForm.protectionCompany ?? ''} 
                             onChange={e => setVehicleForm({...vehicleForm, protectionCompany: e.target.value})} 
                             className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
                             placeholder="Ex: APVS, Gol Plus, etc."
@@ -257,7 +257,7 @@ const VehicleFormModal = ({
                               type="number" 
                               min="1"
                               max="31"
-                              value={vehicleForm.protectionPaymentDay} 
+                              value={vehicleForm.protectionPaymentDay ?? ''} 
                               onChange={e => setVehicleForm({...vehicleForm, protectionPaymentDay: e.target.value})} 
                               className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
                             />
@@ -268,7 +268,7 @@ const VehicleFormModal = ({
                               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-[10px] font-black">R$</span>
                               <input 
                                 type="text" 
-                                value={vehicleForm.protectionValue} 
+                                value={vehicleForm.protectionValue ?? ''} 
                                 onChange={e => {
                                   let v = e.target.value.replace(/\D/g, '');
                                   v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
@@ -287,7 +287,7 @@ const VehicleFormModal = ({
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Empresa da Proteção (Paga por Fora)</label>
                           <input 
                             type="text" 
-                            value={vehicleForm.protectionCompany} 
+                            value={vehicleForm.protectionCompany ?? ''} 
                             onChange={e => setVehicleForm({...vehicleForm, protectionCompany: e.target.value})} 
                             className="w-full bg-white border border-neutral-100 p-3 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-xs" 
                             placeholder="Ex: APVS, Gol Plus, etc."
@@ -344,11 +344,11 @@ const VehicleFormModal = ({
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM Última Troca</label>
-                          <input type="number" value={vehicleForm.lastBeltChangeKm} onChange={e => setVehicleForm({...vehicleForm, lastBeltChangeKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0" />
+                          <input type="number" value={vehicleForm.lastBeltChangeKm ?? ''} onChange={e => setVehicleForm({...vehicleForm, lastBeltChangeKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="0" />
                         </div>
                         <div className="space-y-2">
                           <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Intervalo (KM)</label>
-                          <input type="number" value={vehicleForm.beltChangeIntervalKm} onChange={e => setVehicleForm({...vehicleForm, beltChangeIntervalKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="50000" />
+                          <input type="number" value={vehicleForm.beltChangeIntervalKm ?? ''} onChange={e => setVehicleForm({...vehicleForm, beltChangeIntervalKm: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="50000" />
                         </div>
                       </div>
                     </div>

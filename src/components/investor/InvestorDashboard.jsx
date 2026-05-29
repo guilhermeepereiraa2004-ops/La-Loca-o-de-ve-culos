@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Menu, TrendingUp, Car, Wrench, Wallet, Calendar, 
-  Search, FileText, ShieldCheck, CheckCircle2 
+  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye 
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
@@ -16,7 +16,33 @@ const formatDate = (dateStr) => {
   return dateStr;
 };
 
-const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogout }) => {
+const getFifthBusinessDay = (dateOrYear = new Date(), monthOpt) => {
+  let year, month;
+  if (dateOrYear instanceof Date) {
+    year = dateOrYear.getFullYear();
+    month = dateOrYear.getMonth();
+  } else if (typeof dateOrYear === 'number' && typeof monthOpt === 'number') {
+    year = dateOrYear;
+    month = monthOpt;
+  } else {
+    const d = new Date();
+    year = d.getFullYear();
+    month = d.getMonth();
+  }
+  let count = 0;
+  let day = 1;
+  while (count < 5) {
+    const d = new Date(year, month, day);
+    const dayOfWeek = d.getDay();
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
+    if (count < 5) day++;
+  }
+  return new Date(year, month, day);
+};
+
+const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], onLogout }) => {
+  const [viewingSO, setViewingSO] = useState(null);
+  const [soListModal, setSoListModal] = useState(null);
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem('la_investor_active_tab');
     return savedTab || 'dashboard';
@@ -62,11 +88,12 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
 
       const isSeguro = cat.includes('seguro') || cat.includes('franquia');
       const isProtecao = cat.includes('prote') || cat.includes('veicular');
+      const isBeforeJune2026 = t.date && t.date < '2026-06-01';
 
       if (isSeguro) {
-        insuranceSum += val;
+        if (!isBeforeJune2026) insuranceSum += val;
       } else if (isProtecao) {
-        protectionSum += val;
+        if (!isBeforeJune2026) protectionSum += val;
       } else if (t.type === 'in') {
         if (t.responsible === 'Administradora') return;
         if (cat === 'taxa adm') {
@@ -79,7 +106,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       } else if (t.type === 'out') {
         if (t.responsible === 'Administradora') return;
         if (cat.includes('manuten')) {
-          maintenanceSum += val;
+          if (!isBeforeJune2026) maintenanceSum += val;
         }
       }
     });
@@ -125,6 +152,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
     .filter(t => {
       const cat = t.cat?.toLowerCase().trim() || '';
       const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+      const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+      if (isBeforeJune2026) return false;
       return t.type === 'out' || isSpecialAutoTrans;
     })
     .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
@@ -132,6 +161,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
   // Maintenance history from transactions
   const maintenanceHistory = transactions
     .filter(t => (t.cat?.toLowerCase().includes('manuten') || t.desc?.toLowerCase().includes('manuten')) && myVehicles.some(v => v.plate === t.vehiclePlate))
+    .filter(t => !(t.date && t.date < '2026-06-01'))
     .map(t => ({
       id: t.id,
       vehicle: vehicles.find(v => v.plate === t.vehiclePlate)?.model || 'Veículo',
@@ -176,13 +206,18 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       
       const isSeguroFranquia = cat.includes('seguro') || cat.includes('franquia');
       const isProtecaoVeicular = cat.includes('prote') || cat.includes('veicular');
+      const isBeforeJune2026 = t.date && t.date < '2026-06-01';
 
       if (isSeguroFranquia) {
-        monthlyPerformance[monthKey].insurance += val;
-        monthlyPerformance[monthKey].net -= val;
+        if (!isBeforeJune2026) {
+          monthlyPerformance[monthKey].insurance += val;
+          monthlyPerformance[monthKey].net -= val;
+        }
       } else if (isProtecaoVeicular) {
-        monthlyPerformance[monthKey].protection += val;
-        monthlyPerformance[monthKey].net -= val;
+        if (!isBeforeJune2026) {
+          monthlyPerformance[monthKey].protection += val;
+          monthlyPerformance[monthKey].net -= val;
+        }
       } else if (t.type === 'in') {
         if (cat === 'taxa adm') {
           monthlyPerformance[monthKey].adminTax += val;
@@ -197,11 +232,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
           monthlyPerformance[monthKey].net -= calculatedTax;
         }
       } else if (t.type === 'out') {
-        monthlyPerformance[monthKey].net -= val;
-        if (cat.includes('manuten')) {
-          monthlyPerformance[monthKey].maintenance += val;
-        } else {
-          monthlyPerformance[monthKey].other += val;
+        if (!isBeforeJune2026) {
+          monthlyPerformance[monthKey].net -= val;
+          if (cat.includes('manuten')) {
+            monthlyPerformance[monthKey].maintenance += val;
+          } else {
+            monthlyPerformance[monthKey].other += val;
+          }
         }
       }
     } catch (e) {}
@@ -253,7 +290,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       const refMonthStr = monthKey;
       const realPayout = realPayouts.find(p => p.reference_month === refMonthStr);
 
-      const nextMonthDate = new Date(targetYear, targetMonth + 1, 10);
+      const nextMonthDate = getFifthBusinessDay(targetYear, targetMonth + 1);
       let paymentDateLabel = nextMonthDate.toLocaleDateString('pt-BR');
       let status = 'Em Aberto';
 
@@ -265,6 +302,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
       dividendHistory.push({
         id: i + 1,
         period: monthLabel,
+        refMonthStr,
         gross,
         adminTax: adminTaxSum,
         discounts: {
@@ -310,19 +348,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
     percent: Math.max(5, Math.min(100, Math.round((b.v / maxNet) * 100)))
   }));
 
-  const getFifthBusinessDay = (date = new Date()) => {
-    const year = date.getFullYear();
-    const month = date.getMonth();
-    let count = 0;
-    let day = 1;
-    while (count < 5) {
-      const d = new Date(year, month, day);
-      const dayOfWeek = d.getDay();
-      if (dayOfWeek !== 0 && dayOfWeek !== 6) count++;
-      if (count < 5) day++;
-    }
-    return new Date(year, month, day);
-  };
+
 
   const nextPaymentDate = getFifthBusinessDay(new Date(new Date().getFullYear(), new Date().getMonth() + 1));
 
@@ -370,9 +396,14 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
 
       {/* Sidebar */}
       <aside className={`bg-neutral-950 text-white flex flex-col p-8 fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
-        <div className={`mb-16 transition-opacity duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
-          <EditorialLabel className="text-[#C5A059] mb-2">I n v e s t o r</EditorialLabel>
-          <p className="text-xl font-black uppercase tracking-tighter">Portal LA</p>
+        <div className={`mb-16 transition-all duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" className="h-24 w-auto object-contain" alt="LA Locação de Veículos" />
+            <div className="flex flex-col">
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-[#C5A059] leading-tight">LA Locação</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Portal Investidor</span>
+            </div>
+          </div>
         </div>
 
         <nav className="flex-1 space-y-4">
@@ -588,8 +619,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                           <p className="text-sm font-black text-neutral-900">R$ {v.investValue.toLocaleString('pt-BR')}</p>
                         </div>
                         <div>
-                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Taxa de Adm.</p>
-                          <p className="text-sm font-black text-[#C5A059]">{v.adminTax}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Taxa de Investidor</p>
+                          <p className="text-sm font-black text-[#C5A059]">
+                            {v.investorTax || (100 - (parseFloat(v.adminTax) || 15))}%
+                          </p>
                         </div>
                         <div className="col-span-2 p-4 bg-neutral-50 rounded-2xl flex justify-between items-center border border-neutral-100">
                           <div>
@@ -605,10 +638,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                     </div>
                   </div>
 
-                  <div className="mt-8 flex justify-end gap-4 pt-6 border-t border-neutral-50">
-                    <button className="text-[9px] uppercase tracking-widest font-black text-neutral-400 hover:text-neutral-900 transition-colors">Histórico de Repasses</button>
-                    <button className="px-6 py-3 bg-neutral-950 text-white text-[9px] uppercase tracking-widest font-black rounded-xl hover:bg-[#C5A059] transition-all">Ver Detalhes Técnicos</button>
-                  </div>
+                  {/* Action buttons removed */}
                 </div>
               ))}
             </div>
@@ -703,6 +733,62 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                   const totalDiscounts = d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0);
                   const netValue = d.gross - d.adminTax - totalDiscounts;
 
+                  // Utility to extract URL from notes if present
+                  const extractUrl = (text) => {
+                    if (!text) return null;
+                    const match = text.match(/https?:\/\/[^\s\)\],;]+/);
+                    return match ? match[0] : null;
+                  };
+
+                  const invoiceUrl = d.realPayout?.invoice_url || d.realPayout?.nota_fiscal || d.realPayout?.nota_fiscal_url || (extractUrl(d.realPayout?.notes) && d.realPayout?.notes?.toLowerCase().includes('nota') ? extractUrl(d.realPayout?.notes) : null);
+
+                  const receiptUrl = d.realPayout?.receipt_url || d.realPayout?.recibo || d.realPayout?.recibo_url || d.realPayout?.comprovante_url || (extractUrl(d.realPayout?.notes) && (d.realPayout?.notes?.toLowerCase().includes('recibo') || d.realPayout?.notes?.toLowerCase().includes('comprovante') || !d.realPayout?.notes?.toLowerCase().includes('nota')) ? extractUrl(d.realPayout?.notes) : null);
+
+                  const myVehiclePlates = myVehicles.map(v => v.plate).filter(Boolean);
+                  const myVehicleIds = myVehicles.map(v => v.id).filter(Boolean);
+
+                  const monthServiceOrders = serviceOrders.filter(so => {
+                    const plateMatch = so.plate && myVehiclePlates.includes(so.plate);
+                    const idMatch = so.vehicleId && myVehicleIds.includes(so.vehicleId);
+                    if (!plateMatch && !idMatch) return false;
+                    if (!so.date) return false;
+                    const soMonth = so.date.split('T')[0].substring(0, 7);
+                    return soMonth === d.refMonthStr;
+                  });
+
+                  const monthRentalsWithDocs = rentals.filter(r => {
+                    const plateMatch = r.plate && myVehiclePlates.includes(r.plate);
+                    const idMatch = r.vehicleId && myVehicleIds.includes(r.vehicleId);
+                    if (!plateMatch && !idMatch) return false;
+                    const startMonth = r.startDate ? r.startDate.substring(0, 7) : null;
+                    const endMonth = r.endDate ? r.endDate.substring(0, 7) : null;
+                    const hasDoc = r.signedContract || r.contratoAssinado || r.docs?.signedContract || r.documentos?.signedContract;
+                    if (!hasDoc) return false;
+                    if (startMonth && startMonth <= d.refMonthStr) {
+                      if (!endMonth || endMonth >= d.refMonthStr || r.status === 'Ativo') {
+                        return true;
+                      }
+                    }
+                    return false;
+                  });
+
+                  const docsList = [];
+                  if (invoiceUrl) {
+                    docsList.push({ type: 'invoice', label: 'Nota Fiscal', url: invoiceUrl });
+                  }
+                  if (receiptUrl) {
+                    docsList.push({ type: 'receipt', label: 'Recibo Repasse', url: receiptUrl });
+                  }
+                  if (monthServiceOrders.length > 0) {
+                    docsList.push({ type: 'service_order', label: 'Ordem Serviço', orders: monthServiceOrders });
+                  }
+                  if (monthRentalsWithDocs.length > 0) {
+                    const urls = monthRentalsWithDocs.map(r => r.signedContract || r.contratoAssinado || r.docs?.signedContract || r.documentos?.signedContract).filter(Boolean);
+                    if (urls.length > 0) {
+                      docsList.push({ type: 'vehicle_doc', label: 'Docs Veículo', url: urls[0], urls: urls });
+                    }
+                  }
+
                   return (
                     <div key={d.id} className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden flex flex-col md:flex-row">
                       <div className="p-10 md:w-1/3 bg-neutral-50 border-r border-neutral-100 flex flex-col justify-between">
@@ -792,19 +878,44 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
                           </div>
                         </div>
 
-                        <div className="bg-neutral-950 p-8 rounded-[2rem] text-white">
-                          <h4 className="text-[10px] uppercase tracking-[0.3em] font-black text-[#C5A059] mb-6 flex items-center gap-2">
-                            <FileText size={14} /> 📎 Documentos e Anexos Vinculados
-                          </h4>
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            {['Nota Fiscal', 'Recibo Repasse', 'Ordem Serviço', 'Docs Veículo'].map(doc => (
-                              <button key={doc} className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-[#C5A059] transition-all text-left group">
-                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 group-hover:text-[#C5A059] transition-colors">{doc}</p>
-                                <p className="text-[10px] font-bold mt-1 text-white">Download PDF</p>
-                              </button>
-                            ))}
+                        {docsList.length > 0 && (
+                          <div className="bg-neutral-950 p-8 rounded-[2rem] text-white">
+                            <h4 className="text-[10px] uppercase tracking-[0.3em] font-black text-[#C5A059] mb-6 flex items-center gap-2">
+                              <FileText size={14} /> 📎 Documentos e Anexos Vinculados
+                            </h4>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              {docsList.map(doc => {
+                                if (doc.type === 'service_order') {
+                                  return (
+                                    <button 
+                                      key={doc.label} 
+                                      onClick={() => setSoListModal({ monthLabel: d.period, orders: doc.orders })}
+                                      className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-[#C5A059] transition-all text-left group cursor-pointer"
+                                    >
+                                      <p className="text-[9px] uppercase tracking-widest text-neutral-500 group-hover:text-[#C5A059] transition-colors">{doc.label}</p>
+                                      <p className="text-[10px] font-bold mt-1 text-white flex items-center gap-1.5">
+                                        <Eye size={12} className="text-[#C5A059]" /> Visualizar ({doc.orders.length})
+                                      </p>
+                                    </button>
+                                  );
+                                } else {
+                                  return (
+                                    <a 
+                                      key={doc.label}
+                                      href={doc.url} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer"
+                                      className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-[#C5A059] transition-all text-left group block cursor-pointer"
+                                    >
+                                      <p className="text-[9px] uppercase tracking-widest text-neutral-500 group-hover:text-[#C5A059] transition-colors">{doc.label}</p>
+                                      <p className="text-[10px] font-bold mt-1 text-white">Download PDF</p>
+                                    </a>
+                                  );
+                                }
+                              })}
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -814,6 +925,148 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], onLogou
           )}
         </div>
       </main>
+
+      {/* Modal - Lista de Ordens de Serviço */}
+      {soListModal && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm" onClick={() => setSoListModal(null)} />
+          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="p-6 border-b border-neutral-100 flex justify-between items-center shrink-0">
+              <div>
+                <h4 className="text-lg font-black uppercase tracking-tighter text-neutral-900">Ordens de Serviço</h4>
+                <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{soListModal.monthLabel}</p>
+              </div>
+              <button onClick={() => setSoListModal(null)} className="text-neutral-300 hover:text-neutral-900"><X size={20} /></button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {soListModal.orders.map(os => (
+                <div key={os.id} className="p-5 border border-neutral-100 rounded-2xl hover:border-[#C5A059] transition-all flex justify-between items-center bg-neutral-50/50">
+                  <div>
+                    <h5 className="text-sm font-black text-neutral-950">{os.plate} — {os.model}</h5>
+                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{formatDate(os.date)}</p>
+                    <p className="text-xs text-neutral-600 mt-2 line-clamp-1">{os.description}</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setViewingSO(os);
+                    }}
+                    className="p-3 bg-neutral-900 text-[#C5A059] rounded-xl hover:bg-[#C5A059] hover:text-neutral-950 transition-all flex items-center justify-center shrink-0 active:scale-95 cursor-pointer"
+                    title="Visualizar OS"
+                  >
+                    <Eye size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="p-6 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
+              <button onClick={() => setSoListModal(null)} className="px-8 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#C5A059] hover:text-neutral-950 transition-all shadow-xl cursor-pointer">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal - Detalhe de Ordem de Serviço (Modo Leitura e Impressão) */}
+      {viewingSO && (
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setViewingSO(null)} />
+          <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
+            <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]">
+                  <Wrench size={22} />
+                </div>
+                <div>
+                  <h4 className="text-xl font-black uppercase tracking-tighter">O.S. #{viewingSO.id?.toString().slice(-6)}</h4>
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{viewingSO.plate} — {viewingSO.model}</p>
+                </div>
+              </div>
+              <button onClick={() => setViewingSO(null)} className="text-neutral-300 hover:text-neutral-900"><X size={24} /></button>
+            </div>
+
+            <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[['Data', formatDate(viewingSO.date)], ['KM', `${viewingSO.km || '---'} km`], ['Responsável', viewingSO.responsible], ['Prestador', viewingSO.provider || '---']].map(([label, val]) => (
+                  <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
+                    <p className="text-[8px] uppercase text-neutral-400 font-black">{label}</p>
+                    <p className="text-sm font-black text-neutral-900 mt-1">{val}</p>
+                  </div>
+                ))}
+              </div>
+              
+              <div className="bg-neutral-50 p-6 rounded-2xl">
+                <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">Descrição do Serviço</p>
+                <p className="text-sm text-neutral-700 leading-relaxed">{viewingSO.description}</p>
+              </div>
+
+              {viewingSO.parts?.length > 0 && (
+                <div>
+                  <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-3">Peças Utilizadas</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs min-w-[500px]">
+                      <thead>
+                        <tr className="border-b border-neutral-100">
+                          <th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th>
+                          <th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th>
+                          <th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th>
+                          <th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-50">
+                        {viewingSO.parts.map((p, i) => {
+                          const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseFloat(String(p.unitValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                          return (
+                            <tr key={i}>
+                              <td className="py-3 font-bold">{p.name}</td>
+                              <td className="py-3 text-center">{p.qty}</td>
+                              <td className="py-3 text-right">R$ {unitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                              <td className="py-3 text-right font-black">R$ {(p.qty * unitVal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
+                <div className="space-y-1">
+                  {(() => {
+                    const laborVal = typeof viewingSO.laborValue === 'number' ? viewingSO.laborValue : parseFloat(String(viewingSO.laborValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                    const partsSum = (viewingSO.parts || []).reduce((a, p) => {
+                      const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseFloat(String(p.unitValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                      return a + ((p.qty || 0) * unitVal);
+                    }, 0);
+                    return (
+                      <>
+                        <p className="text-[9px] text-neutral-500 uppercase font-black">Mão de Obra: <span className="text-white">R$ {laborVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></p>
+                        <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {partsSum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></p>
+                      </>
+                    );
+                  })()}
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] text-neutral-400 uppercase font-black">Total da O.S.</p>
+                  <p className="text-3xl font-black text-[#C5A059]">{(viewingSO.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0">
+              <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-200 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all flex items-center gap-2 cursor-pointer">
+                <Printer size={14} /> Imprimir / PDF
+              </button>
+              <button onClick={() => setViewingSO(null)} className="px-8 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#C5A059] hover:text-neutral-950 transition-all shadow-xl cursor-pointer">
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

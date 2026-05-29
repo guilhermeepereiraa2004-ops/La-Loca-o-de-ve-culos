@@ -116,6 +116,8 @@ const App = () => {
         investor={currentUser}
         transactions={transactions}
         vehicles={vehicles}
+        serviceOrders={serviceOrders}
+        rentals={rentals}
         onLogout={() => {
           localStorage.removeItem('la_investor_auth');
           localStorage.removeItem('la_current_view');

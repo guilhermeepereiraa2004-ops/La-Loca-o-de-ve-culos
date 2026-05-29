@@ -41,7 +41,11 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
       <div className="flex items-center gap-4">
         {!isSidebarOpen && (
           <div className="xl:hidden">
-            <span className="text-xl font-black text-neutral-900">LA</span>
+            <img 
+              src="/logo.png" 
+              className="h-8 w-auto object-contain" 
+              alt="LA Locação de Veículos" 
+            />
           </div>
         )}
         <h2 className="text-[10px] md:text-sm font-black uppercase tracking-[0.2em] text-neutral-400 truncate max-w-[150px] md:max-w-none">

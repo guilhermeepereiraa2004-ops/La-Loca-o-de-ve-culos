@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ChevronRight, ChevronDown, Car, ShieldCheck, Wrench, TrendingUp, Phone, Instagram, Facebook, Check, ArrowRight, MapPin } from 'lucide-react';
+import { ChevronRight, ChevronDown, Car, ShieldCheck, Wrench, TrendingUp, Phone, Instagram, Check, ArrowRight, MapPin } from 'lucide-react';
 import '../../styles/landing-animations.css';
 
 /* ── Scroll-reveal hook ─────────────────────────────────────── */
@@ -45,20 +45,23 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
         <div className="relative z-20 w-full max-w-7xl mx-auto px-6 md:px-12">
           <div className="max-w-3xl">
             <Reveal>
-              <Label light>Locação Premium em Aracaju</Label>
+              <img src="/logo.png" className="h-16 md:h-24 w-auto object-contain mb-8" alt="LA Locação de Veículos" />
             </Reveal>
             <Reveal delay="reveal-delay-1">
+              <Label light>Locação Premium em Aracaju</Label>
+            </Reveal>
+            <Reveal delay="reveal-delay-2">
               <h1 className="font-black uppercase tracking-[-0.04em] leading-[0.88] text-white mb-8">
                 <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem]">Dirija o</span>
                 <span className="block text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] text-shine mt-1">Futuro Hoje</span>
               </h1>
             </Reveal>
-            <Reveal delay="reveal-delay-2">
+            <Reveal delay="reveal-delay-3">
               <p className="text-white/50 font-light text-lg md:text-xl leading-relaxed max-w-lg mb-12">
                 Veículos de alto padrão, gestão transparente e rendimentos para investidores. Tudo em uma só plataforma.
               </p>
             </Reveal>
-            <Reveal delay="reveal-delay-3">
+            <Reveal delay="reveal-delay-4">
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
@@ -165,9 +168,12 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 ))}
               </div>
               <Reveal delay="reveal-delay-5">
-                <a href="https://wa.me/5579999094631" target="_blank" className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500">
-                  Consultar Condições <ArrowRight size={14} />
-                </a>
+                <button
+                  onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
+                  className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500"
+                >
+                  Alugue agora <ArrowRight size={14} />
+                </button>
               </Reveal>
             </div>
 
@@ -199,43 +205,55 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-300">Nenhum veículo em destaque</p>
               </div>
             )}
-            {vehicles.filter(v => v.isFavorite).map((car, i) => (
-              <Reveal key={car.id} delay={`reveal-delay-${Math.min(i + 1, 3)}`}>
-                <div className="group bg-white rounded-2xl overflow-hidden border border-neutral-100 hover:border-neutral-200 hover:shadow-xl transition-all duration-500">
-                  <div className="aspect-[16/10] bg-neutral-100 relative overflow-hidden">
-                    <img
-                      src={car.image || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                      alt={car.model}
-                    />
-                    {car.status === 'Alugado' && (
-                      <div className="absolute top-4 right-4 bg-neutral-900/80 backdrop-blur text-white text-[8px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">Locado</div>
-                    )}
-                  </div>
-                  <div className="p-7">
-                    <p className="text-[9px] uppercase tracking-[0.3em] text-[#C5A059] font-bold mb-1">{car.year}</p>
-                    <h3 className="text-lg font-black uppercase tracking-tight text-neutral-900 mb-5">{car.model}</h3>
-                    <div className="pt-5 border-t border-neutral-100 flex items-center justify-between">
-                      <div>
-                        <p className="text-[8px] uppercase tracking-widest text-neutral-300 font-bold">Semanal</p>
-                        <p className="text-lg font-black text-neutral-900">R$ {car.weeklyRental || '550'}</p>
-                      </div>
-                      <button
-                        onClick={() => onInterest(car)}
-                        disabled={car.status === 'Alugado'}
-                        className={`px-6 py-3 text-[9px] uppercase tracking-[0.2em] font-bold rounded-full transition-all duration-300 ${
-                          car.status === 'Alugado'
-                            ? 'bg-neutral-50 text-neutral-300 cursor-not-allowed'
-                            : 'bg-neutral-900 text-white hover:bg-[#C5A059] hover:text-neutral-950'
+            {vehicles.filter(v => v.isFavorite).map((car, i) => {
+              const isRented = car.status === 'Alugado' || car.status === 'Alugado (Reserva)';
+              return (
+                <Reveal key={car.id} delay={`reveal-delay-${Math.min(i + 1, 3)}`}>
+                  <div className="group bg-white rounded-[2.5rem] overflow-hidden border border-neutral-100 hover:border-[#C5A059]/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] transition-all duration-500 flex flex-col">
+                    <div className="aspect-[4/3] bg-neutral-50 relative overflow-hidden flex items-center justify-center">
+                      <img
+                        src={car.image || '/logo.png'}
+                        className={`transition-transform duration-1000 group-hover:scale-105 ${
+                          !car.image 
+                            ? 'h-24 w-auto object-contain p-4' 
+                            : 'w-full h-full object-cover'
                         }`}
-                      >
-                        {car.status === 'Alugado' ? 'Indisponível' : 'Interesse'}
-                      </button>
+                        alt={car.model}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      {isRented && (
+                        <div className="absolute top-5 right-5 backdrop-blur-md bg-neutral-900/80 text-white text-[8px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/20 shadow-sm">
+                          Locado
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-8 flex-1 flex flex-col justify-between">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-[0.25em] text-[#C5A059] font-black mb-1.5">{car.year}</p>
+                        <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 group-hover:text-[#C5A059] transition-colors duration-300">{car.model}</h3>
+                      </div>
+                      <div className="pt-6 border-t border-neutral-100 mt-6 flex items-center justify-between">
+                        <div>
+                          <p className="text-[8px] uppercase tracking-widest text-neutral-400 font-bold">Valor Semanal</p>
+                          <p className="text-lg font-black text-neutral-900">R$ {car.weeklyRental || '550'}</p>
+                        </div>
+                        <button
+                          onClick={() => onInterest(car)}
+                          disabled={isRented}
+                          className={`px-6 py-3.5 text-[9px] uppercase tracking-[0.2em] font-black rounded-xl transition-all duration-300 active:scale-95 shadow-sm ${
+                            isRented
+                              ? 'bg-neutral-100 text-neutral-300 cursor-not-allowed'
+                              : 'bg-neutral-950 text-white hover:bg-[#C5A059] hover:text-neutral-950 hover:shadow-md'
+                          }`}
+                        >
+                          {isRented ? 'Indisponível' : 'Interesse'}
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </Reveal>
-            ))}
+                </Reveal>
+              );
+            })}
           </div>
 
           <Reveal className="mt-16 flex justify-center">
@@ -320,19 +338,89 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
       </section>
 
       {/* ═══ FOOTER ═════════════════════════════════════════════ */}
-      <footer className="bg-neutral-950 border-t border-white/5 py-12">
-        <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-2">
-            <span className="text-lg font-black uppercase tracking-[-0.03em] text-white">LA</span>
-            <span className="text-lg font-black uppercase tracking-[-0.03em] text-[#C5A059]">Locação</span>
+      <footer className="bg-neutral-950 border-t border-white/5 pt-16 pb-8 text-white">
+        <div className="max-w-7xl mx-auto px-6 md:px-12">
+          {/* Main Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-12 pb-12 border-b border-white/5">
+            {/* Column 1: Brand & Slogan */}
+            <div className="space-y-4 md:col-span-2 flex flex-col items-center md:items-start text-center md:text-left">
+              <div className="flex items-center gap-2 justify-center md:justify-start">
+                <span className="text-xl font-black uppercase tracking-[-0.03em] text-white">LA</span>
+                <span className="text-xl font-black uppercase tracking-[-0.03em] text-[#C5A059]">Locação</span>
+              </div>
+              <p className="text-xs text-white/40 font-light leading-relaxed max-w-sm mx-auto md:mx-0">
+                Referência em locação de veículos premium e gestão profissional de frotas em Aracaju/SE. Transparência para motoristas e alta rentabilidade para investidores.
+              </p>
+            </div>
+
+            {/* Column 2: Navigation Links */}
+            <div className="space-y-4 flex flex-col items-center md:items-start text-center md:text-left">
+              <h4 className="text-[10px] uppercase tracking-[0.25em] font-black text-white">Links Rápidos</h4>
+              <ul className="space-y-2.5 text-xs text-white/40 font-medium flex flex-col items-center md:items-start">
+                <li>
+                  <button 
+                    onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
+                    className="hover:text-[#C5A059] transition-colors"
+                  >
+                    Nossa Frota
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="hover:text-[#C5A059] transition-colors"
+                  >
+                    Nossos Serviços
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => document.getElementById('investidores')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="hover:text-[#C5A059] transition-colors"
+                  >
+                    Seja Investidor
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3: Contact & Location */}
+            <div className="space-y-4 flex flex-col items-center md:items-start text-center md:text-left">
+              <h4 className="text-[10px] uppercase tracking-[0.25em] font-black text-white">Contato</h4>
+              <ul className="space-y-3 text-xs text-white/40 font-light flex flex-col items-center md:items-start">
+                <li className="flex items-start gap-2.5 justify-center md:justify-start">
+                  <MapPin size={14} className="text-[#C5A059] shrink-0 mt-0.5" />
+                  <span>Aracaju, Sergipe</span>
+                </li>
+                <li className="flex items-center gap-2.5 justify-center md:justify-start">
+                  <Phone size={14} className="text-[#C5A059] shrink-0" />
+                  <a href="https://wa.me/5579999094631" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                    (79) 99990-94631
+                  </a>
+                </li>
+                <li className="pt-2 flex justify-center md:justify-start">
+                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#C5A059] text-white/40 hover:text-neutral-950 transition-all duration-300 flex items-center justify-center border border-white/5">
+                    <Instagram size={15} />
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-white/20">
-            <MapPin size={12} />
-            <p className="text-[10px] uppercase tracking-widest font-medium">© 2026 · Aracaju, Sergipe</p>
-          </div>
-          <div className="flex gap-3">
-            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/30 hover:bg-[#C5A059] hover:text-neutral-950 transition-all duration-300"><Instagram size={16} /></a>
-            <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/30 hover:bg-[#C5A059] hover:text-neutral-950 transition-all duration-300"><Facebook size={16} /></a>
+
+          {/* Bottom Tier */}
+          <div className="pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-[10px] text-white/30 font-medium">
+            <p>© 2026 LA Locação. Todos os direitos reservados.</p>
+            <p className="flex items-center gap-1">
+              Desenvolvido por 
+              <a 
+                href="https://grpsantana.com.br" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-[#C5A059] hover:underline font-black uppercase tracking-wider"
+              >
+                Grupo Santana
+              </a>
+            </p>
           </div>
         </div>
       </footer>

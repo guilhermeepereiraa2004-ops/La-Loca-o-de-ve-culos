@@ -62,7 +62,10 @@ const AdminInvestidores = ({
         } else if (t.type === 'out') {
            const isRespInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
            if (isRespInvestor) {
-             monthlyNet[monthKey] -= val;
+             const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+             if (!isBeforeJune2026) {
+               monthlyNet[monthKey] -= val;
+             }
            }
          }
       } catch (e) {}

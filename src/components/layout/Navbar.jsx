@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Lock, TrendingUp } from 'lucide-react';
 
 const Navbar = ({ onSetView }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -77,18 +77,43 @@ const Navbar = ({ onSetView }) => {
           </button>
         </div>
 
-        {/* Mobile Toggle */}
-        <button
-          className={`md:hidden p-2 transition-colors duration-500 ${scrolled ? 'text-neutral-900' : 'text-white'}`}
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        >
-          {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-        </button>
+        {/* Mobile Actions & Toggle */}
+        <div className="flex md:hidden items-center gap-3">
+          <button
+            onClick={() => onSetView('investor-login')}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95 border ${
+              scrolled
+                ? 'bg-neutral-50 border-neutral-200/60 text-[#C5A059] shadow-sm'
+                : 'bg-white/10 border-white/15 text-[#C5A059] backdrop-blur-md'
+            }`}
+            title="Portal Investidor"
+          >
+            <TrendingUp size={16} />
+          </button>
+          <button
+            onClick={() => onSetView('admin-login')}
+            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95 border ${
+              scrolled
+                ? 'bg-neutral-50 border-neutral-200/60 text-neutral-500 shadow-sm'
+                : 'bg-white/10 border-white/15 text-white/80 backdrop-blur-md'
+            }`}
+            title="Painel Admin"
+          >
+            <Lock size={15} />
+          </button>
+          
+          <button
+            className={`p-2 transition-colors duration-500 ${scrolled ? 'text-neutral-900' : 'text-white'}`}
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
       <div className={`md:hidden overflow-hidden transition-all duration-500 ease-in-out ${
-        isMobileMenuOpen ? 'max-h-[400px] opacity-100' : 'max-h-0 opacity-0'
+        isMobileMenuOpen ? 'max-h-[300px] opacity-100' : 'max-h-0 opacity-0'
       }`}>
         <div className="bg-white/95 backdrop-blur-2xl px-6 py-8 flex flex-col gap-5 border-b border-neutral-100 shadow-lg">
           {['Frota', 'Serviços', 'Investidores', 'Contato'].map(item => (
@@ -100,19 +125,6 @@ const Navbar = ({ onSetView }) => {
               {item}
             </button>
           ))}
-          <div className="h-px bg-neutral-100 my-1" />
-          <button
-            onClick={() => { setIsMobileMenuOpen(false); onSetView('investor-login'); }}
-            className="w-full py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-xl"
-          >
-            Portal Investidor
-          </button>
-          <button
-            onClick={() => { setIsMobileMenuOpen(false); onSetView('admin-login'); }}
-            className="w-full py-3 text-neutral-400 text-[10px] uppercase tracking-[0.3em] font-bold"
-          >
-            Área Restrita
-          </button>
         </div>
       </div>
     </nav>
