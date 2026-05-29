@@ -400,7 +400,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           <div className="flex items-center gap-2">
             <img src="/logo.png" className="h-6 w-auto object-contain" alt="LA Locação de Veículos" />
             <div className="flex flex-col">
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-[#C5A059] leading-tight">LA Locação</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-[#C5A059] leading-tight">LA VEÍCULOS</span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Portal Investidor</span>
             </div>
           </div>
