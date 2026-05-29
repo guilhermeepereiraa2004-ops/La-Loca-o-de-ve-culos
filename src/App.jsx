@@ -28,7 +28,7 @@ const App = () => {
     interestForm, setInterestForm,
     seedData,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
-    handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
+    handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleRenewRental, handleUpdateClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
@@ -66,6 +66,7 @@ const App = () => {
         onAddTransaction={handleAddTransaction}
         onUpdateTransactionStatus={handleUpdateTransactionStatus}
         onUpdateStatus={handleUpdateLeadStatus}
+        onDeleteLead={handleDeleteLead}
         onAddRental={handleAddRental}
         onDeleteRental={handleDeleteRental}
         onUpdateRental={handleUpdateRental}

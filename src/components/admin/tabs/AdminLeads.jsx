@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download, Search, Mail, Phone, X } from 'lucide-react';
+import { Download, Search, Mail, Phone, X, Trash2 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminLeads = ({ 
@@ -9,7 +9,10 @@ const AdminLeads = ({
   leadStatusFilter, 
   setLeadStatusFilter, 
   onUpdateStatus, 
-  currentUser
+  currentUser,
+  setItemToDelete,
+  setDeleteType,
+  setShowDeleteAuthModal
 }) => {
   const filteredLeads = leads.filter(lead => {
     const name = lead.name || '';
@@ -180,6 +183,17 @@ const AdminLeads = ({
                       >
                         <Phone size={12} /> Whats
                       </a>
+                      <button
+                        onClick={() => {
+                          setItemToDelete(lead);
+                          setDeleteType('lead');
+                          setShowDeleteAuthModal(true);
+                        }}
+                        className="p-3 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center border border-red-100 hover:border-red-500 shadow-sm"
+                        title="Excluir Lead"
+                      >
+                        <Trash2 size={14} />
+                      </button>
                     </div>
                   </div>
 

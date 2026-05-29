@@ -670,6 +670,21 @@ export const useAppState = () => {
     }
   };
 
+  const handleDeleteLead = async (id) => {
+    try {
+      const lead = leads.find(l => l.id === id);
+      const { error } = await supabase.from('leads').delete().eq('id', id);
+      if (error) throw error;
+      setLeads(prev => prev.filter(l => l.id !== id));
+      logActivity('Apagar', 'Lead', id, `Excluiu o lead ${lead?.name || 'ID: ' + id}`);
+      return true;
+    } catch (err) {
+      console.error("Erro ao apagar lead:", err);
+      alert(`Erro ao apagar lead: ${err.message || err.details || 'Erro desconhecido'}`);
+      return false;
+    }
+  };
+
 
   const handleAddRental = async (rental) => {
     try {
@@ -1969,7 +1984,7 @@ export const useAppState = () => {
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
-    handleAddLead, handleUpdateLeadStatus, handleAddRental, handleDeleteRental,
+    handleAddLead, handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleRenewRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleAddTransaction,
     handleUpdateTransactionStatus,

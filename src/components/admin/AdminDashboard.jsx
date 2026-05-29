@@ -45,7 +45,7 @@ import { computeNotifications } from '../../utils/notifications';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus,
-  onUpdateStatus, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient,
+  onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
@@ -257,6 +257,7 @@ const AdminDashboard = ({
       if (deleteType === 'rental') success = await onDeleteRental(itemToDelete.id);
       else if (deleteType === 'vehicle') success = await onDeleteVehicle(itemToDelete.id);
       else if (deleteType === 'investor') success = await onDeleteInvestor(itemToDelete.id);
+      else if (deleteType === 'lead') success = await onDeleteLead(itemToDelete.id);
       
       console.log("ADMIN_DASHBOARD: Resultado da exclusão:", success);
       if (success) {
@@ -318,6 +319,9 @@ const AdminDashboard = ({
               leads={leads} leadSearch={leadSearch} setLeadSearch={setLeadSearch}
               leadStatusFilter={leadStatusFilter} setLeadStatusFilter={setLeadStatusFilter}
               onUpdateStatus={onUpdateStatus} currentUser={currentUser}
+              setItemToDelete={setItemToDelete}
+              setDeleteType={setDeleteType}
+              setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
           {activeTab === 'frota' && (
