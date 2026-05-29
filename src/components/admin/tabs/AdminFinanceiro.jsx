@@ -17,10 +17,17 @@ const AdminFinanceiro = ({
 }) => {
   const [selectedMonth, setSelectedMonth] = useState('Todos'); // 'Todos' or 'YYYY-MM'
 
+  // Exclude vehicle protection transactions before June 2026
+  const filteredRawTransactions = (transactions || []).filter(t => {
+    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+    const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+    return !(isProtection && isBeforeJune2026);
+  });
+
   // Extract available months from transaction dates
   const getAvailableMonths = () => {
     const monthsSet = new Set();
-    transactions.forEach(t => {
+    filteredRawTransactions.forEach(t => {
       if (t.date) {
         monthsSet.add(t.date.substring(0, 7)); // 'YYYY-MM'
       }
@@ -39,7 +46,7 @@ const AdminFinanceiro = ({
   };
 
   // Filter transactions for totals display based on selectedMonth (only company transactions)
-  const displayedTransactionsForTotals = transactions.filter(t => {
+  const displayedTransactionsForTotals = filteredRawTransactions.filter(t => {
     const matchesMonth = selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth);
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
     return matchesMonth && !isInvestor;
@@ -50,7 +57,7 @@ const AdminFinanceiro = ({
   const netBalance = totalIn - totalOut;
 
   // Filter transaction list based on both type filter and month filter
-  const filteredTransactions = transactions.filter(t => {
+  const filteredTransactions = filteredRawTransactions.filter(t => {
     const matchesType = 
       financeFilter === 'Todos' || 
       (financeFilter === 'Entradas' && t.type === 'in') || 

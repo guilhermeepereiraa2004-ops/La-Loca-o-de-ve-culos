@@ -6,7 +6,14 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
   const currentMonth = today.getMonth();
   const currentYear = today.getFullYear();
 
-  const monthlyTransactions = transactions.filter(t => {
+  // Exclude vehicle protection transactions before June 2026
+  const filteredTx = (transactions || []).filter(t => {
+    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+    const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+    return !(isProtection && isBeforeJune2026);
+  });
+
+  const monthlyTransactions = filteredTx.filter(t => {
     const tDate = new Date(t.date);
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
     return tDate.getMonth() === currentMonth && tDate.getFullYear() === currentYear && !isInvestor;
@@ -33,12 +40,12 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
     return acc + val;
   }, 0);
 
-  const saldoAcumulado = transactions.reduce((acc, t) => {
+  const saldoAcumulado = filteredTx.reduce((acc, t) => {
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
     return acc + (t.status === 'Concluído' && !isInvestor ? t.val : 0);
   }, 0);
   
-  const pendingCharges = transactions.filter(t => t.status === 'Pendente').length + 
+  const pendingCharges = filteredTx.filter(t => t.status === 'Pendente').length + 
     rentals.filter(r => r.status === 'Ativo' && r.paymentStatus === 'pendente').length;
 
   const chartData = [];
@@ -49,7 +56,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
     const mYear = d.getFullYear();
     const mMonth = d.getMonth();
     
-    const monthTx = transactions.filter(t => {
+    const monthTx = filteredTx.filter(t => {
       if (!t.date) return false;
       const tDate = new Date(t.date);
       const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
@@ -68,7 +75,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
   }
 
   const date6MonthsAgo = new Date(today.getFullYear(), today.getMonth() - 5, 1);
-  let startingBalance = transactions.filter(t => {
+  let startingBalance = filteredTx.filter(t => {
     if (!t.date) return false;
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
     return new Date(t.date) < date6MonthsAgo && t.status === 'Concluído' && !isInvestor;
