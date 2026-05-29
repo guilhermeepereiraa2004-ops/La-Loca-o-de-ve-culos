@@ -356,7 +356,14 @@ export const useAppState = () => {
       const hasLoggedKey = `la_logged_${currentUser.email || 'master'}_${new Date().toDateString()}`;
       if (!sessionStorage.getItem(hasLoggedKey)) {
         sessionStorage.setItem(hasLoggedKey, 'true');
-        logActivity('Login', 'Auth', null, `Login realizado com sucesso no painel administrativo`);
+        
+        // Differentiate investor login from admin/employee login
+        const isInvestor = localStorage.getItem('la_investor_auth') !== null || (currentUser && !currentUser.role && currentUser.email !== 'Laveiculos@gmail.com');
+        const logMsg = isInvestor
+          ? `Login realizado com sucesso no portal do investidor`
+          : `Login realizado com sucesso no painel administrativo`;
+          
+        logActivity('Login', 'Auth', null, logMsg);
       }
     }
   }, [currentUser]);

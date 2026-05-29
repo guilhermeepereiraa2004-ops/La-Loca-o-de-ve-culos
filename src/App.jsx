@@ -125,6 +125,7 @@ const App = () => {
           setCurrentUser(null);
           setView('home');
         }}
+        onGoHome={() => setView('home')}
       />
     );
   }

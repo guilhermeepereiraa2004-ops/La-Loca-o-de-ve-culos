@@ -40,7 +40,7 @@ const getFifthBusinessDay = (dateOrYear = new Date(), monthOpt) => {
   return new Date(year, month, day);
 };
 
-const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], onLogout }) => {
+const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], onLogout, onGoHome }) => {
   const [viewingSO, setViewingSO] = useState(null);
   const [soListModal, setSoListModal] = useState(null);
   const [activeTab, setActiveTab] = useState(() => {
@@ -389,7 +389,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       {/* Mobile Toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed top-6 left-6 z-[60] xl:hidden bg-neutral-950 text-white p-3 rounded-2xl shadow-2xl border border-neutral-800"
+        className="fixed bottom-6 right-6 z-[60] xl:hidden bg-neutral-950 text-[#C5A059] p-4 rounded-full shadow-2xl border border-neutral-800"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -428,13 +428,22 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           ))}
         </nav>
 
-        <button
-          onClick={onLogout}
-          className="flex items-center gap-4 p-4 text-neutral-500 hover:text-red-400 transition-colors mt-auto"
-        >
-          <X size={20} />
-          <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Sair do Portal</span>
-        </button>
+        <div className="border-t border-neutral-900 pt-4 mt-auto space-y-2">
+          <button
+            onClick={onGoHome}
+            className="flex items-center gap-4 p-4 text-neutral-500 hover:text-[#C5A059] transition-colors w-full"
+          >
+            <Eye size={20} />
+            <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Página Inicial</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-4 p-4 text-neutral-500 hover:text-red-400 transition-colors w-full"
+          >
+            <X size={20} />
+            <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Sair do Portal</span>
+          </button>
+        </div>
       </aside>
 
       {/* Sidebar Overlay for mobile */}
