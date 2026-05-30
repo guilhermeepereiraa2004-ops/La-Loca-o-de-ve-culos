@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Plus, Search, ClipboardCheck, Trash2, Eye, Calendar, Fuel, Gauge, Car, Check, AlertTriangle, X, Loader2, ShieldCheck } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
 
@@ -20,13 +20,47 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     km: '',
     fuelLevel: 'Cheio',
     tireCondition: 'Bom',
+    externalCleanliness: 'Limpo',
+    internalCleanliness: 'Limpo',
+    lastOilChangeDate: '',
+    lastOilChangeKm: '',
+    nextOilChangeKm: '',
     photos: {}, // Object for named slots
+    additionalPhotos: [], // Array for additional photos
     video: null,
     observations: '',
     hasDamages: false,
     damages: [], // [{ id, photo, description }]
     deductions: [] // [{ category, description, value, isProportional }]
   });
+
+  const [vehicleSearchQuery, setVehicleSearchQuery] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (inspectionForm.vehiclePlate) {
+      const v = vehicles.find(veh => veh.plate === inspectionForm.vehiclePlate);
+      if (v) {
+        const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === v.plate && r.status === 'Ativo');
+        setVehicleSearchQuery(`${v.model} - ${v.plate}${activeRental ? ` (${activeRental.userName || activeRental.user})` : ''}`);
+      } else {
+        setVehicleSearchQuery(inspectionForm.vehiclePlate);
+      }
+    } else {
+      setVehicleSearchQuery('');
+    }
+  }, [inspectionForm.vehiclePlate, vehicles, rentals]);
 
   useEffect(() => {
     if (pendingInspection) {
@@ -109,6 +143,11 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     e.preventDefault();
     if (isSaving) return;
 
+    if (!inspectionForm.vehiclePlate) {
+      alert('Por favor, selecione um veículo na lista para prosseguir.');
+      return;
+    }
+
     try {
       setIsSaving(true);
       await onAddInspection({
@@ -123,7 +162,13 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
         km: '',
         fuelLevel: 'Cheio',
         tireCondition: 'Bom',
+        externalCleanliness: 'Limpo',
+        internalCleanliness: 'Limpo',
+        lastOilChangeDate: '',
+        lastOilChangeKm: '',
+        nextOilChangeKm: '',
         photos: {},
+        additionalPhotos: [],
         video: null,
         observations: '',
         hasDamages: false,
@@ -178,6 +223,43 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     }));
   };
 
+  const handleAddAdditionalPhoto = async (file) => {
+    if (!file) return;
+    try {
+      setIsCompressing(true);
+      const compressed = await compressImage(file);
+      const newPhoto = {
+        id: Date.now() + Math.random().toString(36).substr(2, 9),
+        file: compressed,
+        preview: URL.createObjectURL(compressed)
+      };
+      setInspectionForm(prev => ({
+        ...prev,
+        additionalPhotos: [...(prev.additionalPhotos || []), newPhoto]
+      }));
+    } catch (err) {
+      console.error("Compression failed:", err);
+      const newPhoto = {
+        id: Date.now() + Math.random().toString(36).substr(2, 9),
+        file,
+        preview: URL.createObjectURL(file)
+      };
+      setInspectionForm(prev => ({
+        ...prev,
+        additionalPhotos: [...(prev.additionalPhotos || []), newPhoto]
+      }));
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleRemoveAdditionalPhoto = (id) => {
+    setInspectionForm(prev => ({
+      ...prev,
+      additionalPhotos: (prev.additionalPhotos || []).filter(p => p.id !== id)
+    }));
+  };
+
   const handleConfirmDelete = () => {
     if (passwordInput === 'Lareferencia') {
       onDeleteInspection(targetDeleteId);
@@ -195,14 +277,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       {!showForm ? (
         <>
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 md:mb-12">
             <div>
-              <h3 className="text-4xl font-black uppercase tracking-tighter">Vistorias Técnicas</h3>
+              <h3 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter">Vistorias Técnicas</h3>
               <p className="text-neutral-400 text-sm font-light mt-1">Checklist de entrada, saída e manutenções preventivas.</p>
             </div>
             <button
               onClick={() => setShowForm(true)}
-              className="flex items-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
+              className="w-full sm:w-auto flex items-center justify-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
             >
               <Plus size={16} /> Nova Vistoria
             </button>
@@ -210,8 +292,8 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
 
           {/* Alerts Section */}
           {alerts.length > 0 && (
-            <div className="mb-12 p-8 bg-amber-50 rounded-[2.5rem] border border-amber-100 flex flex-col md:flex-row items-start md:items-center gap-6 animate-in slide-in-from-top-4 duration-500">
-              <div className="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-200">
+            <div className="mb-8 md:mb-12 p-6 md:p-8 bg-amber-50 rounded-[1.5rem] md:rounded-[2.5rem] border border-amber-100 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 animate-in slide-in-from-top-4 duration-500">
+              <div className="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-200 shrink-0">
                 <AlertTriangle size={28} />
               </div>
               <div className="flex-1">
@@ -231,7 +313,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
           )}
 
           {/* Search */}
-          <div className="flex flex-col md:flex-row items-center gap-4">
+          <div className="flex flex-col lg:flex-row items-center gap-4 mb-8">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" size={18} />
               <input 
@@ -243,11 +325,11 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
               />
             </div>
             
-            <div className="flex items-center gap-3 w-full md:w-auto">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
               <select 
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="bg-white border border-neutral-100 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#C5A059]/20 outline-none"
+                className="w-full sm:w-auto bg-white border border-neutral-100 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#C5A059]/20 outline-none"
               >
                 <option value="Todos">Todos os Tipos</option>
                 <option value="Entrega">Entrega</option>
@@ -256,27 +338,27 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                 <option value="Devolução">Devolução</option>
               </select>
 
-              <div className="flex items-center gap-2 bg-white border border-neutral-100 px-3 py-2 rounded-2xl">
-                <Calendar size={14} className="text-neutral-400" />
+              <div className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-neutral-100 px-3 py-2 rounded-2xl w-full sm:w-auto overflow-x-auto">
+                <Calendar size={14} className="text-neutral-400 shrink-0" />
                 <input 
                   type="date" 
                   value={dateStart}
                   onChange={(e) => setDateStart(e.target.value)}
-                  className="bg-transparent border-none text-[9px] font-bold outline-none uppercase"
+                  className="bg-transparent border-none text-[9px] font-bold outline-none uppercase min-w-[90px]"
                 />
-                <span className="text-neutral-300 text-[10px]">até</span>
+                <span className="text-neutral-300 text-[10px] shrink-0">até</span>
                 <input 
                   type="date" 
                   value={dateEnd}
                   onChange={(e) => setDateEnd(e.target.value)}
-                  className="bg-transparent border-none text-[9px] font-bold outline-none uppercase"
+                  className="bg-transparent border-none text-[9px] font-bold outline-none uppercase min-w-[90px]"
                 />
               </div>
 
               {(filterType !== 'Todos' || dateStart || dateEnd) && (
                 <button 
                   onClick={() => { setFilterType('Todos'); setDateStart(''); setDateEnd(''); }}
-                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
+                  className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center self-end sm:self-auto"
                   title="Limpar Filtros"
                 >
                   <X size={18} />
@@ -285,9 +367,9 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
             {filteredInspections.map((ins) => (
-              <div key={ins.id} className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm hover:shadow-xl transition-all group">
+              <div key={ins.id} className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-neutral-100 p-6 md:p-8 shadow-sm hover:shadow-xl transition-all group">
                 <div className="flex justify-between items-start mb-6">
                   <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
                     ins.type === 'Entrega' ? 'bg-emerald-50 text-emerald-600' :
@@ -334,12 +416,32 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                     <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Combustível</p>
                     <p className="text-xs font-black text-neutral-900">{ins.fuelLevel}</p>
                   </div>
+                  {ins.externalCleanliness && (
+                    <div className="p-3 bg-neutral-50 rounded-xl">
+                      <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Limpeza Ext.</p>
+                      <p className={`text-xs font-black ${ins.externalCleanliness === 'Limpo' ? 'text-emerald-600' : ins.externalCleanliness === 'Aceitável' ? 'text-amber-600' : 'text-red-600'}`}>{ins.externalCleanliness}</p>
+                    </div>
+                  )}
+                  {ins.internalCleanliness && (
+                    <div className="p-3 bg-neutral-50 rounded-xl">
+                      <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Limpeza Int.</p>
+                      <p className={`text-xs font-black ${ins.internalCleanliness === 'Limpo' ? 'text-emerald-600' : ins.internalCleanliness === 'Aceitável' ? 'text-amber-600' : 'text-red-600'}`}>{ins.internalCleanliness}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                  {Object.values(ins.photos || {}).map((photo, i) => (
-                    <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0">
+                  {Object.entries(ins.photos || {})
+                    .filter(([key]) => key !== 'additional')
+                    .map(([key, photo], i) => (
+                      <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0">
+                        <img src={photo.preview} className="w-full h-full object-cover" />
+                      </div>
+                    ))}
+                  {ins.photos?.additional && ins.photos.additional.map((photo, i) => (
+                    <div key={`add-${i}`} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0 relative">
                       <img src={photo.preview} className="w-full h-full object-cover" />
+                      <span className="absolute bottom-0 right-0 bg-[#C5A059] text-[6px] font-black text-neutral-900 px-0.5 rounded-tl">+</span>
                     </div>
                   ))}
                   {ins.video && (
@@ -360,21 +462,21 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
           </div>
         </>
       ) : (
-        <div className="bg-white rounded-[3rem] p-12 border border-neutral-100 shadow-xl max-w-5xl mx-auto">
-          <div className="flex justify-between items-center mb-12">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-950 shadow-lg">
+        <div className="bg-white rounded-[1.5rem] md:rounded-[3rem] p-4 sm:p-6 md:p-12 border border-neutral-100 shadow-xl max-w-5xl mx-auto">
+          <div className="flex justify-between items-center mb-6 md:mb-12">
+            <div className="flex items-center gap-3 md:gap-4">
+              <div className="w-12 h-12 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-950 shadow-lg shrink-0">
                 <ClipboardCheck size={24} />
               </div>
-              <h3 className="text-2xl font-black uppercase tracking-tighter">Registrar Nova Vistoria</h3>
+              <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter">Registrar Nova Vistoria</h3>
             </div>
-            <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-900">
+            <button onClick={() => setShowForm(false)} className="text-neutral-400 hover:text-neutral-900 p-2">
               <X size={24} />
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-8">
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Tipo de Vistoria</label>
                 <select
@@ -389,24 +491,87 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                 </select>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 relative" ref={dropdownRef}>
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Veículo (Placa)</label>
-                <select
-                  value={inspectionForm.vehiclePlate}
-                  onChange={e => setInspectionForm({...inspectionForm, vehiclePlate: e.target.value})}
-                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
-                  required
-                >
-                  <option value="">Selecione o Veículo</option>
-                  {vehicles.map(v => {
-                    const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === v.plate && r.status === 'Ativo');
-                    return (
-                      <option key={v.id} value={v.plate}>
-                        {v.model} - {v.plate} {activeRental ? `(${activeRental.userName || activeRental.user})` : ''}
-                      </option>
-                    );
-                  })}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Digite para buscar veículo ou placa..."
+                    value={vehicleSearchQuery}
+                    onChange={e => {
+                      setVehicleSearchQuery(e.target.value);
+                      setIsDropdownOpen(true);
+                      if (!e.target.value) {
+                        setInspectionForm(prev => ({ ...prev, vehiclePlate: '' }));
+                      }
+                    }}
+                    onFocus={() => setIsDropdownOpen(true)}
+                    className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                  />
+                  <input type="hidden" name="vehiclePlate" value={inspectionForm.vehiclePlate} required />
+                  {inspectionForm.vehiclePlate && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInspectionForm(prev => ({ ...prev, vehiclePlate: '' }));
+                        setVehicleSearchQuery('');
+                      }}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </div>
+                {isDropdownOpen && (
+                  <div className="absolute z-[200] left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white border border-neutral-100 rounded-2xl shadow-2xl p-2 space-y-1">
+                    {(() => {
+                      const query = vehicleSearchQuery.toLowerCase().trim();
+                      const selectedLabel = (() => {
+                        const selectedV = vehicles.find(veh => veh.plate === inspectionForm.vehiclePlate);
+                        if (!selectedV) return '';
+                        const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === selectedV.plate && r.status === 'Ativo');
+                        return `${selectedV.model} - ${selectedV.plate}${activeRental ? ` (${activeRental.userName || activeRental.user})` : ''}`.toLowerCase();
+                      })();
+
+                      const filtered = vehicles.filter(v => {
+                        if (!query || query === selectedLabel) return true;
+                        const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === v.plate && r.status === 'Ativo');
+                        const conductorName = activeRental ? (activeRental.userName || activeRental.user || '') : '';
+                        const searchStr = `${v.model} ${v.plate} ${conductorName}`.toLowerCase();
+                        return searchStr.includes(query);
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="p-4 text-center text-xs text-neutral-400 font-bold uppercase">
+                            Nenhum veículo encontrado
+                          </div>
+                        );
+                      }
+
+                      return filtered.map(v => {
+                        const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === v.plate && r.status === 'Ativo');
+                        const isSelected = inspectionForm.vehiclePlate === v.plate;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => {
+                              setInspectionForm(prev => ({ ...prev, vehiclePlate: v.plate }));
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full flex flex-col items-start p-3 rounded-xl transition-all text-left ${isSelected ? 'bg-[#C5A059]/10 text-[#C5A059]' : 'hover:bg-neutral-50 text-neutral-800'}`}
+                          >
+                            <span className="text-xs font-black uppercase">{v.model} - {v.plate}</span>
+                            {activeRental && (
+                              <span className="text-[9px] text-neutral-400 font-bold uppercase mt-0.5">Locador: {activeRental.userName || activeRental.user}</span>
+                            )}
+                          </button>
+                        );
+                      });
+                    })()}
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -467,9 +632,116 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
               </div>
             </div>
 
+            {/* Seção de Limpeza e Óleo */}
+            <div className="space-y-6 p-4 sm:p-6 md:p-10 bg-gradient-to-br from-neutral-50 to-white rounded-[1.5rem] md:rounded-[3rem] border border-neutral-100">
+              <div className="flex items-center gap-3 md:gap-4 mb-2">
+                <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059] shrink-0">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tighter">Limpeza & Manutenção</h4>
+                  <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Estado de limpeza e controle de troca de óleo</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Limpeza Externa</label>
+                  <div className="grid grid-cols-3 md:flex gap-2">
+                    {['Limpo', 'Aceitável', 'Sujo'].map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setInspectionForm(prev => ({ ...prev, externalCleanliness: opt }))}
+                        className={`flex-1 py-3 px-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                          inspectionForm.externalCleanliness === opt
+                            ? opt === 'Limpo' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200'
+                              : opt === 'Aceitável' ? 'bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-200'
+                              : 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-200'
+                            : 'bg-white text-neutral-400 border-neutral-100 hover:border-neutral-300'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Limpeza Interna</label>
+                  <div className="grid grid-cols-2 md:flex gap-2">
+                    {['Limpo', 'Aceitável', 'Sujo', 'Necessita Higienização'].map(opt => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => setInspectionForm(prev => ({ ...prev, internalCleanliness: opt }))}
+                        className={`flex-1 py-3 px-2 rounded-xl text-[9px] font-black uppercase tracking-wider transition-all border ${
+                          inspectionForm.internalCleanliness === opt
+                            ? opt === 'Limpo' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200'
+                              : opt === 'Aceitável' ? 'bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-200'
+                              : opt === 'Sujo' ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-200'
+                              : 'bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-200'
+                            : 'bg-white text-neutral-400 border-neutral-100 hover:border-neutral-300'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-t border-neutral-100 pt-6">
+                <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1 mb-4">Controle de Troca de Óleo</p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Última Troca (Data)</label>
+                    <input
+                      type="date"
+                      value={inspectionForm.lastOilChangeDate}
+                      onChange={e => setInspectionForm(prev => ({ ...prev, lastOilChangeDate: e.target.value }))}
+                      className="w-full bg-white border border-neutral-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Última Troca (KM)</label>
+                    <div className="relative">
+                      <Gauge className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300" size={16} />
+                      <input
+                        type="number"
+                        value={inspectionForm.lastOilChangeKm}
+                        onChange={e => setInspectionForm(prev => ({ ...prev, lastOilChangeKm: e.target.value }))}
+                        placeholder="Ex: 45.000"
+                        className="w-full bg-white border border-neutral-100 p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Próxima Troca (KM Previsto)</label>
+                    <div className="relative">
+                      <Gauge className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-300" size={16} />
+                      <input
+                        type="number"
+                        value={inspectionForm.nextOilChangeKm}
+                        onChange={e => setInspectionForm(prev => ({ ...prev, nextOilChangeKm: e.target.value }))}
+                        placeholder="Ex: 50.000"
+                        className="w-full bg-white border border-neutral-100 p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
+                      />
+                    </div>
+                    {inspectionForm.nextOilChangeKm && inspectionForm.km && parseInt(inspectionForm.km) >= parseInt(inspectionForm.nextOilChangeKm) && (
+                      <div className="flex items-center gap-2 mt-1 text-red-500">
+                        <AlertTriangle size={12} />
+                        <span className="text-[9px] font-black uppercase">KM atual já atingiu ou ultrapassou a próxima troca!</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-6">
               <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Galeria Técnica (Fotos Obrigatórias)</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
                 {[
                   { id: 'front', label: 'Frente Completa' },
                   { id: 'rear', label: 'Traseira Completa' },
@@ -579,13 +851,64 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
               </div>
             </div>
 
+            {/* Fotos Adicionais Section */}
+            <div className="space-y-6">
+              <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Fotos Adicionais (Opcional)</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                {(inspectionForm.additionalPhotos || []).map((photoObj) => (
+                  <div key={photoObj.id} className="space-y-2 relative group">
+                    <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicional</p>
+                    <div className="aspect-square rounded-2xl border border-neutral-100 overflow-hidden relative bg-neutral-50 shadow-inner">
+                      <img src={photoObj.preview} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAdditionalPhoto(photoObj.id)}
+                        className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div className="space-y-2">
+                  <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicionar Foto</p>
+                  <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-100 hover:border-[#C5A059]/30 hover:bg-neutral-50 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all relative">
+                    {isCompressing ? (
+                      <>
+                        <Loader2 size={20} className="text-[#C5A059] animate-spin" />
+                        <span className="text-[7px] font-black uppercase tracking-widest text-[#C5A059]">Processando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Plus size={20} className="text-neutral-300 hover:text-[#C5A059]" />
+                        <span className="text-[7px] font-black uppercase tracking-widest text-neutral-400">Anexar</span>
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      disabled={isCompressing}
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          handleAddAdditionalPhoto(file);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+
             {inspectionForm.type === 'Devolução' && (
-              <div className="space-y-8 p-10 bg-neutral-900 rounded-[3rem] border border-[#C5A059]/20 shadow-2xl relative overflow-hidden">
+              <div className="space-y-6 md:space-y-8 p-4 sm:p-6 md:p-10 bg-neutral-900 rounded-[1.5rem] md:rounded-[3rem] border border-[#C5A059]/20 shadow-2xl relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/5 blur-3xl -mr-32 -mt-32" />
                 
-                <div className="flex justify-between items-center relative z-10">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center text-[#C5A059]">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="w-12 h-12 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center text-[#C5A059] shrink-0">
                       <Trash2 size={24} />
                     </div>
                     <div>
@@ -596,7 +919,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                   <button
                     type="button"
                     onClick={handleAddDeduction}
-                    className="bg-[#C5A059] text-neutral-900 px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-white transition-all flex items-center gap-2"
+                    className="w-full sm:w-auto bg-[#C5A059] text-neutral-900 px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-white transition-all flex items-center justify-center gap-2"
                   >
                     <Plus size={14} /> Adicionar Item
                   </button>
@@ -604,7 +927,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
 
                 <div className="space-y-4 relative z-10">
                   {inspectionForm.deductions.map((item, index) => (
-                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white/5 p-6 rounded-[2rem] border border-white/5 items-end group">
+                    <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white/5 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 items-end group">
                       <div className="md:col-span-3 space-y-2">
                         <label className="text-[8px] uppercase tracking-widest text-neutral-500 font-black ml-1">Categoria</label>
                         <select
@@ -645,7 +968,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                         />
                       </div>
 
-                      <div className="md:col-span-2 flex items-center gap-3 pb-3 px-2">
+                      <div className="md:col-span-2 flex items-center gap-3 md:pb-3 px-2">
                         <button
                           type="button"
                           onClick={() => handleUpdateDeduction(index, 'isProportional', !item.isProportional)}
@@ -659,11 +982,11 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                         </div>
                       </div>
 
-                      <div className="md:col-span-1 flex justify-end pb-3">
+                      <div className="md:col-span-1 flex justify-end md:pb-3">
                         <button 
                           type="button"
                           onClick={() => handleRemoveDeduction(index)}
-                          className="text-red-500/50 hover:text-red-500 transition-colors"
+                          className="text-red-500/50 hover:text-red-500 transition-colors p-2"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -679,14 +1002,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                   )}
                 </div>
 
-                <div className="pt-8 border-t border-white/5 flex justify-between items-center relative z-10">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle size={14} className="text-[#C5A059]" />
+                <div className="pt-8 border-t border-white/5 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-6 relative z-10">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <AlertTriangle size={14} className="text-[#C5A059] shrink-0" />
                     <span className="text-[9px] text-neutral-500 font-bold uppercase italic">Valores serão debitados automaticamente do caução no fechamento.</span>
                   </div>
-                  <div className="text-right">
+                  <div className="text-left sm:text-right w-full sm:w-auto">
                     <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest mb-1">Total de Descontos</p>
-                    <h5 className="text-4xl font-black text-[#C5A059] tracking-tighter">
+                    <h5 className="text-3xl sm:text-4xl font-black text-[#C5A059] tracking-tighter">
                       {totalDeductions.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                     </h5>
                   </div>
@@ -694,10 +1017,10 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
               </div>
             )}
 
-            <div className="space-y-8 p-10 bg-neutral-50 rounded-[3rem] border border-neutral-100">
-               <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]">
+            <div className="space-y-6 md:space-y-8 p-4 sm:p-6 md:p-10 bg-neutral-50 rounded-[1.5rem] md:rounded-[3rem] border border-neutral-100">
+               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shrink-0">
                       <AlertTriangle size={24} />
                     </div>
                     <div>
@@ -705,9 +1028,9 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                       <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">Registre danos específicos no veículo</p>
                     </div>
                   </div>
-                  <div className="flex bg-white p-1 rounded-xl border border-neutral-100">
-                    <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: true})} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${inspectionForm.hasDamages ? 'bg-red-500 text-white shadow-lg' : 'text-neutral-400'}`}>Sim</button>
-                    <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: false, damages: []})} className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${!inspectionForm.hasDamages ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400'}`}>Não</button>
+                  <div className="flex bg-white p-1 rounded-xl border border-neutral-100 w-full sm:w-auto justify-between sm:justify-start">
+                    <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: true})} className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${inspectionForm.hasDamages ? 'bg-red-500 text-white shadow-lg' : 'text-neutral-400'}`}>Sim</button>
+                    <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: false, damages: []})} className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${!inspectionForm.hasDamages ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400'}`}>Não</button>
                   </div>
                </div>
 
@@ -715,7 +1038,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                  <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {inspectionForm.damages.map((dmg) => (
-                        <div key={dmg.id} className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm space-y-4">
+                        <div key={dmg.id} className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-neutral-100 shadow-sm space-y-4">
                            <div className="flex justify-between items-start">
                               <label className={`w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative ${dmg.photo ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 hover:border-[#C5A059]/30'}`}>
                                 {dmg.photo ? (
@@ -754,7 +1077,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                       <button 
                         type="button" 
                         onClick={handleAddDamage}
-                        className="border-2 border-dashed border-neutral-200 rounded-[2rem] flex flex-col items-center justify-center gap-3 text-neutral-400 hover:border-[#C5A059] hover:text-[#C5A059] transition-all p-8"
+                        className="border-2 border-dashed border-neutral-200 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-3 text-neutral-400 hover:border-[#C5A059] hover:text-[#C5A059] transition-all p-6 md:p-8"
                       >
                         <Plus size={24} />
                         <span className="text-[10px] font-black uppercase tracking-widest">Adicionar Foto de Avaria</span>
@@ -774,18 +1097,18 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
               />
             </div>
 
-            <div className="flex justify-end gap-6 pt-8">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-4 pt-6">
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-10 py-5 text-[10px] uppercase tracking-[0.3em] font-black text-neutral-400 hover:text-neutral-900 transition-all"
+                className="w-full sm:w-auto px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-black text-neutral-400 hover:text-neutral-900 transition-all flex items-center justify-center"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSaving}
-                className={`px-12 py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center gap-3 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#C5A059]'}`}
+                className={`w-full sm:w-auto px-12 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center justify-center gap-3 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#C5A059]'}`}
               >
                 {isSaving ? (
                   <>

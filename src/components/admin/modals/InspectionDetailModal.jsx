@@ -120,6 +120,59 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
             </div>
           </div>
 
+          {/* Section 1.5: Cleanliness & Oil Control */}
+          {(inspection.externalCleanliness || inspection.internalCleanliness || inspection.lastOilChangeKm || inspection.nextOilChangeKm) && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-neutral-50 p-8 rounded-[2rem] border border-neutral-100 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div className="space-y-4">
+                <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Estado de Limpeza</h5>
+                <div className="grid grid-cols-2 gap-4">
+                  {inspection.externalCleanliness && (
+                    <div className="bg-white p-4 rounded-2xl border border-neutral-100">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Limpeza Externa</p>
+                      <p className={`text-xs font-black uppercase ${
+                        inspection.externalCleanliness === 'Limpo' ? 'text-emerald-600' :
+                        inspection.externalCleanliness === 'Aceitável' ? 'text-amber-600' : 'text-red-600'
+                      }`}>{inspection.externalCleanliness}</p>
+                    </div>
+                  )}
+                  {inspection.internalCleanliness && (
+                    <div className="bg-white p-4 rounded-2xl border border-neutral-100">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Limpeza Interna</p>
+                      <p className={`text-xs font-black uppercase ${
+                        inspection.internalCleanliness === 'Limpo' ? 'text-emerald-600' :
+                        inspection.internalCleanliness === 'Aceitável' ? 'text-amber-600' :
+                        inspection.internalCleanliness === 'Sujo' ? 'text-red-600' : 'text-rose-600'
+                      }`}>{inspection.internalCleanliness}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Controle de Óleo</h5>
+                <div className="grid grid-cols-3 gap-4">
+                  {inspection.lastOilChangeDate ? (
+                    <div className="bg-white p-4 rounded-2xl border border-neutral-100">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Última Troca (Data)</p>
+                      <p className="text-xs font-black text-neutral-900">{new Date(inspection.lastOilChangeDate + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                    </div>
+                  ) : null}
+                  {inspection.lastOilChangeKm ? (
+                    <div className="bg-white p-4 rounded-2xl border border-neutral-100">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Última Troca (KM)</p>
+                      <p className="text-xs font-black text-neutral-900">{(parseInt(inspection.lastOilChangeKm) || 0).toLocaleString()} KM</p>
+                    </div>
+                  ) : null}
+                  {inspection.nextOilChangeKm ? (
+                    <div className="bg-white p-4 rounded-2xl border border-neutral-100">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Próxima Troca (KM)</p>
+                      <p className="text-xs font-black text-neutral-900">{(parseInt(inspection.nextOilChangeKm) || 0).toLocaleString()} KM</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Section 2: Photos Gallery */}
           <section>
             <div className="flex items-center gap-3 mb-8">
@@ -201,6 +254,37 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
               </div>
             </div>
           </section>
+
+          {/* Section 2.5: Additional Photos if they exist */}
+          {inspection.photos?.additional && inspection.photos.additional.length > 0 && (
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+              <div className="flex items-center gap-3 mb-8">
+                <Camera size={18} className="text-[#C5A059]" />
+                <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Fotos Adicionais</h5>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                {inspection.photos.additional.map((photo, index) => (
+                  <div key={index} className="space-y-3">
+                    <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicional {index + 1}</p>
+                    <div className="aspect-square bg-neutral-100 rounded-3xl overflow-hidden relative group border border-neutral-200 shadow-inner">
+                      <img src={photo.preview} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Foto Adicional ${index + 1}`} />
+                      <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
+                        <button 
+                          onClick={() => setSelectedMedia({ type: 'image', url: photo.preview })}
+                          className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <a href={photo.preview} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform">
+                          <Download size={18} />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Section: Damages */}
           {inspection.hasDamages && (

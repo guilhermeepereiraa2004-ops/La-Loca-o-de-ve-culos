@@ -2,6 +2,12 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { uploadFile } from '../utils/supabaseStorage';
 
+// Limpar temporariamente o bloqueio antigo do rate limiter de uploads salvo no localStorage
+try {
+  localStorage.removeItem('la_rl_block_upload_file');
+  localStorage.removeItem('la_rl_upload_file');
+} catch (e) {}
+
 // Robust Mapping System for Portuguese Database Schema (Audited from Supabase)
 const TABLE_MAPPINGS = {
   rentals: {
@@ -479,6 +485,20 @@ export const useAppState = () => {
                   });
                 }
               }
+            }
+            
+            if (item.table === 'inspections') {
+              mappedData = mappedData.map(ins => {
+                const items = ins.items || {};
+                return {
+                  ...ins,
+                  externalCleanliness: items.externalCleanliness || ins.externalCleanliness,
+                  internalCleanliness: items.internalCleanliness || ins.internalCleanliness,
+                  lastOilChangeDate: items.lastOilChangeDate || ins.lastOilChangeDate,
+                  lastOilChangeKm: items.lastOilChangeKm || ins.lastOilChangeKm,
+                  nextOilChangeKm: items.nextOilChangeKm || ins.nextOilChangeKm,
+                };
+              });
             }
             
             item.setter(mappedData);
@@ -1823,7 +1843,22 @@ export const useAppState = () => {
         }
       }));
 
-      // 2. Upload Damage Photos in Parallel
+      // 2. Upload Additional Photos in Parallel
+      const additionalPhotos = inspection.additionalPhotos || [];
+      const uploadedAdditional = await Promise.all(additionalPhotos.map(async (photoObj) => {
+        if (photoObj.file) {
+          const url = await uploadFile(photoObj.file, `vistorias/${inspection.vehiclePlate}/adicionais`);
+          return { preview: url };
+        }
+        return photoObj;
+      }));
+
+      // Store additional photos under 'additional' key of photos object
+      if (uploadedAdditional.length > 0) {
+        uploadedPhotos.additional = uploadedAdditional;
+      }
+
+      // 3. Upload Damage Photos in Parallel
       const validDamages = (inspection.damages || []).filter(d => d.photo || d.description);
       const uploadedDamages = await Promise.all(validDamages.map(async (dmg) => {
         if (dmg.photo && dmg.photo.file) {
@@ -1833,7 +1868,7 @@ export const useAppState = () => {
         return dmg;
       }));
 
-      // 3. Upload Video if exists
+      // 4. Upload Video if exists
       let videoUrl = inspection.video;
       if (inspection.video && inspection.video.file) {
         const url = await uploadFile(inspection.video.file, `vistorias/${inspection.vehiclePlate}/videos`);
@@ -1844,16 +1879,37 @@ export const useAppState = () => {
         ...inspection,
         photos: uploadedPhotos,
         damages: uploadedDamages,
-        video: videoUrl
+        video: videoUrl,
+        items: {
+          externalCleanliness: inspection.externalCleanliness,
+          internalCleanliness: inspection.internalCleanliness,
+          lastOilChangeDate: inspection.lastOilChangeDate,
+          lastOilChangeKm: inspection.lastOilChangeKm,
+          nextOilChangeKm: inspection.nextOilChangeKm,
+        }
       };
+      delete finalInspection.additionalPhotos;
+      delete finalInspection.externalCleanliness;
+      delete finalInspection.internalCleanliness;
+      delete finalInspection.lastOilChangeDate;
+      delete finalInspection.lastOilChangeKm;
+      delete finalInspection.nextOilChangeKm;
 
       const { data, error } = await supabase.from('inspections').insert([mapToSnake(finalInspection)]).select();
       if (error) throw error;
       
       if (data) {
         const newInsp = mapToCamel(data)[0];
-        setInspections(prev => [newInsp, ...prev]);
-        logActivity('Criar', 'Vistoria', newInsp.id, `Realizou vistoria de ${newInsp.type} para o veículo ${newInsp.vehiclePlate}`);
+        const unpackedInsp = {
+          ...newInsp,
+          externalCleanliness: newInsp.items?.externalCleanliness || newInsp.externalCleanliness,
+          internalCleanliness: newInsp.items?.internalCleanliness || newInsp.internalCleanliness,
+          lastOilChangeDate: newInsp.items?.lastOilChangeDate || newInsp.lastOilChangeDate,
+          lastOilChangeKm: newInsp.items?.lastOilChangeKm || newInsp.lastOilChangeKm,
+          nextOilChangeKm: newInsp.items?.nextOilChangeKm || newInsp.nextOilChangeKm,
+        };
+        setInspections(prev => [unpackedInsp, ...prev]);
+        logActivity('Criar', 'Vistoria', unpackedInsp.id, `Realizou vistoria de ${unpackedInsp.type} para o veículo ${unpackedInsp.vehiclePlate}`);
       }
     } catch (err) {
       console.error('Erro ao salvar vistoria com arquivos:', err.message);

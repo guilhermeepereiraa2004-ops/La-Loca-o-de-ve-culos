@@ -403,9 +403,17 @@ const RentalDetailModal = ({
                         </div>
                         
                         <div className="flex gap-2 overflow-x-auto pb-4 custom-scrollbar">
-                          {Object.values(ins.photos || {}).map((photo, i) => (
-                            <div key={i} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-neutral-100 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedImage(getFileUrl(photo))}>
-                              <img src={getFileUrl(photo)} className="w-full h-full object-cover" alt="Vistoria" />
+                          {Object.entries(ins.photos || {})
+                            .filter(([key]) => key !== 'additional')
+                            .map(([key, photo], i) => (
+                              <div key={i} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-neutral-100 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedImage(getFileUrl(photo))}>
+                                <img src={getFileUrl(photo)} className="w-full h-full object-cover" alt="Vistoria" />
+                              </div>
+                            ))}
+                          {ins.photos?.additional && ins.photos.additional.map((photo, i) => (
+                            <div key={`add-${i}`} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-dashed border-[#C5A059]/40 cursor-pointer hover:opacity-80 transition-opacity relative" onClick={() => setSelectedImage(getFileUrl(photo))}>
+                              <img src={getFileUrl(photo)} className="w-full h-full object-cover" alt="Vistoria Adicional" />
+                              <span className="absolute bottom-1 right-1 bg-[#C5A059] text-[8px] font-black text-neutral-900 px-1 rounded shadow">+</span>
                             </div>
                           ))}
                         </div>

@@ -282,9 +282,19 @@ const AdminDashboard = ({
   const alerts = getDynamicAlerts(vehicles, maintenances, inspections, clients);
 
   // ── Notification system ────────────────────────────────────────────────────
-  const { badges: notifBadges, alerts: notifAlerts, totalCount: notifTotal } = computeNotifications({
+  const { badges: notifBadges, alerts: notifAlerts } = computeNotifications({
     leads, rentals, transactions, maintenances, inspections, vehicles, serviceOrders, replacementContracts,
   });
+
+  const filteredBadges = {};
+  Object.keys(notifBadges).forEach(key => {
+    if (canAccess(key)) {
+      filteredBadges[key] = notifBadges[key];
+    }
+  });
+
+  const filteredAlerts = notifAlerts.filter(alert => canAccess(alert.module));
+  const filteredTotal = Object.values(filteredBadges).reduce((sum, n) => sum + n, 0);
 
   return (
     <div className="min-h-screen xl:h-screen bg-neutral-50 flex animate-in fade-in duration-500 relative xl:overflow-hidden overflow-x-hidden w-full">
@@ -297,7 +307,7 @@ const AdminDashboard = ({
         canAccess={canAccess} 
         onGoHome={onGoHome} 
         onLogout={onLogout}
-        badges={notifBadges}
+        badges={filteredBadges}
       />
 
       <main className="flex-1 flex flex-col min-w-0 h-screen xl:h-screen overflow-hidden transition-all duration-500 xl:ml-16">
@@ -307,14 +317,14 @@ const AdminDashboard = ({
           isSidebarOpen={isSidebarOpen} 
           onSeed={onSeed}
           hasData={vehicles.length > 0}
-          alerts={notifAlerts}
-          totalCount={notifTotal}
+          alerts={filteredAlerts}
+          totalCount={filteredTotal}
           onNavigate={setActiveTab}
         />
 
         <div className="flex-1 overflow-y-auto p-4 md:p-5 xl:p-6 2xl:p-8">
-          {activeTab === 'bi' && <AdminBI stats={biData.mainStats} chartData={biData.chartData} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
-          {activeTab === 'leads' && (
+          {activeTab === 'bi' && canAccess('bi') && <AdminBI stats={biData.mainStats} chartData={biData.chartData} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
+          {activeTab === 'leads' && canAccess('leads') && (
             <AdminLeads 
               leads={leads} leadSearch={leadSearch} setLeadSearch={setLeadSearch}
               leadStatusFilter={leadStatusFilter} setLeadStatusFilter={setLeadStatusFilter}
@@ -324,7 +334,7 @@ const AdminDashboard = ({
               setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
-          {activeTab === 'frota' && (
+          {activeTab === 'frota' && canAccess('frota') && (
             <AdminFrota 
               vehicles={vehicles} inspections={inspections} vehicleSearch={vehicleSearch} 
               setVehicleSearch={setVehicleSearch} vehicleStatusFilter={vehicleStatusFilter}
@@ -338,7 +348,7 @@ const AdminDashboard = ({
               onGoToVistorias={(data) => { if (data) setPendingInspection(data); setActiveTab('vistoria'); }}
             />
           )}
-          {activeTab === 'locacao' && (
+          {activeTab === 'locacao' && canAccess('locacao') && (
             <AdminLocacoes 
               rentals={rentals} inspections={inspections} rentalFilter={rentalFilter}
               setRentalFilter={setRentalFilter} setShowAddForm={setShowAddForm}
@@ -361,9 +371,9 @@ const AdminDashboard = ({
               onRenewContract={handleTriggerRenewal}
             />
           )}
-          {activeTab === 'clientes' && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
-          {activeTab === 'faturamento' && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} onConfirmPayment={onConfirmPayment} />}
-          {activeTab === 'investidores' && (
+          {activeTab === 'clientes' && canAccess('clientes') && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
+          {activeTab === 'faturamento' && canAccess('faturamento') && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} onConfirmPayment={onConfirmPayment} />}
+          {activeTab === 'investidores' && canAccess('investidores') && (
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}
               isEditing={isEditing} setIsEditing={setIsEditing} onAddInvestor={onAddInvestor}
@@ -377,7 +387,7 @@ const AdminDashboard = ({
               onAddTransaction={onAddTransaction}
             />
           )}
-          {activeTab === 'financeiro' && (
+          {activeTab === 'financeiro' && canAccess('financeiro') && (
             <AdminFinanceiro 
               transactions={transactions} financeFilter={financeFilter} setFinanceFilter={setFinanceFilter}
               showFinanceForm={showFinanceForm} setShowFinanceForm={setShowFinanceForm}
@@ -387,8 +397,8 @@ const AdminDashboard = ({
               investors={investors}
             />
           )}
-          {activeTab === 'caucao' && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} />}
-          {activeTab === 'manutencaoAdmin' && (
+          {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} />}
+          {activeTab === 'manutencaoAdmin' && canAccess('manutencaoAdmin') && (
             <AdminManutencao 
               vehicles={vehicles} maintenances={maintenances}
               onAddMaintenance={isAdmin ? onAddMaintenance : undefined}
@@ -397,7 +407,7 @@ const AdminDashboard = ({
               setShowAdminSuccess={setShowAdminSuccess} isReadOnly={!isAdmin}
             />
           )}
-          {activeTab === 'vistoria' && (
+          {activeTab === 'vistoria' && canAccess('vistoria') && (
             <AdminVistoria 
               inspections={inspections} vehicles={vehicles} rentals={rentals} 
               onAddInspection={async (ins) => {
@@ -423,7 +433,7 @@ const AdminDashboard = ({
           {activeTab === 'logs' && canAccess('logs') && (
             <AdminLogs logs={logs} isDbConnected={isLogsDbConnected} />
           )}
-          {activeTab === 'multas' && (
+          {activeTab === 'multas' && canAccess('multas') && (
             <AdminMultas 
               fines={fines}
               isDbConnected={isFinesDbConnected}
@@ -435,7 +445,7 @@ const AdminDashboard = ({
               clients={clients}
             />
           )}
-          {activeTab === 'oficina' && (
+          {activeTab === 'oficina' && canAccess('oficina') && (
             <AdminOficina
               vehicles={vehicles} investors={investors} rentals={rentals}
               serviceOrders={serviceOrders} replacementContracts={replacementContracts}

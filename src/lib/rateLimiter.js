@@ -49,7 +49,7 @@ const RATE_LIMIT_CONFIG = {
 
   // Upload de arquivos (protege contra flood de uploads)
   upload_file: {
-    maxAttempts: 10,
+    maxAttempts: 50,
     windowMs: 5 * 60 * 1000,      // Janela de 5 minutos
     blockDurationMs: 5 * 60 * 1000,  // Bloqueio de 5 minutos
     friendlyName: 'upload de arquivo',

@@ -94,6 +94,20 @@ export const useAdminState = (currentUser) => {
     return (currentUser?.modules || []).includes(moduleId);
   };
 
+  useEffect(() => {
+    if (currentUser && !canAccess(activeTab)) {
+      const allowedTabs = [
+        'bi', 'faturamento', 'frota', 'leads', 'locacao', 'clientes', 
+        'investidores', 'financeiro', 'caucao', 'manutencaoAdmin', 
+        'vistoria', 'multas', 'oficina', 'logs', 'usuarios'
+      ];
+      const firstAllowed = allowedTabs.find(tabId => canAccess(tabId));
+      if (firstAllowed) {
+        setActiveTab(firstAllowed);
+      }
+    }
+  }, [currentUser, activeTab]);
+
   return {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
     showAddForm, setShowAddForm, isEditing, setIsEditing,

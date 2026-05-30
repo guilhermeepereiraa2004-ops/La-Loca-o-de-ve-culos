@@ -3,15 +3,18 @@ import { Plus, User, Shield, Trash2, Edit, Check, X, Eye, EyeOff, Users, Key, Lo
 
 const ALL_MODULES = [
   { id: 'bi',             label: 'Painel BI',       icon: '📊' },
+  { id: 'faturamento',   label: 'Faturamento',     icon: '🧾' },
   { id: 'frota',         label: 'Frota',            icon: '🚗' },
   { id: 'leads',         label: 'Leads',            icon: '📋' },
   { id: 'locacao',       label: 'Locações',         icon: '📝' },
+  { id: 'clientes',      label: 'Clientes',         icon: '👤' },
   { id: 'investidores',  label: 'Investidores',     icon: '💼' },
   { id: 'financeiro',    label: 'Financeiro',       icon: '💰' },
   { id: 'caucao',        label: 'Caução',           icon: '🔐' },
   { id: 'manutencaoAdmin', label: 'Manutenção',     icon: '🔧' },
   { id: 'vistoria',      label: 'Vistoria',         icon: '📷' },
   { id: 'multas',        label: 'Multas',           icon: '🚨' },
+  { id: 'oficina',       label: 'Oficina',          icon: '🛠️' },
   { id: 'logs',          label: 'Logs do Sistema',  icon: '📜' },
 ];
 

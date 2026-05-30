@@ -45,6 +45,7 @@ const AdminMultas = ({
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
   const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrStatus, setOcrStatus] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
   const [showFormSubmitted, setShowFormSubmitted] = useState(false);
 
@@ -167,40 +168,715 @@ const AdminMultas = ({
     });
   }, [fines, search, statusFilter, driverFilter, vehicleFilter]);
 
-  // Simulate OCR upload
-  const handleOcrUpload = (e) => {
-    e.preventDefault();
-    setOcrLoading(true);
+  const loadPdfJs = () => {
+    return new Promise((resolve, reject) => {
+      if (window.pdfjsLib) {
+        resolve(window.pdfjsLib);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      script.onload = () => {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      };
+      script.onerror = (err) => reject(err);
+      document.body.appendChild(script);
+    });
+  };
 
-    // Simulate 1 second analysis
-    setTimeout(() => {
-      // Find an active rental if possible to make the simulation show driver identification
-      const activeRental = rentals.find(r => r.status === 'Ativo');
-      const plate = activeRental ? (activeRental.plate || activeRental.vehiclePlate) : 'QNE-8A90';
+  const loadTesseract = () => {
+    return new Promise((resolve, reject) => {
+      if (window.Tesseract) {
+        resolve(window.Tesseract);
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'https://unpkg.com/tesseract.js@v5.0.5/dist/tesseract.min.js';
+      script.onload = () => resolve(window.Tesseract);
+      script.onerror = (err) => reject(err);
+      document.body.appendChild(script);
+    });
+  };
+
+  const parseOcrText = (text) => {
+    const result = {
+      vehiclePlate: '',
+      infraction: '',
+      date: '',
+      time: '',
+      value: '',
+      location: '',
+      code: ''
+    };
+
+    if (!text) return result;
+
+    const upperText = text.toUpperCase();
+    const lines = text.split('\n');
+
+    // Context helper function
+    const getMultilineContext = (txt, index, length) => {
+      const beforeText = txt.substring(0, index);
+      const afterText = txt.substring(index + length);
       
-      let targetDate = new Date();
-      if (activeRental && activeRental.startDate) {
-        // Pick a date 1 day after rental start date
-        const rentalStart = new Date(activeRental.startDate);
-        rentalStart.setDate(rentalStart.getDate() + 1);
-        targetDate = rentalStart;
-      } else {
-        targetDate.setDate(targetDate.getDate() - 3);
+      const beforeLines = beforeText.split('\n');
+      const afterLines = afterText.split('\n');
+      
+      const prevLinesStr = beforeLines.slice(-4).join('\n');
+      const nextLinesStr = afterLines.slice(0, 4).join('\n');
+      const currentLine = (beforeLines[beforeLines.length - 1] || '') + txt.substring(index, index + length) + (afterLines[0] || '');
+      
+      return (prevLinesStr + '\n' + currentLine + '\n' + nextLinesStr).toUpperCase();
+    };
+
+    // 1. PLACA DO VEÍCULO (AAA-1234 ou AAA1A23)
+    const plateRegex = /\b([A-Z]{3}-?[0-9][A-Z0-9][0-9]{2})\b/g;
+    let plateFound = '';
+    const plateMatches = [];
+    let plateMatch;
+    while ((plateMatch = plateRegex.exec(upperText)) !== null) {
+      let rawPlate = plateMatch[1];
+      if (!rawPlate.includes('-') && rawPlate.length === 7) {
+        rawPlate = rawPlate.substring(0, 3) + '-' + rawPlate.substring(3);
+      }
+      plateMatches.push(rawPlate);
+    }
+    
+    // Cross-reference with registered vehicles
+    const registeredPlates = vehicles.map(v => (v.plate || '').toUpperCase().trim()).filter(Boolean);
+    
+    const matchedRegPlate = plateMatches.find(p => registeredPlates.includes(p));
+    if (matchedRegPlate) {
+      plateFound = matchedRegPlate;
+    } else if (plateMatches.length > 0) {
+      plateFound = plateMatches[0];
+    } else {
+      // Fuzzy search in case of slight OCR errors
+      for (const word of upperText.split(/\s+/)) {
+        const cleanWord = word.replace(/[^A-Z0-9]/g, '');
+        if (cleanWord.length === 7) {
+          let wordPlate = cleanWord.substring(0, 3) + '-' + cleanWord.substring(3);
+          const foundFuzzy = registeredPlates.find(regPlate => {
+            const cleanReg = regPlate.replace('-', '');
+            let diffCount = 0;
+            for (let k = 0; k < 7; k++) {
+              if (cleanReg[k] !== cleanWord[k]) diffCount++;
+            }
+            return diffCount <= 1; // max 1 character difference
+          });
+          if (foundFuzzy) {
+            plateFound = foundFuzzy;
+            break;
+          }
+        }
+      }
+    }
+    result.vehiclePlate = plateFound;
+
+    // 2. DATA DA INFRAÇÃO
+    const dateRegex = /\b([0-2][0-9]|3[01])\/(0[1-9]|1[0-2])\/([0-9]{4})\b/g;
+    const dateCandidates = [];
+    let dateMatch;
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+
+    while ((dateMatch = dateRegex.exec(text)) !== null) {
+      const dStr = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+      const context = getMultilineContext(text, dateMatch.index, dateMatch[0].length);
+      
+      let score = 0;
+      
+      if (context.includes('COMETIMENTO') || context.includes('DO COMET') || context.includes('MOMENTO DA INFRAÇÃO') || context.includes('DATA E HORA')) {
+        score += 120;
+      }
+      if (context.includes('DATA DA INFRAÇÃO') || context.includes('DATA DA INFRACAO') || context.includes('DATA DE COMETIMENTO')) {
+        score += 100;
+      }
+      if (context.includes('LOCAL DA INFRAÇÃO') || context.includes('LOCAL DA INFRACAO')) {
+        score += 40;
+      }
+      if (context.includes('DATA:') || context.includes('DATA ') || context.includes('HORA:')) {
+        score += 30;
+      }
+      
+      if (context.includes('NOTIFIC') || context.includes('AUTUA') || context.includes('EMISS') || context.includes('EXPED') ||
+          context.includes('VENC') || context.includes('LIMIT') || context.includes('PAGAM') || context.includes('GERAD') ||
+          context.includes('IMPRESS') || context.includes('DEFESA') || context.includes('RECURSO') || context.includes('APRESENT')) {
+        score -= 150;
       }
 
-      const dateStr = targetDate.toISOString().split('T')[0];
+      try {
+        const parts = dStr.split('-');
+        const candDate = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+        
+        if (candDate > today) {
+          score -= 500;
+        } else {
+          const fiveYearsAgo = new Date();
+          fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+          if (candDate >= fiveYearsAgo) {
+            score += 15;
+          }
+        }
+      } catch (e) {
+        score -= 500;
+      }
 
-      setFineForm({
-        vehiclePlate: plate,
-        infraction: 'Transitar em velocidade superior à máxima permitida em até 20%',
-        date: dateStr,
-        time: '14:45',
-        value: '130,16',
-        location: 'Av. das Nações Unidas, Km 22.5 - São Paulo/SP',
-        code: '745-50'
+      dateCandidates.push({
+        str: dStr,
+        original: dateMatch[0],
+        index: dateMatch.index,
+        score
       });
+    }
+
+    dateCandidates.sort((a, b) => b.score - a.score);
+
+    if (dateCandidates.length > 0) {
+      const validCandidates = dateCandidates.filter(c => c.score > -200);
+      if (validCandidates.length > 0) {
+        let oldestIndex = 0;
+        let oldestTime = Infinity;
+        validCandidates.forEach((c, idx) => {
+          try {
+            const parts = c.str.split('-');
+            const t = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2])).getTime();
+            if (t < oldestTime) {
+              oldestTime = t;
+              oldestIndex = idx;
+            }
+          } catch (e) {}
+        });
+        
+        validCandidates[oldestIndex].score += 50;
+        validCandidates.sort((a, b) => b.score - a.score);
+        result.date = validCandidates[0].str;
+      } else {
+        result.date = dateCandidates[0].str;
+      }
+    }
+
+    // 3. HORÁRIO DA INFRAÇÃO
+    const timeRegex = /\b([01]?[0-9]|2[0-3]):[0-5][0-9]\b/g;
+    const timeCandidates = [];
+    let timeMatch;
+    
+    while ((timeMatch = timeRegex.exec(text)) !== null) {
+      const context = getMultilineContext(text, timeMatch.index, timeMatch[0].length);
+      let score = 0;
+      
+      if (result.date) {
+        const parts = result.date.split('-');
+        const dateStr = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        const dateIdx = text.indexOf(dateStr);
+        if (dateIdx !== -1) {
+          const distance = Math.abs(timeMatch.index - dateIdx);
+          if (distance < 50) {
+            score += 150;
+          } else if (distance < 150) {
+            score += 80;
+          }
+        }
+      }
+      
+      if (context.includes('HORA') || context.includes('HORÁRIO') || context.includes('MOMENTO') || context.includes('COMETIMENTO') || context.includes('DO COMET')) {
+        score += 50;
+      }
+      
+      if (context.includes('NOTIFIC') || context.includes('AUTUA') || context.includes('EMISS') || context.includes('EXPED') ||
+          context.includes('VENC') || context.includes('LIMIT') || context.includes('PAGAM') || context.includes('GERAD') || context.includes('IMPRESS')) {
+        score -= 50;
+      }
+      
+      timeCandidates.push({
+        str: timeMatch[0],
+        score
+      });
+    }
+    
+    if (timeCandidates.length > 0) {
+      timeCandidates.sort((a, b) => b.score - a.score);
+      result.time = timeCandidates[0].str;
+    }
+
+    // 4. VALOR DA MULTA (Busca valor integral)
+    const valueRegex = /\b([0-9]{1,3}(?:\.[0-9]{3})*,[0-9]{2})\b/g;
+    const valueCandidates = [];
+    let valueMatch;
+    
+    const standardFineValues = [
+      88.38, 130.16, 195.23, 293.47, 586.94, 880.41, 1467.35, 2934.70, 5869.40,
+      70.70, 104.12, 156.18, 234.78, 469.55, 704.33, 1173.88, 2347.76,
+      53.03, 78.10, 78.09, 117.14, 117.13, 176.08, 352.16, 528.25, 1760.82
+    ];
+
+    while ((valueMatch = valueRegex.exec(text)) !== null) {
+      const vStr = valueMatch[1];
+      const numericVal = parseFloat(vStr.replace(/\./g, '').replace(',', '.'));
+      const context = getMultilineContext(text, valueMatch.index, valueMatch[0].length);
+      
+      if (isNaN(numericVal) || numericVal < 40) continue;
+      
+      let score = 0;
+      const isStandard = standardFineValues.some(v => Math.abs(v - numericVal) < 0.05);
+      if (isStandard) {
+        score += 150;
+        const isFullValue = [88.38, 130.16, 195.23, 293.47, 586.94, 880.41, 1467.35, 2934.70].some(v => Math.abs(v - numericVal) < 0.05);
+        if (isFullValue) {
+          score += 30;
+        }
+      }
+      
+      if (context.includes('VALOR') || context.includes('R$') || context.includes('IMPORTÂNCIA') || context.includes('MULTA')) {
+        score += 80;
+      }
+      
+      if (context.includes('DESCONTO') || context.includes('LIQUIDO') || context.includes('PAGO') || context.includes('COBRADO') || context.includes('%')) {
+        score -= 50;
+      }
+      
+      valueCandidates.push({
+        str: vStr,
+        score
+      });
+    }
+    
+    if (valueCandidates.length > 0) {
+      valueCandidates.sort((a, b) => b.score - a.score);
+      result.value = valueCandidates[0].str;
+    }
+
+    // 5. CÓDIGO DA INFRAÇÃO (Enquadramento)
+    const codeCandidates = [];
+    
+    const commonCtbCodes = [
+      '5010', '5185', '5452', '5541', '5550', '5673', '5746', '5819', '6041', '6050',
+      '6599', '7030', '7048', '7366', '7455', '7463', '7471', '7625', '7633',
+      '7340', '5010', '5185', '5452', '6920', '6939', '5550', '6858'
+    ];
+
+    const codeExcludeTerms = ['MUNIC', 'CIDADE', 'POSTAL', 'CEP', 'CNPJ', 'CPF', 'TELEFONE', 'AGENTE', 'RENAINF', 'NÚMERO', 'NUMERO'];
+
+    const evaluateCodeCandidate = (rawMatch, formattedCode, index) => {
+      const context = getMultilineContext(text, index, rawMatch.length);
+      let score = 0;
+      
+      // Alta prioridade: próximo de "CÓDIGO DA INFRAÇÃO"
+      if (context.includes('CÓDIGO DA INFRAÇÃO') || context.includes('CODIGO DA INFRACAO') || context.includes('CÓDIGO DA INFR') || context.includes('CODIGO DA INFR')) {
+        score += 200;
+      }
+      
+      if (context.includes('CÓDIGO') || context.includes('CODIGO') || context.includes('ENQUADR') || 
+          context.includes('ARTIGO') || context.includes('ART.')) {
+        score += 80;
+      }
+      
+      // Penalizar contextos que NÃO são código de infração
+      if (codeExcludeTerms.some(term => context.includes(term))) {
+        score -= 200;
+      }
+      
+      const normalizedCode = formattedCode.replace(/-/g, '');
+      if (commonCtbCodes.includes(normalizedCode) || commonCtbCodes.includes(normalizedCode.substring(0, 4))) {
+        score += 100;
+      }
+      
+      return score;
+    };
+
+    // ESTRATÉGIA A: Busca inline - extrai o número logo após "CÓDIGO DA INFRAÇÃO"
+    const inlineCodeRegex = /C[ÓO]DIGO\s+DA\s+INFRA[ÇC][ÃA]O[:\s]*(\d{4,5})/i;
+    const inlineCodeMatch = text.match(inlineCodeRegex);
+    if (inlineCodeMatch && inlineCodeMatch[1]) {
+      codeCandidates.push({ str: inlineCodeMatch[1], score: 300 });
+    }
+    
+    // ESTRATÉGIA B: Busca linha-a-linha após "CÓDIGO DA INFRAÇÃO"
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].toUpperCase().trim();
+      if (line.includes('CÓDIGO DA INFRAÇÃO') || line.includes('CODIGO DA INFRACAO') || line.includes('CÓDIGO DA INFR') || line.includes('CODIGO DA INFR')) {
+        // Verifica se o código está na mesma linha
+        const sameLineDigits = lines[i].match(/(\d{4,5})\s*/);
+        if (sameLineDigits) {
+          const cand = sameLineDigits[1];
+          const isExcluded = codeExcludeTerms.some(term => line.includes(term));
+          if (!isExcluded) {
+            codeCandidates.push({ str: cand, score: 250 });
+          }
+        }
+        // Verifica as próximas linhas
+        for (let j = i + 1; j < Math.min(lines.length, i + 4); j++) {
+          const nextLine = lines[j].trim();
+          const digitMatch = nextLine.match(/^(\d{4,5})\b/);
+          if (digitMatch) {
+            codeCandidates.push({ str: digitMatch[1], score: 250 });
+            break;
+          }
+        }
+        break;
+      }
+    }
+
+    // ESTRATÉGIA C: Regex global para códigos de 5 dígitos (XXX-XX ou XXXXX)
+    const ctbCodeRegex5 = /\b([3-7][0-9]{2})[- ]?([0-9]{2})\b/g;
+    let codeMatch;
+    while ((codeMatch = ctbCodeRegex5.exec(text)) !== null) {
+      const formatted = `${codeMatch[1]}${codeMatch[2]}`;
+      const score = evaluateCodeCandidate(codeMatch[0], formatted, codeMatch.index);
+      codeCandidates.push({ str: formatted, score });
+    }
+
+    // ESTRATÉGIA D: Regex global para códigos de 4 dígitos (XXXX)
+    const ctbCodeRegex4 = /\b([3-7][0-9]{3})\b/g;
+    while ((codeMatch = ctbCodeRegex4.exec(text)) !== null) {
+      const cand = codeMatch[1];
+      // Evitar pegar anos (2024, 2025, 2026, etc.)
+      if (parseInt(cand) >= 2000 && parseInt(cand) <= 2099) continue;
+      const score = evaluateCodeCandidate(codeMatch[0], cand, codeMatch.index);
+      codeCandidates.push({ str: cand, score });
+    }
+    
+    if (codeCandidates.length > 0) {
+      codeCandidates.sort((a, b) => b.score - a.score);
+      result.code = codeCandidates[0].score > -100 ? codeCandidates[0].str : '';
+    }
+
+    // 6. LOCAL DA INFRAÇÃO
+    let locationFound = '';
+    
+    // Lista de termos que indicam cabeçalhos/seções administrativas (NÃO são endereços)
+    const locationExcludeTerms = [
+      'IDENTIFICAÇÃO', 'IDENTIFICACAO', 'DATA', 'HORA', 'CÓDIGO', 'CODIGO',
+      'LOCAL DA INFR', 'PROPRIETÁRIO', 'PROPRIETARIO', 'OBSERVAÇ', 'OBSERVAC',
+      'EMBARCADOR', 'TRANSPORTADOR', 'AGENTE', 'AUTUADOR', 'ASSINATURA',
+      'ARRENDATÁRIO', 'ARRENDATARIO', 'SENATRAN', 'NOTIFICAÇÃO', 'NOTIFICACAO',
+      'MENSAGEM', 'ÓRGÃO', 'ORGAO', 'CONDUTOR', 'VEÍCULO', 'VEICULO',
+      'NOME DO MUNIC', 'COMETIMENTO', 'PENALIDADE', 'DESCRIÇÃO', 'DESCRICAO',
+      'ENQUADRAMENTO', 'INFRAÇÃO', 'INFRACAO', 'UF'
+    ];
+    
+    const isAdminLine = (str) => {
+      const u = str.toUpperCase();
+      return locationExcludeTerms.some(term => u.includes(term));
+    };
+
+    // ESTRATÉGIA A: Busca inline no texto contínuo (para PDFs sem quebras de linha)
+    // Procura o padrão: "LOCAL DA INFRAÇÃO" seguido pelo endereço até o próximo campo
+    const inlineLocRegex = /LOCAL\s+DA\s+INFRA[ÇC][ÃA]O[:\s]*([^\n]*?)(?=\s*(?:DATA|HORA|C[ÓO]DIGO|NOME DO|MUNIC[ÍI]PIO|IDENTIFICA[ÇC][ÃA]O|$))/i;
+    const inlineLocMatch = text.match(inlineLocRegex);
+    if (inlineLocMatch && inlineLocMatch[1]) {
+      const candidate = inlineLocMatch[1].trim();
+      if (candidate.length > 3 && !isAdminLine(candidate)) {
+        locationFound = candidate;
+      }
+    }
+
+    // ESTRATÉGIA B: Busca linha-a-linha (para PDFs com quebras de linha corretas)
+    if (!locationFound) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].toUpperCase().trim();
+        // Somente matchear se a linha contém especificamente "LOCAL DA INFRAÇÃO" ou "LOCAL DA INFRACAO"
+        if (line.includes('LOCAL DA INFRAÇÃO') || line.includes('LOCAL DA INFRACAO') || line.includes('LOCAL DO FATO') || line.includes('LOCAL DO COMETIMENTO')) {
+          // Verifica se o endereço está na mesma linha (após o label)
+          const sameLineMatch = lines[i].match(/LOCAL\s+DA\s+INFRA[ÇC][ÃA]O[:\s]*(.+)/i);
+          if (sameLineMatch && sameLineMatch[1]) {
+            const sameLine = sameLineMatch[1].trim();
+            if (sameLine.length > 3 && !isAdminLine(sameLine)) {
+              locationFound = sameLine;
+              break;
+            }
+          }
+          // Senão, pega a próxima linha que não seja cabeçalho
+          for (let j = i + 1; j < Math.min(lines.length, i + 6); j++) {
+            const cand = lines[j].trim();
+            if (cand && cand.length > 3 && !isAdminLine(cand)) {
+              locationFound = cand;
+              break;
+            }
+          }
+          if (locationFound) break;
+        }
+      }
+    }
+
+    // ESTRATÉGIA C: Fallback - busca padrões de endereço conhecidos
+    if (!locationFound) {
+      const addressPatterns = [
+        /\b(BR[-\s]?\d{2,3}\s*KM\s*[\d.,]+)/i,
+        /\b(ROD(?:OVIA)?[\s.]+[A-ZÀ-Ú\s]+\s*KM\s*[\d.,]+)/i,
+        /\b(AV(?:ENIDA)?[\s.]+[A-ZÀ-Ú\s,]+\d*)/i,
+        /\b(RUA\s+[A-ZÀ-Ú\s,]+\d*)/i,
+        /\b(ESTRADA\s+[A-ZÀ-Ú\s,]+\d*)/i
+      ];
+      for (const pattern of addressPatterns) {
+        const addrMatch = text.match(pattern);
+        if (addrMatch && addrMatch[1]) {
+          const candidate = addrMatch[1].trim();
+          if (!isAdminLine(candidate)) {
+            locationFound = candidate;
+            break;
+          }
+        }
+      }
+    }
+
+    // ESTRATÉGIA D: Último fallback - linhas com termos de endereço
+    if (!locationFound) {
+      const locationLines = lines.filter(line => {
+        const l = line.toUpperCase();
+        if (isAdminLine(l)) return false;
+        return l.includes('RUA ') || l.includes('AV. ') || l.includes('AVENIDA ') || l.includes('RODOVIA ') || l.includes('ROD. ') || l.includes(' KM ') || l.includes('ESTRADA ') || l.includes('BR-') || l.includes('BR ');
+      });
+      if (locationLines.length > 0) {
+        locationFound = locationLines[0].trim();
+      }
+    }
+    result.location = locationFound.substring(0, 100);
+
+    // 7. INFRAÇÃO COMETIDA
+    const lowerText = text.toLowerCase();
+    const cleanCode = result.code.replace(/-/g, '');
+    
+    // PRIORIDADE 1: Extrair diretamente do campo "DESCRIÇÃO DA INFRAÇÃO" no PDF
+    let infractionFromPdf = '';
+    
+    // Inline regex para texto contínuo
+    const inlineDescRegex = /DESCRI[ÇC][ÃA]O\s+DA\s+INFRA[ÇC][ÃA]O[:\s]*([^\n]+?)(?=\s*(?:MEDI[ÇC][ÃA]O|VALOR\s+CONSIDER|LIMITE\s+REGULAM|N[ÚU]MERO\s+RENAINF|ENQUADRAMENTO|$))/i;
+    const inlineDescMatch = text.match(inlineDescRegex);
+    if (inlineDescMatch && inlineDescMatch[1] && inlineDescMatch[1].trim().length > 10) {
+      infractionFromPdf = inlineDescMatch[1].trim();
+    }
+    
+    // Busca linha-a-linha (concatena múltiplas linhas da descrição)
+    if (!infractionFromPdf) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].toUpperCase().trim();
+        if (line.includes('DESCRIÇÃO DA INFRAÇÃO') || line.includes('DESCRICAO DA INFRACAO') || line.includes('DESCRIÇÃO DA INFR') || line.includes('DESCRICAO DA INFR')) {
+          // Verifica se a descrição está na mesma linha
+          const sameLineMatch = lines[i].match(/DESCRI[ÇC][ÃA]O\s+DA\s+INFRA[ÇC][ÃA]O[:\s]*(.+)/i);
+          if (sameLineMatch && sameLineMatch[1] && sameLineMatch[1].trim().length > 5) {
+            infractionFromPdf = sameLineMatch[1].trim();
+          }
+          // Concatena as próximas linhas até encontrar um cabeçalho de outra seção
+          const startJ = infractionFromPdf ? i + 2 : i + 1;
+          for (let j = infractionFromPdf ? i + 1 : i + 1; j < Math.min(lines.length, i + 6); j++) {
+            const cand = lines[j].trim();
+            const candUpper = cand.toUpperCase();
+            // Para se encontrar cabeçalho de outra seção
+            if (candUpper.includes('MEDIÇÃO') || candUpper.includes('MEDICAO') ||
+                candUpper.includes('VALOR CONSIDER') || candUpper.includes('LIMITE REGULAM') ||
+                candUpper.includes('NÚMERO RENAINF') || candUpper.includes('NUMERO RENAINF') ||
+                candUpper.includes('ENQUADRAMENTO') || candUpper.includes('MEDIÇÃO REALIZADA') ||
+                candUpper.includes('MEDICAO REALIZADA') || candUpper.includes('VALOR DA MULTA') ||
+                candUpper.includes('DESDOBRAMENTO') || candUpper.includes('CÓDIGO DA INFR') ||
+                candUpper.includes('CODIGO DA INFR') || !cand) {
+              break;
+            }
+            // Linha curta de continuação (ex: "20%") ou linha longa
+            if (cand.length > 0) {
+              if (infractionFromPdf) {
+                infractionFromPdf += ' ' + cand;
+              } else {
+                infractionFromPdf = cand;
+              }
+            }
+          }
+          break;
+        }
+      }
+    }
+    
+    if (infractionFromPdf) {
+      result.infraction = infractionFromPdf;
+    } else if (cleanCode.startsWith('7455') || cleanCode === '74550') {
+      result.infraction = 'Transitar em velocidade superior à máxima permitida em até 20%';
+    } else if (cleanCode.startsWith('7463') || cleanCode === '74630') {
+      result.infraction = 'Transitar em velocidade superior à máxima permitida em mais de 20% até 50%';
+    } else if (cleanCode.startsWith('7471') || cleanCode === '74710') {
+      result.infraction = 'Transitar em velocidade superior à máxima permitida em mais de 50%';
+    } else if (cleanCode.startsWith('6050') || cleanCode.startsWith('6051')) {
+      result.infraction = 'Avançar o sinal vermelho do semáforo';
+    } else if (cleanCode.startsWith('7633')) {
+      result.infraction = 'Dirigir veículo manuseando/segurando telefone celular';
+    } else if (cleanCode.startsWith('5185')) {
+      result.infraction = 'Conduzir veículo sem uso do cinto de segurança';
+    } else if (lowerText.includes('velocidade')) {
+      if (lowerText.includes('20% a 50%') || lowerText.includes('20% até 50%') || lowerText.includes('20 a 50%')) {
+        result.infraction = 'Transitar em velocidade superior à máxima permitida em mais de 20% até 50%';
+      } else if (lowerText.includes('50%')) {
+        result.infraction = 'Transitar em velocidade superior à máxima permitida em mais de 50%';
+      } else {
+        result.infraction = 'Transitar em velocidade superior à máxima permitida em até 20%';
+      }
+    } else if (lowerText.includes('sinal') || lowerText.includes('vermelho')) {
+      result.infraction = 'Avançar o sinal vermelho do semáforo';
+    } else if (lowerText.includes('celular') || lowerText.includes('telefone')) {
+      result.infraction = 'Dirigir veículo manuseando telefone celular';
+    } else if (lowerText.includes('cinto') || lowerText.includes('seguranca') || lowerText.includes('segurança')) {
+      result.infraction = 'Conduzir veículo sem uso do cinto de segurança';
+    } else if (lowerText.includes('estacionar') || lowerText.includes('proibido')) {
+      result.infraction = 'Estacionar o veículo em local proibido pela sinalização';
+    } else {
+      const cleanLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 15 && !l.includes('LOCAÇÃO') && !l.includes('MULTA') && !l.includes('IDENTIFICAÇÃO') && !l.includes('LOCAL'));
+      if (cleanLines.length > 0) {
+        result.infraction = cleanLines[0];
+      } else {
+        result.infraction = 'Infração de trânsito detectada via OCR';
+      }
+    }
+
+    return result;
+  };
+
+  const handleOcrClick = (e) => {
+    e.preventDefault();
+    if (ocrLoading) return;
+    document.getElementById('ocr-file-input')?.click();
+  };
+
+  const handleOcrFileChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOcrLoading(true);
+    setOcrStatus('Carregando arquivo...');
+
+    try {
+      let text = '';
+      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+
+      if (isPdf) {
+        setOcrStatus('Carregando leitor de PDF...');
+        const pdfjsLib = await loadPdfJs();
+        
+        setOcrStatus('Lendo arquivo PDF...');
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        let extractedText = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          
+          let lastY = null;
+          let pageText = '';
+          for (const item of textContent.items) {
+            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
+              pageText += '\n';
+            } else if (item.hasEOL) {
+              pageText += '\n';
+            } else if (pageText && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
+              pageText += ' ';
+            }
+            pageText += item.str;
+            lastY = item.transform[5];
+          }
+          extractedText += pageText + '\n';
+        }
+
+        // Se o PDF tiver texto nativo relevante
+        if (extractedText.trim().length > 20) {
+          text = extractedText;
+        } else {
+          // É um PDF escaneado (imagem). Renderiza a primeira página para canvas para fazer OCR
+          setOcrStatus('PDF digitalizado detectado. Renderizando página...');
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2.0 }); // 2x scale for better OCR accuracy
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          canvas.height = viewport.height;
+          canvas.width = viewport.width;
+          
+          await page.render({ canvasContext: context, viewport }).promise;
+          
+          setOcrStatus('Carregando biblioteca de OCR...');
+          const Tesseract = await loadTesseract();
+          setOcrStatus('Analisando imagem do PDF...');
+          
+          const worker = await Tesseract.createWorker('por', 1, {
+            logger: m => {
+              if (m.status === 'recognizing text') {
+                const pct = Math.round(m.progress * 100);
+                setOcrStatus(`Lendo imagem do PDF: ${pct}%`);
+              } else {
+                setOcrStatus('Processando imagem do PDF...');
+              }
+            }
+          });
+          
+          const { data: { text: ocrText } } = await worker.recognize(canvas);
+          await worker.terminate();
+          text = ocrText;
+        }
+      } else {
+        // É uma imagem normal
+        setOcrStatus('Carregando biblioteca de OCR...');
+        const Tesseract = await loadTesseract();
+        setOcrStatus('Iniciando processamento...');
+        
+        const worker = await Tesseract.createWorker('por', 1, {
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              const pct = Math.round(m.progress * 100);
+              setOcrStatus(`Lendo imagem: ${pct}%`);
+            } else {
+              setOcrStatus('Processando imagem...');
+            }
+          }
+        });
+        
+        const { data: { text: ocrText } } = await worker.recognize(file);
+        await worker.terminate();
+        text = ocrText;
+      }
+
+      setOcrStatus('Analisando informações...');
+      console.log('=== TEXTO EXTRAÍDO DO DOCUMENTO ===');
+      console.log(text);
+      console.log('=== FIM DO TEXTO ===');
+      const parsed = parseOcrText(text);
+      console.log('=== RESULTADO DO PARSING ===', parsed);
+
+      setFineForm(prev => ({
+        ...prev,
+        ...parsed
+      }));
+
+      alert('Documento lido com sucesso! Os campos identificados foram preenchidos.');
+    } catch (err) {
+      console.error('OCR/PDF Error:', err);
+      setOcrStatus('Erro. Usando dados simulados...');
+      
+      setTimeout(() => {
+        const activeRental = rentals.find(r => r.status === 'Ativo');
+        const plate = activeRental ? (activeRental.plate || activeRental.vehiclePlate) : 'QNE-8A90';
+        let targetDate = new Date();
+        if (activeRental && activeRental.startDate) {
+          const rentalStart = new Date(activeRental.startDate);
+          rentalStart.setDate(rentalStart.getDate() + 1);
+          targetDate = rentalStart;
+        } else {
+          targetDate.setDate(targetDate.getDate() - 3);
+        }
+        const dateStr = targetDate.toISOString().split('T')[0];
+
+        setFineForm({
+          vehiclePlate: plate,
+          infraction: 'Transitar em velocidade superior à máxima permitida em até 20% (Simulado - falha na leitura do arquivo)',
+          date: dateStr,
+          time: '14:45',
+          value: '130,16',
+          location: 'Av. das Nações Unidas, Km 22.5 - São Paulo/SP (Simulado)',
+          code: '745-50'
+        });
+        alert('Não foi possível ler este arquivo. Preenchemos com dados simulados para teste.');
+      }, 1000);
+    } finally {
       setOcrLoading(false);
-    }, 1200);
+      setOcrStatus('');
+      e.target.value = '';
+    }
   };
 
   // API Sync
@@ -796,17 +1472,24 @@ const AdminMultas = ({
             <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-10">
               
               {/* OCR IA Drop Area */}
-              <div 
-                onClick={handleOcrUpload}
+              <label 
+                htmlFor="ocr-file-input"
                 className={`p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${
                   ocrLoading ? 'border-[#C5A059] bg-[#C5A059]/5' : 'border-neutral-200 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white hover:shadow-xl'
                 }`}
               >
+                <input 
+                  type="file" 
+                  id="ocr-file-input" 
+                  accept="image/*,application/pdf" 
+                  className="hidden" 
+                  onChange={handleOcrFileChange} 
+                />
                 {ocrLoading ? (
                   <div className="flex flex-col items-center gap-4 py-4">
                     <Loader2 size={36} className="animate-spin text-[#C5A059]" />
                     <div className="text-center">
-                      <p className="text-xs font-black uppercase tracking-wider text-neutral-900">Analisando documento via OCR/IA...</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-[#C5A059]">{ocrStatus || 'Analisando documento...'}</p>
                       <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">Extraindo placa, valor, código de infração e local...</p>
                     </div>
                   </div>
@@ -821,7 +1504,7 @@ const AdminMultas = ({
                     </div>
                   </>
                 )}
-              </div>
+              </label>
 
               {/* Form Input fields */}
               <form onSubmit={handleSubmit} className="space-y-8">
@@ -968,7 +1651,7 @@ const AdminMultas = ({
                     className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm text-neutral-900"
                   >
                     <option value="">-- Usar identificação automática do sistema --</option>
-                    <option value="Administradora">L.A Locadora (Administradora / Sem Condutor)</option>
+                    <option value="Administradora">L.A Veículos (Administradora / Sem Condutor)</option>
                     {clients.map(c => (
                       <option key={c.id} value={c.id}>{c.nome || c.name} (CPF: {c.cpf || '—'})</option>
                     ))}
@@ -1123,7 +1806,7 @@ const AdminMultas = ({
                 <div className="grid grid-cols-2 gap-10 pt-12">
                   <div className="text-center space-y-1">
                     <div className="border-t border-neutral-950 w-full mx-auto" />
-                    <span className="text-[9px] font-black uppercase text-neutral-400">Assinatura do Proprietário (L.A Locadora)</span>
+                    <span className="text-[9px] font-black uppercase text-neutral-400">Assinatura do Proprietário (L.A Veículos)</span>
                   </div>
                   <div className="text-center space-y-1">
                     <div className="border-t border-neutral-950 w-full mx-auto" />
@@ -1169,7 +1852,7 @@ const AdminMultas = ({
                 className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-xs text-neutral-900"
               >
                 <option value="">-- Selecione o Motorista --</option>
-                <option value="Administradora">L.A Locadora (Administradora / Sem Condutor)</option>
+                <option value="Administradora">L.A Veículos (Administradora / Sem Condutor)</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>{c.nome || c.name} (CPF: {c.cpf || '—'})</option>
                 ))}
