@@ -329,7 +329,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
               
               <div className="flex items-center gap-3 mb-8 relative z-10">
                 <AlertTriangle size={18} className="text-[#C5A059]" />
-                <h5 className="text-sm font-black uppercase tracking-widest text-white">Itens a Descontar da Caução</h5>
+                <h5 className="text-sm font-black uppercase tracking-widest text-white">Itens a pagar</h5>
               </div>
 
               <div className="space-y-4 relative z-10">

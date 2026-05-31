@@ -2,6 +2,31 @@ import React, { useState } from 'react';
 import { ArrowDownLeft, ArrowUpRight, Wallet, Plus, X } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
+const formatTransactionDateTime = (t) => {
+  if (t.createdAt) {
+    try {
+      const d = new Date(t.createdAt);
+      if (!isNaN(d.getTime())) {
+        const datePart = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        const timePart = d.toLocaleTimeString('pt-BR', { 
+          timeZone: 'America/Sao_Paulo', 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+        return `${datePart} às ${timePart}`;
+      }
+    } catch (err) {
+      console.error("Erro ao formatar data/hora da transação:", err);
+    }
+  }
+  
+  if (t.date && t.date.includes('-')) {
+    return t.date.substring(0, 10).split('-').reverse().join('/');
+  }
+  return t.date || '—';
+};
+
 const AdminFinanceiro = ({
   transactions,
   financeFilter,
@@ -213,7 +238,7 @@ const AdminFinanceiro = ({
                             </div>
                             <div>
                               <p className="text-sm font-black text-neutral-900">{t.desc}</p>
-                              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
+                              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{formatTransactionDateTime(t)}</p>
                             </div>
                           </div>
                         </td>
@@ -283,7 +308,7 @@ const AdminFinanceiro = ({
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
-                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{t.date && t.date.includes('-') ? t.date.substring(0, 10).split('-').reverse().join('/') : t.date || '—'}</p>
+                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{formatTransactionDateTime(t)}</p>
                         </div>
                       </div>
                       <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>

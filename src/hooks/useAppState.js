@@ -72,7 +72,9 @@ const TABLE_MAPPINGS = {
     entryDate: 'entry_date',
     isFavorite: 'is_favorite',
     status: 'status',
-    dividend: 'dividend'
+    dividend: 'dividend',
+    crlv: 'crlv',
+    crv: 'crv'
   },
   clients: {
     id: 'id',
@@ -111,7 +113,8 @@ const TABLE_MAPPINGS = {
     date: 'date',
     vehiclePlate: 'vehicle_plate',
     responsible: 'responsible',
-    status: 'status'
+    status: 'status',
+    createdAt: 'created_at'
   },
   fines: {
     id: 'id',
@@ -796,7 +799,10 @@ export const useAppState = () => {
       payload['juros_di\u00e1rios'] = parseFloat(rental.dailyInterest) || 0;
       
       payload['status'] = 'Ativo';
-      payload['start_date'] = rental.startDate;
+      payload['start_date'] = rental.startDate || null;
+      if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
+      if (payload['data_de_nascimento'] === '') payload['data_de_nascimento'] = null;
+      if (payload['end_date'] === '') payload['end_date'] = null;
 
       const { data, error } = await supabase.from('rentals').insert([payload]).select();
       if (error) throw error;
@@ -903,10 +909,13 @@ export const useAppState = () => {
       return { success: true };
     } catch (error) {
       console.error("Erro detalhado ao criar locação:", error);
-      // Exibe o erro completo para diagnóstico
       const errorMsg = error.details || error.message || 'Erro desconhecido';
-      const hint = error.hint ? `\n\nDica: ${error.hint}` : '';
-      alert(`ERRO NO BANCO DE DADOS:\n${errorMsg}${hint}\n\nVerifique se as colunas na tabela do Supabase batem com os nomes no código.`);
+      if (errorMsg.includes('invalid input syntax for type date') || errorMsg.includes('type date: ""')) {
+        alert("Atenção: A locação não pôde ser criada porque a Data de Nascimento ou a Validade da CNH estão vazias ou incorretas no formulário. Por favor, verifique-as nos dados do condutor.");
+      } else {
+        const hint = error.hint ? `\n\nDica: ${error.hint}` : '';
+        alert(`ERRO NO BANCO DE DADOS:\n${errorMsg}${hint}\n\nVerifique se as colunas na tabela do Supabase batem com os nomes no código.`);
+      }
       return { success: false, error };
     }
   };
@@ -936,6 +945,21 @@ export const useAppState = () => {
       logActivity('Atualizar', 'Cliente', updatedClient.id, `Atualizou dados do cliente ${updatedClient.nome || updatedClient.name}`);
     }
     return { success: !error, error };
+  };
+
+  const handleDeleteClient = async (id) => {
+    try {
+      const client = clients.find(c => c.id === id);
+      const { error } = await supabase.from('clients').delete().eq('id', id);
+      if (error) throw error;
+      setClients(prev => prev.filter(c => c.id !== id));
+      logActivity('Apagar', 'Cliente', id, `Excluiu o cliente ${client?.nome || client?.name || 'ID: ' + id}`);
+      return true;
+    } catch (err) {
+      console.error("Erro ao apagar cliente:", err);
+      alert(`Erro ao apagar cliente: ${err.message || err.details || 'Erro desconhecido'}`);
+      return false;
+    }
   };
 
   const handleUpdateRental = async (updatedRental) => {
@@ -987,6 +1011,10 @@ export const useAppState = () => {
       delete payload.address;
       
       if (payload.value) payload.value = parseFloat(String(payload.value).replace(/\./g, '').replace(',', '.'));
+      if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
+      if (payload['data_de_nascimento'] === '') payload['data_de_nascimento'] = null;
+      if (payload['start_date'] === '') payload['start_date'] = null;
+      if (payload['end_date'] === '') payload['end_date'] = null;
 
       const { error } = await supabase.from('rentals').update(payload).eq('id', finalRental.id);
       if (error) throw error;
@@ -1066,7 +1094,12 @@ export const useAppState = () => {
       return { success: true };
     } catch (error) {
       console.error("Erro ao atualizar loca\u00e7\u00e3o:", error);
-      alert(`Erro ao salvar: ${error.message}`);
+      const errorMsg = error.message || 'Erro desconhecido';
+      if (errorMsg.includes('invalid input syntax for type date') || errorMsg.includes('type date: ""')) {
+        alert("Atenção: A locação não pôde ser salva porque a Data de Nascimento ou a Validade da CNH estão vazias ou incorretas no formulário. Por favor, verifique-as nos dados do condutor.");
+      } else {
+        alert(`Erro ao salvar: ${errorMsg}`);
+      }
       return { success: false, error };
     }
   };
@@ -1153,6 +1186,16 @@ export const useAppState = () => {
       imageUrl = await uploadFile(vehicle.imageFile, 'veiculos');
     }
 
+    let crlvUrl = vehicle.crlv;
+    if (vehicle.crlvFile) {
+      crlvUrl = await uploadFile(vehicle.crlvFile, 'veiculos');
+    }
+
+    let crvUrl = vehicle.crv;
+    if (vehicle.crvFile) {
+      crvUrl = await uploadFile(vehicle.crvFile, 'veiculos');
+    }
+
     const parseBRL = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -1166,6 +1209,8 @@ export const useAppState = () => {
     const dbVehicle = mapToSnake({
       ...vehicle,
       image: imageUrl,
+      crlv: crlvUrl,
+      crv: crvUrl,
       investorId,
       status: 'Disponível'
     }, 'vehicles');
@@ -1214,6 +1259,16 @@ export const useAppState = () => {
       imageUrl = await uploadFile(vehicle.imageFile, 'veiculos');
     }
 
+    let crlvUrl = vehicle.crlv;
+    if (vehicle.crlvFile) {
+      crlvUrl = await uploadFile(vehicle.crlvFile, 'veiculos');
+    }
+
+    let crvUrl = vehicle.crv;
+    if (vehicle.crvFile) {
+      crvUrl = await uploadFile(vehicle.crvFile, 'veiculos');
+    }
+
     const parseBRL = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -1224,7 +1279,7 @@ export const useAppState = () => {
     const investorObj = investors.find(inv => inv.name === vehicle.investor || inv.id === vehicle.investor || inv.id === vehicle.investorId);
     const investorId = investorObj ? investorObj.id : null;
 
-    const vehicleData = { ...vehicle, image: imageUrl, investorId };
+    const vehicleData = { ...vehicle, image: imageUrl, crlv: crlvUrl, crv: crvUrl, investorId };
     const dbVehicle = mapToSnake(vehicleData, 'vehicles');
     
     // Manual overrides for parsed values
@@ -2059,7 +2114,7 @@ export const useAppState = () => {
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleAddLead, handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleRenewRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
-    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleAddTransaction,
+    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleDeleteClient, handleAddTransaction,
     handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,

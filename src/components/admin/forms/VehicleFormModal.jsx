@@ -1,10 +1,24 @@
 import React from 'react';
-import { X, Car, Users, TrendingUp, Wrench, Camera, Check } from 'lucide-react';
+import { X, Car, Users, TrendingUp, Wrench, Camera, Check, FileText } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
+import ImageEditorModal from '../modals/ImageEditorModal';
 
 const VehicleFormModal = ({ 
   isOpen, onClose, isEditing, vehicleForm, setVehicleForm, investors, onSubmit 
 }) => {
+  const [isEditorOpen, setIsEditorOpen] = React.useState(false);
+  const [tempImageSrc, setTempImageSrc] = React.useState('');
+
+  const handleEditorSave = (editedFile, editedDataUrl) => {
+    setVehicleForm({
+      ...vehicleForm,
+      imageFile: editedFile,
+      imagePreview: editedDataUrl,
+      image: editedDataUrl
+    });
+    setIsEditorOpen(false);
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -404,14 +418,11 @@ const VehicleFormModal = ({
                         if (file) {
                           const reader = new FileReader();
                           reader.onloadend = () => {
-                            setVehicleForm({
-                              ...vehicleForm, 
-                              imageFile: file,
-                              imagePreview: reader.result,
-                              image: reader.result
-                            });
+                            setTempImageSrc(reader.result);
+                            setIsEditorOpen(true);
                           };
                           reader.readAsDataURL(file);
+                          e.target.value = '';
                         }
                       }} 
                     />
@@ -420,11 +431,25 @@ const VehicleFormModal = ({
 
                 <div className="relative rounded-[2.5rem] overflow-hidden bg-neutral-100 border border-neutral-200 aspect-video flex items-center justify-center group shadow-inner">
                   {vehicleForm.imagePreview || vehicleForm.image ? (
-                    <img 
-                      src={vehicleForm.imagePreview || vehicleForm.image} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
-                    />
+                    <>
+                      <img 
+                        src={vehicleForm.imagePreview || vehicleForm.image} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" 
+                      />
+                      <div className="absolute inset-0 bg-neutral-955/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTempImageSrc(vehicleForm.imagePreview || vehicleForm.image);
+                            setIsEditorOpen(true);
+                          }}
+                          className="bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-widest px-6 py-3 rounded-xl hover:bg-white transition-all shadow-xl"
+                        >
+                          Ajustar Foto
+                        </button>
+                      </div>
+                    </>
                   ) : (
                     <div className="flex flex-col items-center gap-3 text-neutral-300">
                       <Car size={48} strokeWidth={1} />
@@ -438,7 +463,198 @@ const VehicleFormModal = ({
               </div>
             </div>
           </div>
+
+          {/* CRLV do Veículo */}
+          <div className="pt-6 border-t border-neutral-100">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]"><FileText size={16} /></div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Documento do Veículo (CRLV)</h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <p className="text-[10px] text-neutral-400 font-bold uppercase leading-relaxed">Insira o documento CRLV em formato PDF ou imagem. Isso permitirá a visualização direta e download no dossiê do veículo.</p>
+                  
+                  <label className={`relative group cursor-pointer flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed rounded-[2.5rem] transition-all overflow-hidden ${vehicleForm.crlvFile || vehicleForm.crlv ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-200 hover:border-[#C5A059] hover:bg-neutral-50'}`}>
+                    {vehicleForm.crlvFile || vehicleForm.crlv ? (
+                      <>
+                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shadow-lg shadow-emerald-200/50">
+                          <Check size={24} />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-black uppercase tracking-widest text-emerald-600 block mb-1">CRLV Vinculado</span>
+                          <span className="text-[10px] text-emerald-400 font-bold truncate max-w-[250px] block">
+                            {vehicleForm.crlvFile ? vehicleForm.crlvFile.name : 'Arquivo CRLV Atual'}
+                          </span>
+                        </div>
+                        <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <span className="text-white text-[10px] font-black uppercase tracking-widest bg-neutral-900/80 px-6 py-3 rounded-full">Substituir Documento</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-300 group-hover:text-[#C5A059] group-hover:bg-[#C5A059]/10 transition-all">
+                          <FileText size={24} />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-black uppercase tracking-widest text-neutral-900 block mb-1">Selecionar CRLV</span>
+                          <span className="text-[10px] text-neutral-400 font-bold uppercase">PDF, PNG ou JPG</span>
+                        </div>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      accept=".pdf,image/*"
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setVehicleForm({
+                            ...vehicleForm,
+                            crlvFile: file,
+                            crlv: ''
+                          });
+                        }
+                      }} 
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col justify-center items-center p-6 bg-neutral-50 rounded-[2.5rem] border border-neutral-100 text-center font-bold">
+                  {vehicleForm.crlv || vehicleForm.crlvFile ? (
+                    <div className="space-y-4">
+                      <div className="w-16 h-16 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center mx-auto text-[#C5A059]">
+                        <FileText size={32} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-800 block">Documento Pronto</span>
+                        {vehicleForm.crlv && (
+                          <a href={vehicleForm.crlv} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#C5A059] font-black uppercase tracking-wider hover:underline mt-2 inline-block">
+                            Visualizar Documento Atual
+                          </a>
+                        )}
+                      </div>
+                      {(vehicleForm.crlv || vehicleForm.crlvFile) && (
+                        <button 
+                          type="button" 
+                          onClick={() => setVehicleForm({...vehicleForm, crlv: '', crlvFile: null})} 
+                          className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest cursor-pointer"
+                        >
+                          Remover Documento
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-neutral-300">
+                      <FileText size={48} strokeWidth={1} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Nenhum CRLV Anexado</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CRV do Veículo */}
+          <div className="pt-6 border-t border-neutral-100">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]"><FileText size={16} /></div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Documento do Veículo (CRV)</h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <p className="text-[10px] text-neutral-400 font-bold uppercase leading-relaxed">Insira o documento CRV em formato PDF ou imagem. Isso permitirá a visualização direta e download no dossiê do veículo.</p>
+                  
+                  <label className={`relative group cursor-pointer flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed rounded-[2.5rem] transition-all overflow-hidden ${vehicleForm.crvFile || vehicleForm.crv ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-200 hover:border-[#C5A059] hover:bg-neutral-50'}`}>
+                    {vehicleForm.crvFile || vehicleForm.crv ? (
+                      <>
+                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shadow-lg shadow-emerald-200/50">
+                          <Check size={24} />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-black uppercase tracking-widest text-emerald-600 block mb-1">CRV Vinculado</span>
+                          <span className="text-[10px] text-emerald-400 font-bold truncate max-w-[250px] block">
+                            {vehicleForm.crvFile ? vehicleForm.crvFile.name : 'Arquivo CRV Atual'}
+                          </span>
+                        </div>
+                        <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <span className="text-white text-[10px] font-black uppercase tracking-widest bg-neutral-900/80 px-6 py-3 rounded-full">Substituir Documento</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-300 group-hover:text-[#C5A059] group-hover:bg-[#C5A059]/10 transition-all">
+                          <FileText size={24} />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-black uppercase tracking-widest text-neutral-900 block mb-1">Selecionar CRV</span>
+                          <span className="text-[10px] text-neutral-400 font-bold uppercase">PDF, PNG ou JPG</span>
+                        </div>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      accept=".pdf,image/*"
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setVehicleForm({
+                            ...vehicleForm,
+                            crvFile: file,
+                            crv: ''
+                          });
+                        }
+                      }} 
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col justify-center items-center p-6 bg-neutral-50 rounded-[2.5rem] border border-neutral-100 text-center font-bold">
+                  {vehicleForm.crv || vehicleForm.crvFile ? (
+                    <div className="space-y-4">
+                      <div className="w-16 h-16 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center mx-auto text-[#C5A059]">
+                        <FileText size={32} />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-widest text-neutral-800 block">Documento Pronto</span>
+                        {vehicleForm.crv && (
+                          <a href={vehicleForm.crv} target="_blank" rel="noopener noreferrer" className="text-[10px] text-[#C5A059] font-black uppercase tracking-wider hover:underline mt-2 inline-block">
+                            Visualizar Documento Atual
+                          </a>
+                        )}
+                      </div>
+                      {(vehicleForm.crv || vehicleForm.crvFile) && (
+                        <button 
+                          type="button" 
+                          onClick={() => setVehicleForm({...vehicleForm, crv: '', crvFile: null})} 
+                          className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest cursor-pointer"
+                        >
+                          Remover Documento
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 text-neutral-300">
+                      <FileText size={48} strokeWidth={1} />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Nenhum CRV Anexado</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
         </form>
+
+        <ImageEditorModal
+          isOpen={isEditorOpen}
+          imageSrc={tempImageSrc}
+          onClose={() => setIsEditorOpen(false)}
+          onSave={handleEditorSave}
+        />
         
         {/* Footer */}
         <div className="p-6 md:p-12 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">

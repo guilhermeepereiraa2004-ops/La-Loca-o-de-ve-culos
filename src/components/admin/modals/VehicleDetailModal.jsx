@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Car, Calendar, Gauge, Users, TrendingUp, ShieldCheck, ClipboardCheck, Wrench, AlertTriangle, ChevronRight, Eye } from 'lucide-react';
+import { X, Car, Calendar, Gauge, Users, TrendingUp, ShieldCheck, ClipboardCheck, Wrench, AlertTriangle, ChevronRight, Eye, FileText } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rentals = [], onClose, onGoToVistorias }) => {
@@ -130,6 +130,31 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
                         </div>
                     </div>
                 </section>
+
+                {(vehicle.crlv || vehicle.crv) && (
+                  <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <FileText size={18} className="text-[#C5A059]" />
+                        <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Documentação do Ativo</h4>
+                    </div>
+                    <div className="space-y-3">
+                      {vehicle.crlv && (
+                        <a href={vehicle.crlv} target="_blank" rel="noopener noreferrer"
+                           className="w-full py-4 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 group shadow-lg">
+                          <Eye size={16} />
+                          Visualizar CRLV
+                        </a>
+                      )}
+                      {vehicle.crv && (
+                        <a href={vehicle.crv} target="_blank" rel="noopener noreferrer"
+                           className="w-full py-4 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 group shadow-lg">
+                          <Eye size={16} />
+                          Visualizar CRV
+                        </a>
+                      )}
+                    </div>
+                  </section>
+                )}
 
                 {activeRental && (
                   <section className="space-y-6 animate-in slide-in-from-top duration-500">

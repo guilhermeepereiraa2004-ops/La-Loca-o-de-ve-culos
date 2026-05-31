@@ -57,7 +57,9 @@ export const useAdminState = (currentUser) => {
     hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
     image: '', imageFile: null, imagePreview: null, weeklyRental: '', 
     investmentValue: '', preventiveMaintenance: true,
-    entryDate: new Date().toISOString().split('T')[0]
+    entryDate: new Date().toISOString().split('T')[0],
+    crlv: '', crlvFile: null,
+    crv: '', crvFile: null
   });
 
   const [financeForm, setFinanceForm] = useState({

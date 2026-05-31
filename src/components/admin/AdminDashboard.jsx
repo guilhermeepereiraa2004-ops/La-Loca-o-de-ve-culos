@@ -45,7 +45,7 @@ import { computeNotifications } from '../../utils/notifications';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus,
-  onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient,
+  onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient, onDeleteClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
@@ -196,6 +196,16 @@ const AdminDashboard = ({
       return;
     }
 
+    if (!rentalForm.birthDate || !rentalForm.cnhValidity) {
+      setShowAdminSuccess({
+        show: true,
+        type: 'warning',
+        title: 'Dados Obrigatórios',
+        message: 'A Data de Nascimento e a Validade da CNH são obrigatórias para criar o contrato da locação. Por favor, preencha-as na aba "Dados do Condutor".'
+      });
+      return;
+    }
+
     const cleanNumeric = (val) => {
       if (!val) return 0;
       if (typeof val === 'number') return val;
@@ -258,6 +268,7 @@ const AdminDashboard = ({
       else if (deleteType === 'vehicle') success = await onDeleteVehicle(itemToDelete.id);
       else if (deleteType === 'investor') success = await onDeleteInvestor(itemToDelete.id);
       else if (deleteType === 'lead') success = await onDeleteLead(itemToDelete.id);
+      else if (deleteType === 'client') success = await onDeleteClient(itemToDelete.id);
       
       console.log("ADMIN_DASHBOARD: Resultado da exclusão:", success);
       if (success) {
@@ -371,8 +382,16 @@ const AdminDashboard = ({
               onRenewContract={handleTriggerRenewal}
             />
           )}
-          {activeTab === 'clientes' && canAccess('clientes') && <AdminClientes clients={clients} onUpdateClient={onUpdateClient} />}
-          {activeTab === 'faturamento' && canAccess('faturamento') && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} onConfirmPayment={onConfirmPayment} />}
+          {activeTab === 'clientes' && canAccess('clientes') && (
+            <AdminClientes 
+              clients={clients} 
+              onUpdateClient={onUpdateClient} 
+              setItemToDelete={setItemToDelete}
+              setDeleteType={setDeleteType}
+              setShowDeleteAuthModal={setShowDeleteAuthModal}
+            />
+          )}
+          {activeTab === 'faturamento' && canAccess('faturamento') && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} transactions={transactions} onConfirmPayment={onConfirmPayment} />}
           {activeTab === 'investidores' && canAccess('investidores') && (
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}

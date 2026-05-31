@@ -182,7 +182,11 @@ const AdminFrota = ({
                             beltChangeIntervalKm: car.beltChangeIntervalKm || '',
                             image: car.image || '',
                             investmentValue: car.investmentValue || '',
-                            preventiveMaintenance: car.preventiveMaintenance || false
+                            preventiveMaintenance: car.preventiveMaintenance || false,
+                            crlv: car.crlv || '',
+                            crlvFile: null,
+                            crv: car.crv || '',
+                            crvFile: null
                           });
                           setIsEditing(true);
                           setShowAddForm(true);

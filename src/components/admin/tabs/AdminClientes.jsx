@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
-import { Search, User, Phone, Mail, Calendar, Eye } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, Eye, Trash2 } from 'lucide-react';
 import ClientDetailModal from '../modals/ClientDetailModal';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
-const AdminClientes = ({ clients = [], onUpdateClient }) => {
+const AdminClientes = ({ 
+  clients = [], 
+  onUpdateClient, 
+  setItemToDelete, 
+  setDeleteType, 
+  setShowDeleteAuthModal 
+}) => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selectedClient, setSelectedClient] = useState(null);
@@ -202,12 +208,25 @@ const AdminClientes = ({ clients = [], onUpdateClient }) => {
                 </div>
 
                 {/* Footer Action */}
-                <button 
-                  onClick={() => setSelectedClient(client)}
-                  className="w-full py-3.5 bg-neutral-950 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-200"
-                >
-                  <Eye size={13} /> Abrir Ficha do Cliente
-                </button>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setSelectedClient(client)}
+                    className="flex-1 py-3.5 bg-neutral-950 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-200"
+                  >
+                    <Eye size={13} /> Abrir Ficha do Cliente
+                  </button>
+                  <button
+                    onClick={() => {
+                      setItemToDelete(client);
+                      setDeleteType('client');
+                      setShowDeleteAuthModal(true);
+                    }}
+                    className="p-3.5 bg-white text-neutral-400 border border-neutral-200 rounded-xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm active:scale-95 duration-200"
+                    title="Excluir Cliente"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
               </div>
             );
           })

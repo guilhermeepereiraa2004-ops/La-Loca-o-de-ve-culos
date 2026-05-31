@@ -912,7 +912,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                       <Trash2 size={24} />
                     </div>
                     <div>
-                      <h4 className="text-xl font-black text-white uppercase tracking-tighter">Itens a Descontar da Caução</h4>
+                      <h4 className="text-xl font-black text-white uppercase tracking-tighter">Itens a pagar</h4>
                       <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">Lançamento de avarias e manutenções de devolução</p>
                     </div>
                   </div>

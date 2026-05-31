@@ -1,143 +1,46 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
-  Search, Receipt, ArrowRight, Car, AlertCircle,
-  FileText, Loader2, Copy, ExternalLink, X, QrCode, CheckCircle2,
-  Clock, AlertTriangle, RefreshCw, CalendarDays
+  Search, Receipt, ArrowRight, Car, AlertCircle, CheckCircle2,
+  Clock, AlertTriangle, CalendarDays
 } from 'lucide-react';
 import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { EditorialLabel } from '../../ui/EditorialLabel';
-import {
-  getOrCreateCustomer,
-  createBoleto,
-  createPix,
-  getNextDueDate,
-  getPaymentsForRental,
-} from '../../../utils/asaas.js';
+import { getNextDueDate } from '../../../utils/asaas.js';
 
-// ─── Modal de resultado do boleto/Pix ────────────────────────────────────────
-const BoletoResultModal = ({ result, onClose }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  if (!result) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/60 backdrop-blur-sm p-4"
-      onClick={onClose}>
-      <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden"
-        onClick={e => e.stopPropagation()}>
-
-        {/* Header */}
-        <div className="bg-neutral-900 p-8 relative">
-          <button onClick={onClose}
-            className="absolute top-6 right-6 w-9 h-9 rounded-full bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center transition-colors">
-            <X size={16} className="text-white" />
-          </button>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-[#C5A059]/20 rounded-2xl flex items-center justify-center">
-              {result.type === 'pix' ? <QrCode size={20} className="text-[#C5A059]" /> : <Receipt size={20} className="text-[#C5A059]" />}
-            </div>
-            <div>
-              <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest">
-                {result.type === 'pix' ? 'Pix Gerado' : 'Boleto Gerado'}
-              </p>
-              <h4 className="text-white font-black text-lg tracking-tight">
-                R$ {parseFloat(result.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </h4>
-            </div>
-          </div>
-          <p className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold">
-            Vencimento: {result.dueDate ? new Date(result.dueDate + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}
-          </p>
-        </div>
-
-        {/* Body */}
-        <div className="p-8 space-y-5">
-          {/* Status */}
-          <div className="flex items-center gap-2 p-4 bg-emerald-50 rounded-2xl border border-emerald-100">
-            <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-emerald-700">
-              {result.type === 'pix' ? 'Pix gerado com sucesso no Sandbox Asaas' : 'Boleto gerado com sucesso no Sandbox Asaas'}
-            </span>
-          </div>
-
-          {/* Boleto Fields */}
-          {result.type === 'boleto' && (
-            <>
-              {result.identificationField && (
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-2">Linha Digitável</p>
-                  <div className="flex gap-2">
-                    <input readOnly value={result.identificationField}
-                      className="flex-1 bg-neutral-50 border border-neutral-100 rounded-xl p-3 text-xs font-mono text-neutral-700 outline-none" />
-                    <button onClick={() => handleCopy(result.identificationField)}
-                      className="shrink-0 w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center hover:bg-[#C5A059] transition-colors group">
-                      {copied ? <CheckCircle2 size={14} className="text-white" /> : <Copy size={14} className="text-white" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {result.bankSlipUrl && (
-                <a href={result.bankSlipUrl} target="_blank" rel="noopener noreferrer"
-                  className="w-full py-4 bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2 group">
-                  <FileText size={16} />
-                  Visualizar PDF do Boleto
-                  <ExternalLink size={12} className="opacity-60 group-hover:opacity-100" />
-                </a>
-              )}
-            </>
-          )}
-
-          {/* Pix Fields */}
-          {result.type === 'pix' && (
-            <>
-              {result.payload && (
-                <div>
-                  <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-2">Copia e Cola Pix</p>
-                  <div className="flex gap-2">
-                    <input readOnly value={result.payload}
-                      className="flex-1 bg-neutral-50 border border-neutral-100 rounded-xl p-3 text-xs font-mono text-neutral-700 outline-none" />
-                    <button onClick={() => handleCopy(result.payload)}
-                      className="shrink-0 w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center hover:bg-[#C5A059] transition-colors">
-                      {copied ? <CheckCircle2 size={14} className="text-white" /> : <Copy size={14} className="text-white" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-              {result.encodedImage && (
-                <div className="flex justify-center">
-                  <img src={`data:image/png;base64,${result.encodedImage}`}
-                    alt="QR Code Pix" className="w-48 h-48 rounded-2xl border border-neutral-100" />
-                </div>
-              )}
-            </>
-          )}
-
-          <p className="text-[9px] text-neutral-400 text-center font-bold uppercase tracking-widest">
-            ⚠ Ambiente de testes (Sandbox) — nenhum valor real é cobrado
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+// ─── Formatter de data/hora do pagamento ──────────────────────────────────────────
+const formatTransactionDateTime = (t) => {
+  if (t.createdAt) {
+    try {
+      const d = new Date(t.createdAt);
+      if (!isNaN(d.getTime())) {
+        const datePart = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        const timePart = d.toLocaleTimeString('pt-BR', { 
+          timeZone: 'America/Sao_Paulo', 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: false 
+        });
+        return `${datePart} às ${timePart}`;
+      }
+    } catch (err) {
+      console.error("Erro ao formatar data/hora da transação:", err);
+    }
+  }
+  
+  if (t.date && t.date.includes('-')) {
+    return t.date.substring(0, 10).split('-').reverse().join('/');
+  }
+  return t.date || '—';
 };
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-// ─── Badge de status do pagamento ─────────────────────────────────────────────
+// ─── Badge de status do pagamento local ─────────────────────────────────────────────
 const PaymentStatusBadge = ({ status }) => {
   const map = {
-    RECEIVED:  { label: 'Recebido',  cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> },
-    CONFIRMED: { label: 'Confirmado', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> },
-    PENDING:   { label: 'Pendente',  cls: 'bg-amber-50 text-amber-700 border-amber-200',       icon: <Clock size={10} /> },
-    OVERDUE:   { label: 'Vencido',   cls: 'bg-red-50 text-red-700 border-red-200',             icon: <AlertTriangle size={10} /> },
-    REFUNDED:  { label: 'Estornado', cls: 'bg-neutral-50 text-neutral-500 border-neutral-200', icon: <RefreshCw size={10} /> },
+    'Concluído': { label: 'Concluído', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> },
+    'Pendente':  { label: 'Pendente',  cls: 'bg-amber-50 text-amber-700 border-amber-200',       icon: <Clock size={10} /> },
+    'Atrasado':  { label: 'Atrasado',  cls: 'bg-red-50 text-red-700 border-red-200',             icon: <AlertTriangle size={10} /> },
   };
-  const s = map[status] || map.PENDING;
+  const s = map[status] || { label: status || 'Concluído', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> };
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${s.cls}`}>
       {s.icon} {s.label}
@@ -145,93 +48,15 @@ const PaymentStatusBadge = ({ status }) => {
   );
 };
 
-const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = [], clients = [], fines = [], onConfirmPayment }) => {
+const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = [], clients = [], fines = [], transactions = [], onConfirmPayment }) => {
   const [search, setSearch] = useState('');
   const [lateFees, setLateFees] = useState({});
-  const [generating, setGenerating] = useState({}); // rentalId → 'boleto' | 'pix' | false
-  const [boletoResult, setBoletoResult] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [paymentHistory, setPaymentHistory] = useState({}); // rentalId → []
+  const [openHistories, setOpenHistories] = useState({});
 
   const handleConfirm = (rentalId, calc) => {
     const lateFee = parseFloat(lateFees[rentalId] || 0);
     onConfirmPayment(rentalId, { ...calc, lateFee });
     alert('Pagamento confirmado e receita enviada ao financeiro!');
-  };
-
-  // Carrega histórico de pagamentos de um contrato
-  const loadPaymentHistory = useCallback(async (rentalId) => {
-    const payments = await getPaymentsForRental(rentalId);
-    setPaymentHistory(prev => ({ ...prev, [rentalId]: payments }));
-  }, []);
-
-  // Ao montar o painel (ou quando a lista de contratos muda),
-  // carrega o histórico de todos os contratos ativos em paralelo
-  useEffect(() => {
-    const activeRentals = (Array.isArray(rentals) ? rentals : []).filter(r => r.status === 'Ativo');
-    if (activeRentals.length === 0) return;
-    Promise.all(activeRentals.map(r => loadPaymentHistory(r.id)));
-  }, [rentals, loadPaymentHistory]);
-
-  const handleGenerateBoleto = async (rental, calc, type = 'boleto') => {
-    setGenerating(prev => ({ ...prev, [rental.id]: type }));
-    setErrors(prev => ({ ...prev, [rental.id]: null }));
-
-    try {
-      let client = (clients || []).find(c =>
-        (rental.clientId && c.id === rental.clientId) ||
-        (rental.id_cliente && c.id === rental.id_cliente) ||
-        (rental.idCliente && c.id === rental.idCliente)
-      );
-      if (!client && (rental.cpf || rental.cpfCnpj)) {
-        const queryCpf = rental.cpf || rental.cpfCnpj;
-        client = (clients || []).find(c => c.cpf && queryCpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, ''));
-      }
-      if (!client) {
-        client = (clients || []).find(c => 
-          (c.nome || c.name || '').toLowerCase() === (rental.user || rental.userName || '').toLowerCase()
-        );
-      }
-
-      const customerData = {
-        name: rental.user || rental.userName || 'Condutor',
-        cpfCnpj: client?.cpf || rental.cpf || '',
-        email: client?.email || rental.email || '',
-        phone: client?.phone || client?.telefone || rental.clientPhone || '',
-      };
-
-      const customerId = await getOrCreateCustomer(customerData);
-
-      const lateFee = parseFloat(lateFees[rental.id] || 0);
-      const totalValue = parseFloat((calc.total + lateFee).toFixed(2));
-
-      // Calcula o vencimento correto baseado no dia da semana do contrato
-      const dueDate = getNextDueDate(rental.startDate || rental.date);
-      let description = `Locação - ${rental.user || rental.userName} | ${rental.vehicle || rental.vehicleModel} (${rental.plate || rental.vehiclePlate})`;
-      if (calc.finesDetails && calc.finesDetails.length > 0) {
-        const finesDesc = calc.finesDetails.map(fd => `Multa: ${fd.infraction} (parc. ${fd.installment})`).join(', ');
-        description += ` | ${finesDesc}`;
-      }
-
-      let result;
-      if (type === 'pix') {
-        // createPix já busca e mescla o QR Code internamente
-        const payment = await createPix({ rentalId: rental.id, customerId, value: totalValue, dueDate, description });
-        result = { type: 'pix', value: totalValue, dueDate, ...payment };
-      } else {
-        const payment = await createBoleto({ rentalId: rental.id, customerId, value: totalValue, dueDate, description });
-        result = { type: 'boleto', value: totalValue, ...payment };
-      }
-
-      setBoletoResult(result);
-      // Atualiza o histórico imediatamente após gerar
-      await loadPaymentHistory(rental.id);
-    } catch (err) {
-      console.error('Erro ao gerar cobrança Asaas:', err);
-      setErrors(prev => ({ ...prev, [rental.id]: err.message }));
-    } finally {
-      setGenerating(prev => ({ ...prev, [rental.id]: false }));
-    }
   };
 
   const calculateBoleto = (rental) => {
@@ -380,9 +205,6 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      {/* Modal de resultado */}
-      {boletoResult && <BoletoResultModal result={boletoResult} onClose={() => setBoletoResult(null)} />}
-
       {/* Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="space-y-1">
@@ -392,7 +214,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
           </div>
           <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Faturamento</h3>
           <p className="text-neutral-500 font-medium italic text-sm tracking-tight">
-            Gestão individual de boletos e Pix baseada no ciclo de cada contrato.
+            Gestão individual de faturamento baseada no ciclo de cada contrato.
           </p>
         </div>
 
@@ -421,10 +243,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
           </div>
         </div>
         <div className="p-6 bg-white rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-between">
-          <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Integração</p>
+          <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Sistema de Cobrança</p>
           <div>
-            <h4 className="text-xl font-black text-emerald-600 tracking-tight leading-none">Asaas</h4>
-            <p className="text-[8px] text-emerald-600 font-bold uppercase tracking-wider mt-1">Sandbox Ativo ✓</p>
+            <h4 className="text-xl font-black text-amber-600 tracking-tight leading-none">Manual</h4>
+            <p className="text-[8px] text-amber-600 font-bold uppercase tracking-wider mt-1">Confirmação Manual Ativa ✓</p>
           </div>
         </div>
         <div className="p-6 bg-white rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-between">
@@ -441,9 +263,24 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
         {filtered.length > 0 ? (
           filtered.map(rental => {
             const calc = calculateBoleto(rental);
-            const isGenerating = generating[rental.id];
-            const errorMsg = errors[rental.id];
-            const history = paymentHistory[rental.id] || [];
+
+            // Filter transactions for this rental contract matching the plate of main vehicle or replacement vehicle
+            const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
+            const activeRC = calc.activeRC;
+            const replacementPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
+
+            const history = (transactions || [])
+              .filter(t => {
+                const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
+                const isMatchingPlate = tPlate && (tPlate === rentalPlate || (replacementPlate && tPlate === replacementPlate));
+                if (!isMatchingPlate) return false;
+
+                // Show rental, fine and tire tax payments from the client (type 'in' of category 'Aluguel', 'multa' or 'taxa de pneus')
+                const category = (t.cat || '').toLowerCase();
+                const isPaymentCategory = category === 'aluguel' || category === 'multa' || category === 'taxa de pneus';
+                return t.type === 'in' && isPaymentCategory;
+              })
+              .sort((a, b) => new Date(b.date) - new Date(a.date));
 
             return (
               <div key={rental.id} className="bg-white rounded-3xl border border-neutral-150 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-neutral-200">
@@ -569,41 +406,49 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                       </div>
                     </div>
 
-                    {/* Módulo 3: Histórico de Cobranças */}
+                    {/* Módulo 3: Histórico de Pagamentos Confirmados */}
                     {history.length > 0 && (
-                      <div className="pt-6 border-t border-neutral-100/80">
-                        <div className="flex justify-between items-center mb-4">
-                          <p className="text-[9px] font-black uppercase tracking-wider text-neutral-500">Histórico de Cobranças (Asaas)</p>
-                          <button onClick={() => loadPaymentHistory(rental.id)}
-                            className="text-[8px] font-black text-neutral-400 hover:text-neutral-900 uppercase tracking-widest flex items-center gap-1 transition-colors">
-                            <RefreshCw size={10} /> Atualizar status
+                      <div className="pt-6 border-t border-neutral-100/80 space-y-4">
+                        <div className="flex justify-between items-center">
+                          <button
+                            onClick={() => setOpenHistories(prev => ({ ...prev, [rental.id]: !prev[rental.id] }))}
+                            className="text-[9px] font-black text-[#C5A059] hover:text-neutral-900 uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                          >
+                            {openHistories[rental.id] ? 'Ocultar Histórico de Pagamentos' : 'Ver Histórico de Pagamentos'}
                           </button>
                         </div>
                         
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {history.map(p => (
-                            <div key={p.id} className="flex items-center justify-between p-3 bg-neutral-50/50 border border-neutral-100 rounded-xl">
-                              <div className="flex items-center gap-2">
-                                <div className="w-6 h-6 bg-white border border-neutral-200/60 rounded-md flex items-center justify-center text-neutral-500 shrink-0">
-                                  {p.billing_type === 'PIX' ? <QrCode size={11} /> : <Receipt size={11} />}
+                        {openHistories[rental.id] && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                            {history.map(p => (
+                              <div key={p.id} className="flex items-center justify-between p-3 bg-neutral-50/50 border border-neutral-100 rounded-xl">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-6 h-6 bg-white border border-neutral-200/60 rounded-md flex items-center justify-center text-neutral-500 shrink-0">
+                                    <Receipt size={11} />
+                                  </div>
+                                  <div>
+                                    <p className="text-[9px] font-black text-neutral-800 uppercase tracking-tight">
+                                      R$ {parseFloat(p.val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </p>
+                                    <p className="text-[8px] text-neutral-600 font-bold leading-tight">
+                                      {p.cat?.toLowerCase() === 'aluguel' 
+                                        ? 'Aluguel + Taxa de Pneus' 
+                                        : p.cat?.toLowerCase() === 'taxa de pneus' 
+                                          ? 'Taxa de Pneus' 
+                                          : (p.desc || p.cat || 'Pagamento')}
+                                    </p>
+                                    <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider">
+                                      Data: {formatTransactionDateTime(p)}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-[9px] font-black text-neutral-800 uppercase tracking-tight">R$ {parseFloat(p.value).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                                  <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider">Venc: {new Date(p.due_date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <PaymentStatusBadge status={p.status} />
                                 </div>
                               </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <PaymentStatusBadge status={p.status} />
-                                {p.bank_slip_url && (
-                                  <a href={p.bank_slip_url} target="_blank" rel="noopener noreferrer"
-                                    className="text-[8px] font-black text-[#C5A059] hover:text-neutral-900 hover:underline transition-colors">
-                                    PDF
-                                  </a>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
@@ -643,41 +488,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                       </div>
                     </div>
 
-                    {/* Actions and Error Msg */}
+                    {/* Actions Panel */}
                     <div className="space-y-3">
-                      {errorMsg && (
-                        <div className="p-3 bg-red-50 border border-red-100 rounded-xl mb-3">
-                          <p className="text-[8px] font-black text-red-600 uppercase tracking-widest">Erro: {errorMsg}</p>
-                        </div>
-                      )}
-
-                      <button
-                        onClick={() => handleGenerateBoleto(rental, calc, 'boleto')}
-                        disabled={!!isGenerating}
-                        className="w-full py-3.5 bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neutral-950 hover:text-white transition-all shadow-md flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isGenerating === 'boleto'
-                          ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
-                          : <><Receipt size={13} /> Gerar Boleto</>
-                        }
-                      </button>
-
-                      <button
-                        onClick={() => handleGenerateBoleto(rental, calc, 'pix')}
-                        disabled={!!isGenerating}
-                        className="w-full py-3.5 bg-white border border-neutral-200 text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isGenerating === 'pix'
-                          ? <><Loader2 size={13} className="animate-spin" /> Gerando...</>
-                          : <><QrCode size={13} /> Gerar Pix</>
-                        }
-                      </button>
-
                       <button
                         onClick={() => handleConfirm(rental.id, calc)}
-                        className="w-full py-2.5 border border-neutral-200/60 text-neutral-400 text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neutral-50 hover:text-neutral-600 transition-all flex items-center justify-center gap-1.5"
+                        className="w-full py-4 bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neutral-950 hover:text-white transition-all shadow-md flex items-center justify-center gap-2 group"
                       >
-                        Confirmar Manual <ArrowRight size={11} />
+                        Confirmar Pagamento Manual <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />
                       </button>
                     </div>
                   </div>
@@ -698,3 +515,4 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
 };
 
 export default AdminFaturamento;
+

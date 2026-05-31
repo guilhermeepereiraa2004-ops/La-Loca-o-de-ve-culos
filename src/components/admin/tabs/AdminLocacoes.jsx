@@ -70,7 +70,6 @@ const AdminLocacoes = ({
       if (rentalFilter === 'todas') return true;
       if (rentalFilter === 'ativas') return rental.status === 'Ativo';
       if (rentalFilter === 'encerradas') return rental.status === 'Encerrado';
-      if (rentalFilter === 'passadas') return rental.status === 'Encerrado' || !isActive;
       return true;
     } catch (e) {
       return true;
@@ -199,8 +198,7 @@ const AdminLocacoes = ({
             {[
               { id: 'todas', label: 'Todas' },
               { id: 'ativas', label: 'Ativas' },
-              { id: 'encerradas', label: 'Encerradas' },
-              { id: 'passadas', label: 'Passadas' }
+              { id: 'encerradas', label: 'Encerradas' }
             ].map((filter) => (
               <button
                 key={filter.id}

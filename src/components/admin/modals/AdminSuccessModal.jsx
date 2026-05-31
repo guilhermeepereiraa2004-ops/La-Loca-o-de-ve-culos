@@ -1,8 +1,10 @@
 import React from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, AlertTriangle } from 'lucide-react';
 
 const AdminSuccessModal = ({ data, onClose }) => {
   if (!data.show) return null;
+
+  const isWarning = data.type === 'warning';
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center px-6">
@@ -14,8 +16,8 @@ const AdminSuccessModal = ({ data, onClose }) => {
         >
           <X size={20} />
         </button>
-        <div className="w-20 h-20 bg-emerald-50 text-emerald-500 rounded-full flex items-center justify-center mx-auto mb-8">
-          <Check size={40} />
+        <div className={`w-20 h-20 ${isWarning ? 'bg-amber-50 text-amber-500' : 'bg-emerald-50 text-emerald-500'} rounded-full flex items-center justify-center mx-auto mb-8`}>
+          {isWarning ? <AlertTriangle size={40} /> : <Check size={40} />}
         </div>
         <h3 className="text-2xl font-black uppercase tracking-tighter text-neutral-900 mb-4">{data.title}</h3>
         <p className="text-neutral-500 font-light mb-10 leading-relaxed">
@@ -23,7 +25,7 @@ const AdminSuccessModal = ({ data, onClose }) => {
         </p>
         <button 
           onClick={onClose}
-          className="w-full py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all"
+          className={`w-full py-4 ${isWarning ? 'bg-amber-500 hover:bg-amber-600' : 'bg-neutral-900 hover:bg-[#C5A059]'} text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all`}
         >
           Entendido
         </button>
