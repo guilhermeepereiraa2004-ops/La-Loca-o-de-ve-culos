@@ -22,8 +22,10 @@ const AdminFrota = ({
 }) => {
   const filteredVehicles = vehicles.filter(car => {
     const searchLower = (vehicleSearch || '').toLowerCase();
+    const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+    const cleanPlate = (car.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (car.model || '').toLowerCase().includes(searchLower) ||
-      (car.plate || '').toLowerCase().includes(searchLower);
+      cleanPlate.includes(cleanSearch);
     const matchesStatus = vehicleStatusFilter === 'Todos' || car.status === vehicleStatusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -170,8 +172,8 @@ const AdminFrota = ({
                             fipeValue: car.fipeValue || '',
                             investor: car.investor || '',
                             investorId: car.investorId || '',
-                            adminTax: car.adminTax || '15',
-                            investorTax: car.investorTax || (100 - (parseFloat(car.adminTax) || 15)).toString(),
+                            adminTax: car.adminTax || '20',
+                            investorTax: car.investorTax || (100 - (parseFloat(car.adminTax) || 20)).toString(),
                             hasProtection: car.hasProtection !== undefined ? car.hasProtection : (car.protectionValue ? true : false),
                             protectionCompany: car.protectionCompany || '',
                             protectionPaymentDay: car.protectionPaymentDay || '10',
@@ -186,7 +188,9 @@ const AdminFrota = ({
                             crlv: car.crlv || '',
                             crlvFile: null,
                             crv: car.crv || '',
-                            crvFile: null
+                            crvFile: null,
+                            contractUrl: car.contractUrl || '',
+                            contractUrlFile: null
                           });
                           setIsEditing(true);
                           setShowAddForm(true);

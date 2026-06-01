@@ -100,7 +100,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           adminTaxSum += val;
         } else {
           gross += val;
-          const taxRate = parseFloat(v?.adminTax || 15) / 100;
+          const taxRate = parseFloat(v?.adminTax || 20) / 100;
           adminTaxSum += val * taxRate;
         }
       } else if (t.type === 'out') {
@@ -225,7 +225,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         } else {
           monthlyPerformance[monthKey].gross += val;
           const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
-          const taxRate = v ? (parseFloat(v.adminTax || 15) / 100) : 0;
+          const taxRate = v ? (parseFloat(v.adminTax || 20) / 100) : 0;
           const calculatedTax = val * taxRate;
           monthlyPerformance[monthKey].adminTax += calculatedTax;
           monthlyPerformance[monthKey].net += val;
@@ -630,7 +630,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         <div>
                           <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Taxa de Investidor</p>
                           <p className="text-sm font-black text-[#C5A059]">
-                            {v.investorTax || (100 - (parseFloat(v.adminTax) || 15))}%
+                            {v.investorTax || (100 - (parseFloat(v.adminTax) || 20))}%
                           </p>
                         </div>
                         <div className="col-span-2 p-4 bg-neutral-50 rounded-2xl flex justify-between items-center border border-neutral-100">

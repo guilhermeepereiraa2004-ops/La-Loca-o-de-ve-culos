@@ -2,6 +2,7 @@ import React from 'react';
 import { X, Car, Users, TrendingUp, Wrench, Camera, Check, FileText } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import ImageEditorModal from '../modals/ImageEditorModal';
+import { generateManagementContract } from '../../../utils/contractGenerator';
 
 const VehicleFormModal = ({ 
   isOpen, onClose, isEditing, vehicleForm, setVehicleForm, investors, onSubmit 
@@ -641,6 +642,111 @@ const VehicleFormModal = ({
                     <div className="flex flex-col items-center gap-3 text-neutral-300">
                       <FileText size={48} strokeWidth={1} />
                       <span className="text-[10px] font-black uppercase tracking-widest">Nenhum CRV Anexado</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Contrato de Gestão do Veículo */}
+          <div className="pt-6 border-t border-neutral-100">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-8 h-8 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059]"><FileText size={16} /></div>
+                <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Contrato de Gestão</h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                  <p className="text-[10px] text-neutral-400 font-bold uppercase leading-relaxed">
+                    Gere o contrato de gestão pré-preenchido com os dados do veículo e do investidor, ou anexe o contrato assinado pelo investidor.
+                  </p>
+                  
+                  <div className="flex flex-col gap-3">
+                    <button
+                      type="button"
+                      disabled={!vehicleForm.investorId}
+                      onClick={async () => {
+                        const selectedInvestor = investors.find(i => i.id.toString() === vehicleForm.investorId?.toString());
+                        await generateManagementContract(vehicleForm, selectedInvestor);
+                      }}
+                      className={`w-full py-4 px-6 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all flex items-center justify-center gap-2 shadow-lg border ${
+                        vehicleForm.investorId
+                          ? 'bg-white text-neutral-900 border-neutral-200 hover:bg-neutral-50 hover:border-[#C5A059]/50 shadow-neutral-100/55'
+                          : 'bg-neutral-50 text-neutral-300 border-neutral-100 cursor-not-allowed shadow-none'
+                      }`}
+                    >
+                      <FileText size={16} />
+                      Gerar Contrato (DOCX)
+                    </button>
+                    {!vehicleForm.investorId && (
+                      <span className="text-[8px] text-amber-600 uppercase font-black tracking-widest ml-1 animate-pulse">
+                        * Selecione um investidor acima para liberar a geração do contrato
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className={`relative group cursor-pointer flex flex-col items-center justify-center gap-4 p-8 border-2 border-dashed rounded-[2.5rem] transition-all overflow-hidden ${vehicleForm.contractUrlFile || vehicleForm.contractUrl ? 'border-emerald-500 bg-emerald-50/30' : 'border-neutral-200 hover:border-[#C5A059] hover:bg-neutral-50'}`}>
+                    {vehicleForm.contractUrlFile || vehicleForm.contractUrl ? (
+                      <>
+                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 shadow-lg shadow-emerald-200/50">
+                          <Check size={24} />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-black uppercase tracking-widest text-emerald-600 block mb-1">Contrato Anexado</span>
+                          <span className="text-[10px] text-emerald-400 font-bold truncate max-w-[250px] block">
+                            {vehicleForm.contractUrlFile ? vehicleForm.contractUrlFile.name : 'Contrato Salvo'}
+                          </span>
+                        </div>
+                        <div className="absolute inset-0 bg-neutral-900/40 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                          <span className="text-white text-[10px] font-black uppercase tracking-widest bg-neutral-900/80 px-6 py-3 rounded-full">Substituir Contrato</span>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center text-neutral-300 group-hover:text-[#C5A059] group-hover:bg-[#C5A059]/10 transition-all">
+                          <FileText size={24} />
+                        </div>
+                        <div className="text-center">
+                          <span className="text-xs font-black uppercase tracking-widest text-neutral-900 block mb-1">Anexar Contrato Assinado</span>
+                          <span className="text-[10px] text-neutral-400 font-bold uppercase">PDF, Imagem ou DOCX</span>
+                        </div>
+                      </>
+                    )}
+                    <input 
+                      type="file" 
+                      accept=".pdf,.docx,image/*"
+                      className="hidden" 
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setVehicleForm({
+                            ...vehicleForm,
+                            contractUrlFile: file,
+                            contractUrl: ''
+                          });
+                        }
+                      }} 
+                    />
+                  </label>
+                  
+                  {(vehicleForm.contractUrl || vehicleForm.contractUrlFile) && (
+                    <div className="flex justify-between items-center px-4">
+                      {vehicleForm.contractUrl && (
+                        <a href={vehicleForm.contractUrl} target="_blank" rel="noopener noreferrer" className="text-[9px] text-[#C5A059] font-black uppercase tracking-wider hover:underline">
+                          Visualizar Contrato Atual
+                        </a>
+                      )}
+                      <button 
+                        type="button" 
+                        onClick={() => setVehicleForm({...vehicleForm, contractUrl: '', contractUrlFile: null})} 
+                        className="text-[9px] font-black text-red-500 hover:text-red-700 uppercase tracking-widest cursor-pointer ml-auto"
+                      >
+                        Remover Contrato
+                      </button>
                     </div>
                   )}
                 </div>

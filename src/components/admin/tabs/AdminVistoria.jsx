@@ -88,9 +88,13 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate);
     const conductorName = (activeRental?.userName || activeRental?.user || '').toLowerCase();
     
-    const matchesSearch = ins.vehiclePlate.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
-                         ins.type.toLowerCase().includes(inspectionSearch.toLowerCase()) ||
-                         conductorName.includes(inspectionSearch.toLowerCase());
+    const searchLower = inspectionSearch.toLowerCase();
+    const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+    const cleanPlate = (ins.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    
+    const matchesSearch = cleanPlate.includes(cleanSearch) ||
+                         ins.type.toLowerCase().includes(searchLower) ||
+                         conductorName.includes(searchLower);
                          
     const matchesType = filterType === 'Todos' || ins.type === filterType;
     
@@ -537,8 +541,10 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                         if (!query || query === selectedLabel) return true;
                         const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === v.plate && r.status === 'Ativo');
                         const conductorName = activeRental ? (activeRental.userName || activeRental.user || '') : '';
-                        const searchStr = `${v.model} ${v.plate} ${conductorName}`.toLowerCase();
-                        return searchStr.includes(query);
+                        const cleanSearch = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const cleanPlate = (v.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+                        const searchStr = `${v.model} ${conductorName}`.toLowerCase();
+                        return searchStr.includes(query.toLowerCase()) || cleanPlate.includes(cleanSearch);
                       });
 
                       if (filtered.length === 0) {

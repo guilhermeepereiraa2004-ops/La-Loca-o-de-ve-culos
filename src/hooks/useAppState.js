@@ -74,7 +74,8 @@ const TABLE_MAPPINGS = {
     status: 'status',
     dividend: 'dividend',
     crlv: 'crlv',
-    crv: 'crv'
+    crv: 'crv',
+    contractUrl: 'contract_url'
   },
   clients: {
     id: 'id',
@@ -179,7 +180,7 @@ const mapToCamel = (data, tableName) => {
 const mapToSnake = (obj, tableName) => {
   const mappings = TABLE_MAPPINGS[tableName] || {};
   const newObj = {};
-  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'id', 'investor', 'investors', 'adminTax'];
+  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax'];
   for (const key in obj) {
     if (skipKeys.includes(key)) continue;
     if (mappings[key]) {
@@ -456,13 +457,24 @@ export const useAppState = () => {
                  if (!client) {
                    client = currentClients.find(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
                  }
+
+                const rentalDocs = rental.docs || {};
+                const clientDocs = client?.docs || {};
+
                 return {
                   ...rental,
                   image: vehicle?.image || rental.image,
                   vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle || rental.modelo,
                   plate: vehicle?.plate || rental.vehiclePlate || rental.plate || rental.placa,
+                  vehicleYear: vehicle?.year || rental.vehicleYear || '',
+                  vehicleRenavam: vehicle?.renavam || rental.vehicleRenavam || '',
                   cpf: client?.cpf || rental.cpf,
-                  address: client?.address || rental.address,
+                  address: client?.address || rental.address || rentalDocs.address || clientDocs.address || '',
+                  rg: rentalDocs.rg || clientDocs.rg || rental.rg || '',
+                  nacionalidade: rentalDocs.nacionalidade || clientDocs.nacionalidade || rental.nacionalidade || 'brasileiro(a)',
+                  estadoCivil: rentalDocs.estadoCivil || clientDocs.estadoCivil || rental.estadoCivil || 'solteiro(a)',
+                  cep: rentalDocs.cep || clientDocs.cep || rental.cep || '',
+                  cidadeUf: rentalDocs.cidadeUf || clientDocs.cidadeUf || rental.cidadeUf || 'Aracaju/SE',
                   cnh: client?.cnh || rental.cnh || rental.cnhNumber
                 };
               });
@@ -526,12 +538,12 @@ export const useAppState = () => {
             for (const v of allVehicles) {
               if (!v.plate) continue;
 
-              // 1. Proteção Veicular (Vence todo dia 01, entra como receita da empresa)
+              // 1. Proteção Veicular (Vence todo dia 10, entra como receita da empresa)
               const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
               const protVal = parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
               
               if (hasProt && protVal > 0) {
-                const paymentDayProt = 1; // Padrão dia 01 de cada mês
+                const paymentDayProt = 10; // Padrão dia 10 de cada mês
                 if (currentDay >= paymentDayProt) {
                   const alreadyExists = loadedTransactions.some(t => {
                     if (t.vehiclePlate !== v.plate) return false;
@@ -547,16 +559,18 @@ export const useAppState = () => {
                   });
                   
                   if (!alreadyExists) {
-                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-01`;
+                    const isInternal = !v.investor || v.investor.toLowerCase().trim() === 'interno' || v.investor.toLowerCase().trim() === 'nenhum';
+                    const respStr = isInternal ? 'Administradora' : `Investidor: ${v.investor}`;
+                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
                     newTransactionsToInsert.push({
                       type: 'in', // Receita para a empresa
-                      val: protVal, // Valor positivo
+                      val: protVal, // Valor positivo para entrada
                       cat: 'Proteção Veicular',
                       desc: `Proteção Veicular - ${v.model} (${v.plate})`,
                       date: dateStr,
                       vehicle_plate: v.plate,
-                      responsible: 'Administradora',
-                      status: 'Pendente'
+                      responsible: respStr,
+                      status: 'Concluído' // Já entra como pago por padrão
                     });
                   }
                 }
@@ -583,6 +597,8 @@ export const useAppState = () => {
                   });
                   
                   if (!alreadyExists) {
+                    const isInternal = !v.investor || v.investor.toLowerCase().trim() === 'interno' || v.investor.toLowerCase().trim() === 'nenhum';
+                    const respStr = isInternal ? 'Administradora' : `Investidor: ${v.investor}`;
                     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
                     newTransactionsToInsert.push({
                       type: 'in', // Receita para a empresa
@@ -591,8 +607,8 @@ export const useAppState = () => {
                       desc: `Seguro Franquia - ${v.model} (${v.plate})`,
                       date: dateStr,
                       vehicle_plate: v.plate,
-                      responsible: 'Administradora',
-                      status: 'Pendente'
+                      responsible: respStr,
+                      status: 'Concluído' // Já entra como pago por padrão
                     });
                   }
                 }
@@ -740,6 +756,13 @@ export const useAppState = () => {
       delete payload.period;
       delete payload.cpf;
       delete payload.address;
+      delete payload.rg;
+      delete payload.nacionalidade;
+      delete payload.estado_civil;
+      delete payload.cep;
+      delete payload.cidade_uf;
+      delete payload.vehicle_year;
+      delete payload.vehicle_renavam;
 
       // --- NOVO: Upload de Documentos ---
       const uploadedDocs = { ...(rental.docs || {}) };
@@ -781,7 +804,15 @@ export const useAppState = () => {
 
 
       // Atualiza o payload com os caminhos/URLs dos documentos
-      payload['documentos'] = uploadedDocs;
+      payload['documentos'] = {
+        ...uploadedDocs,
+        rg: rental.rg || null,
+        nacionalidade: rental.nacionalidade || null,
+        estadoCivil: rental.estadoCivil || null,
+        cep: rental.cep || null,
+        cidadeUf: rental.cidadeUf || null,
+        address: rental.address || null
+      };
 
       const parseBRL = (val) => {
         if (typeof val === 'number') return val;
@@ -820,7 +851,16 @@ export const useAppState = () => {
           cnh_validity: cleanDate(rental.cnhValidity),
           registro_cnh: rental.cnhRegisterNumber || null,
           data_de_nascimento: cleanDate(rental.birthDate),
-          documentos: { ...(uploadedDocs || {}) },
+          address: rental.address || null,
+          documentos: { 
+            ...uploadedDocs,
+            rg: rental.rg || null,
+            nacionalidade: rental.nacionalidade || null,
+            estadoCivil: rental.estadoCivil || null,
+            cep: rental.cep || null,
+            cidadeUf: rental.cidadeUf || null,
+            address: rental.address || null
+          },
           status: 'Ativo'
         };
 
@@ -895,11 +935,20 @@ export const useAppState = () => {
       if (data) {
         const newRental = mapToCamel(data, 'rentals')[0];
         const vehicle = vehicles.find(v => v.id === rental.vehicleId);
+        const rentalDocs = newRental.docs || {};
         const enrichedRental = {
           ...newRental,
           image: vehicle?.image || rental.image,
           vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle,
-          plate: vehicle?.plate || rental.vehiclePlate || rental.plate
+          plate: vehicle?.plate || rental.vehiclePlate || rental.plate,
+          cpf: rental.cpf || '',
+          address: rental.address || rentalDocs.address || '',
+          rg: rentalDocs.rg || rental.rg || '',
+          nacionalidade: rentalDocs.nacionalidade || rental.nacionalidade || 'brasileiro(a)',
+          estadoCivil: rentalDocs.estadoCivil || rental.estadoCivil || 'solteiro(a)',
+          cep: rentalDocs.cep || rental.cep || '',
+          cidadeUf: rentalDocs.cidadeUf || rental.cidadeUf || 'Aracaju/SE',
+          cnh: rental.cnh || rental.cnhNumber
         };
         setRentals(prev => [enrichedRental, ...prev]);
         logActivity('Criar', 'Locação', newRental.id, `Criou locação para ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate || enrichedRental.plate}`);
@@ -995,7 +1044,17 @@ export const useAppState = () => {
         if (uploadedDocs[key] instanceof File) delete uploadedDocs[key];
       });
 
-      finalRental.docs = uploadedDocs;
+      const finalDocs = {
+        ...uploadedDocs,
+        rg: finalRental.rg || null,
+        nacionalidade: finalRental.nacionalidade || null,
+        estadoCivil: finalRental.estadoCivil || null,
+        cep: finalRental.cep || null,
+        cidadeUf: finalRental.cidadeUf || null,
+        address: finalRental.address || null
+      };
+
+      finalRental.docs = finalDocs;
 
       // Map to database schema
       const payload = mapToSnake(finalRental, 'rentals');
@@ -1009,6 +1068,13 @@ export const useAppState = () => {
       delete payload.period;
       delete payload.cpf;
       delete payload.address;
+      delete payload.rg;
+      delete payload.nacionalidade;
+      delete payload.estado_civil;
+      delete payload.cep;
+      delete payload.cidade_uf;
+      delete payload.vehicle_year;
+      delete payload.vehicle_renavam;
       
       if (payload.value) payload.value = parseFloat(String(payload.value).replace(/\./g, '').replace(',', '.'));
       if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
@@ -1035,7 +1101,8 @@ export const useAppState = () => {
           cnh_validity: finalRental.cnhValidity,
           registro_cnh: finalRental.cnhRegisterNumber,
           data_de_nascimento: finalRental.birthDate,
-          documentos: finalRental.docs,
+          documentos: finalDocs,
+          address: finalRental.address || null,
           status: 'Ativo'
         };
 
@@ -1091,7 +1158,7 @@ export const useAppState = () => {
       }
       setRentals(prev => prev.map(r => r.id === finalRental.id ? { ...finalRental } : r));
       logActivity('Atualizar', 'Locação', finalRental.id, `Atualizou a locação de ${finalRental.userName || finalRental.user}`);
-      return { success: true };
+      return { success: true, data: finalRental };
     } catch (error) {
       console.error("Erro ao atualizar loca\u00e7\u00e3o:", error);
       const errorMsg = error.message || 'Erro desconhecido';
@@ -1196,6 +1263,11 @@ export const useAppState = () => {
       crvUrl = await uploadFile(vehicle.crvFile, 'veiculos');
     }
 
+    let contractUrl = vehicle.contractUrl;
+    if (vehicle.contractUrlFile) {
+      contractUrl = await uploadFile(vehicle.contractUrlFile, 'veiculos');
+    }
+
     const parseBRL = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -1211,6 +1283,7 @@ export const useAppState = () => {
       image: imageUrl,
       crlv: crlvUrl,
       crv: crvUrl,
+      contractUrl,
       investorId,
       status: 'Disponível'
     }, 'vehicles');
@@ -1225,7 +1298,7 @@ export const useAppState = () => {
     dbVehicle['protection_value'] = parseBRL(vehicle.protectionValue);
     dbVehicle['admin_tax'] = parseFloat(vehicle.adminTax) || 0;
     dbVehicle['investor_tax'] = parseFloat(vehicle.investorTax) || 0;
-    dbVehicle['franchise_insurance'] = parseBRL(vehicle.franchiseInsurance);
+    dbVehicle['franchise_insurance'] = vehicle.franchiseInsurance === true || String(vehicle.franchiseInsurance) === 'true';
     dbVehicle['last_belt_change_km'] = parseFloat(vehicle.lastBeltChangeKm) || null;
     dbVehicle['belt_change_interval_km'] = parseFloat(vehicle.beltChangeIntervalKm) || null;
     dbVehicle['dividend'] = parseBRL(vehicle.dividend);
@@ -1269,6 +1342,11 @@ export const useAppState = () => {
       crvUrl = await uploadFile(vehicle.crvFile, 'veiculos');
     }
 
+    let contractUrl = vehicle.contractUrl;
+    if (vehicle.contractUrlFile) {
+      contractUrl = await uploadFile(vehicle.contractUrlFile, 'veiculos');
+    }
+
     const parseBRL = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
@@ -1279,7 +1357,7 @@ export const useAppState = () => {
     const investorObj = investors.find(inv => inv.name === vehicle.investor || inv.id === vehicle.investor || inv.id === vehicle.investorId);
     const investorId = investorObj ? investorObj.id : null;
 
-    const vehicleData = { ...vehicle, image: imageUrl, crlv: crlvUrl, crv: crvUrl, investorId };
+    const vehicleData = { ...vehicle, image: imageUrl, crlv: crlvUrl, crv: crvUrl, contractUrl, investorId };
     const dbVehicle = mapToSnake(vehicleData, 'vehicles');
     
     // Manual overrides for parsed values
@@ -1292,7 +1370,7 @@ export const useAppState = () => {
     dbVehicle['initial_km'] = parseFloat(vehicle.initialKm) || 0;
     dbVehicle['admin_tax'] = parseFloat(vehicle.adminTax) || 0;
     dbVehicle['investor_tax'] = parseFloat(vehicle.investorTax) || 0;
-    dbVehicle['franchise_insurance'] = parseBRL(vehicle.franchiseInsurance);
+    dbVehicle['franchise_insurance'] = vehicle.franchiseInsurance === true || String(vehicle.franchiseInsurance) === 'true';
     dbVehicle['last_belt_change_km'] = parseFloat(vehicle.lastBeltChangeKm) || null;
     dbVehicle['belt_change_interval_km'] = parseFloat(vehicle.beltChangeIntervalKm) || null;
     dbVehicle['dividend'] = parseBRL(vehicle.dividend);
@@ -1735,7 +1813,7 @@ export const useAppState = () => {
     if (!rental) return;
 
     const vehicle = vehicles.find(v => v.id === rental.vehicleId);
-    const mainAdminTaxPercent = parseFloat(vehicle?.adminTax || 15) / 100;
+    const mainAdminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
     
     // Identificar a placa do carro reserva vinculado neste ciclo
     const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === rental.plate && rc.status === 'Ativo');
@@ -1750,7 +1828,7 @@ export const useAppState = () => {
     let repAdminRevenue = 0;
     if (repRent > 0 && replacementPlate) {
       const repVehicle = vehicles.find(v => v.plate === replacementPlate);
-      const repAdminTaxPercent = parseFloat(repVehicle?.adminTax || 15) / 100;
+      const repAdminTaxPercent = parseFloat(repVehicle?.adminTax || 20) / 100;
       repAdminRevenue = repRent * repAdminTaxPercent;
     }
 

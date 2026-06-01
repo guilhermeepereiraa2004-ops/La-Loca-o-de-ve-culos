@@ -114,8 +114,10 @@ const AdminOficina = ({
   const filtered = serviceOrders.filter(os => {
     if (!search) return true;
     const term = search.toLowerCase();
+    const cleanTerm = term.replace(/[^a-z0-9]/g, '');
+    const cleanPlate = (os.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     return (
-      (os.plate || '').toLowerCase().includes(term) ||
+      cleanPlate.includes(cleanTerm) ||
       (os.model || '').toLowerCase().includes(term) ||
       (os.description || '').toLowerCase().includes(term)
     );

@@ -47,9 +47,11 @@ const RentalFormModal = ({
       if (!isAvailable) return false;
       if (!vehicleSearch) return true;
       const searchLower = vehicleSearch.toLowerCase();
+      const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+      const cleanPlate = (v.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
       return (
         v.model?.toLowerCase().includes(searchLower) ||
-        v.plate?.toLowerCase().includes(searchLower)
+        cleanPlate.includes(cleanSearch)
       );
     });
   }, [vehicles, vehicleSearch]);
@@ -67,7 +69,13 @@ const RentalFormModal = ({
         cnhNumber: "12345678900",
         cnhRegisterNumber: "987654321",
         birthDate: "1995-05-15",
-        cnhValidity: "2029-12-31"
+        cnhValidity: "2029-12-31",
+        rg: "1234567 SSP/SE",
+        nacionalidade: "brasileiro(a)",
+        estadoCivil: "solteiro(a)",
+        address: "Rua Antônio, n° 42, Bairro Zona",
+        cep: "49000-000",
+        cidadeUf: "Aracaju/SE"
       });
     } else if (currentRentalStep === 3) {
       setRentalForm({
@@ -169,6 +177,8 @@ const RentalFormModal = ({
                         plate: v.plate, 
                         vehicle: v.model,
                         vehicleId: v.id,
+                        vehicleYear: v.year || '',
+                        vehicleRenavam: v.renavam || '',
                         value: v.weeklyRental || ''
                       })}
                       className={`relative p-8 rounded-[3rem] border-2 text-left transition-all duration-500 group overflow-hidden ${rentalForm.plate === v.plate ? 'border-neutral-900 bg-neutral-900 text-white shadow-2xl shadow-neutral-900/20' : 'border-neutral-100 bg-white hover:border-[#C5A059]/30 hover:shadow-xl'}`}
@@ -283,11 +293,17 @@ const RentalFormModal = ({
                           cnhRegisterNumber: client.cnhRegisterNumber || '',
                           birthDate: client.birthDate || '',
                           cnhValidity: client.cnhExpiration || client.cnhValidity || '',
+                          address: client.address || client.docs?.address || '',
+                          rg: client.docs?.rg || '',
+                          nacionalidade: client.docs?.nacionalidade || 'brasileiro(a)',
+                          estadoCivil: client.docs?.estadoCivil || 'solteiro(a)',
+                          cep: client.docs?.cep || '',
+                          cidadeUf: client.docs?.cidadeUf || 'Aracaju/SE',
                           docs: {
-                            cnh: client.documentos?.cnh || client.docs?.cnh || null,
-                            residence: client.documentos?.residence || client.docs?.residence || null,
-                            appPrints: client.documentos?.appPrints || client.docs?.appPrints || [],
-                            signedContract: client.documentos?.signedContract || client.docs?.signedContract || null
+                            cnh: client.docs?.cnh || null,
+                            residence: client.docs?.residence || null,
+                            appPrints: client.docs?.appPrints || [],
+                            signedContract: client.docs?.signedContract || null
                           }
                         });
                       }
@@ -341,6 +357,36 @@ const RentalFormModal = ({
                       <div className="relative group">
                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                         <input type="date" required value={rentalForm.birthDate || ''} onChange={e => setRentalForm({...rentalForm, birthDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">RG (Órgão Emissor/UF)</label>
+                      <input type="text" required value={rentalForm.rg || ''} onChange={e => setRentalForm({...rentalForm, rg: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="Ex: 11111 SSP/SE" />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Nacionalidade</label>
+                      <input type="text" required value={rentalForm.nacionalidade || 'brasileiro(a)'} onChange={e => setRentalForm({...rentalForm, nacionalidade: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="Ex: brasileiro(a)" />
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Estado Civil</label>
+                      <input type="text" required value={rentalForm.estadoCivil || 'solteiro(a)'} onChange={e => setRentalForm({...rentalForm, estadoCivil: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-[1.5rem] outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" placeholder="Ex: solteiro(a)" />
+                    </div>
+                  </div>
+
+                  <div className="p-8 bg-neutral-50 rounded-[2.5rem] border border-neutral-100 space-y-6">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-[#C5A059] font-black">Endereço de Residência</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-3 md:col-span-2">
+                        <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Rua, nº, Bairro</label>
+                        <input type="text" required value={rentalForm.address || ''} onChange={e => setRentalForm({...rentalForm, address: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: Rua Antônio, n° 42, Bairro Zona" />
+                      </div>
+                      <div className="space-y-3">
+                        <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">CEP</label>
+                        <input type="text" required value={rentalForm.cep || ''} onChange={e => setRentalForm({...rentalForm, cep: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: 49000-000" />
+                      </div>
+                      <div className="space-y-3 md:col-span-3">
+                        <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Cidade / UF</label>
+                        <input type="text" required value={rentalForm.cidadeUf || 'Aracaju/SE'} onChange={e => setRentalForm({...rentalForm, cidadeUf: e.target.value})} className="w-full bg-white border border-neutral-200 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-xs" placeholder="Ex: Aracaju/SE" />
                       </div>
                     </div>
                   </div>

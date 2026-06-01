@@ -109,7 +109,7 @@ const AdminDashboard = ({
   const resetVehicleForm = () => {
     setVehicleForm({
       model: '', plate: '', year: '', renavam: '', initialKm: '', status: 'Disponível',
-      fipeValue: '', investor: '', adminTax: '15', investorTax: '85',
+      fipeValue: '', investor: '', adminTax: '20', investorTax: '80',
       hasProtection: false,
       protectionCompany: '',
       protectionPaymentDay: '10',
@@ -118,7 +118,10 @@ const AdminDashboard = ({
       hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
       image: '', imageFile: null, imagePreview: null, weeklyRental: '', 
       investmentValue: '', preventiveMaintenance: true,
-      entryDate: new Date().toISOString().split('T')[0]
+      entryDate: new Date().toISOString().split('T')[0],
+      crlv: '', crlvFile: null,
+      crv: '', crvFile: null,
+      contractUrl: '', contractUrlFile: null
     });
   };
 
@@ -531,6 +534,9 @@ const AdminDashboard = ({
           onUpdate={async (data) => {
             const result = await onUpdateRental(data);
             if (result?.success) {
+              if (result.data) {
+                setSelectedRental(result.data);
+              }
               setShowAdminSuccess({
                 show: true,
                 title: 'Contrato Anexado',

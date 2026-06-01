@@ -39,11 +39,16 @@ const AdminManutencao = ({
     }
   }, [maintenanceForm.vehiclePlate, vehicles]);
 
-  const filteredMaintenances = (maintenances || []).filter(m => 
-    (m.vehiclePlate || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.serviceType || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (m.provider || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredMaintenances = (maintenances || []).filter(m => {
+    const term = searchTerm.toLowerCase();
+    const cleanTerm = term.replace(/[^a-z0-9]/g, '');
+    const cleanPlate = (m.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return (
+      cleanPlate.includes(cleanTerm) ||
+      (m.serviceType || '').toLowerCase().includes(term) ||
+      (m.provider || '').toLowerCase().includes(term)
+    );
+  });
 
   const calculateAlerts = () => {
     const alerts = [];

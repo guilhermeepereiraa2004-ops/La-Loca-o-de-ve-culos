@@ -43,12 +43,12 @@ export const useAdminState = (currentUser) => {
 
   const [investorForm, setInvestorForm] = useState({
     name: '', email: '', phone: '', cpf: '', address: '',
-    bank: '', pix: '', password: '', adminTax: '15', status: 'Ativo'
+    bank: '', pix: '', password: '', adminTax: '20', status: 'Ativo'
   });
 
   const [vehicleForm, setVehicleForm] = useState({
     model: '', plate: '', year: '', renavam: '', initialKm: '', status: 'Disponível',
-    fipeValue: '', investor: '', investorId: '', adminTax: '15', investorTax: '85',
+    fipeValue: '', investor: '', investorId: '', adminTax: '20', investorTax: '80',
     hasProtection: false,
     protectionCompany: '',
     protectionPaymentDate: new Date().toISOString().split('T')[0],
@@ -59,7 +59,8 @@ export const useAdminState = (currentUser) => {
     investmentValue: '', preventiveMaintenance: true,
     entryDate: new Date().toISOString().split('T')[0],
     crlv: '', crlvFile: null,
-    crv: '', crvFile: null
+    crv: '', crvFile: null,
+    contractUrl: '', contractUrlFile: null
   });
 
   const [financeForm, setFinanceForm] = useState({
@@ -72,10 +73,12 @@ export const useAdminState = (currentUser) => {
 
   const [rentalForm, setRentalForm] = useState({
     user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '', cpf: '',
+    rg: '', nacionalidade: 'brasileiro(a)', estadoCivil: 'solteiro(a)', address: '', cep: '', cidadeUf: 'Aracaju/SE',
     vehicle: '', plate: '', rentalType: 'weekly', 
     value: '', tireTax: '25', durationWeeks: '4', depositTotal: '', 
     depositPaid: '', depositInstallments: '1', 
     startDate: new Date().toISOString().split('T')[0],
+    vehicleYear: '', vehicleRenavam: '',
     lateFine: '10', dailyInterest: '1', observations: '',
     docs: { cnh: null, residence: null, appPrints: [], signedContract: null }
   });

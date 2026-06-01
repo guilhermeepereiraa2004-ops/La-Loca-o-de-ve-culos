@@ -53,9 +53,13 @@ const AdminInvestidores = ({
              monthlyNet[monthKey] -= val;
           } else if (cat === 'pagamento de dívida' || cat === 'pagamento dívida') {
              monthlyNet[monthKey] += val; // Valor integral quita a dívida sem cobrar taxa
+          } else if (cat === 'proteção veicular' || cat.includes('prote')) {
+             monthlyNet[monthKey] -= val; // Proteção veicular paga pelo investidor é despesa para ele
+          } else if (cat === 'seguro franquia' || cat.includes('franquia') || cat.includes('seguro')) {
+             monthlyNet[monthKey] -= val; // Seguro franquia pago pelo investidor é despesa para ele
           } else {
              const v = invVehicles.find(veh => veh.plate === t.vehiclePlate);
-             const taxRate = parseFloat(v?.adminTax || 15) / 100;
+             const taxRate = parseFloat(v?.adminTax || 20) / 100;
              monthlyNet[monthKey] += val;
              monthlyNet[monthKey] -= (val * taxRate);
           }
@@ -401,7 +405,7 @@ const AdminInvestidores = ({
                             {invVehs.map(v => (
                               <div key={v.id} className="flex justify-between items-center text-[10px] text-neutral-700 font-bold bg-white/60 px-2.5 py-1 rounded-lg border border-neutral-100">
                                 <span className="truncate max-w-[130px]">{v.model} <span className="font-mono text-[9px] text-neutral-400">({v.plate})</span></span>
-                                <span className="font-black text-neutral-900">{v.adminTax || 15}%</span>
+                                <span className="font-black text-neutral-900">{v.adminTax || 20}%</span>
                               </div>
                             ))}
                           </div>

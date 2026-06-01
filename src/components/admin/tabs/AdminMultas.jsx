@@ -154,11 +154,14 @@ const AdminMultas = ({
   // Filtered fines
   const filteredFines = useMemo(() => {
     return fines.filter(f => {
+      const searchLower = search.toLowerCase();
+      const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+      const cleanPlate = (f.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
       const matchesSearch = 
-        (f.infraction || '').toLowerCase().includes(search.toLowerCase()) ||
-        (f.vehiclePlate || '').toLowerCase().includes(search.toLowerCase()) ||
-        (f.driverName || '').toLowerCase().includes(search.toLowerCase()) ||
-        (f.location || '').toLowerCase().includes(search.toLowerCase());
+        (f.infraction || '').toLowerCase().includes(searchLower) ||
+        cleanPlate.includes(cleanSearch) ||
+        (f.driverName || '').toLowerCase().includes(searchLower) ||
+        (f.location || '').toLowerCase().includes(searchLower);
 
       const matchesStatus = statusFilter === 'Todos' || f.status === statusFilter;
       const matchesDriver = driverFilter === 'Todos' || f.driverName === driverFilter;

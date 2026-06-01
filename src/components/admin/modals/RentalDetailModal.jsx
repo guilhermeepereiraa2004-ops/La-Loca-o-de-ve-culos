@@ -251,6 +251,22 @@ const RentalDetailModal = ({
                   </div>
                   <div className="pt-6 border-t border-neutral-100 grid grid-cols-2 gap-y-6 gap-x-4">
                     <div>
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">CPF</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.cpf || '---'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">RG</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.rg || '---'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Estado Civil</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.estadoCivil || '---'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Nacionalidade</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.nacionalidade || '---'}</p>
+                    </div>
+                    <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Número CNH</p>
                       <p className="text-sm font-black text-neutral-900">{rental.cnhNumber || rental.cnh || '---'}</p>
                     </div>
@@ -259,8 +275,20 @@ const RentalDetailModal = ({
                       <p className="text-sm font-black text-neutral-900">{rental.cnhRegisterNumber || '---'}</p>
                     </div>
                     <div>
-                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Validade</p>
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Validade CNH</p>
                       <p className="text-sm font-black text-neutral-900">{rental.cnhValidity ? new Date(rental.cnhValidity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">CEP</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.cep || '---'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Cidade / UF</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.cidadeUf || '---'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Endereço Residencial</p>
+                      <p className="text-sm font-black text-neutral-900">{rental.address || '---'}</p>
                     </div>
                   </div>
                 </div>

@@ -101,11 +101,11 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
                         </div>
                         <div className="flex justify-between items-center p-4 border border-neutral-100 rounded-2xl">
                             <span className="text-[9px] uppercase font-black text-neutral-400">Taxa Admin</span>
-                            <span className="text-neutral-900 font-black">{vehicle.adminTax || '15'}%</span>
+                            <span className="text-neutral-900 font-black">{vehicle.adminTax || '20'}%</span>
                         </div>
                         <div className="flex justify-between items-center p-4 border border-neutral-100 rounded-2xl">
                             <span className="text-[9px] uppercase font-black text-neutral-400">Taxa Investidor</span>
-                            <span className="text-neutral-900 font-black">{vehicle.investorTax || '85'}%</span>
+                            <span className="text-neutral-900 font-black">{vehicle.investorTax || '80'}%</span>
                         </div>
                     </div>
                 </section>
@@ -131,7 +131,7 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
                     </div>
                 </section>
 
-                {(vehicle.crlv || vehicle.crv) && (
+                {(vehicle.crlv || vehicle.crv || vehicle.contractUrl) && (
                   <section className="space-y-4">
                     <div className="flex items-center gap-3">
                         <FileText size={18} className="text-[#C5A059]" />
@@ -150,6 +150,13 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
                            className="w-full py-4 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 group shadow-lg">
                           <Eye size={16} />
                           Visualizar CRV
+                        </a>
+                      )}
+                      {vehicle.contractUrl && (
+                        <a href={vehicle.contractUrl} target="_blank" rel="noopener noreferrer"
+                           className="w-full py-4 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 group shadow-lg">
+                          <Eye size={16} />
+                          Visualizar Contrato de Gestão
                         </a>
                       )}
                     </div>

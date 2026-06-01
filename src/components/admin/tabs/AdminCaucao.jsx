@@ -21,10 +21,15 @@ const AdminCaucao = ({
   }, 0);
   const totalContratado = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
 
-  const filteredRentals = safeRentals.filter(r =>
-    (r.userName || r.user || '').toLowerCase().includes(search.toLowerCase()) ||
-    (r.plate || r.vehiclePlate || '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredRentals = safeRentals.filter(r => {
+    const searchLower = search.toLowerCase();
+    const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+    const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return (
+      (r.userName || r.user || '').toLowerCase().includes(searchLower) ||
+      cleanPlate.includes(cleanSearch)
+    );
+  });
 
   const handleOpenPayModal = (rental) => {
     setSelectedRental(rental);

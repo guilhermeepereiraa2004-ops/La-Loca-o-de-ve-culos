@@ -74,7 +74,9 @@ const AdminFinanceiro = ({
   const displayedTransactionsForTotals = filteredRawTransactions.filter(t => {
     const matchesMonth = selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth);
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
-    return matchesMonth && !isInvestor;
+    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+    const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
+    return matchesMonth && (!isInvestor || isProtection || isInsurance);
   });
 
   const totalIn = displayedTransactionsForTotals.filter(t => t.type === 'in').reduce((acc, t) => acc + t.val, 0);

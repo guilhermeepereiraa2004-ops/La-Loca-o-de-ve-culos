@@ -193,13 +193,16 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
   };
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
-  const filtered = safeRentals.filter(r =>
-    r.status === 'Ativo' &&
-    (
-      (r.userName || r.user || '').toLowerCase().includes(search.toLowerCase()) ||
-      (r.plate || r.vehiclePlate || '').toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const filtered = safeRentals.filter(r => {
+    if (r.status !== 'Ativo') return false;
+    const searchLower = search.toLowerCase();
+    const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+    const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    return (
+      (r.userName || r.user || '').toLowerCase().includes(searchLower) ||
+      cleanPlate.includes(cleanSearch)
+    );
+  });
 
   const totalPrevisao = filtered.reduce((acc, r) => acc + calculateBoleto(r).total, 0);
 
