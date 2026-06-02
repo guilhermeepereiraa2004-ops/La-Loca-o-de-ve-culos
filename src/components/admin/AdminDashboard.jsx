@@ -407,6 +407,7 @@ const AdminDashboard = ({
               vehicles={vehicles}
               transactions={transactions}
               onAddTransaction={onAddTransaction}
+              rentals={rentals}
             />
           )}
           {activeTab === 'financeiro' && canAccess('financeiro') && (
@@ -417,6 +418,7 @@ const AdminDashboard = ({
               handleSaveTransaction={handleSaveTransaction} vehicles={vehicles}
               onUpdateTransactionStatus={onUpdateTransactionStatus}
               investors={investors}
+              rentals={rentals}
             />
           )}
           {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} />}

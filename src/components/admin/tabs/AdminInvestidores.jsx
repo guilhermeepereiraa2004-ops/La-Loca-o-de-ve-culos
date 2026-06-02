@@ -19,8 +19,97 @@ const AdminInvestidores = ({
   setShowAdminSuccess,
   vehicles = [],
   transactions = [],
-  onAddTransaction
+  onAddTransaction,
+  rentals = []
 }) => {
+  const getInvestorShareForTransaction = (t, invVehicles = [], rentals = []) => {
+    if (!t || t.status !== 'Concluído') return { share: 0, explanation: 'Ignorado (Não concluído)' };
+    
+    const val = parseFloat(t.val) || 0;
+    const absVal = Math.abs(val);
+    const category = (t.cat || '').toLowerCase().trim();
+
+    if (t.type === 'out' || val < 0) {
+      const isRespInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+      const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+      if (isRespInvestor && !isBeforeJune2026) {
+        return { 
+          share: -absVal, 
+          explanation: `Despesa cobrada do investidor: - R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+        };
+      }
+      return { 
+        share: 0, 
+        explanation: `Ignorado (Despesa da administradora ou anterior a Junho/2026)` 
+      };
+    }
+
+    if (category === 'taxa adm') {
+      return { 
+        share: 0, 
+        explanation: `Ignorado (Taxa adm de R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pertence 100% à empresa)` 
+      };
+    }
+    if (category === 'taxa de pneus') {
+      return { 
+        share: 0, 
+        explanation: `Ignorado (Taxa de pneus de R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pertence 100% à empresa)` 
+      };
+    }
+
+    if (category.includes('prote') || category.includes('veicular')) {
+      return { 
+        share: -absVal, 
+        explanation: `Despesa de proteção veicular: - R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+      };
+    }
+    if (category.includes('franquia') || category.includes('seguro')) {
+      return { 
+        share: -absVal, 
+        explanation: `Despesa de seguro franquia: - R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+      };
+    }
+
+    if (category === 'pagamento de dívida' || category === 'pagamento dívida') {
+      return { 
+        share: absVal, 
+        explanation: `Pagamento de dívida recebido: + R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+      };
+    }
+
+    if (category === 'aluguel') {
+      const descLower = (t.desc || '').toLowerCase();
+      const isAsaas = descLower.includes('recebimento') || descLower.includes('asaas');
+      
+      const vehicle = invVehicles.find(v => v.plate === t.vehiclePlate);
+      const adminTaxPercent = parseFloat(vehicle?.adminTax || 20);
+      const investorSharePercent = 100 - adminTaxPercent;
+      
+      if (!isAsaas) {
+        const investorPart = absVal * (investorSharePercent / 100);
+        return {
+          share: investorPart,
+          explanation: `Aluguel manual: R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} bruto - ${adminTaxPercent}% (Taxa Adm) = + R$ ${investorPart.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        };
+      } else {
+        const rental = rentals.find(r => r.plate === t.vehiclePlate || r.vehiclePlate === t.vehiclePlate);
+        const tireTax = rental ? parseFloat(rental.tireTax || 25) : 25;
+        
+        const rentValue = Math.max(0, absVal - tireTax);
+        const investorPart = rentValue * (investorSharePercent / 100);
+        return {
+          share: investorPart,
+          explanation: `Aluguel Asaas: R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} bruto (deduz R$ ${tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} de taxa de pneus, restando R$ ${rentValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} de aluguel) - ${adminTaxPercent}% (Taxa Adm) = + R$ ${investorPart.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+        };
+      }
+    }
+
+    return { 
+      share: 0, 
+      explanation: `Ignorado (${t.cat || 'Outros'} de R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} pertence 100% à empresa)` 
+    };
+  };
+
   const calculateInvestorPayout = (inv) => {
     const invVehicles = (vehicles || []).filter(v => {
       const invNameMatch = v.investor?.toLowerCase().trim() === inv.name?.toLowerCase().trim();
@@ -28,15 +117,19 @@ const AdminInvestidores = ({
       return invNameMatch || invIdMatch;
     });
 
-    if (invVehicles.length === 0) return { payout: 0, currentMonthNet: 0, carriedDebt: 0 };
+    if (invVehicles.length === 0) return { payout: 0, currentMonthNet: 0, carriedDebt: 0, vehicles: [], transactionsDetails: [], monthlySummaries: [] };
 
     const investorTrans = (transactions || []).filter(t => 
       invVehicles.some(v => v.plate === t.vehiclePlate) ||
       (t.responsible?.toLowerCase().trim() === `investidor: ${inv.name?.toLowerCase().trim()}`)
     );
 
-    // Agrupa o saldo de todos os veículos mês a mês
+    const today = new Date();
+    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
     const monthlyNet = {};
+    const transactionsDetails = [];
+
     investorTrans.forEach(t => {
       if (!t.date) return;
       try {
@@ -45,58 +138,52 @@ const AdminInvestidores = ({
         
         if (!monthlyNet[monthKey]) monthlyNet[monthKey] = 0;
         
-        const cat = t.cat?.toLowerCase().trim() || '';
-        const val = Math.abs(t.val || 0);
-        
-        if (t.type === 'in') {
-          if (cat === 'taxa adm') {
-             monthlyNet[monthKey] -= val;
-          } else if (cat === 'pagamento de dívida' || cat === 'pagamento dívida') {
-             monthlyNet[monthKey] += val; // Valor integral quita a dívida sem cobrar taxa
-          } else if (cat === 'proteção veicular' || cat.includes('prote')) {
-             monthlyNet[monthKey] -= val; // Proteção veicular paga pelo investidor é despesa para ele
-          } else if (cat === 'seguro franquia' || cat.includes('franquia') || cat.includes('seguro')) {
-             monthlyNet[monthKey] -= val; // Seguro franquia pago pelo investidor é despesa para ele
-          } else {
-             const v = invVehicles.find(veh => veh.plate === t.vehiclePlate);
-             const taxRate = parseFloat(v?.adminTax || 20) / 100;
-             monthlyNet[monthKey] += val;
-             monthlyNet[monthKey] -= (val * taxRate);
-          }
-        } else if (t.type === 'out') {
-           const isRespInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
-           if (isRespInvestor) {
-             const isBeforeJune2026 = t.date && t.date < '2026-06-01';
-             if (!isBeforeJune2026) {
-               monthlyNet[monthKey] -= val;
-             }
-           }
-         }
-      } catch (e) {}
+        const detail = getInvestorShareForTransaction(t, invVehicles, rentals);
+        monthlyNet[monthKey] += detail.share;
+
+        if (monthKey === currentMonthKey) {
+          transactionsDetails.push({
+            id: t.id || Math.random().toString(),
+            date: t.date,
+            desc: t.desc,
+            cat: t.cat,
+            val: t.val,
+            type: t.type,
+            share: detail.share,
+            explanation: detail.explanation
+          });
+        }
+      } catch (e) {
+        console.error(e);
+      }
     });
 
-    // Processa os meses cronologicamente para transportar o saldo negativo
     const sortedMonths = Object.keys(monthlyNet).sort();
-    
-    const today = new Date();
-    const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-
     let carriedBalance = 0;
+    const monthlySummaries = [];
 
     for (const month of sortedMonths) {
+      const net = monthlyNet[month];
+      
       if (month >= currentMonthKey) {
-        // Para no mês atual, pois queremos saber o saldo herdado ATÉ o mês atual
         break;
       }
       
-      const net = monthlyNet[month];
       const total = net + carriedBalance;
+      const [yr, mo] = month.split('-');
+      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+      const monthName = `${monthNames[parseInt(mo) - 1]}/${yr}`;
+      
+      monthlySummaries.push({
+        month: monthName,
+        net,
+        carriedBefore: carriedBalance,
+        totalAfter: total
+      });
       
       if (total > 0) {
-        // Mês positivo quitou as dívidas (e o investidor recebeu o lucro)
         carriedBalance = 0;
       } else {
-        // Mês negativo acumula como dívida para o próximo
         carriedBalance = total;
       }
     }
@@ -105,17 +192,22 @@ const AdminInvestidores = ({
     const currentPayout = currentMonthNet + carriedBalance;
     
     return {
-      payout: currentPayout, // Pode ser negativo se a dívida continuar
+      payout: currentPayout,
       currentMonthNet,
-      carriedDebt: carriedBalance
+      carriedDebt: carriedBalance,
+      vehicles: invVehicles,
+      transactionsDetails: transactionsDetails.sort((a, b) => b.date.localeCompare(a.date)),
+      monthlySummaries
     };
   };
+
   const [showForm, setShowForm] = React.useState(false);
   const [payoutModal, setPayoutModal] = useState(null); // { investor, amount }
   const [debtPaymentModal, setDebtPaymentModal] = useState(null); // { investor, debtAmount }
   const [debtPaymentInput, setDebtPaymentInput] = useState('');
   const [payoutHistory, setPayoutHistory] = useState({}); // investorId → []
   const [expandedHistory, setExpandedHistory] = useState({}); // investorId → bool
+  const [selectedInvForCalc, setSelectedInvForCalc] = useState(null); // For memory modal
 
   const loadPayoutHistory = useCallback(async (investorId) => {
     const records = await getPayoutsForInvestor(investorId);
@@ -148,6 +240,143 @@ const AdminInvestidores = ({
           }}
         />
       )}
+
+      {/* Modal de Memória de Cálculo */}
+      {selectedInvForCalc && (() => {
+        const { payout, currentMonthNet, carriedDebt, transactionsDetails, monthlySummaries, vehicles: invVehs } = calculateInvestorPayout(selectedInvForCalc);
+        const formatCurrency = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        return (
+          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-neutral-950/80 backdrop-blur-md p-4 font-sans">
+            <div className="bg-white rounded-[3rem] w-full max-w-4xl max-h-[85vh] overflow-hidden shadow-2xl relative flex flex-col">
+              
+              {/* Modal Header */}
+              <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50 shrink-0">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-neutral-900 text-[#C5A059] rounded-xl flex items-center justify-center font-black select-none">
+                    {selectedInvForCalc.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="text-[8px] uppercase tracking-[0.2em] font-black text-[#C5A059]">Memória de Cálculo</span>
+                    <h4 className="text-lg font-black uppercase tracking-tight text-neutral-900 leading-tight">{selectedInvForCalc.name}</h4>
+                  </div>
+                </div>
+                <button onClick={() => setSelectedInvForCalc(null)} className="w-10 h-10 bg-white flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all shadow-sm">
+                  <X size={18} />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6">
+                
+                {/* Vehicles reference */}
+                <div>
+                  <h5 className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2.5">Ativos Associados</h5>
+                  <div className="flex flex-wrap gap-2">
+                    {invVehs.map(v => (
+                      <span key={v.id} className="px-3 py-1.5 bg-neutral-50 border border-neutral-100 text-[10px] font-bold text-neutral-700 rounded-xl">
+                        {v.model} <span className="font-mono text-neutral-400">({v.plate})</span> — Taxa Adm: <span className="text-neutral-900 font-black">{v.adminTax || 20}%</span>
+                      </span>
+                    ))}
+                    {invVehs.length === 0 && (
+                      <span className="text-xs text-neutral-400 italic">Nenhum veículo vinculado</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Financial Summary Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-100">
+                    <p className="text-[8px] uppercase text-neutral-400 font-black mb-1">Mês Atual (Líquido)</p>
+                    <p className="text-lg font-mono font-black text-neutral-800">{formatCurrency(currentMonthNet)}</p>
+                  </div>
+                  <div className={`p-5 rounded-2xl border ${carriedDebt < 0 ? 'bg-red-50/50 border-red-100 text-red-700' : 'bg-neutral-50 border-neutral-100 text-neutral-800'}`}>
+                    <p className="text-[8px] uppercase text-neutral-400 font-black mb-1">Dívidas Anteriores</p>
+                    <p className="text-lg font-mono font-black">{formatCurrency(carriedDebt)}</p>
+                  </div>
+                  <div className={`p-5 rounded-2xl border text-white ${payout >= 0 ? 'bg-neutral-950 border-neutral-900' : 'bg-red-600 border-red-500'}`}>
+                    <p className="text-[8px] uppercase text-neutral-300 font-black mb-1">Líquido a Repassar</p>
+                    <p className="text-lg font-mono font-black">{formatCurrency(payout)}</p>
+                  </div>
+                </div>
+
+                {/* Carried Debt breakdown */}
+                {monthlySummaries.length > 0 && (
+                  <div className="bg-amber-50/50 border border-amber-100 p-5 rounded-2xl">
+                    <h5 className="text-[9px] uppercase tracking-widest text-amber-700 font-black mb-2">Evolução do Saldo Anterior (Meses Passados)</h5>
+                    <div className="divide-y divide-amber-100/50 space-y-1.5">
+                      {monthlySummaries.map((s, idx) => (
+                        <div key={idx} className="flex justify-between items-center text-[10px] py-1.5 font-semibold text-neutral-600">
+                          <span>Mês: <span className="font-bold text-neutral-800">{s.month}</span></span>
+                          <div className="flex gap-4 font-mono">
+                            <span>Faturamento Mês: {formatCurrency(s.net)}</span>
+                            <span>Saldo Acumulado: <span className={s.totalAfter < 0 ? 'text-red-600 font-bold' : 'text-emerald-600 font-bold'}>{formatCurrency(s.totalAfter)}</span></span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Transactions breakdown */}
+                <div>
+                  <h5 className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-3">Transações Detalhadas do Mês Atual</h5>
+                  <div className="border border-neutral-100 rounded-2xl overflow-hidden bg-white">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-neutral-50 border-b border-neutral-100">
+                          <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px]">Data / Descrição</th>
+                          <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Bruto</th>
+                          <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px]">Memória de Cálculo (Fórmula Aplicada)</th>
+                          <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px] text-right">Efeito Líquido</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-neutral-100 font-medium text-neutral-700">
+                        {transactionsDetails.filter(td => td.share !== 0).length === 0 ? (
+                          <tr>
+                            <td colSpan="4" className="px-4 py-8 text-center text-neutral-400 italic">Nenhum faturamento registrado no mês atual</td>
+                          </tr>
+                        ) : (
+                          transactionsDetails.filter(td => td.share !== 0).map(td => (
+                            <tr key={td.id} className="hover:bg-neutral-50/50 transition-colors">
+                              <td className="px-4 py-3.5">
+                                <p className="font-bold text-neutral-900">{td.desc}</p>
+                                <p className="text-[9.5px] text-neutral-400 mt-0.5">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                              </td>
+                              <td className="px-4 py-3.5 text-right font-mono font-bold text-neutral-800">
+                                {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
+                              </td>
+                              <td className="px-4 py-3.5 text-[9.5px] text-neutral-500 leading-relaxed max-w-xs">
+                                {td.explanation}
+                              </td>
+                              <td className="px-4 py-3.5 text-right font-mono font-black">
+                                <span className={td.share > 0 ? 'text-emerald-600' : td.share < 0 ? 'text-red-600' : 'text-neutral-400'}>
+                                  {td.share > 0 ? '+' : ''} {formatCurrency(td.share)}
+                                </span>
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-6 border-t border-neutral-100 bg-neutral-50/30 flex justify-end shrink-0">
+                <button 
+                  onClick={() => setSelectedInvForCalc(null)}
+                  className="px-8 py-3.5 bg-neutral-950 text-white text-[10px] uppercase tracking-widest font-black hover:bg-[#C5A059] transition-all rounded-xl shadow-md"
+                >
+                  Fechar Detalhes
+                </button>
+              </div>
+
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal de Pagamento de Débito Manual */}
       {debtPaymentModal && (
@@ -270,7 +499,15 @@ const AdminInvestidores = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
-            {investors.map((investor) => {
+            {[...investors].sort((a, b) => {
+              const payoutA = calculateInvestorPayout(a).payout;
+              const payoutB = calculateInvestorPayout(b).payout;
+              
+              if (payoutA > 0 && payoutB <= 0) return -1;
+              if (payoutB > 0 && payoutA <= 0) return 1;
+              if (payoutA > 0 && payoutB > 0) return payoutB - payoutA;
+              return payoutB - payoutA;
+            }).map((investor) => {
               const { payout, currentMonthNet, carriedDebt } = calculateInvestorPayout(investor);
               const invVehs = (vehicles || []).filter(v => {
                 const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
@@ -368,6 +605,13 @@ const AdminInvestidores = ({
                           <h4 className="text-xl font-mono font-black text-neutral-900 leading-none mt-1">
                             R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </h4>
+                          
+                          <button
+                            onClick={() => setSelectedInvForCalc(investor)}
+                            className="mt-2 text-[9.5px] text-[#C5A059] font-black uppercase tracking-widest underline flex items-center gap-1 hover:text-neutral-950 transition-colors"
+                          >
+                            Ver Memória de Cálculo
+                          </button>
                           
                           {carriedDebt < 0 && (
                             <div className="mt-1.5 flex items-center gap-1">

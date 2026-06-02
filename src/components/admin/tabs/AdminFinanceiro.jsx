@@ -27,6 +27,43 @@ const formatTransactionDateTime = (t) => {
   return t.date || '—';
 };
 
+const getCompanyShareForTransaction = (t, vehicles = [], rentals = []) => {
+  if (!t) return 0;
+  const val = parseFloat(t.val) || 0;
+  if (t.type === 'out' || val < 0) {
+    return val;
+  }
+
+  const category = (t.cat || '').toLowerCase().trim();
+  if (category === 'taxa adm' || category === 'taxa de pneus') {
+    return val;
+  }
+
+  if (category === 'aluguel') {
+    const descLower = (t.desc || '').toLowerCase();
+    const isAsaas = descLower.includes('recebimento') || descLower.includes('asaas');
+    if (!isAsaas) {
+      return 0;
+    }
+
+    const vehicle = vehicles.find(v => v.plate === t.vehiclePlate);
+    const adminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
+    
+    const rental = rentals.find(r => r.plate === t.vehiclePlate || r.vehiclePlate === t.vehiclePlate);
+    const tireTax = rental ? parseFloat(rental.tireTax || 25) : 25;
+
+    if (val <= tireTax) {
+      return val;
+    }
+
+    const rentValueWithoutTireTax = val - tireTax;
+    const adminShare = rentValueWithoutTireTax * adminTaxPercent;
+    return adminShare + tireTax;
+  }
+
+  return val;
+};
+
 const AdminFinanceiro = ({
   transactions,
   financeFilter,
@@ -38,7 +75,8 @@ const AdminFinanceiro = ({
   handleSaveTransaction,
   vehicles,
   onUpdateTransactionStatus,
-  investors = []
+  investors = [],
+  rentals = []
 }) => {
   const [selectedMonth, setSelectedMonth] = useState('Todos'); // 'Todos' or 'YYYY-MM'
 
@@ -76,11 +114,22 @@ const AdminFinanceiro = ({
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
     const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
     const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
-    return matchesMonth && (!isInvestor || isProtection || isInsurance);
+    
+    // Hide manual rent transactions (gross rent) from the company cash flow totals
+    const isManualRent = (t.cat || '').toLowerCase().trim() === 'aluguel' && 
+      !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+
+    return matchesMonth && (!isInvestor || isProtection || isInsurance) && !isManualRent;
   });
 
-  const totalIn = displayedTransactionsForTotals.filter(t => t.type === 'in').reduce((acc, t) => acc + t.val, 0);
-  const totalOut = Math.abs(displayedTransactionsForTotals.filter(t => t.type === 'out').reduce((acc, t) => acc + t.val, 0));
+  const totalIn = displayedTransactionsForTotals
+    .filter(t => t.type === 'in')
+    .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0);
+  const totalOut = Math.abs(
+    displayedTransactionsForTotals
+      .filter(t => t.type === 'out')
+      .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0)
+  );
   const netBalance = totalIn - totalOut;
 
   // Filter transaction list based on both type filter and month filter
@@ -94,7 +143,11 @@ const AdminFinanceiro = ({
       selectedMonth === 'Todos' || 
       (t.date && t.date.substring(0, 7) === selectedMonth);
       
-    return matchesType && matchesMonth;
+    // Hide manual rent transactions (gross rent) from the company transactions list
+    const isManualRent = (t.cat || '').toLowerCase().trim() === 'aluguel' && 
+      !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+
+    return matchesType && matchesMonth && !isManualRent;
   });
 
   return (
@@ -258,7 +311,7 @@ const AdminFinanceiro = ({
                         </td>
                       <td className="px-4 py-3 xl:px-6 xl:py-4 text-right">
                         <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
-                          {t.type === 'in' ? '+' : '-'} R$ {Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          {t.type === 'in' ? '+' : '-'} R$ {Math.abs(getCompanyShareForTransaction(t, vehicles, rentals)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </td>
                       <td className="px-4 py-3 xl:px-6 xl:py-4">
@@ -327,7 +380,7 @@ const AdminFinanceiro = ({
                     <div className="text-right">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Valor</p>
                       <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
-                        {t.type === 'in' ? '+' : '-'} R$ {Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        {t.type === 'in' ? '+' : '-'} R$ {Math.abs(getCompanyShareForTransaction(t, vehicles, rentals)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
                   </div>

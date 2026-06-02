@@ -55,6 +55,13 @@ const AdminManutencao = ({
     const today = new Date();
 
     vehicles.forEach(v => {
+      const hasPreventive = v.preventiveMaintenance !== false && 
+                            v.preventiveMaintenance !== 'false' && 
+                            v.preventive_maintenance !== false && 
+                            v.preventive_maintenance !== 'false';
+
+      if (!hasPreventive) return;
+
       // 6-month preventive maintenance alert
       if (!v.entryDate) return;
       const entryDate = new Date(v.entryDate);

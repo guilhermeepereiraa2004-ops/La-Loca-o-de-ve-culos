@@ -272,7 +272,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
             const activeRC = calc.activeRC;
             const replacementPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
 
-            const history = (transactions || [])
+            const rawHistory = (transactions || [])
               .filter(t => {
                 const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
                 const isMatchingPlate = tPlate && (tPlate === rentalPlate || (replacementPlate && tPlate === replacementPlate));
@@ -282,8 +282,59 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                 const category = (t.cat || '').toLowerCase();
                 const isPaymentCategory = category === 'aluguel' || category === 'multa' || category === 'taxa de pneus';
                 return t.type === 'in' && isPaymentCategory;
-              })
-              .sort((a, b) => new Date(b.date) - new Date(a.date));
+              });
+
+            const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+            const hasPaidToday = (transactions || []).some(t => {
+              const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
+              const isMatchingPlate = tPlate && (tPlate === rentalPlate || (replacementPlate && tPlate === replacementPlate));
+              if (!isMatchingPlate) return false;
+              return t.type === 'in' && t.cat?.toLowerCase() === 'aluguel' && t.date === todayStr;
+            });
+
+            const grouped = [];
+            const processedIds = new Set();
+
+            for (let i = 0; i < rawHistory.length; i++) {
+              const current = rawHistory[i];
+              if (processedIds.has(current.id)) continue;
+
+              const category = (current.cat || '').toLowerCase();
+              if (category === 'aluguel') {
+                // Find a matching 'taxa de pneus' transaction created around the same time/date
+                const matchingTireTax = rawHistory.find(t => {
+                  if (processedIds.has(t.id)) return false;
+                  if ((t.cat || '').toLowerCase() !== 'taxa de pneus') return false;
+
+                  if (current.createdAt && t.createdAt) {
+                    const diff = Math.abs(new Date(current.createdAt) - new Date(t.createdAt));
+                    return diff < 5000; // within 5 seconds
+                  }
+                  return current.date === t.date;
+                });
+
+                if (matchingTireTax) {
+                  processedIds.add(current.id);
+                  processedIds.add(matchingTireTax.id);
+                  grouped.push({
+                    ...current,
+                    val: (parseFloat(current.val) || 0) + (parseFloat(matchingTireTax.val) || 0)
+                  });
+                } else {
+                  processedIds.add(current.id);
+                  grouped.push(current);
+                }
+              } else if (category === 'taxa de pneus') {
+                // Ignore standalone tire tax transactions (they are grouped with Aluguel)
+                processedIds.add(current.id);
+              } else {
+                // Keep other transactions (like multa) as is
+                processedIds.add(current.id);
+                grouped.push(current);
+              }
+            }
+
+            const history = grouped.sort((a, b) => new Date(b.date) - new Date(a.date));
 
             return (
               <div key={rental.id} className="bg-white rounded-3xl border border-neutral-150 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-neutral-200">
@@ -494,10 +545,16 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     {/* Actions Panel */}
                     <div className="space-y-3">
                       <button
-                        onClick={() => handleConfirm(rental.id, calc)}
-                        className="w-full py-4 bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-neutral-950 hover:text-white transition-all shadow-md flex items-center justify-center gap-2 group"
+                        onClick={() => !hasPaidToday && handleConfirm(rental.id, calc)}
+                        disabled={hasPaidToday}
+                        className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${
+                          hasPaidToday 
+                            ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed border border-neutral-300/40 shadow-none' 
+                            : 'bg-[#C5A059] text-neutral-900 hover:bg-neutral-950 hover:text-white'
+                        }`}
                       >
-                        Confirmar Pagamento Manual <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />
+                        {hasPaidToday ? 'Pagamento Já Confirmado Hoje' : 'Confirmar Pagamento Manual'}
+                        {!hasPaidToday && <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />}
                       </button>
                     </div>
                   </div>

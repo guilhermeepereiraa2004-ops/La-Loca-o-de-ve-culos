@@ -153,11 +153,11 @@ const AdminCaucao = ({
                   const received = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
                   const remaining = total - received;
 
-                  // Calculate Next Due Date
+                  // Calculate Next Due Date (First installment is due next week since down payment is paid on start date)
                   const paidCount = (rental.paidInstallments || []).length;
                   const startDate = rental.date || rental.startDate ? new Date((rental.date || rental.startDate) + 'T12:00:00') : new Date();
                   const nextDueDate = new Date(startDate.getTime());
-                  nextDueDate.setDate(startDate.getDate() + (paidCount * 7));
+                  nextDueDate.setDate(startDate.getDate() + ((paidCount + 1) * 7));
 
                   const today = new Date();
                   today.setHours(12, 0, 0, 0);
@@ -289,11 +289,11 @@ const AdminCaucao = ({
               const received = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
               const remaining = total - received;
 
-              // Calculate Next Due Date
+              // Calculate Next Due Date (First installment is due next week since down payment is paid on start date)
               const paidCount = (rental.paidInstallments || []).length;
               const startDate = rental.date || rental.startDate ? new Date((rental.date || rental.startDate) + 'T12:00:00') : new Date();
               const nextDueDate = new Date(startDate.getTime());
-              nextDueDate.setDate(startDate.getDate() + (paidCount * 7));
+              nextDueDate.setDate(startDate.getDate() + ((paidCount + 1) * 7));
 
               const today = new Date();
               today.setHours(12, 0, 0, 0);

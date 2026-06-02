@@ -1,6 +1,43 @@
 import React from 'react';
 import { Car, Wrench, TrendingUp, Landmark, Calendar, ClipboardList } from 'lucide-react';
 
+const getCompanyShareForTransaction = (t, vehicles = [], rentals = []) => {
+  if (!t) return 0;
+  const val = parseFloat(t.val) || 0;
+  if (t.type === 'out' || val < 0) {
+    return val;
+  }
+
+  const category = (t.cat || '').toLowerCase().trim();
+  if (category === 'taxa adm' || category === 'taxa de pneus') {
+    return val;
+  }
+
+  if (category === 'aluguel') {
+    const descLower = (t.desc || '').toLowerCase();
+    const isAsaas = descLower.includes('recebimento') || descLower.includes('asaas');
+    if (!isAsaas) {
+      return 0;
+    }
+
+    const vehicle = vehicles.find(v => v.plate === t.vehiclePlate);
+    const adminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
+    
+    const rental = rentals.find(r => r.plate === t.vehiclePlate || r.vehiclePlate === t.vehiclePlate);
+    const tireTax = rental ? parseFloat(rental.tireTax || 25) : 25;
+
+    if (val <= tireTax) {
+      return val;
+    }
+
+    const rentValueWithoutTireTax = val - tireTax;
+    const adminShare = rentValueWithoutTireTax * adminTaxPercent;
+    return adminShare + tireTax;
+  }
+
+  return val;
+};
+
 export const calculateBIStats = (transactions, vehicles, rentals, investors, leads) => {
   const today = new Date();
   const currentMonth = today.getMonth();
@@ -21,11 +58,11 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   const monthlyRevenue = monthlyTransactions
     .filter(t => t.val > 0)
-    .reduce((acc, t) => acc + t.val, 0);
+    .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0);
 
   const monthlyExpenses = monthlyTransactions
     .filter(t => t.val < 0)
-    .reduce((acc, t) => acc + Math.abs(t.val), 0);
+    .reduce((acc, t) => acc + Math.abs(getCompanyShareForTransaction(t, vehicles, rentals)), 0);
 
   const netProfit = monthlyRevenue - monthlyExpenses;
   
@@ -42,7 +79,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   const saldoAcumulado = filteredTx.reduce((acc, t) => {
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
-    return acc + (t.status === 'Concluído' && !isInvestor ? t.val : 0);
+    return acc + (t.status === 'Concluído' && !isInvestor ? getCompanyShareForTransaction(t, vehicles, rentals) : 0);
   }, 0);
   
   const pendingCharges = filteredTx.filter(t => t.status === 'Pendente').length + 
@@ -63,8 +100,12 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
       return tDate.getMonth() === mMonth && tDate.getFullYear() === mYear && t.status === 'Concluído' && !isInvestor;
     });
 
-    const mRev = monthTx.filter(t => t.val > 0).reduce((acc, t) => acc + t.val, 0);
-    const mExp = monthTx.filter(t => t.val < 0).reduce((acc, t) => acc + Math.abs(t.val), 0);
+    const mRev = monthTx
+      .filter(t => t.val > 0)
+      .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0);
+    const mExp = monthTx
+      .filter(t => t.val < 0)
+      .reduce((acc, t) => acc + Math.abs(getCompanyShareForTransaction(t, vehicles, rentals)), 0);
     
     chartData.push({
       name: `${monthNames[mMonth]}`,
@@ -79,7 +120,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
     if (!t.date) return false;
     const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
     return new Date(t.date) < date6MonthsAgo && t.status === 'Concluído' && !isInvestor;
-  }).reduce((acc, t) => acc + t.val, 0);
+  }).reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0);
 
   chartData.forEach(monthData => {
     startingBalance += (monthData.receitas - monthData.despesas);
@@ -134,24 +175,32 @@ export const getDynamicAlerts = (vehicles, maintenances, inspections, clients) =
   });
 
   (vehicles || []).forEach(v => {
-    if (!v.entryDate) return;
-    const entryDate = new Date(v.entryDate);
-    const monthsSinceEntry = (today.getFullYear() - entryDate.getFullYear()) * 12 + (today.getMonth() - entryDate.getMonth());
-    
-    if (monthsSinceEntry > 0 && monthsSinceEntry % 6 === 0 || (monthsSinceEntry + 1) % 6 === 0) {
-      const recentPreventive = (maintenances || []).find(m => 
-        m.vehiclePlate === v.plate && 
-        (m.serviceType || '').toLowerCase().includes('preventiva') &&
-        (today - new Date(m.date)) / (1000 * 60 * 60 * 24 * 30) < 2
-      );
-      if (!recentPreventive) preventiveCount++;
-    }
+    const hasPreventive = v.preventiveMaintenance !== false && 
+                          v.preventiveMaintenance !== 'false' && 
+                          v.preventive_maintenance !== false && 
+                          v.preventive_maintenance !== 'false';
 
-    const currentKm = parseInt(v.km || 0);
-    const lastChange = parseInt(v.lastBeltChangeKm || 0);
-    const interval = parseInt(v.beltChangeIntervalKm || 60000);
-    if (currentKm >= (lastChange + interval - 5000)) {
-      beltCount++;
+    if (hasPreventive) {
+      if (v.entryDate) {
+        const entryDate = new Date(v.entryDate);
+        const monthsSinceEntry = (today.getFullYear() - entryDate.getFullYear()) * 12 + (today.getMonth() - entryDate.getMonth());
+        
+        if (monthsSinceEntry > 0 && monthsSinceEntry % 6 === 0 || (monthsSinceEntry + 1) % 6 === 0) {
+          const recentPreventive = (maintenances || []).find(m => 
+            m.vehiclePlate === v.plate && 
+            (m.serviceType || '').toLowerCase().includes('preventiva') &&
+            (today - new Date(m.date)) / (1000 * 60 * 60 * 24 * 30) < 2
+          );
+          if (!recentPreventive) preventiveCount++;
+        }
+      }
+
+      const currentKm = parseInt(v.km || 0);
+      const lastChange = parseInt(v.lastBeltChangeKm || 0);
+      const interval = parseInt(v.beltChangeIntervalKm || 60000);
+      if (currentKm >= (lastChange + interval - 5000)) {
+        beltCount++;
+      }
     }
 
     if (v.status === 'Alugado' || v.status === 'Alugado (Reserva)') {
