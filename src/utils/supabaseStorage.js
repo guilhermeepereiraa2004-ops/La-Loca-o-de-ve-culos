@@ -3,6 +3,28 @@ import * as rateLimiter from '../lib/rateLimiter';
 
 const UPLOAD_ACTION = 'upload_file';
 
+const sanitizePathSegment = (segment) => {
+  if (!segment) return '';
+  return segment
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^a-zA-Z0-9-_]/g, "_"); // Substitui qualquer caracter não permitido por _
+};
+
+/**
+ * Sanitiza um caminho de pastas completo, tratando cada segmento individualmente.
+ *
+ * @param {string} folderPath Caminho completo (ex: 'condutores/Sérgio Murilo/prints')
+ * @returns {string} Caminho sanitizado
+ */
+const sanitizeFolder = (folderPath) => {
+  if (!folderPath) return '';
+  return folderPath
+    .split('/')
+    .map(sanitizePathSegment)
+    .join('/');
+};
+
 /**
  * Faz upload de um arquivo para o Supabase Storage e retorna a URL pública.
  * Inclui proteção de rate limit para evitar flood de uploads.
@@ -27,10 +49,13 @@ export const uploadFile = async (file, folder) => {
     // Registra a tentativa de upload
     rateLimiter.record(UPLOAD_ACTION);
 
+    // Sanitiza o caminho da pasta
+    const sanitizedFolder = sanitizeFolder(folder);
+
     // Gerar um nome único para o arquivo
     const fileExt = file.name ? file.name.split('.').pop() : 'jpg';
     const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
-    const filePath = `${folder}/${fileName}`;
+    const filePath = `${sanitizedFolder}/${fileName}`;
 
     // 1. Fazer o upload
     const { error } = await supabase.storage
@@ -53,6 +78,7 @@ export const uploadFile = async (file, folder) => {
     throw error;
   }
 };
+
 
 /**
  * Retorna a URL pública de um caminho no Storage ou a própria string se já for uma URL
