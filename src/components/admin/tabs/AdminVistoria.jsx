@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Plus, Search, ClipboardCheck, Trash2, Eye, Calendar, Fuel, Gauge, Car, Check, AlertTriangle, X, Loader2, ShieldCheck } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
+import { saveDraft, getDraft, clearDraft } from '../../../utils/indexedDbHelper';
 
 const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection }) => {
   const [showForm, setShowForm] = useState(false);
@@ -12,6 +13,10 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [targetDeleteId, setTargetDeleteId] = useState(null);
+  
+  const [savedDraft, setSavedDraft] = useState(null);
+  const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+
   const [inspectionForm, setInspectionForm] = useState({
     type: 'Entrega',
     vehiclePlate: '',
@@ -74,6 +79,56 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
       onClearPendingInspection();
     }
   }, [pendingInspection, onClearPendingInspection]);
+
+  // Check for saved draft when opening the form
+  useEffect(() => {
+    const checkDraft = async () => {
+      if (showForm) {
+        try {
+          const draft = await getDraft();
+          if (draft) {
+            setSavedDraft(draft);
+            setShowDraftPrompt(true);
+          }
+        } catch (err) {
+          console.error("Erro ao verificar rascunho:", err);
+        }
+      }
+    };
+    checkDraft();
+  }, [showForm]);
+
+  // Autosave draft on form changes
+  useEffect(() => {
+    if (showForm && !showDraftPrompt) {
+      const timer = setTimeout(async () => {
+        try {
+          await saveDraft(inspectionForm);
+        } catch (err) {
+          console.error("Erro ao salvar rascunho:", err);
+        }
+      }, 1000); // 1 second debounce
+      return () => clearTimeout(timer);
+    }
+  }, [inspectionForm, showForm, showDraftPrompt]);
+
+  const handleRestoreDraft = () => {
+    if (savedDraft) {
+      setInspectionForm(savedDraft);
+      setShowDraftPrompt(false);
+      setSavedDraft(null);
+    }
+  };
+
+  const handleDiscardDraft = async () => {
+    try {
+      await clearDraft();
+    } catch (err) {
+      console.error("Erro ao limpar rascunho:", err);
+    }
+    setShowDraftPrompt(false);
+    setSavedDraft(null);
+  };
 
   const getDriverForInspection = (ins) => {
     if (ins.driverName) return ins.driverName;
@@ -181,6 +236,11 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
       await onAddInspection({
         ...inspectionForm
       });
+      try {
+        await clearDraft();
+      } catch (clearErr) {
+        console.error("Erro ao limpar rascunho após envio:", clearErr);
+      }
       setShowForm(false);
       setInspectionForm({
         type: 'Entrega',
@@ -1194,6 +1254,40 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                   Confirmar Exclusão
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Draft Recovery Modal */}
+      {showDraftPrompt && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center gap-4 mb-8">
+              <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100">
+                <AlertTriangle size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Rascunho Encontrado</h3>
+                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">
+                  Você tem um rascunho de vistoria pendente. Deseja restaurar as fotos e informações?
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button 
+                onClick={handleRestoreDraft}
+                className="w-full py-4 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#C5A059] transition-all shadow-lg flex items-center justify-center gap-2 font-bold"
+              >
+                Restaurar Rascunho
+              </button>
+              <button 
+                onClick={handleDiscardDraft}
+                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 rounded-xl transition-colors font-bold"
+              >
+                Descartar Rascunho
+              </button>
             </div>
           </div>
         </div>
