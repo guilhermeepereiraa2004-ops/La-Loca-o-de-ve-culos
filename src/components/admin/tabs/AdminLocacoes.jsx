@@ -331,9 +331,11 @@ const AdminLocacoes = ({
                       <div className="flex items-start gap-4 mb-6">
                         <div className="w-20 h-14 rounded-xl overflow-hidden bg-neutral-100 border border-neutral-150 shadow-sm shrink-0">
                           <img 
-                            src={getPublicUrl(rental.image) || 'https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&q=80'} 
+                            src={getPublicUrl(rental.image) || '/logo-new.png'} 
                             alt={rental.vehicle} 
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '0.5rem'; e.currentTarget.style.background = '#000000'; }}
+                            style={rental.image === '/logo-new.png' || !rental.image ? { objectFit: 'contain', padding: '0.5rem', background: '#000000' } : {}}
                           />
                         </div>
                         <div className="min-w-0 flex-1 space-y-1">

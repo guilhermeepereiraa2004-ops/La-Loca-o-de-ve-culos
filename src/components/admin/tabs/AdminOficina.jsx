@@ -415,7 +415,7 @@ const AdminOficina = ({
                       <thead><tr className="border-b border-neutral-100"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
                       <tbody className="divide-y divide-neutral-50">
                         {viewingOS.parts.map((p, i) => (
-                          <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseBrValue(p.unitValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td><td className="py-3 text-right font-black">R$ {(p.qty * parseBrValue(p.unitValue || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td></tr>
+                          <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseBrValue(p.unitValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td className="py-3 text-right font-black">R$ {(p.qty * parseBrValue(p.unitValue || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
                         ))}
                       </tbody>
                     </table>
@@ -424,8 +424,8 @@ const AdminOficina = ({
               )}
               <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
                 <div className="space-y-1">
-                  <p className="text-[9px] text-neutral-500 uppercase font-black">Mão de Obra: <span className="text-white">R$ {parseBrValue(viewingOS.laborValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></p>
-                  <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {(viewingOS.parts || []).reduce((a, p) => a + ((p.qty || 0) * parseBrValue(p.unitValue)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></p>
+                  <p className="text-[9px] text-neutral-500 uppercase font-black">Mão de Obra: <span className="text-white">R$ {parseBrValue(viewingOS.laborValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                  <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {(viewingOS.parts || []).reduce((a, p) => a + ((p.qty || 0) * parseBrValue(p.unitValue)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-neutral-400 uppercase font-black">Total da O.S.</p>

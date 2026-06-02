@@ -130,7 +130,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                 <h5 className="text-sm font-black uppercase text-amber-900 mb-1">Rescisão Antecipada Detectada</h5>
                 <p className="text-xs text-amber-700/80 leading-relaxed font-bold">
                   O contrato está sendo encerrado antes do término planejado ({closureData.scheduledEndDate ? new Date(closureData.scheduledEndDate + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não Informado'}). 
-                  Como consequência, o condutor perde integralmente o valor de sua caução (R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}), retida como multa de rescisão.
+                  Como consequência, o condutor perde integralmente o valor de sua caução (R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}), retida como multa de rescisão.
                 </p>
               </div>
             </div>

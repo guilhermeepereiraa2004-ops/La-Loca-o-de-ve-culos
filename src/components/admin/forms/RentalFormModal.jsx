@@ -560,14 +560,14 @@ const RentalFormModal = ({
                                   <div className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover:bg-[#C5A059] transition-colors" />
                                   <span className="text-neutral-400 text-xs font-bold group-hover:text-white transition-colors uppercase tracking-widest">Aluguel Base</span>
                                 </div>
-                                <span className="text-white text-base font-black tracking-tight">R$ {baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-white text-base font-black tracking-tight">R$ {baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between items-center group py-2">
                                 <div className="flex items-center gap-3">
                                   <div className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover:bg-[#C5A059] transition-colors" />
                                   <span className="text-neutral-400 text-xs font-bold group-hover:text-white transition-colors uppercase tracking-widest">Taxa Operacional Pneus</span>
                                 </div>
-                                <span className="text-white text-base font-black tracking-tight">R$ {tireVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-white text-base font-black tracking-tight">R$ {tireVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               
                               <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5 mt-6 mb-6">
@@ -577,7 +577,7 @@ const RentalFormModal = ({
                                 </div>
                                 <div className="flex justify-between items-baseline">
                                   <span className="text-neutral-300 text-[10px] uppercase tracking-widest font-bold opacity-40 italic">Contrato Jurídico</span>
-                                  <span className="text-[#C5A059] text-xl font-black tracking-tighter">R$ {totalRentalContract.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  <span className="text-[#C5A059] text-xl font-black tracking-tighter">R$ {totalRentalContract.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               </div>
                             </div>
@@ -585,11 +585,11 @@ const RentalFormModal = ({
                             <div className="pt-8 border-t border-neutral-800/50 space-y-4">
                               <div className="flex justify-between items-center group">
                                 <span className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold group-hover:text-neutral-300 transition-colors">Garantia Caução</span>
-                                <span className="text-neutral-300 text-sm font-black">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-neutral-300 text-sm font-black">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between items-center group">
                                 <span className="text-neutral-500 text-[10px] uppercase tracking-widest font-bold group-hover:text-neutral-300 transition-colors">Adiantamento Pago</span>
-                                <span className="text-emerald-500 text-sm font-black">R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                <span className="text-emerald-500 text-sm font-black">R$ {paid.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               {balance > 0 && (
                                 <div className="flex justify-between items-center p-6 bg-amber-500/5 rounded-[2rem] border border-amber-500/10 mt-4 group hover:bg-amber-500/10 transition-all">
@@ -598,7 +598,7 @@ const RentalFormModal = ({
                                     <span className="text-neutral-500 text-[8px] font-bold mt-1">Saldo restante em {installments}x</span>
                                   </div>
                                   <div className="text-right">
-                                    <span className="text-amber-500 text-lg font-black tracking-tighter">+ R$ {installmentVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                    <span className="text-amber-500 text-lg font-black tracking-tighter">+ R$ {installmentVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                   </div>
                                 </div>
                               )}
@@ -615,7 +615,7 @@ const RentalFormModal = ({
                                 </div>
                                 <div className="text-right">
                                   <span className="text-[#C5A059] text-5xl font-black tracking-tighter block leading-none mb-1">
-                                    {weeklyTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                    {weeklyTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
                                   <span className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.3em]">REAIS / SEMANA</span>
                                 </div>

@@ -75,6 +75,31 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     }
   }, [pendingInspection, onClearPendingInspection]);
 
+  const getDriverForInspection = (ins) => {
+    if (ins.driverName) return ins.driverName;
+
+    const insDateStr = ins.date;
+    if (insDateStr) {
+      const matchingRental = rentals.find(r => {
+        const plate = r.vehiclePlate || r.plate;
+        if ((plate || '').replace('-', '').toUpperCase() !== (ins.vehiclePlate || '').replace('-', '').toUpperCase()) return false;
+        
+        const start = r.startDate;
+        const end = r.endDate;
+        
+        const afterStart = start ? (insDateStr >= start) : true;
+        const beforeEnd = end ? (insDateStr <= end) : true;
+        
+        return afterStart && beforeEnd;
+      });
+      if (matchingRental) {
+        return matchingRental.userName || matchingRental.user;
+      }
+    }
+
+    return 'Condutor N/I';
+  };
+
   const filteredInspections = inspections.filter(ins => {
     // Exclude Coleta inspections for exempt vehicles (current fleet)
     if (ins.type === 'Coleta') {
@@ -85,8 +110,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
       if (isExempt) return false;
     }
 
-    const activeRental = rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate);
-    const conductorName = (activeRental?.userName || activeRental?.user || '').toLowerCase();
+    const conductorName = (getDriverForInspection(ins) || '').toLowerCase();
     
     const searchLower = inspectionSearch.toLowerCase();
     const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
@@ -403,7 +427,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                       <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{ins.vehiclePlate}</h4>
                       {ins.type === 'Entrega' || ins.type === 'Devolução' ? (
                         <span className="px-2 py-0.5 bg-neutral-900 text-white text-[7px] font-black uppercase tracking-widest rounded">
-                          {rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate)?.userName || rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate)?.user || 'Condutor N/I'}
+                          {getDriverForInspection(ins)}
                         </span>
                       ) : null}
                     </div>

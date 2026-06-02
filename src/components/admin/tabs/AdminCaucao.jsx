@@ -442,7 +442,7 @@ const AdminCaucao = ({
                               Parcela {installmentNum}
                             </span>
                             <span className={`text-lg font-black ${isPaid ? 'text-emerald-900' : 'text-neutral-900'}`}>
-                              R$ {valuePerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                              R$ {valuePerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             {isPaid && <Check size={18} className="text-emerald-600" />}
                           </button>
@@ -461,7 +461,7 @@ const AdminCaucao = ({
 
                     <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 mb-6">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Valor da Parcela {pendingInstallment.number}</p>
-                      <p className="text-3xl font-black text-neutral-900">R$ {pendingInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="text-3xl font-black text-neutral-900">R$ {pendingInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
 
                     <div className="flex justify-center gap-4">
@@ -477,7 +477,7 @@ const AdminCaucao = ({
                             (parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0) -
                             (parseFloat(String(selectedRental.depositReceived || selectedRental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0) -
                             pendingInstallment.value
-                          ).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>

@@ -22,14 +22,17 @@ const RentalDetailModal = ({
   onRenewContract
 }) => {
   const [localSelectedImage, setLocalSelectedImage] = useState(null);
+  const [isUploading, setIsUploading] = useState(false);
   const setSelectedImage = setGlobalSelectedImage || setLocalSelectedImage;
 
   const getFileUrl = (file) => getPublicUrl(file);
 
   const handlePreview = (url) => {
     if (!url) return;
-    const isDoc = url.toLowerCase().includes('.doc') || url.toLowerCase().includes('.docx');
-    if (isDoc) {
+    const lowerUrl = url.toLowerCase();
+    const isDoc = lowerUrl.includes('.doc') || lowerUrl.includes('.docx');
+    const isPdf = lowerUrl.includes('.pdf');
+    if (isDoc || isPdf) {
       window.open(url, '_blank');
     } else {
       setSelectedImage(url);
@@ -150,11 +153,19 @@ const RentalDetailModal = ({
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto">
+            {rental.docs?.signedContract && (
+              <button 
+                onClick={() => handlePreview(getFileUrl(rental.docs.signedContract))}
+                className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all shadow-xl group border border-emerald-500"
+              >
+                <FileText size={18} className="group-hover:scale-110 transition-transform" /> Baixar Assinado
+              </button>
+            )}
             <button 
               onClick={() => generateRentalContract(rental)}
               className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-4 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl group"
             >
-              <FileDown size={18} className="group-hover:-translate-y-0.5 transition-transform" /> Contrato .DOCX
+              <FileDown size={18} className="group-hover:-translate-y-0.5 transition-transform" /> {rental.docs?.signedContract ? 'Modelo .DOCX' : 'Contrato .DOCX'}
             </button>
             <button onClick={onClose} className="w-14 h-14 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100">
               <X size={24} />
@@ -305,13 +316,13 @@ const RentalDetailModal = ({
                         <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C5A059]">Veículo Vinculado</h5>
                       </div>
                       <div className="aspect-video rounded-[2rem] overflow-hidden mb-6 border border-white/5 bg-neutral-800">
-                        {rental.image ? (
-                          <img src={getPublicUrl(rental.image)} className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" alt="Veículo" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-neutral-700">
-                            <Car size={48} />
-                          </div>
-                        )}
+                        <img 
+                          src={getPublicUrl(rental.image) || '/logo-new.png'} 
+                          className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" 
+                          alt="Veículo" 
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '1.5rem'; e.currentTarget.style.background = '#000000'; }}
+                          style={rental.image === '/logo-new.png' || !rental.image ? { objectFit: 'contain', padding: '1.5rem', background: '#000000' } : {}}
+                        />
                       </div>
                       <h4 className="text-2xl font-black text-white uppercase tracking-tighter leading-none mb-4">{rental.vehicle || rental.vehicleModel || 'Veículo Indefinido'}</h4>
                     </div>
@@ -475,30 +486,59 @@ const RentalDetailModal = ({
                 <div className="space-y-4">
                   {/* Upload Label */}
                   <label className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all cursor-pointer group border-2 border-dashed ${
-                    rental.docs?.signedContract 
-                      ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                      : 'bg-neutral-50 border-neutral-200 text-neutral-400 hover:border-[#C5A059] hover:bg-white'
+                    isUploading
+                      ? 'bg-amber-50/50 border-amber-300 text-amber-700 animate-pulse pointer-events-none'
+                      : rental.docs?.signedContract 
+                        ? 'bg-emerald-50/50 border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400' 
+                        : 'bg-neutral-50 border-neutral-200 text-neutral-400 hover:border-[#C5A059] hover:bg-white'
                   }`}>
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
-                      rental.docs?.signedContract ? 'bg-emerald-500 text-white' : 'bg-white text-neutral-400'
+                      isUploading
+                        ? 'bg-amber-500 text-white'
+                        : rental.docs?.signedContract ? 'bg-emerald-500 text-white' : 'bg-white text-neutral-400'
                     }`}>
-                      <Download size={20} className={rental.docs?.signedContract ? '' : 'rotate-180 group-hover:animate-bounce'} />
+                      {isUploading ? (
+                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <Download size={20} className={rental.docs?.signedContract ? '' : 'rotate-180 group-hover:animate-bounce'} />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <span className="text-[10px] font-black uppercase tracking-widest block">{rental.docs?.signedContract ? 'Contrato OK' : 'Anexar Assinado'}</span>
-                      <span className="text-[8px] font-bold uppercase opacity-60">PDF ou JPG assinado</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest block">
+                        {isUploading 
+                          ? 'Enviando arquivo...' 
+                          : rental.docs?.signedContract 
+                            ? 'Substituir Contrato' 
+                            : 'Anexar Assinado'}
+                      </span>
+                      <span className="text-[8px] font-bold uppercase opacity-60">
+                        {isUploading 
+                          ? 'Por favor, aguarde...' 
+                          : rental.docs?.signedContract 
+                            ? 'Clique para trocar o arquivo' 
+                            : 'PDF ou JPG assinado'}
+                      </span>
                     </div>
                     <input 
                       type="file" 
                       className="hidden" 
                       accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
+                      disabled={isUploading}
                       onChange={async (e) => {
                         const file = e.target.files[0];
                         if (file && onUpdate) {
-                          onUpdate({ 
-                            ...rental, 
-                            docs: { ...(rental.docs || {}), signedContract: file } 
-                          });
+                          try {
+                            setIsUploading(true);
+                            await onUpdate({ 
+                              ...rental, 
+                              docs: { ...(rental.docs || {}), signedContract: file } 
+                            });
+                          } catch (err) {
+                            console.error("Erro ao subir contrato:", err);
+                            alert("Erro ao enviar o arquivo. Por favor, tente novamente.");
+                          } finally {
+                            setIsUploading(false);
+                          }
                         }
                       }}
                     />
@@ -583,12 +623,13 @@ const RentalDetailModal = ({
               {/* Documents Card */}
               <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm space-y-8">
                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Anexos e Fotos</h5>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-3">
                   {[
                     { label: 'CNH', file: rental.docs?.cnh, icon: <CreditCard size={14} /> },
-                    { label: 'Residência', file: rental.docs?.residence, icon: <MapPin size={14} /> }
+                    { label: 'Residência', file: rental.docs?.residence, icon: <MapPin size={14} /> },
+                    { label: 'Contrato', file: rental.docs?.signedContract, icon: <FileText size={14} /> }
                   ].map((doc, i) => (
-                    <div key={i} className={`p-4 rounded-2xl border-2 border-neutral-50 flex flex-col items-center gap-3 transition-all ${doc.file ? 'bg-neutral-50 hover:border-[#C5A059]/30 cursor-pointer' : 'opacity-40'}`} onClick={() => doc.file && handlePreview(getFileUrl(doc.file))}>
+                    <div key={i} className={`p-4 rounded-2xl border-2 border-neutral-50 flex flex-col items-center gap-3 transition-all ${doc.file ? 'bg-neutral-50 hover:border-[#C5A059]/30 cursor-pointer' : 'opacity-40 pointer-events-none'}`} onClick={() => doc.file && handlePreview(getFileUrl(doc.file))}>
                       <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[#C5A059] shadow-sm">
                         {doc.icon}
                       </div>

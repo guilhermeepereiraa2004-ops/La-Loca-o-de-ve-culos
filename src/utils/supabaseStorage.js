@@ -97,7 +97,7 @@ export const getPublicUrl = (path) => {
 
   if (typeof path !== 'string') return null;
   if (path === '[object Object]') return null;
-  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:')) return path;
+  if (path.startsWith('http') || path.startsWith('blob:') || path.startsWith('data:') || path.startsWith('/')) return path;
 
   const { data: { publicUrl } } = supabase.storage
     .from('La-locacao')

@@ -814,6 +814,10 @@ export const useAppState = () => {
         address: rental.address || null
       };
 
+      if (uploadedDocs.signedContract) {
+        payload['contrato_assinado'] = uploadedDocs.signedContract;
+      }
+
       const parseBRL = (val) => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
@@ -1055,6 +1059,11 @@ export const useAppState = () => {
       };
 
       finalRental.docs = finalDocs;
+
+      // Sincroniza a propriedade da raiz com o valor dentro dos documentos para atualizar contrato_assinado no banco
+      if (finalDocs.signedContract) {
+        finalRental.signedContract = finalDocs.signedContract;
+      }
 
       // Map to database schema
       const payload = mapToSnake(finalRental, 'rentals');
@@ -2008,8 +2017,36 @@ export const useAppState = () => {
         videoUrl = { preview: url };
       }
 
+      // Find driver at the time of inspection
+      let driverName = inspection.driverName;
+      if (!driverName && inspection.vehiclePlate) {
+        const insDateStr = inspection.date;
+        const matchingRental = rentals.find(r => {
+          const plate = r.vehiclePlate || r.plate;
+          if ((plate || '').replace('-', '').toUpperCase() !== (inspection.vehiclePlate || '').replace('-', '').toUpperCase()) return false;
+          
+          const start = r.startDate;
+          const end = r.endDate;
+          
+          const afterStart = start ? (insDateStr >= start) : true;
+          const beforeEnd = end ? (insDateStr <= end) : true;
+          
+          return afterStart && beforeEnd;
+        });
+        if (matchingRental) {
+          driverName = matchingRental.userName || matchingRental.user;
+        } else {
+          const activeRental = rentals.find(r => 
+            (r.vehiclePlate || r.plate || '').replace('-', '').toUpperCase() === (inspection.vehiclePlate || '').replace('-', '').toUpperCase() &&
+            r.status === 'Ativo'
+          );
+          driverName = activeRental?.userName || activeRental?.user || null;
+        }
+      }
+
       const finalInspection = {
         ...inspection,
+        driverName,
         photos: uploadedPhotos,
         damages: uploadedDamages,
         video: videoUrl,

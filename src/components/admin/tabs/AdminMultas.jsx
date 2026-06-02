@@ -938,7 +938,7 @@ const AdminMultas = ({
 
   // Manual payment quittance (quitar multa total)
   const handleQuitFine = async (fine) => {
-    if (window.confirm(`Tem certeza que deseja registrar a quitação integral manual da multa no valor total de R$ ${fine.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}?`)) {
+    if (window.confirm(`Tem certeza que deseja registrar a quitação integral manual da multa no valor total de R$ ${fine.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}?`)) {
       // Mark all installments as paid
       const allInstallments = [];
       for (let i = 1; i <= fine.installments; i++) {
@@ -1343,14 +1343,14 @@ const AdminMultas = ({
                       <div className="space-y-0.5">
                         <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-black">Valor Total</span>
                         <p className="text-base font-black text-neutral-900">
-                          R$ {totalVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {totalVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
                       <div className="space-y-0.5">
                         <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-black">Parcelamento</span>
                         <p className="text-sm font-bold text-neutral-700">
-                          {fine.installments}x de R$ {fine.installmentValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) || '—'}
+                          {fine.installments}x de R$ {fine.installmentValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}
                         </p>
                       </div>
 
@@ -1364,7 +1364,7 @@ const AdminMultas = ({
                       <div className="space-y-0.5">
                         <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-black">A Receber</span>
                         <p className="text-sm font-bold text-red-600">
-                          R$ {remainingVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {remainingVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
