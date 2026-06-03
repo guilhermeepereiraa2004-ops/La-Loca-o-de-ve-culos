@@ -124,6 +124,7 @@ const TABLE_MAPPINGS = {
     date: 'date',
     value: 'value',
     location: 'location',
+    code: 'code',
     driverName: 'driver_name',
     driverId: 'driver_id',
     rentalId: 'rental_id',
@@ -1055,7 +1056,49 @@ export const useAppState = () => {
       const rental = rentals.find(r => r.id === id);
       const { error } = await supabase.from('rentals').delete().eq('id', id);
       if (error) throw error;
-      if (rental) await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
+
+      // Ao excluir a locação, remove também as transações automáticas geradas no momento da criação.
+      // Critério: mesma placa, data igual ao início da locação, categorias automáticas e status Concluído.
+      if (rental) {
+        const plate = rental.plate || rental.vehiclePlate || rental.placa;
+        const startDate = rental.startDate || rental.date;
+
+        if (plate && startDate) {
+          const startDateStr = String(startDate).substring(0, 10); // "YYYY-MM-DD"
+          const autoCategories = ['Aluguel', 'Taxa Adm', 'taxa de pneus'];
+
+          const { data: txToDelete, error: fetchErr } = await supabase
+            .from('transactions')
+            .select('id, cat, val, date')
+            .eq('vehicle_plate', plate)
+            .eq('status', 'Concluído')
+            .in('cat', autoCategories);
+
+          if (!fetchErr && txToDelete && txToDelete.length > 0) {
+            // Filtra só as que têm data igual ao início da locação
+            const idsToDelete = txToDelete
+              .filter(t => t.date && String(t.date).substring(0, 10) === startDateStr)
+              .map(t => t.id);
+
+            if (idsToDelete.length > 0) {
+              const { error: delTxErr } = await supabase
+                .from('transactions')
+                .delete()
+                .in('id', idsToDelete);
+
+              if (!delTxErr) {
+                setTransactions(prev => prev.filter(t => !idsToDelete.includes(t.id)));
+                console.log(`✅ ${idsToDelete.length} transação(ões) automática(s) removida(s) junto com a locação excluída.`);
+              } else {
+                console.warn('Aviso: Não foi possível remover transações automáticas da locação:', delTxErr.message);
+              }
+            }
+          }
+        }
+
+        await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
+      }
+
       setRentals(prev => prev.filter(r => r.id !== id));
       logActivity('Apagar', 'Locação', id, `Excluiu a locação de ${rental?.userName || rental?.user || 'desconhecido'} (Veículo ID: ${rental?.vehicleId})`);
       return true;

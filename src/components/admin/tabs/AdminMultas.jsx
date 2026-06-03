@@ -16,6 +16,7 @@ import {
   Printer, 
   Eye, 
   Trash2, 
+  Pencil,
   AlertCircle,
   FileSpreadsheet,
   CheckCircle,
@@ -44,6 +45,7 @@ const AdminMultas = ({
 
   // Modal State
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingFine, setEditingFine] = useState(null);
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrStatus, setOcrStatus] = useState('');
   const [syncLoading, setSyncLoading] = useState(false);
@@ -732,6 +734,21 @@ const AdminMultas = ({
     return result;
   };
 
+  const resetFineForm = () => {
+    setFineForm({
+      vehiclePlate: '',
+      infraction: '',
+      date: '',
+      time: '',
+      value: '',
+      location: '',
+      code: ''
+    });
+    setEditingFine(null);
+    setManualDriverId('');
+    setShowAddModal(false);
+  };
+
   const handleOcrClick = (e) => {
     e.preventDefault();
     if (ocrLoading) return;
@@ -901,6 +918,76 @@ const AdminMultas = ({
       ? clients.find(c => String(c.id) === String(manualDriverId)) 
       : null;
 
+    let finalDriverInfo = {};
+    if (manualDriverId === 'Administradora') {
+      finalDriverInfo = {
+        driverName: 'Administradora',
+        driverId: null,
+        rentalId: null
+      };
+    } else if (selectedClient) {
+      const fineDate = new Date(fineForm.date + (fineForm.time ? `T${fineForm.time}:00` : ''));
+      const matchedRental = rentals.find(r => {
+        const isSameClient = r.clientId === selectedClient.id;
+        if (!isSameClient) return false;
+        
+        const start = new Date(r.startDate || r.date);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = r.endDate ? new Date(r.endDate) : new Date('2099-12-31');
+        end.setHours(23, 59, 59, 999);
+        
+        return fineDate >= start && fineDate <= end;
+      });
+
+      finalDriverInfo = {
+        driverName: selectedClient.nome || selectedClient.name,
+        driverId: selectedClient.id,
+        rentalId: matchedRental ? matchedRental.id : null
+      };
+    } else {
+      finalDriverInfo = {
+        driverName: currentMatchedDriver.driverName,
+        driverId: currentMatchedDriver.driverId,
+        rentalId: currentMatchedDriver.rentalId
+      };
+    }
+
+    if (editingFine) {
+      let installments = editingFine.installments || 1;
+      if (editingFine.value !== valueNum) {
+        if (valueNum <= 150) {
+          installments = 2;
+        } else if (valueNum <= 200) {
+          installments = 3;
+        } else {
+          installments = 4;
+        }
+      }
+
+      const updatedPayload = {
+        ...editingFine,
+        vehiclePlate: fineForm.vehiclePlate.toUpperCase(),
+        infraction: fineForm.infraction,
+        date: fineForm.date + (fineForm.time ? `T${fineForm.time}:00` : ''),
+        value: valueNum,
+        location: fineForm.location,
+        code: fineForm.code,
+        installments,
+        installmentValue: parseFloat((valueNum / installments).toFixed(2)),
+        ...finalDriverInfo
+      };
+
+      onUpdateFine(updatedPayload).then((res) => {
+        if (res && res.success) {
+          setShowAddModal(false);
+          resetFineForm();
+          alert('Multa atualizada com sucesso!');
+        }
+      });
+      return;
+    }
+
     const finePayload = {
       vehiclePlate: fineForm.vehiclePlate.toUpperCase(),
       infraction: fineForm.infraction,
@@ -908,29 +995,13 @@ const AdminMultas = ({
       value: valueNum,
       location: fineForm.location,
       code: fineForm.code,
-      ...(manualDriverId === 'Administradora' ? {
-        driverName: 'Administradora',
-        driverId: null,
-        rentalId: null
-      } : selectedClient ? {
-        driverName: selectedClient.nome || selectedClient.name,
-        driverId: selectedClient.id
-      } : {})
+      ...finalDriverInfo
     };
 
     onAddFine(finePayload).then((res) => {
       if (res && res.success) {
         setShowAddModal(false);
-        setFineForm({
-          vehiclePlate: '',
-          infraction: '',
-          date: '',
-          time: '',
-          value: '',
-          location: '',
-          code: ''
-        });
-        setManualDriverId('');
+        resetFineForm();
         alert('Multa registrada com sucesso!');
       }
     });
@@ -1083,7 +1154,10 @@ const AdminMultas = ({
           </button>
           
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => {
+              resetFineForm();
+              setShowAddModal(true);
+            }}
             className="flex-1 xl:flex-none py-5 px-8 bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#b08d4b] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#C5A059]/10"
           >
             <Plus size={14} />
@@ -1418,6 +1492,61 @@ const AdminMultas = ({
 
                     <button
                       onClick={() => {
+                        setEditingFine(fine);
+                        
+                        let dateStr = '';
+                        let timeStr = '';
+                        if (fine.date) {
+                          try {
+                            if (typeof fine.date === 'string') {
+                              dateStr = fine.date.substring(0, 10);
+                              if (fine.date.includes('T')) {
+                                timeStr = fine.date.split('T')[1].substring(0, 5);
+                              }
+                            } else {
+                              const dateObj = new Date(fine.date);
+                              if (!isNaN(dateObj.getTime())) {
+                                dateStr = dateObj.toISOString().split('T')[0];
+                                const hours = String(dateObj.getHours()).padStart(2, '0');
+                                const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                                timeStr = `${hours}:${minutes}`;
+                              }
+                            }
+                          } catch (e) {
+                            console.warn("Error parsing fine date:", e);
+                          }
+                        }
+
+                        let parsedVal = 0;
+                        if (typeof fine.value === 'number') {
+                          parsedVal = fine.value;
+                        } else if (typeof fine.value === 'string') {
+                          parsedVal = parseFloat(fine.value.replace(/\./g, '').replace(',', '.')) || 0;
+                        } else if (fine.value) {
+                          parsedVal = parseFloat(fine.value) || 0;
+                        }
+                        const valueFormatted = parsedVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+
+                        setFineForm({
+                          vehiclePlate: fine.vehiclePlate || '',
+                          infraction: fine.infraction || '',
+                          date: dateStr,
+                          time: timeStr,
+                          value: valueFormatted,
+                          location: fine.location || '',
+                          code: fine.code || ''
+                        });
+                        setManualDriverId(fine.driverName === 'Administradora' ? 'Administradora' : fine.driverId ? String(fine.driverId) : '');
+                        setShowAddModal(true);
+                      }}
+                      className="w-full py-3.5 bg-white border border-neutral-200 text-neutral-700 hover:border-[#C5A059] hover:text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5"
+                    >
+                      <Pencil size={12} />
+                      Editar Registro
+                    </button>
+
+                    <button
+                      onClick={() => {
                         if (window.confirm('Tem certeza de que deseja excluir esta multa do sistema?')) {
                           onDeleteFine(fine.id);
                         }
@@ -1446,7 +1575,7 @@ const AdminMultas = ({
       {/* ADD FINE MODAL */}
       {showAddModal && createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
-          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setShowAddModal(false)} />
+          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={resetFineForm} />
           <div className="relative bg-white w-full max-w-4xl h-full md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
             
             {/* Header */}
@@ -1454,17 +1583,16 @@ const AdminMultas = ({
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
-                  <EditorialLabel className="text-[#C5A059]">Novo Registro de Infração</EditorialLabel>
+                  <EditorialLabel className="text-[#C5A059]">
+                    {editingFine ? 'Alteração de Registro de Infração' : 'Novo Registro de Infração'}
+                  </EditorialLabel>
                 </div>
                 <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
-                  Cadastrar Multa de Trânsito
+                  {editingFine ? 'Editar Multa de Trânsito' : 'Cadastrar Multa de Trânsito'}
                 </h3>
               </div>
               <button 
-                onClick={() => {
-                  setShowAddModal(false);
-                  setManualDriverId('');
-                }} 
+                onClick={resetFineForm} 
                 className="w-10 h-10 bg-white border border-neutral-100 rounded-xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm"
               >
                 <X size={20} />
@@ -1475,12 +1603,13 @@ const AdminMultas = ({
             <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-10">
               
               {/* OCR IA Drop Area */}
-              <label 
-                htmlFor="ocr-file-input"
-                className={`p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${
-                  ocrLoading ? 'border-[#C5A059] bg-[#C5A059]/5' : 'border-neutral-200 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white hover:shadow-xl'
-                }`}
-              >
+              {!editingFine && (
+                <label 
+                  htmlFor="ocr-file-input"
+                  className={`p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${
+                    ocrLoading ? 'border-[#C5A059] bg-[#C5A059]/5' : 'border-neutral-200 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white hover:shadow-xl'
+                  }`}
+                >
                 <input 
                   type="file" 
                   id="ocr-file-input" 
@@ -1508,6 +1637,7 @@ const AdminMultas = ({
                   </>
                 )}
               </label>
+              )}
 
               {/* Form Input fields */}
               <form onSubmit={handleSubmit} className="space-y-8">
@@ -1668,10 +1798,7 @@ const AdminMultas = ({
                 <div className="flex justify-end gap-4 pt-6 border-t border-neutral-100">
                   <button
                     type="button"
-                    onClick={() => {
-                      setShowAddModal(false);
-                      setManualDriverId('');
-                    }}
+                    onClick={resetFineForm}
                     className="py-4.5 px-8 text-neutral-400 hover:text-neutral-600 text-[10px] font-black uppercase tracking-widest transition-all"
                   >
                     Cancelar
