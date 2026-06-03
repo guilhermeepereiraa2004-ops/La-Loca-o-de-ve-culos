@@ -956,6 +956,76 @@ export const useAppState = () => {
         };
         setRentals(prev => [enrichedRental, ...prev]);
         logActivity('Criar', 'Locação', newRental.id, `Criou locação para ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate || enrichedRental.plate}`);
+
+        // --- Geração Automática das Transações de Primeiro Pagamento ---
+        try {
+          const weeklyRate = parseFloat(newRental.value) || 0;
+          const tireTax = parseFloat(newRental.tireTax) || 0;
+          const vehiclePlate = enrichedRental.plate || '';
+          
+          const adminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
+          const adminPart = weeklyRate * adminTaxPercent;
+          
+          const transDate = newRental.startDate || new Date().toISOString().split('T')[0];
+          const autoTransactions = [];
+          
+          // 1. Aluguel Bruto (Entrada - base para divisão do investidor)
+          if (weeklyRate > 0) {
+            autoTransactions.push({
+              date: transDate,
+              type: 'in',
+              val: weeklyRate,
+              desc: `Primeiro Aluguel (Automático) - ${newRental.userName || newRental.user}`,
+              cat: 'Aluguel',
+              vehiclePlate: vehiclePlate,
+              status: 'Concluído',
+              responsible: ''
+            });
+          }
+          
+          // 2. Taxa Adm (Entrada - 100% da Administradora)
+          if (adminPart > 0) {
+            autoTransactions.push({
+              date: transDate,
+              type: 'in',
+              val: adminPart,
+              desc: `Taxa Adm Primeiro Aluguel - ${newRental.userName || newRental.user}`,
+              cat: 'Taxa Adm',
+              vehiclePlate: vehiclePlate,
+              status: 'Concluído',
+              responsible: 'Administradora'
+            });
+          }
+          
+          // 3. Taxa de Pneus (Entrada - 100% da Administradora)
+          if (tireTax > 0) {
+            autoTransactions.push({
+              date: transDate,
+              type: 'in',
+              val: tireTax,
+              desc: `Taxa de Pneus Primeiro Aluguel - ${newRental.userName || newRental.user}`,
+              cat: 'taxa de pneus',
+              vehiclePlate: vehiclePlate,
+              status: 'Concluído',
+              responsible: 'Administradora'
+            });
+          }
+          
+          if (autoTransactions.length > 0) {
+            const { data: transData, error: transError } = await supabase
+              .from('transactions')
+              .insert(autoTransactions.map(t => mapToSnake(t, 'transactions')))
+              .select();
+              
+            if (!transError && transData) {
+              setTransactions(prev => [...mapToCamel(transData, 'transactions'), ...prev]);
+            } else if (transError) {
+              console.error("Erro ao inserir transações automáticas de primeiro pagamento:", transError);
+            }
+          }
+        } catch (transErr) {
+          console.error("Erro no processo de geração de transações automáticas de primeiro pagamento:", transErr);
+        }
       }
       
       await handleUpdateVehicle({ id: rental.vehicleId, status: 'Alugado' });

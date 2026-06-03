@@ -5,7 +5,17 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 const formatTransactionDateTime = (t) => {
   if (t.createdAt) {
     try {
-      const d = new Date(t.createdAt);
+      let dateStr = t.createdAt;
+      const lastMinus = dateStr.lastIndexOf('-');
+      const lastPlus = dateStr.lastIndexOf('+');
+      if (lastMinus > 10) {
+        dateStr = dateStr.substring(0, lastMinus) + 'Z';
+      } else if (lastPlus > 10) {
+        dateStr = dateStr.substring(0, lastPlus) + 'Z';
+      } else if (!dateStr.endsWith('Z')) {
+        dateStr = dateStr + 'Z';
+      }
+      const d = new Date(dateStr);
       if (!isNaN(d.getTime())) {
         const datePart = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
         const timePart = d.toLocaleTimeString('pt-BR', { 

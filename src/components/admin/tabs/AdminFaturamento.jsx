@@ -11,7 +11,17 @@ import { getNextDueDate } from '../../../utils/asaas.js';
 const formatTransactionDateTime = (t) => {
   if (t.createdAt) {
     try {
-      const d = new Date(t.createdAt);
+      let dateStr = t.createdAt;
+      const lastMinus = dateStr.lastIndexOf('-');
+      const lastPlus = dateStr.lastIndexOf('+');
+      if (lastMinus > 10) {
+        dateStr = dateStr.substring(0, lastMinus) + 'Z';
+      } else if (lastPlus > 10) {
+        dateStr = dateStr.substring(0, lastPlus) + 'Z';
+      } else if (!dateStr.endsWith('Z')) {
+        dateStr = dateStr + 'Z';
+      }
+      const d = new Date(dateStr);
       if (!isNaN(d.getTime())) {
         const datePart = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
         const timePart = d.toLocaleTimeString('pt-BR', { 
@@ -63,9 +73,44 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     const weeklyRate = parseFloat(String(rental.value || 0).replace(/\./g, '').replace(',', '.')) || 0;
     const dailyRate = weeklyRate / 7;
 
-    const dueDateStr = getNextDueDate(rental.startDate || rental.date);
+    let dueDateStr = getNextDueDate(rental.startDate || rental.date);
     if (!dueDateStr) {
-      return { weeklyRate, dailyRate, daysInMaintenance: 0, abatimento: 0, replacementCharge: 0, replacementDays: 0, replacementDailyRate: 0, tireTax: 0, total: weeklyRate, activeRC: null, rcsDetails: [] };
+      return { weeklyRate, dailyRate, daysInMaintenance: 0, abatimento: 0, replacementCharge: 0, replacementDays: 0, replacementDailyRate: 0, tireTax: 0, total: weeklyRate, activeRC: null, rcsDetails: [], hasPaidToday: false, dueDate: '' };
+    }
+
+    const rentalPlate = rental.plate || rental.vehiclePlate;
+    const rentalDriver = rental.user || rental.userName;
+
+    // Determinar se já houve pagamento hoje para adiantar o vencimento
+    const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+    
+    // Identificar a placa do carro reserva vinculado neste ciclo
+    const matchedRCs = Array.isArray(replacementContracts)
+      ? replacementContracts.filter(rc => {
+          if (rc.mainVehiclePlate && rentalPlate) {
+            return rc.mainVehiclePlate.toLowerCase() === rentalPlate.toLowerCase();
+          }
+          return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase();
+        })
+      : [];
+    const activeRC = matchedRCs.find(rc => rc.status === 'Ativo') || null;
+    const replacementPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
+
+    const hasPaidToday = (transactions || []).some(t => {
+      const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
+      const isMatchingPlate = tPlate && (tPlate === rentalPlate?.toLowerCase() || (replacementPlate && tPlate === replacementPlate));
+      if (!isMatchingPlate) return false;
+      return t.type === 'in' && t.cat?.toLowerCase() === 'aluguel' && t.date === todayStr;
+    });
+
+    if (hasPaidToday) {
+      try {
+        const dObj = new Date(dueDateStr + 'T12:00:00');
+        dObj.setDate(dObj.getDate() + 7);
+        dueDateStr = dObj.toISOString().split('T')[0];
+      } catch (e) {
+        console.error("Erro ao ajustar data de vencimento:", e);
+      }
     }
 
     const dueDateObj = new Date(dueDateStr + 'T12:00:00');
@@ -99,18 +144,6 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       const diffTime = overlapEnd.getTime() - overlapStart.getTime();
       return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     };
-
-    const rentalPlate = rental.plate || rental.vehiclePlate;
-    const rentalDriver = rental.user || rental.userName;
-
-    const matchedRCs = Array.isArray(replacementContracts)
-      ? replacementContracts.filter(rc => {
-          if (rc.mainVehiclePlate && rentalPlate) {
-            return rc.mainVehiclePlate.toLowerCase() === rentalPlate.toLowerCase();
-          }
-          return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase();
-        })
-      : [];
 
     let totalDaysInMaintenance = 0;
     let totalReplacementCharge = 0;
@@ -172,8 +205,6 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     const baseTotal = (weeklyRate - abatimento) + totalReplacementCharge + tireTax + finesTotal;
     const total = baseTotal + lateFeeVal;
 
-    const activeRC = matchedRCs.find(rc => rc.status === 'Ativo') || null;
-
     return { 
       weeklyRate, 
       dailyRate, 
@@ -187,6 +218,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       activeRC,
       cycleStart: cycleStartStr,
       cycleEnd: cycleEndStr,
+      dueDate: dueDateStr,
+      hasPaidToday,
       rcsDetails,
       finesDetails
     };
@@ -284,13 +317,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                 return t.type === 'in' && isPaymentCategory;
               });
 
-            const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
-            const hasPaidToday = (transactions || []).some(t => {
-              const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-              const isMatchingPlate = tPlate && (tPlate === rentalPlate || (replacementPlate && tPlate === replacementPlate));
-              if (!isMatchingPlate) return false;
-              return t.type === 'in' && t.cat?.toLowerCase() === 'aluguel' && t.date === todayStr;
-            });
+            const hasPaidToday = calc.hasPaidToday;
 
             const grouped = [];
             const processedIds = new Set();
@@ -530,12 +557,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                           <div>
                             <p className="text-[7px] text-neutral-500 font-black uppercase tracking-widest">Próximo Vencimento</p>
                             <p className="text-xs font-black text-[#C5A059] uppercase tracking-tight">
-                              {(() => {
-                                const d = getNextDueDate(rental.startDate || rental.date);
-                                return new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', {
-                                  weekday: 'short', day: '2-digit', month: '2-digit'
-                                });
-                              })()}
+                              {calc.dueDate ? new Date(calc.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', {
+                                weekday: 'short', day: '2-digit', month: '2-digit'
+                              }) : '—'}
                             </p>
                           </div>
                         </div>
