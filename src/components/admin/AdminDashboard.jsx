@@ -155,6 +155,7 @@ const AdminDashboard = ({
     setShowAddForm(false);
     resetVehicleForm();
     setIsEditing(false);
+    setSelectedVehicle(null);
     
     setShowAdminSuccess({
       show: true,
@@ -242,6 +243,7 @@ const AdminDashboard = ({
 
     setShowAddForm(false);
     setIsEditingRental(false);
+    setSelectedRental(null);
     setCurrentRentalStep(1);
     
     setShowAdminSuccess({
@@ -368,6 +370,8 @@ const AdminDashboard = ({
               setRentalFilter={setRentalFilter} setShowAddForm={setShowAddForm}
               resetRentalForm={() => {
                 setCurrentRentalStep(1);
+                setIsEditingRental(false);
+                setSelectedRental(null);
                 setRentalForm({
                   user: '', clientPhone: '', email: '', cnhNumber: '', cnhValidity: '',
                   vehicle: '', plate: '', rentalType: 'weekly', value: '', tireTax: '25',
@@ -482,13 +486,21 @@ const AdminDashboard = ({
       </main>
 
       <VehicleFormModal 
-        isOpen={showAddForm && activeTab === 'frota'} onClose={() => setShowAddForm(false)}
+        isOpen={showAddForm && activeTab === 'frota'} onClose={() => {
+          setShowAddForm(false);
+          setIsEditing(false);
+          setSelectedVehicle(null);
+        }}
         isEditing={isEditing} vehicleForm={vehicleForm} setVehicleForm={setVehicleForm}
         investors={investors} onSubmit={handleSaveVehicle}
       />
 
       <RentalFormModal 
-        isOpen={showAddForm && activeTab === 'locacao'} onClose={() => setShowAddForm(false)}
+        isOpen={showAddForm && activeTab === 'locacao'} onClose={() => {
+          setShowAddForm(false);
+          setIsEditingRental(false);
+          setSelectedRental(null);
+        }}
         currentRentalStep={currentRentalStep} setCurrentRentalStep={setCurrentRentalStep}
         totalRentalSteps={totalRentalSteps} rentalForm={rentalForm} setRentalForm={setRentalForm}
         vehicles={vehicles} clients={clients} fines={fines} onSubmit={handleSaveRental}

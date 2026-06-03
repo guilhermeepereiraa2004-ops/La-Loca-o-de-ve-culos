@@ -181,8 +181,9 @@ const mapToSnake = (obj, tableName) => {
   const mappings = TABLE_MAPPINGS[tableName] || {};
   const newObj = {};
   const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax'];
+  const effectiveSkip = tableName === 'fines' ? skipKeys.filter(k => k !== 'id') : skipKeys;
   for (const key in obj) {
-    if (skipKeys.includes(key)) continue;
+    if (effectiveSkip.includes(key)) continue;
     if (mappings[key]) {
       newObj[mappings[key]] = obj[key];
     } else {
@@ -310,8 +311,14 @@ export const useAppState = () => {
         .order('created_at', { ascending: false });
       
       if (!error && data) {
-        setFines(mapToCamel(data, 'fines'));
+        const camelData = mapToCamel(data, 'fines');
+        setFines(camelData);
         setIsFinesDbConnected(true);
+        try {
+          localStorage.setItem('la_system_fines', JSON.stringify(camelData));
+        } catch (e) {
+          console.warn("Could not sync loaded system_fines to localStorage:", e);
+        }
         return;
       }
       if (error) {
@@ -1778,7 +1785,9 @@ export const useAppState = () => {
       }
     }
 
-    const val = parseFloat(String(fine.value).replace(/\./g, '').replace(',', '.')) || 0;
+    const val = typeof fine.value === 'number' 
+      ? fine.value 
+      : parseFloat(String(fine.value || '0').replace(/\./g, '').replace(',', '.')) || 0;
     let installments = 1;
     if (val <= 150) {
       installments = 2;
@@ -1789,8 +1798,13 @@ export const useAppState = () => {
     }
     const installmentValue = parseFloat((val / installments).toFixed(2));
 
+    const generatedId = (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') 
+      ? crypto.randomUUID() 
+      : 'f_' + Math.random().toString(36).substring(2, 15) + '_' + Date.now().toString(36);
+
     const newFine = {
       ...fine,
+      id: generatedId,
       value: val,
       installments,
       paidInstallments: [],
@@ -1813,6 +1827,13 @@ export const useAppState = () => {
         const camelData = mapToCamel(data, 'fines')[0];
         setFines(prev => [camelData, ...prev]);
         setIsFinesDbConnected(true);
+        try {
+          const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
+          const localFines = JSON.parse(localFinesStr);
+          localStorage.setItem('la_system_fines', JSON.stringify([camelData, ...localFines]));
+        } catch (e) {
+          console.warn("Could not sync added fine to localStorage:", e);
+        }
         logActivity('Criar', 'Multas', camelData.id, `Registrou multa: ${camelData.infraction} - Placa: ${camelData.vehiclePlate} - Condutor: ${camelData.driverName}`);
         return { success: true, data: camelData };
       }
@@ -1835,6 +1856,15 @@ export const useAppState = () => {
 
   const handleUpdateFine = async (updatedFine) => {
     try {
+      const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
+      const localFines = JSON.parse(localFinesStr);
+      const updatedLocal = localFines.map(f => f.id === updatedFine.id ? updatedFine : f);
+      localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
+    } catch (e) {
+      console.warn("Could not sync update to localStorage:", e);
+    }
+
+    try {
       const payload = mapToSnake(updatedFine, 'fines');
       delete payload.id;
       const { error } = await supabase
@@ -1849,19 +1879,24 @@ export const useAppState = () => {
         return { success: true };
       }
     } catch (e) {
-      console.warn("Supabase system_fines update failed, falling back to local storage:", e);
+      console.warn("Supabase system_fines update failed:", e);
     }
 
     setFines(prev => prev.map(f => f.id === updatedFine.id ? updatedFine : f));
-    const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
-    const localFines = JSON.parse(localFinesStr);
-    const updatedLocal = localFines.map(f => f.id === updatedFine.id ? updatedFine : f);
-    localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
     logActivity('Atualizar', 'Multas', updatedFine.id, `Atualizou status da multa ID ${updatedFine.id} (Local) para: ${updatedFine.status}`);
     return { success: true };
   };
 
   const handleDeleteFine = async (id) => {
+    try {
+      const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
+      const localFines = JSON.parse(localFinesStr);
+      const updatedLocal = localFines.filter(f => f.id !== id);
+      localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
+    } catch (e) {
+      console.warn("Could not sync delete to localStorage:", e);
+    }
+
     try {
       const { error } = await supabase
         .from('system_fines')
@@ -1875,14 +1910,10 @@ export const useAppState = () => {
         return { success: true };
       }
     } catch (e) {
-      console.warn("Supabase system_fines delete failed, falling back to local storage:", e);
+      console.warn("Supabase system_fines delete failed:", e);
     }
 
     setFines(prev => prev.filter(f => f.id !== id));
-    const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
-    const localFines = JSON.parse(localFinesStr);
-    const updatedLocal = localFines.filter(f => f.id !== id);
-    localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
     logActivity('Apagar', 'Multas', id, `Excluiu multa ID ${id} (Local)`);
     return { success: true };
   };
