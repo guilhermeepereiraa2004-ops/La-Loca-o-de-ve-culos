@@ -11,7 +11,7 @@ import {
  * Modal para registrar um repasse a um investidor.
  * Confirma o valor, a chave Pix e grava no histórico do Supabase.
  */
-const InvestorPayoutModal = ({ investor, amount, onClose, onSuccess }) => {
+const InvestorPayoutModal = ({ investor, amount, referenceMonth, onClose, onSuccess }) => {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -19,7 +19,7 @@ const InvestorPayoutModal = ({ investor, amount, onClose, onSuccess }) => {
   const [confirmedDuplicate, setConfirmedDuplicate] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  const refMonth = getCurrentReferenceMonth();
+  const refMonth = referenceMonth || getCurrentReferenceMonth();
   const pixKey = investor?.pix || '—';
 
   const handleCopyPix = () => {
