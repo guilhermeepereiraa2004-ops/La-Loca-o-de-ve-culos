@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Wallet, Plus, X } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Wallet, Plus, X, Search } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const formatTransactionDateTime = (t) => {
@@ -89,6 +89,19 @@ const AdminFinanceiro = ({
   rentals = []
 }) => {
   const [selectedMonth, setSelectedMonth] = useState('Todos'); // 'Todos' or 'YYYY-MM'
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('Todos');
+
+  // Extract available categories dynamically from transactions list
+  const getAvailableCategories = () => {
+    const categoriesSet = new Set();
+    filteredRawTransactions.forEach(t => {
+      if (t.cat) {
+        categoriesSet.add(t.cat.trim());
+      }
+    });
+    return Array.from(categoriesSet).sort();
+  };
 
   // Exclude vehicle protection transactions before June 2026
   const filteredRawTransactions = (transactions || []).filter(t => {
@@ -142,7 +155,7 @@ const AdminFinanceiro = ({
   );
   const netBalance = totalIn - totalOut;
 
-  // Filter transaction list based on both type filter and month filter
+  // Filter transaction list based on type, month, category, and search term
   const filteredTransactions = filteredRawTransactions.filter(t => {
     const matchesType = 
       financeFilter === 'Todos' || 
@@ -153,11 +166,36 @@ const AdminFinanceiro = ({
       selectedMonth === 'Todos' || 
       (t.date && t.date.substring(0, 7) === selectedMonth);
       
+    const matchesCategory = 
+      selectedCategory === 'Todos' || 
+      (t.cat && t.cat.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
+      
+    const matchesSearch = 
+      !searchTerm || 
+      (t.desc && t.desc.toLowerCase().includes(searchTerm.toLowerCase())) || 
+      (t.responsible && t.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (t.vehiclePlate && t.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()));
+
     // Hide manual rent transactions (gross rent) from the company transactions list
     const isManualRent = (t.cat || '').toLowerCase().trim() === 'aluguel' && 
       !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
 
-    return matchesType && matchesMonth && !isManualRent;
+    return matchesType && matchesMonth && matchesCategory && matchesSearch && !isManualRent;
+  }).sort((a, b) => {
+    const getMs = (t) => {
+      if (t.createdAt) {
+        const d = new Date(t.createdAt);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      if (t.date) {
+        const d = new Date(t.date.includes('T') ? t.date : `${t.date}T00:00:00`);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      return 0;
+    };
+    const diff = getMs(b) - getMs(a);
+    if (diff !== 0) return diff;
+    return (b.id || 0) - (a.id || 0);
   });
 
   return (
@@ -252,16 +290,58 @@ const AdminFinanceiro = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-neutral-100 w-fit shadow-sm">
-          {['Todos', 'Entradas', 'Saídas'].map(f => (
-            <button
-              key={f}
-              onClick={() => setFinanceFilter(f)}
-              className={`px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${financeFilter === f ? 'bg-neutral-950 text-white shadow-md' : 'text-neutral-400 hover:text-neutral-900'}`}
-            >
-              {f}
-            </button>
-          ))}
+        <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
+          {/* Entradas/Saídas Toggle */}
+          <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-neutral-100 w-fit shadow-sm">
+            {['Todos', 'Entradas', 'Saídas'].map(f => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFinanceFilter(f)}
+                className={`px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${financeFilter === f ? 'bg-neutral-950 text-white shadow-md' : 'text-neutral-400 hover:text-neutral-900'}`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
+            {/* Search Input */}
+            <div className="relative group min-w-[260px]">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#C5A059] transition-colors" size={16} />
+              <input
+                type="text"
+                placeholder="Pesquisar por nome ou placa..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-white border border-neutral-100 pl-11 pr-10 py-3 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-bold text-[10px] text-neutral-900 uppercase tracking-widest"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* Category Filter */}
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-neutral-100 shadow-sm">
+              <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400 ml-2">Categoria:</span>
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="bg-neutral-50 border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
+              >
+                <option value="Todos">Todas</option>
+                {getAvailableCategories().map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Transactions Table */}

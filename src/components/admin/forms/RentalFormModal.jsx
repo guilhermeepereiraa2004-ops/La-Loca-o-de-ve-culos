@@ -14,6 +14,25 @@ const RentalFormModal = ({
   const [isProcessingFiles, setIsProcessingFiles] = React.useState(false);
   const [conductorType, setConductorType] = React.useState('cadastrar');
   const [vehicleSearch, setVehicleSearch] = React.useState('');
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!isOpen) {
+      setIsSubmitting(false);
+    }
+  }, [isOpen]);
+
+  const handleSubmit = async (e) => {
+    if (isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      await onSubmit(e);
+    } catch (err) {
+      console.error("Erro ao finalizar locação:", err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const blockStatus = React.useMemo(() => {
     if (!fines || fines.length === 0) return { blocked: false, activeFinesCount: 0 };
@@ -95,7 +114,10 @@ const RentalFormModal = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
-      <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={onClose} />
+      <div 
+        className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" 
+        onClick={() => { if (!isSubmitting) onClose(); }} 
+      />
       <div className="relative bg-white w-full max-w-7xl h-full md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
         {/* Header / Steps Indicator */}
         <div className="p-6 md:p-12 pb-6 md:pb-8 border-b border-neutral-50 shrink-0 bg-neutral-50/50">
@@ -111,7 +133,11 @@ const RentalFormModal = ({
                  currentRentalStep === 3 ? 'Termos Financeiros' : 'Gestão de Contrato'}
               </h3>
             </div>
-            <button onClick={onClose} className="w-10 h-10 md:w-12 md:h-12 bg-white border border-neutral-100 rounded-xl md:rounded-2xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm">
+            <button 
+              onClick={onClose} 
+              disabled={isSubmitting} 
+              className={`w-10 h-10 md:w-12 md:h-12 bg-white border border-neutral-100 rounded-xl md:rounded-2xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+            >
               <X size={20} />
             </button>
           </div>
@@ -777,8 +803,8 @@ const RentalFormModal = ({
           <button 
             type="button"
             onClick={() => setCurrentRentalStep(Math.max(1, currentRentalStep - 1))}
-            disabled={currentRentalStep === 1}
-            className={`px-10 py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${currentRentalStep === 1 ? 'opacity-0 pointer-events-none' : 'bg-white text-neutral-400 hover:text-neutral-900 hover:shadow-lg'}`}
+            disabled={currentRentalStep === 1 || isSubmitting}
+            className={`px-10 py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${currentRentalStep === 1 ? 'opacity-0 pointer-events-none' : 'bg-white text-neutral-400 hover:text-neutral-900 hover:shadow-lg'} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
           >
             Voltar
           </button>
@@ -788,19 +814,26 @@ const RentalFormModal = ({
               <button 
                 type="button"
                 onClick={() => setCurrentRentalStep(currentRentalStep + 1)}
-                disabled={(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked)}
-                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting}
+                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Próximo Passo
               </button>
             ) : (
               <button 
                 type="button"
-                onClick={onSubmit}
-                disabled={blockStatus.blocked}
-                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${blockStatus.blocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+                onClick={handleSubmit}
+                disabled={blockStatus.blocked || isSubmitting}
+                className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 flex items-center justify-center gap-2 ${blockStatus.blocked || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                Finalizar e Ativar
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Finalizando...</span>
+                  </>
+                ) : (
+                  <span>Finalizar e Ativar</span>
+                )}
               </button>
             )}
           </div>
