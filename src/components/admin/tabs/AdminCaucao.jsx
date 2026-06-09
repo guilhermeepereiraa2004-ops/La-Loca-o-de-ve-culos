@@ -189,17 +189,13 @@ const AdminCaucao = ({
                       {/* Due Date Column */}
                       <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1.5">
-                          <span className={`text-[9px] xl:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border transition-all ${isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10' :
-                              'bg-neutral-50 text-neutral-900 border-neutral-100'
+                          <span className={`text-[9px] xl:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border transition-all ${remaining <= 0
+                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                              : isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10'
+                              : 'bg-neutral-50 text-neutral-900 border-neutral-100'
                             }`}>
-                            {rental.paymentDay || '---'}
+                            {remaining <= 0 ? 'Liquidado' : nextDueDate.toLocaleDateString('pt-BR')}
                           </span>
-                          {remaining > 0 && (
-                            <span className={`text-[8px] font-black uppercase tracking-tighter ${isDueToday || isOverdue ? 'text-red-500' : 'text-neutral-400'
-                              }`}>
-                              {nextDueDate.toLocaleDateString('pt-BR')}
-                            </span>
-                          )}
                         </div>
                       </td>
 
@@ -330,8 +326,8 @@ const AdminCaucao = ({
                   <div className="grid grid-cols-2 gap-4 py-3 border-t border-b border-neutral-50 text-xs">
                     <div className="space-y-0.5">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Vencimento</p>
-                      <p className={`font-bold ${isOverdue || isDueToday ? 'text-red-500' : 'text-neutral-800'}`}>
-                        {rental.paymentDay || '---'} {remaining > 0 && `(${nextDueDate.toLocaleDateString('pt-BR')})`}
+                      <p className={`font-bold ${remaining <= 0 ? 'text-emerald-600' : isOverdue || isDueToday ? 'text-red-500' : 'text-neutral-800'}`}>
+                        {remaining <= 0 ? 'Liquidado' : nextDueDate.toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                     <div className="space-y-0.5">

@@ -429,7 +429,7 @@ const RentalDetailModal = ({
                               {ins.type}
                             </div>
                             <div>
-                              <p className="text-xs font-black text-neutral-900">{new Date(ins.date).toLocaleDateString('pt-BR')}</p>
+                              <p className="text-xs font-black text-neutral-900">{new Date(ins.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
                               <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">{(ins.km || 0).toLocaleString()} KM rodados</p>
                             </div>
                           </div>
