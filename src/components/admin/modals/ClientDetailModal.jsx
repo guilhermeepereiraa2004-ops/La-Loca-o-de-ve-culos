@@ -90,6 +90,22 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
     return expDate < today;
   };
 
+  const isPdfFile = (file) => {
+    if (!file) return false;
+    if (file instanceof File) {
+      return file.type === 'application/pdf';
+    }
+    if (typeof file === 'object') {
+      if (file.type === 'application/pdf') return true;
+      const url = file.url || file.preview || '';
+      if (url.toLowerCase().includes('.pdf')) return true;
+    }
+    if (typeof file === 'string') {
+      return file.toLowerCase().includes('.pdf');
+    }
+    return false;
+  };
+
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
       <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-md" onClick={onClose} />
@@ -319,9 +335,20 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                   <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
                     {client.docs?.cnh ? (
                       <>
-                        <img src={getFileUrl(client.docs.cnh)} className="w-full h-full object-cover" alt="CNH" />
+                        {isPdfFile(client.docs.cnh) ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-600 gap-2">
+                            <FileText size={36} />
+                            <span className="text-[9px] font-black uppercase tracking-wider">Documento PDF</span>
+                          </div>
+                        ) : (
+                          <img src={getFileUrl(client.docs.cnh)} className="w-full h-full object-cover" alt="CNH" />
+                        )}
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                          {isPdfFile(client.docs.cnh) ? (
+                            <button onClick={() => window.open(getFileUrl(client.docs.cnh), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                          ) : (
+                            <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -339,9 +366,20 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                   <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
                     {client.docs?.residence ? (
                       <>
-                        <img src={getFileUrl(client.docs.residence)} className="w-full h-full object-cover" alt="Residência" />
+                        {isPdfFile(client.docs.residence) ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-600 gap-2">
+                            <FileText size={36} />
+                            <span className="text-[9px] font-black uppercase tracking-wider">Documento PDF</span>
+                          </div>
+                        ) : (
+                          <img src={getFileUrl(client.docs.residence)} className="w-full h-full object-cover" alt="Residência" />
+                        )}
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                          <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                          {isPdfFile(client.docs.residence) ? (
+                            <button onClick={() => window.open(getFileUrl(client.docs.residence), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                          ) : (
+                            <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                          )}
                         </div>
                       </>
                     ) : (
@@ -358,9 +396,20 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                   <div key={idx} className="space-y-2">
                     <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">App {idx + 1}</p>
                     <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
-                      <img src={getFileUrl(print)} className="w-full h-full object-cover" alt={`App ${idx + 1}`} />
+                      {isPdfFile(print) ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-600 gap-2">
+                          <FileText size={36} />
+                          <span className="text-[9px] font-black uppercase tracking-wider">Documento PDF</span>
+                        </div>
+                      ) : (
+                        <img src={getFileUrl(print)} className="w-full h-full object-cover" alt={`App ${idx + 1}`} />
+                      )}
                       <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
-                        <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                        {isPdfFile(print) ? (
+                          <button onClick={() => window.open(getFileUrl(print), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                        ) : (
+                          <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                        )}
                       </div>
                     </div>
                   </div>

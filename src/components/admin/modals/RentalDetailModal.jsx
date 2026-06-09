@@ -27,6 +27,22 @@ const RentalDetailModal = ({
 
   const getFileUrl = (file) => getPublicUrl(file);
 
+  const isPdfFile = (file) => {
+    if (!file) return false;
+    if (file instanceof File) {
+      return file.type === 'application/pdf';
+    }
+    if (typeof file === 'object') {
+      if (file.type === 'application/pdf') return true;
+      const url = file.url || file.preview || '';
+      if (url.toLowerCase().includes('.pdf')) return true;
+    }
+    if (typeof file === 'string') {
+      return file.toLowerCase().includes('.pdf');
+    }
+    return false;
+  };
+
   const handlePreview = (url) => {
     if (!url) return;
     const lowerUrl = url.toLowerCase();
@@ -644,8 +660,14 @@ const RentalDetailModal = ({
                     <p className="text-[8px] font-black uppercase tracking-widest text-neutral-400">Prints do Aplicativo</p>
                     <div className="flex gap-2 overflow-x-auto pb-2">
                       {(rental.docs.appPrints || rental.docs.app_prints).map((print, i) => (
-                        <div key={i} className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-neutral-100 cursor-pointer hover:opacity-80" onClick={() => handlePreview(getFileUrl(print))}>
-                          <img src={getFileUrl(print)} className="w-full h-full object-cover" alt="App Print" />
+                        <div key={i} className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-neutral-100 cursor-pointer hover:opacity-80 flex items-center justify-center bg-neutral-50" onClick={() => handlePreview(getFileUrl(print))}>
+                          {isPdfFile(print) ? (
+                            <div className="w-full h-full flex items-center justify-center bg-red-50 text-red-600">
+                              <FileText size={20} />
+                            </div>
+                          ) : (
+                            <img src={getFileUrl(print)} className="w-full h-full object-cover" alt="App Print" />
+                          )}
                         </div>
                       ))}
                     </div>

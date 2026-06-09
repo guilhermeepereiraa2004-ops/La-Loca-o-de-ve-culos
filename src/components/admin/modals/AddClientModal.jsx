@@ -216,12 +216,12 @@ const AddClientModal = ({ isOpen, onClose, onAddClient }) => {
                       {form.docs.cnh ? (form.docs.cnh.name || 'CNH Selecionada') : 'Clique para anexar'}
                     </span>
                   </div>
-                  <input type="file" className="hidden" accept="image/*" onChange={async (e) => {
+                  <input type="file" className="hidden" accept="image/*,application/pdf" onChange={async (e) => {
                     const file = e.target.files[0];
                     if (file) {
                       try {
                         setIsProcessingFiles(true);
-                        const compressed = await compressImage(file);
+                        const compressed = file.type.includes('image') ? await compressImage(file) : file;
                         setForm(prev => ({...prev, docs: { ...prev.docs, cnh: compressed }}));
                       } finally { setIsProcessingFiles(false); }
                     }
@@ -261,18 +261,18 @@ const AddClientModal = ({ isOpen, onClose, onAddClient }) => {
                     <span className={`text-[10px] font-black uppercase tracking-widest block mb-1 ${form.docs.appPrints?.length > 0 ? 'text-emerald-600' : 'text-neutral-900'}`}>Prints App</span>
                     {form.docs.appPrints?.length > 0 ? (
                       <span className="text-[8px] text-emerald-500 font-black uppercase tracking-widest bg-emerald-100 px-3 py-1 rounded-full">
-                        {form.docs.appPrints.length} IMAGENS
+                        {form.docs.appPrints.length} ARQUIVOS
                       </span>
                     ) : (
                       <span className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest">(Opcional)</span>
                     )}
                   </div>
-                  <input type="file" multiple className="hidden" accept="image/*" onChange={async (e) => {
+                  <input type="file" multiple className="hidden" accept="image/*,application/pdf" onChange={async (e) => {
                     const files = Array.from(e.target.files);
                     if (files.length > 0) {
                       try {
                         setIsProcessingFiles(true);
-                        const compressed = await Promise.all(files.map(f => compressImage(f)));
+                        const compressed = await Promise.all(files.map(f => f.type.includes('image') ? compressImage(f) : f));
                         setForm(prev => ({...prev, docs: { ...prev.docs, appPrints: compressed }}));
                       } finally { setIsProcessingFiles(false); }
                     }
