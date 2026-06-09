@@ -45,7 +45,7 @@ import { computeNotifications } from '../../utils/notifications';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus,
-  onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onUpdateClient, onDeleteClient,
+  onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onAddClient, onUpdateClient, onDeleteClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
@@ -392,6 +392,7 @@ const AdminDashboard = ({
           {activeTab === 'clientes' && canAccess('clientes') && (
             <AdminClientes 
               clients={clients} 
+              onAddClient={onAddClient}
               onUpdateClient={onUpdateClient} 
               setItemToDelete={setItemToDelete}
               setDeleteType={setDeleteType}

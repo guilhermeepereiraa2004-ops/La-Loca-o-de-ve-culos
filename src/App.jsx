@@ -29,7 +29,7 @@ const App = () => {
     seedData,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
-    handleUpdateRental, handleRenewRental, handleUpdateClient, handleDeleteClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
+    handleUpdateRental, handleRenewRental, handleAddClient, handleUpdateClient, handleDeleteClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
@@ -71,6 +71,7 @@ const App = () => {
         onDeleteRental={handleDeleteRental}
         onUpdateRental={handleUpdateRental}
         onRenewRental={handleRenewRental}
+        onAddClient={handleAddClient}
         onUpdateClient={handleUpdateClient}
         onDeleteClient={handleDeleteClient}
         onAddInvestor={handleAddInvestor}

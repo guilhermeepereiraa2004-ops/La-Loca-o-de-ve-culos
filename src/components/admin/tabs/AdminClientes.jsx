@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { Search, User, Phone, Mail, Calendar, Eye, Trash2 } from 'lucide-react';
+import { Search, User, Phone, Mail, Calendar, Eye, Trash2, MapPin } from 'lucide-react';
 import ClientDetailModal from '../modals/ClientDetailModal';
+import AddClientModal from '../modals/AddClientModal';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminClientes = ({ 
   clients = [], 
   onUpdateClient, 
+  onAddClient,
   setItemToDelete, 
   setDeleteType, 
   setShowDeleteAuthModal 
@@ -13,6 +15,7 @@ const AdminClientes = ({
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selectedClient, setSelectedClient] = useState(null);
+  const [showAddClientModal, setShowAddClientModal] = useState(false);
 
   const isExpired = (dateStr) => {
     if (!dateStr) return false;
@@ -49,7 +52,7 @@ const AdminClientes = ({
         </div>
       </div>
 
-      {/* Search & Filters */}
+      {/* Search & Filters & Add */}
       <div className="bg-white rounded-[2rem] xl:rounded-[3rem] p-6 border border-neutral-100 shadow-sm mb-8 xl:mb-12 flex flex-col lg:flex-row gap-6 justify-between items-center">
         <div className="relative flex-1 w-full group">
           <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
@@ -61,23 +64,31 @@ const AdminClientes = ({
             className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
           />
         </div>
-        <div className="flex bg-neutral-50 p-1.5 rounded-[2rem] border border-neutral-100 shadow-inner shrink-0 w-full lg:w-auto">
-          {[
-            { id: 'todos', label: 'Todos' },
-            { id: 'ativos', label: 'CNH Ativa' },
-            { id: 'vencidos', label: 'CNH Vencida' }
-          ].map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setStatusFilter(item.id)}
-              className={`flex-1 lg:flex-none px-6 py-3.5 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all duration-500 ${statusFilter === item.id
-                ? 'bg-neutral-900 text-white shadow-xl shadow-neutral-900/20 scale-105'
-                : 'text-neutral-400 hover:text-neutral-900 hover:bg-white'
-              }`}
-            >
-              {item.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-4 w-full lg:w-auto">
+          <div className="flex bg-neutral-50 p-1.5 rounded-[2rem] border border-neutral-100 shadow-inner shrink-0 w-full lg:w-auto">
+            {[
+              { id: 'todos', label: 'Todos' },
+              { id: 'ativos', label: 'CNH Ativa' },
+              { id: 'vencidos', label: 'CNH Vencida' }
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setStatusFilter(item.id)}
+                className={`flex-1 lg:flex-none px-6 py-3.5 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all duration-500 ${statusFilter === item.id
+                  ? 'bg-neutral-900 text-white shadow-xl shadow-neutral-900/20 scale-105'
+                  : 'text-neutral-400 hover:text-neutral-900 hover:bg-white'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+          <button 
+            onClick={() => setShowAddClientModal(true)}
+            className="px-6 py-4 bg-neutral-900 hover:bg-[#C5A059] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-neutral-900/20 whitespace-nowrap"
+          >
+            + Novo Cliente
+          </button>
         </div>
       </div>
 
@@ -176,6 +187,17 @@ const AdminClientes = ({
                           <span className="truncate">{client.email}</span>
                         </div>
                       )}
+
+                      {/* Address */}
+                      {(client.address || client.docs?.address) && (
+                        <div className="flex items-start gap-2 text-xs font-bold text-neutral-800 mt-1">
+                          <MapPin size={12} className="text-neutral-400 shrink-0 mt-0.5" />
+                          <span className="line-clamp-2 leading-tight">
+                            {client.address || client.docs?.address}
+                            {(client.docs?.cidadeUf) ? ` — ${client.docs.cidadeUf}` : ''}
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     {/* CNH Details */}
@@ -247,6 +269,14 @@ const AdminClientes = ({
               return res;
             }
           }}
+        />
+      )}
+
+      {showAddClientModal && (
+        <AddClientModal
+          isOpen={showAddClientModal}
+          onClose={() => setShowAddClientModal(false)}
+          onAddClient={onAddClient}
         />
       )}
     </div>

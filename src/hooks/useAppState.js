@@ -841,6 +841,12 @@ export const useAppState = () => {
       payload['multa_tardia'] = parseFloat(rental.lateFine) || 0;
       payload['juros_di\u00e1rios'] = parseFloat(rental.dailyInterest) || 0;
       
+      // Sanitização de campos inteiros: string vazia causa "invalid input syntax for type integer"
+      payload['deposit_installments'] = parseInt(payload['deposit_installments']) || null;
+      payload['semanas'] = payload['semanas'] && String(payload['semanas']).trim() !== '' ? String(parseInt(payload['semanas']) || 4) : '4';
+      if (payload['id_veiculo'] === '' || payload['id_veiculo'] === undefined) payload['id_veiculo'] = null;
+      if (payload['id_cliente'] === '' || payload['id_cliente'] === undefined) payload['id_cliente'] = null;
+
       payload['status'] = 'Ativo';
       payload['start_date'] = rental.startDate || null;
       if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
@@ -2354,6 +2360,93 @@ export const useAppState = () => {
     }
   };
 
+  const handleAddClient = async (clientData) => {
+    try {
+      const userName = clientData.nome || clientData.name || 'cliente';
+
+      // Upload de documentos
+      const uploadedDocs = { ...(clientData.docs || {}) };
+
+      if (uploadedDocs.cnh instanceof File) {
+        const url = await uploadFile(uploadedDocs.cnh, `condutores/${userName}`);
+        if (url) uploadedDocs.cnh = url;
+      }
+      if (uploadedDocs.residence instanceof File) {
+        const url = await uploadFile(uploadedDocs.residence, `condutores/${userName}`);
+        if (url) uploadedDocs.residence = url;
+      }
+      if (uploadedDocs.appPrints && Array.isArray(uploadedDocs.appPrints)) {
+        const printUrls = await Promise.all(uploadedDocs.appPrints.map(async (print) => {
+          if (print instanceof File) return await uploadFile(print, `condutores/${userName}/prints`);
+          return print;
+        }));
+        uploadedDocs.appPrints = printUrls.filter(u => u);
+      }
+
+      // Limpeza: garante que nenhum File permaneça
+      Object.keys(uploadedDocs).forEach(key => {
+        if (uploadedDocs[key] instanceof File) delete uploadedDocs[key];
+      });
+
+      const cleanDate = (d) => (d && String(d).trim() !== '') ? d : null;
+
+      const payload = {
+        nome: clientData.nome || clientData.name,
+        telefone: clientData.telefone || clientData.phone || null,
+        'e-mail': clientData.email || null,
+        cpf: clientData.cpf || null,
+        cnh_number: clientData.cnhNumber || null,
+        cnh_validity: cleanDate(clientData.cnhValidity),
+        registro_cnh: clientData.cnhRegisterNumber || null,
+        data_de_nascimento: cleanDate(clientData.birthDate),
+        address: clientData.address || null,
+        documentos: {
+          ...uploadedDocs,
+          rg: clientData.rg || null,
+          nacionalidade: clientData.nacionalidade || null,
+          estadoCivil: clientData.estadoCivil || null,
+          cep: clientData.cep || null,
+          cidadeUf: clientData.cidadeUf || null,
+          address: clientData.address || null
+        },
+        status: 'Ativo'
+      };
+
+      // Verifica duplicidade por CPF ou CNH
+      const queryField = payload.cpf ? 'cpf' : (payload.cnh_number ? 'cnh_number' : null);
+      const queryVal = payload.cpf || payload.cnh_number;
+
+      if (queryVal) {
+        const { data: existing } = await supabase
+          .from('clients')
+          .select('id')
+          .eq(queryField, queryVal)
+          .maybeSingle();
+
+        if (existing) {
+          alert('Já existe um cliente cadastrado com este CPF ou CNH.');
+          return { success: false, error: { message: 'Cliente duplicado' } };
+        }
+      }
+
+      const { data, error } = await supabase.from('clients').insert([payload]).select();
+      if (error) throw error;
+
+      if (data && data[0]) {
+        const newClient = mapToCamel(data, 'clients')[0];
+        setClients(prev => [newClient, ...prev]);
+        logActivity('Criar', 'Cliente', data[0].id, `Cadastrou o cliente ${payload.nome}`);
+      }
+
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao cadastrar cliente:', err);
+      const errorMsg = err.message || 'Erro desconhecido';
+      alert(`Erro ao cadastrar cliente: ${errorMsg}`);
+      return { success: false, error: err };
+    }
+  };
+
   const handleInterestSubmit = async (e) => {
     e.preventDefault();
     await handleAddLead({ name: interestForm.name, contact: interestForm.phone, email: interestForm.email, type: 'locacao', vehicleModel: selectedVehicleForInterest?.model, vehiclePlate: selectedVehicleForInterest?.plate, message: interestForm.observation });
@@ -2373,7 +2466,7 @@ export const useAppState = () => {
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleAddLead, handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleRenewRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
-    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleDeleteClient, handleAddTransaction,
+    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleDeleteClient, handleAddClient, handleAddTransaction,
     handleUpdateTransactionStatus,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { 
   X, User, Phone, Mail, FileText, 
   MapPin, CreditCard, ImageIcon, Download, 
-  AlertTriangle, Calendar, ShieldCheck, Camera, Edit2, Save
+  AlertTriangle, Calendar, ShieldCheck, Camera, Edit2, Save, Home
 } from 'lucide-react';
 import { formatCPF } from '../../../utils/cpfFormatter';
 
@@ -12,6 +12,9 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState(client || {});
   const [errorModal, setErrorModal] = useState(null);
+
+  // Helper to get value from top-level or nested docs
+  const getField = (obj, key) => obj[key] || obj.docs?.[key] || '';
 
   if (!client) return null;
 
@@ -185,6 +188,81 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                       <input type="text" value={editForm.cpf || ''} onChange={e => setEditForm({...editForm, cpf: formatCPF(e.target.value)})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="000.000.000-00" />
                     ) : (
                       <p className="text-sm font-black text-neutral-900">{client.cpf || '---'}</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Extended Personal Info: RG, Nacionalidade, Estado Civil */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <FileText size={18} className="text-[#C5A059]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Documentação Complementar</h5>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">RG (Órgão Emissor/UF)</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.docs?.rg || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), rg: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="1234567 SSP/SE" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900">{getField(client, 'rg') || '---'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Nacionalidade</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.docs?.nacionalidade || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), nacionalidade: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="brasileiro(a)" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900 capitalize">{getField(client, 'nacionalidade') || '---'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Estado Civil</p>
+                    {isEditing ? (
+                      <select value={editForm.docs?.estadoCivil || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), estadoCivil: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]">
+                        <option value="">Selecionar...</option>
+                        <option value="solteiro(a)">Solteiro(a)</option>
+                        <option value="casado(a)">Casado(a)</option>
+                        <option value="divorciado(a)">Divorciado(a)</option>
+                        <option value="viúvo(a)">Viúvo(a)</option>
+                        <option value="união estável">União Estável</option>
+                      </select>
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900 capitalize">{getField(client, 'estadoCivil') || '---'}</p>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Address Info */}
+              <section className="space-y-6">
+                <div className="flex items-center gap-3 mb-2">
+                  <Home size={18} className="text-[#C5A059]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Endereço</h5>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
+                  <div className="md:col-span-3">
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Rua, Nº, Bairro</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.address || editForm.docs?.address || ''} onChange={e => setEditForm({...editForm, address: e.target.value, docs: {...(editForm.docs || {}), address: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="Rua Exemplo, 123, Centro" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900">{client.address || getField(client, 'address') || '---'}</p>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">CEP</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.docs?.cep || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), cep: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="49000-000" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900">{getField(client, 'cep') || '---'}</p>
+                    )}
+                  </div>
+                  <div className="md:col-span-2">
+                    <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Cidade / UF</p>
+                    {isEditing ? (
+                      <input type="text" value={editForm.docs?.cidadeUf || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), cidadeUf: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="Aracaju/SE" />
+                    ) : (
+                      <p className="text-sm font-black text-neutral-900">{getField(client, 'cidadeUf') || '---'}</p>
                     )}
                   </div>
                 </div>
