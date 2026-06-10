@@ -193,6 +193,22 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     return matchesSearch && matchesType && matchesDate;
   });
 
+  const sortedInspections = [...filteredInspections].sort((a, b) => {
+    const dateA = a.date || '';
+    const dateB = b.date || '';
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA);
+    }
+    const timeA = a.time || '';
+    const timeB = b.time || '';
+    if (timeA !== timeB) {
+      return timeB.localeCompare(timeA);
+    }
+    const createdA = a.createdAt || a.id || '';
+    const createdB = b.createdAt || b.id || '';
+    return createdB.localeCompare(createdA);
+  });
+
   const getOperationalAlerts = () => {
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
@@ -456,7 +472,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
-            {filteredInspections.map((ins) => (
+            {sortedInspections.map((ins) => (
               <div key={ins.id} className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-neutral-100 p-6 md:p-8 shadow-sm hover:shadow-xl transition-all group">
                 <div className="flex justify-between items-start mb-6">
                   <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
