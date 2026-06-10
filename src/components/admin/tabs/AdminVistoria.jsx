@@ -194,26 +194,19 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
   });
 
   const sortedInspections = [...filteredInspections].sort((a, b) => {
-    const getDateTime = (ins) => {
-      if (ins.date && ins.time) return new Date(`${ins.date}T${ins.time}:00`).getTime();
-      if (ins.date) return new Date(`${ins.date}T00:00:00`).getTime();
-      if (ins.createdAt) return new Date(ins.createdAt).getTime();
-      return 0;
-    };
-    
-    const timeA = getDateTime(a);
-    const timeB = getDateTime(b);
-    
-    if (timeA !== timeB && !isNaN(timeA) && !isNaN(timeB)) {
-      return timeB - timeA; // Descending: newest first
+    const dateA = a.date || '';
+    const dateB = b.date || '';
+    if (dateA !== dateB) {
+      return dateB.localeCompare(dateA);
     }
-    
-    const createdA = new Date(a.createdAt || 0).getTime();
-    const createdB = new Date(b.createdAt || 0).getTime();
-    if (!isNaN(createdA) && !isNaN(createdB)) {
-      return createdB - createdA;
+    const timeA = a.time || '';
+    const timeB = b.time || '';
+    if (timeA !== timeB) {
+      return timeB.localeCompare(timeA);
     }
-    return (b.id || '').localeCompare(a.id || '');
+    const createdA = a.createdAt || a.id || '';
+    const createdB = b.createdAt || b.id || '';
+    return createdB.localeCompare(createdA);
   });
 
   const getOperationalAlerts = () => {

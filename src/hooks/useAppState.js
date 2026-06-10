@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { parseDbError } from '../utils/errorHelper';
 import { uploadFile } from '../utils/supabaseStorage';
 
 // Limpar temporariamente o bloqueio antigo do rate limiter de uploads salvo no localStorage
@@ -665,7 +666,7 @@ export const useAppState = () => {
       if (error.message?.includes('modules') || error.code === 'PGRST204') {
         alert(`ERRO NO BANCO DE DADOS: A coluna 'modules' está faltando na tabela 'system_users'.\n\nPor favor, execute o script abaixo no SQL Editor do Supabase para corrigir:\n\nALTER TABLE public.system_users ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];`);
       } else {
-        alert(`Erro ao criar usuário: ${error.message}`);
+        alert(`Erro ao criar usuário: ${parseDbError(error)}`);
       }
     }
   };
@@ -680,7 +681,7 @@ export const useAppState = () => {
       if (error.message?.includes('modules') || error.code === 'PGRST204') {
         alert(`ERRO NO BANCO DE DADOS: A coluna 'modules' está faltando na tabela 'system_users'.\n\nPor favor, execute o script abaixo no SQL Editor do Supabase para corrigir:\n\nALTER TABLE public.system_users ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];`);
       } else {
-        alert(`Erro ao atualizar usuário: ${error.message}`);
+        alert(`Erro ao atualizar usuário: ${parseDbError(error)}`);
       }
     }
   };
@@ -711,7 +712,7 @@ export const useAppState = () => {
       logActivity('Criar', 'Lead', data[0].id, `Criou novo lead: ${newLead.name} para o modelo ${newLead.vehicleModel || 'não especificado'}`);
     } else if (error) {
       console.error("Erro ao criar lead:", error);
-      alert(`Erro ao criar lead: ${error.message}`);
+      alert(`Erro ao criar lead: ${parseDbError(error)}`);
     }
   };
 
@@ -730,7 +731,7 @@ export const useAppState = () => {
       logActivity('Atualizar', 'Lead', id, `Atualizou status do lead ID ${id} para ${status}`);
     } else {
       console.error("Erro ao atualizar status do lead:", error);
-      alert(`Erro ao atualizar status do lead: ${error.message}`);
+      alert(`Erro ao atualizar status do lead: ${parseDbError(error)}`);
     }
   };
 
@@ -1326,7 +1327,7 @@ export const useAppState = () => {
       return { success: true };
     } catch (error) {
       console.error("Erro ao renovar locação:", error);
-      alert(`Erro ao renovar: ${error.message}`);
+      alert(`Erro ao renovar: ${parseDbError(error)}`);
       return { success: false, error };
     }
   };
@@ -1345,7 +1346,7 @@ export const useAppState = () => {
       return { success: false, error: new Error('Nenhum dado retornado do servidor') };
     } catch (err) {
       console.error("Erro ao cadastrar investidor:", err);
-      alert(`Erro ao cadastrar investidor: ${err.message}`);
+      alert(`Erro ao cadastrar investidor: ${parseDbError(err)}`);
       return { success: false, error: err };
     }
   };
@@ -1360,7 +1361,7 @@ export const useAppState = () => {
       return { success: true };
     } catch (err) {
       console.error("Erro ao atualizar investidor:", err);
-      alert(`Erro ao atualizar investidor: ${err.message}`);
+      alert(`Erro ao atualizar investidor: ${parseDbError(err)}`);
       return { success: false, error: err };
     }
   };
@@ -1446,7 +1447,7 @@ export const useAppState = () => {
       logActivity('Criar', 'Veículo', newV.id, `Cadastrou o veículo ${newV.model} (${newV.plate})`);
     } else if (error) {
       console.error("Erro ao adicionar veículo:", error);
-      alert(`Erro ao salvar veículo: ${error.message}`);
+      alert(`Erro ao salvar veículo: ${parseDbError(error)}`);
     }
   };
 
@@ -1517,7 +1518,7 @@ export const useAppState = () => {
       logActivity('Atualizar', 'Veículo', vehicle.id, `Atualizou os dados do veículo ${updatedCamel.model} (${updatedCamel.plate})`);
     } else {
       console.error("Erro detalhado ao atualizar veículo:", error);
-      alert(`Erro ao salvar: ${error.message}`);
+      alert(`Erro ao salvar: ${parseDbError(error)}`);
     }
   };
 
@@ -1756,7 +1757,7 @@ export const useAppState = () => {
       return { success: true };
     } catch (error) {
       console.error("Erro ao encerrar contrato:", error);
-      alert(`Erro ao encerrar contrato: ${error.message}`);
+      alert(`Erro ao encerrar contrato: ${parseDbError(error)}`);
       return { success: false, error };
     }
   };
@@ -1802,7 +1803,7 @@ export const useAppState = () => {
       alert(`Parcela ${installmentNumber} marcada como paga com sucesso!`);
     } catch (err) {
       console.error("Erro fatal no pagamento de caução:", err);
-      alert(`Erro ao processar pagamento: ${err.message}`);
+      alert(`Erro ao processar pagamento: ${parseDbError(err)}`);
     }
   };
 
@@ -2233,7 +2234,7 @@ export const useAppState = () => {
       }
     } catch (err) {
       console.error('Erro ao salvar vistoria com arquivos:', err.message);
-      alert(`Erro ao salvar vistoria: ${err.message}`);
+      alert(`Erro ao salvar vistoria: ${parseDbError(err)}`);
     }
   };
 
@@ -2321,7 +2322,7 @@ export const useAppState = () => {
       return { success: true };
     } catch (err) {
       console.error("Erro ao atualizar ordem de serviço:", err);
-      alert(`Erro ao atualizar ordem de serviço: ${err.message}`);
+      alert(`Erro ao atualizar ordem de serviço: ${parseDbError(err)}`);
       return { success: false, error: err };
     }
   };
@@ -2356,7 +2357,7 @@ export const useAppState = () => {
       logActivity('Apagar', 'Ordem Serviço', id, `Excluiu a ordem de serviço #${id} para o veículo ${os.plate || 'desconhecido'}`);
     } else {
       console.error("Erro ao apagar ordem de serviço:", error);
-      alert(`Erro ao apagar ordem de serviço: ${error.message}`);
+      alert(`Erro ao apagar ordem de serviço: ${parseDbError(error)}`);
     }
   };
 
