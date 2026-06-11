@@ -184,7 +184,7 @@ const ImageEditorModal = ({ isOpen, imageSrc, onClose, onSave }) => {
             <span className="text-[9px] font-black uppercase tracking-widest text-neutral-500 w-12 text-left">Zoom</span>
             <input 
               type="range" 
-              min="1" 
+              min="0.1" 
               max="3" 
               step="0.05"
               value={zoom} 
