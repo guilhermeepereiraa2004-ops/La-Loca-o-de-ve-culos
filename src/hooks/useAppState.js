@@ -1425,7 +1425,7 @@ export const useAppState = () => {
     }, 'vehicles');
 
     // Override with parsed numbers
-    dbVehicle['year'] = parseInt(vehicle.year) || null;
+    dbVehicle['year'] = vehicle.year ? String(vehicle.year).trim() : null;
     dbVehicle['initial_km'] = parseFloat(vehicle.initialKm) || 0;
     dbVehicle['km'] = parseFloat(vehicle.initialKm) || 0;
     dbVehicle['fipe_value'] = parseBRL(vehicle.fipeValue);
@@ -1497,7 +1497,7 @@ export const useAppState = () => {
     const dbVehicle = mapToSnake(vehicleData, 'vehicles');
     
     // Manual overrides for parsed values
-    dbVehicle['year'] = parseInt(vehicle.year) || null;
+    dbVehicle['year'] = vehicle.year ? String(vehicle.year).trim() : null;
     dbVehicle['fipe_value'] = parseBRL(vehicle.fipeValue);
     dbVehicle['weekly_rental'] = parseBRL(vehicle.weeklyRental);
     dbVehicle['investment_value'] = parseBRL(vehicle.investmentValue);
