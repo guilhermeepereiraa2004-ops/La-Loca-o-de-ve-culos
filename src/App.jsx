@@ -30,7 +30,7 @@ const App = () => {
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleRenewRental, handleAddClient, handleUpdateClient, handleDeleteClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
-    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransactionStatus,
+    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransactionStatus, handleDeleteTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
@@ -65,6 +65,7 @@ const App = () => {
         onPayCaucaoInstallment={handlePayCaucaoInstallment}
         onAddTransaction={handleAddTransaction}
         onUpdateTransactionStatus={handleUpdateTransactionStatus}
+        onDeleteTransaction={handleDeleteTransaction}
         onUpdateStatus={handleUpdateLeadStatus}
         onDeleteLead={handleDeleteLead}
         onAddRental={handleAddRental}

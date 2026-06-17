@@ -951,7 +951,7 @@ const AdminInvestidores = ({
               onClick={async () => {
                  const val = parseFloat(debtPaymentInput);
                  if (val > 0) {
-                   await onAddTransaction({
+                   const result = await onAddTransaction({
                      type: 'in',
                      val: val,
                      cat: 'Pagamento de Dívida',
@@ -960,12 +960,14 @@ const AdminInvestidores = ({
                      responsible: `Investidor: ${debtPaymentModal.investor.name}`,
                      status: 'Concluído'
                    });
-                   setShowAdminSuccess({
-                     show: true,
-                     title: 'Dívida Quitada',
-                     message: `O pagamento de R$ ${val.toLocaleString('pt-BR')} foi registrado com sucesso, reduzindo o saldo devedor do investidor.`
-                   });
-                   setDebtPaymentModal(null);
+                   if (result && result.success) {
+                     setShowAdminSuccess({
+                       show: true,
+                       title: 'Dívida Quitada',
+                       message: `O pagamento de R$ ${val.toLocaleString('pt-BR')} foi registrado com sucesso, reduzindo o saldo devedor do investidor.`
+                     });
+                     setDebtPaymentModal(null);
+                   }
                  }
               }}
               className="w-full py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-lg active:scale-95 duration-200"

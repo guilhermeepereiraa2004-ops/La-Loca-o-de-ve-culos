@@ -44,7 +44,7 @@ import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 import { computeNotifications } from '../../utils/notifications';
 
 const AdminDashboard = ({
-  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus,
+  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus, onDeleteTransaction,
   onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onAddClient, onUpdateClient, onDeleteClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
@@ -164,7 +164,7 @@ const AdminDashboard = ({
     });
   };
 
-  const handleSaveTransaction = (e) => {
+  const handleSaveTransaction = async (e) => {
     e.preventDefault();
     const cleanNumeric = (val) => {
       if (!val) return 0;
@@ -173,24 +173,27 @@ const AdminDashboard = ({
       return parseFloat(clean) || 0;
     };
 
-    onAddTransaction({
+    const result = await onAddTransaction({
       ...financeForm,
       val: cleanNumeric(financeForm.val) * (financeForm.type === 'out' ? -1 : 1),
       status: financeForm.status || 'Concluído'
     });
-    setShowFinanceForm(false);
-    setFinanceForm({
-      date: new Date().toISOString().split('T')[0],
-      type: 'in', val: '', desc: '', cat: 'Aluguel',
-      vehiclePlate: '', responsible: 'Administradora',
-      status: 'Concluído',
-      investorName: ''
-    });
-    setShowAdminSuccess({
-      show: true,
-      title: 'Lançamento Realizado',
-      message: 'A transação foi registrada com sucesso no fluxo financeiro.'
-    });
+
+    if (result && result.success) {
+      setShowFinanceForm(false);
+      setFinanceForm({
+        date: new Date().toISOString().split('T')[0],
+        type: 'in', val: '', desc: '', cat: 'Aluguel',
+        vehiclePlate: '', responsible: 'Administradora',
+        status: 'Concluído',
+        investorName: ''
+      });
+      setShowAdminSuccess({
+        show: true,
+        title: 'Lançamento Realizado',
+        message: 'A transação foi registrada com sucesso no fluxo financeiro.'
+      });
+    }
   };
 
   const handleSaveRental = async (e) => {
@@ -274,6 +277,7 @@ const AdminDashboard = ({
       else if (deleteType === 'investor') success = await onDeleteInvestor(itemToDelete.id);
       else if (deleteType === 'lead') success = await onDeleteLead(itemToDelete.id);
       else if (deleteType === 'client') success = await onDeleteClient(itemToDelete.id);
+      else if (deleteType === 'transaction') success = await onDeleteTransaction(itemToDelete.id);
       
       console.log("ADMIN_DASHBOARD: Resultado da exclusão:", success);
       if (success) {
@@ -424,6 +428,9 @@ const AdminDashboard = ({
               onUpdateTransactionStatus={onUpdateTransactionStatus}
               investors={investors}
               rentals={rentals}
+              setItemToDelete={setItemToDelete}
+              setDeleteType={setDeleteType}
+              setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
           {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} />}

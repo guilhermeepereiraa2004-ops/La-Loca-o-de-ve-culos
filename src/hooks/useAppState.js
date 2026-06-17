@@ -182,7 +182,7 @@ const mapToCamel = (data, tableName) => {
 const mapToSnake = (obj, tableName) => {
   const mappings = TABLE_MAPPINGS[tableName] || {};
   const newObj = {};
-  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax'];
+  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax', 'investorName'];
   const effectiveSkip = tableName === 'fines' ? skipKeys.filter(k => k !== 'id') : skipKeys;
   for (const key in obj) {
     if (effectiveSkip.includes(key)) continue;
@@ -1538,11 +1538,36 @@ export const useAppState = () => {
   };
 
   const handleAddTransaction = async (transaction) => {
-    const { data, error } = await supabase.from('transactions').insert([mapToSnake(transaction, 'transactions')]).select();
-    if (!error && data) {
-      const newTx = mapToCamel(data, 'transactions')[0];
-      setTransactions(prev => [newTx, ...prev]);
-      logActivity('Criar', 'Financeiro', newTx.id, `Lançou transação de ${newTx.type === 'in' ? 'Recebimento' : 'Pagamento'}: R$ ${newTx.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - Desc: ${newTx.desc}`);
+    try {
+      const payload = mapToSnake(transaction, 'transactions');
+      const { data, error } = await supabase.from('transactions').insert([payload]).select();
+      if (error) throw error;
+      if (data && data.length > 0) {
+        const newTx = mapToCamel(data, 'transactions')[0];
+        setTransactions(prev => [newTx, ...prev]);
+        logActivity('Criar', 'Financeiro', newTx.id, `Lançou transação de ${newTx.type === 'in' ? 'Recebimento' : 'Pagamento'}: R$ ${newTx.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - Desc: ${newTx.desc}`);
+        return { success: true, data: newTx };
+      }
+      return { success: false, error: new Error('Nenhum dado retornado do banco de dados') };
+    } catch (err) {
+      console.error("Erro ao cadastrar transação:", err);
+      alert(`Erro ao salvar lançamento financeiro: ${parseDbError(err)}`);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteTransaction = async (id) => {
+    try {
+      const transaction = transactions.find(t => t.id === id);
+      const { error } = await supabase.from('transactions').delete().eq('id', id);
+      if (error) throw error;
+      setTransactions(prev => prev.filter(t => t.id !== id));
+      logActivity('Apagar', 'Financeiro', id, `Excluiu transação de ${transaction?.type === 'in' ? 'Recebimento' : 'Pagamento'}: R$ ${transaction?.val?.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - Desc: ${transaction?.desc}`);
+      return true;
+    } catch (err) {
+      console.error("Erro ao apagar transação:", err);
+      alert(`Erro ao apagar transação: ${parseDbError(err)}`);
+      return false;
     }
   };
 
@@ -2469,6 +2494,7 @@ export const useAppState = () => {
     handleUpdateRental, handleRenewRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleDeleteClient, handleAddClient, handleAddTransaction,
     handleUpdateTransactionStatus,
+    handleDeleteTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
