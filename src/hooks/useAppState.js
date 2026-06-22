@@ -1727,24 +1727,6 @@ export const useAppState = () => {
       const transactionsToAdd = [];
       const today = todayStr;
 
-      // 1. Registro de descontos da caução (se houver débitos)
-      if (closureData.totalDebts > 0) {
-        const isEarly = closureData.earlyTerminationPenalty > 0;
-        const descStr = isEarly 
-          ? `Perda de Caução (Rescisão Antecipada) - ${rental.userName || rental.user || 'Condutor'}`
-          : `Dedução de Caução (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`;
-
-        transactionsToAdd.push({
-          date: today,
-          type: 'out',
-          val: Math.min(closureData.totalDebts, closureData.caucaoAvailable),
-          desc: descStr,
-          cat: 'Caução',
-          vehiclePlate: rental.plate,
-          status: 'Pago',
-          responsible: 'Administradora'
-        });
-      }
 
       // 2. Registro do saldo final
       if (closureData.type === 'return' && closureData.balance > 0) {
