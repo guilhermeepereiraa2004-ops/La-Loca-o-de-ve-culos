@@ -165,6 +165,7 @@ const AdminFrota = ({
                           setVehicleForm({
                             ...car,
                             model: car.model || '',
+                            description: car.description || '',
                             plate: car.plate || '',
                             year: car.year || '',
                             renavam: car.renavam || '',
@@ -230,11 +231,14 @@ const AdminFrota = ({
 
                 <div className="p-8">
                   <div className="flex justify-between items-start mb-6">
-                    <div>
+                    <div className="flex-1">
                       <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black mb-1">{car.year}</p>
                       <h4 className="text-xl font-black text-neutral-900 tracking-tighter uppercase">{car.model || 'Sem Modelo'}</h4>
+                      {car.description && (
+                        <p className="text-[10px] font-medium text-neutral-500 mt-2 line-clamp-2 pr-4">{car.description}</p>
+                      )}
                     </div>
-                    <div className="text-right">
+                    <div className="text-right shrink-0 ml-4">
                       <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Valor FIPE</p>
                       <p className="text-sm font-black text-neutral-900">
                         {car.fipeValue ? 

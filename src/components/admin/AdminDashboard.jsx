@@ -186,7 +186,8 @@ const AdminDashboard = ({
         type: 'in', val: '', desc: '', cat: 'Aluguel',
         vehiclePlate: '', responsible: 'Administradora',
         status: 'Concluído',
-        investorName: ''
+        investorName: '',
+        provider: ''
       });
       setShowAdminSuccess({
         show: true,

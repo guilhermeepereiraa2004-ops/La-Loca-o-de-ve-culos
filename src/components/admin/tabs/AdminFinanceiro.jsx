@@ -431,6 +431,9 @@ const AdminFinanceiro = ({
                                 {formatManualDate(t) && (
                                   <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">Ref: {formatManualDate(t)}</p>
                                 )}
+                                {t.provider && (
+                                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Forn: {t.provider}</p>
+                                )}
                                 <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Gerado: {formatTransactionDateTime(t)}</p>
                               </div>
                             </div>
@@ -518,6 +521,9 @@ const AdminFinanceiro = ({
                           <div className="flex flex-col gap-0.5 mt-1">
                             {formatManualDate(t) && (
                               <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">Ref: {formatManualDate(t)}</p>
+                            )}
+                            {t.provider && (
+                              <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Forn: {t.provider}</p>
                             )}
                             <p className="text-[8px] uppercase tracking-widest text-neutral-400 font-bold">Gerado: {formatTransactionDateTime(t)}</p>
                           </div>

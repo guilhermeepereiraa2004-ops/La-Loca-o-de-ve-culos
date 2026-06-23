@@ -86,6 +86,18 @@ const VehicleDetailModal = ({ vehicle, inspections = [], maintenances = [], rent
             </div>
           </div>
 
+          {vehicle.description && (
+            <div className="p-8 bg-neutral-50 rounded-[2.5rem] border border-neutral-100">
+              <div className="flex items-center gap-3 mb-4">
+                <FileText size={18} className="text-[#C5A059]" />
+                <h4 className="text-xs font-black uppercase tracking-widest text-neutral-900">Descrição / Informações Complementares</h4>
+              </div>
+              <p className="text-sm font-medium text-neutral-600 leading-relaxed whitespace-pre-line">
+                {vehicle.description}
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Left Column: Financial & Technical */}
             <div className="lg:col-span-1 space-y-10">

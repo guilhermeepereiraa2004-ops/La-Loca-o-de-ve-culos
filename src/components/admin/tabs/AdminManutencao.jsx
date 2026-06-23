@@ -16,6 +16,8 @@ const AdminManutencao = ({
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [plateSearch, setPlateSearch] = useState('');
+  const [showPlateDropdown, setShowPlateDropdown] = useState(false);
   
   const [maintenanceForm, setMaintenanceForm] = useState({
     vehiclePlate: '',
@@ -34,8 +36,14 @@ const AdminManutencao = ({
     if (maintenanceForm.vehiclePlate) {
       const vehicle = vehicles.find(v => v.plate === maintenanceForm.vehiclePlate);
       if (vehicle) {
-        setMaintenanceForm(prev => ({ ...prev, vehicleModel: vehicle.model }));
+        setMaintenanceForm(prev => ({ 
+          ...prev, 
+          vehicleModel: vehicle.model,
+          vehicleDescription: vehicle.description 
+        }));
       }
+    } else {
+      setMaintenanceForm(prev => ({ ...prev, vehicleModel: '', vehicleDescription: '' }));
     }
   }, [maintenanceForm.vehiclePlate, vehicles]);
 
@@ -182,18 +190,47 @@ const AdminManutencao = ({
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Veículo (Placa)</label>
                 <div className="relative">
-                  <Car size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-                  <select
-                    value={maintenanceForm.vehiclePlate}
-                    onChange={e => setMaintenanceForm({ ...maintenanceForm, vehiclePlate: e.target.value })}
-                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm appearance-none"
-                  >
-                    <option value="">Selecione o veículo</option>
-                    {vehicles.map(v => (
-                      <option key={v.id} value={v.plate}>{v.plate} - {v.model}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none" />
+                  <Car size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 z-10" />
+                  <input
+                    type="text"
+                    value={showPlateDropdown ? plateSearch : (maintenanceForm.vehiclePlate || '')}
+                    onChange={(e) => {
+                      setPlateSearch(e.target.value.toUpperCase());
+                      setMaintenanceForm({ ...maintenanceForm, vehiclePlate: '' });
+                      setShowPlateDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setPlateSearch(maintenanceForm.vehiclePlate || '');
+                      setShowPlateDropdown(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowPlateDropdown(false), 200)}
+                    placeholder="Digite a placa ou modelo..."
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm relative z-0"
+                  />
+                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none z-10" />
+                  
+                  {showPlateDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                      {vehicles
+                        .filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase()))
+                        .map(v => (
+                          <div
+                            key={v.id}
+                            className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
+                            onClick={() => {
+                              setMaintenanceForm({ ...maintenanceForm, vehiclePlate: v.plate });
+                              setPlateSearch('');
+                              setShowPlateDropdown(false);
+                            }}
+                          >
+                            {v.plate} - <span className="font-medium text-neutral-500">{v.model}</span>
+                          </div>
+                      ))}
+                      {vehicles.filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase())).length === 0 && (
+                        <div className="p-4 text-sm text-neutral-400 text-center">Nenhum veículo encontrado</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -210,6 +247,15 @@ const AdminManutencao = ({
                   />
                 </div>
               </div>
+
+              {maintenanceForm.vehicleDescription && (
+                <div className="space-y-3 md:col-span-3">
+                  <label className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black ml-1">Observações do Veículo</label>
+                  <div className="w-full bg-[#C5A059]/10 text-neutral-700 border border-[#C5A059]/20 p-5 rounded-2xl font-medium text-xs whitespace-pre-line leading-relaxed">
+                    {maintenanceForm.vehicleDescription}
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Data do Serviço</label>

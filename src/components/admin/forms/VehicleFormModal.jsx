@@ -56,6 +56,16 @@ const VehicleFormModal = ({
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Marca / Modelo</label>
                     <input type="text" required value={vehicleForm.model ?? ''} onChange={e => setVehicleForm({...vehicleForm, model: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: Chevrolet Onix 1.0 Turbo" />
                   </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição do Veículo</label>
+                    <textarea 
+                      value={vehicleForm.description ?? ''} 
+                      onChange={e => setVehicleForm({...vehicleForm, description: e.target.value})} 
+                      className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm min-h-[80px]" 
+                      placeholder="Informações complementares sobre o veículo..."
+                    />
+                  </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">

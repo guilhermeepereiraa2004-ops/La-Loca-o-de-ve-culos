@@ -100,6 +100,11 @@ const FinanceFormModal = ({
               <input type="text" required value={financeForm.desc} onChange={e => setFinanceForm({...financeForm, desc: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: Lavagem completa Porsche" />
             </div>
 
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Fornecedor (Opcional)</label>
+              <input type="text" value={financeForm.provider || ''} onChange={e => setFinanceForm({...financeForm, provider: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="Ex: Nome da oficina, posto, empresa..." />
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-center">

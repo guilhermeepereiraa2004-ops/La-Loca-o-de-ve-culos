@@ -42,6 +42,8 @@ const AdminOficina = ({
   const [editingOS, setEditingOS] = useState(null);
   const [replacementCarPlate, setReplacementCarPlate] = useState('');
   const [isRented, setIsRented] = useState(false);
+  const [plateSearch, setPlateSearch] = useState('');
+  const [showPlateDropdown, setShowPlateDropdown] = useState(false);
 
   useEffect(() => {
     if (form.plate) {
@@ -54,7 +56,8 @@ const AdminOficina = ({
             model: v.model, 
             vehicleId: v.id, 
             responsible: prev.responsible || 'Administradora',
-            km: prev.km || v.km || '' 
+            km: prev.km || v.km || '',
+            vehicleDescription: v.description
           };
         });
       }
@@ -63,6 +66,7 @@ const AdminOficina = ({
       setIsRented(!!rental);
     } else {
       setIsRented(false);
+      setForm(prev => ({ ...prev, vehicleDescription: '' }));
     }
   }, [form.plate, vehicles, rentals, editingOS]);
 
@@ -238,12 +242,53 @@ const AdminOficina = ({
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
               <form onSubmit={handleSubmit} id="os-form" className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Veículo (Placa) *</label>
-                    <select disabled={!!editingOS} value={form.plate} onChange={e => setForm({ ...form, plate: e.target.value })} required className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm disabled:opacity-50">
-                      <option value="">Selecione</option>
-                      {vehicles.map(v => <option key={v.id} value={v.plate}>{v.plate} — {v.model}</option>)}
-                    </select>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        disabled={!!editingOS}
+                        value={showPlateDropdown ? plateSearch : (form.plate || '')}
+                        onChange={(e) => {
+                          setPlateSearch(e.target.value.toUpperCase());
+                          setForm({ ...form, plate: '' });
+                          setShowPlateDropdown(true);
+                        }}
+                        onFocus={() => {
+                          if (!editingOS) {
+                            setPlateSearch(form.plate || '');
+                            setShowPlateDropdown(true);
+                          }
+                        }}
+                        onBlur={() => setTimeout(() => setShowPlateDropdown(false), 200)}
+                        placeholder="Digite a placa ou modelo..."
+                        className="w-full bg-neutral-50 p-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm disabled:opacity-50 relative z-0"
+                      />
+                      <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none z-10" />
+                      
+                      {showPlateDropdown && !editingOS && (
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                          {vehicles
+                            .filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase()))
+                            .map(v => (
+                              <div
+                                key={v.id}
+                                className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
+                                onClick={() => {
+                                  setForm({ ...form, plate: v.plate });
+                                  setPlateSearch('');
+                                  setShowPlateDropdown(false);
+                                }}
+                              >
+                                {v.plate} - <span className="font-medium text-neutral-500">{v.model}</span>
+                              </div>
+                          ))}
+                          {vehicles.filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase())).length === 0 && (
+                            <div className="p-4 text-sm text-neutral-400 text-center">Nenhum veículo encontrado</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Modelo (Auto)</label>
@@ -258,6 +303,15 @@ const AdminOficina = ({
                     <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
                   </div>
                 </div>
+
+                {form.vehicleDescription && (
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black ml-1">Observações do Veículo</label>
+                    <div className="w-full bg-[#C5A059]/10 text-neutral-700 border border-[#C5A059]/20 p-4 rounded-xl font-medium text-xs whitespace-pre-line leading-relaxed">
+                      {form.vehicleDescription}
+                    </div>
+                  </div>
+                )}
 
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição do Serviço</label>
