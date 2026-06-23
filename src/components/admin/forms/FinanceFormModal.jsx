@@ -1,15 +1,19 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const FinanceFormModal = ({ 
   isOpen, onClose, financeForm, setFinanceForm, vehicles, onSubmit, investors = [], transactions = []
 }) => {
   const [isCustomCategory, setIsCustomCategory] = React.useState(false);
+  const [plateSearch, setPlateSearch] = React.useState('');
+  const [showPlateDropdown, setShowPlateDropdown] = React.useState(false);
 
   React.useEffect(() => {
     if (isOpen) {
       setIsCustomCategory(false);
+      setPlateSearch('');
+      setShowPlateDropdown(false);
     }
   }, [isOpen]);
 
@@ -165,12 +169,67 @@ const FinanceFormModal = ({
                   </select>
                 )}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Placa (Opcional)</label>
-                <select value={financeForm.vehiclePlate} onChange={e => setFinanceForm({...financeForm, vehiclePlate: e.target.value})} className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm">
-                  <option value="">Nenhuma</option>
-                  {vehicles.map(v => <option key={v.id} value={v.plate}>{v.plate} ({v.model})</option>)}
-                </select>
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={showPlateDropdown ? plateSearch : (financeForm.vehiclePlate || '')}
+                    onChange={(e) => {
+                      setPlateSearch(e.target.value.toUpperCase());
+                      setFinanceForm({ ...financeForm, vehiclePlate: '' });
+                      setShowPlateDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setPlateSearch(financeForm.vehiclePlate || '');
+                      setShowPlateDropdown(true);
+                    }}
+                    onBlur={() => setTimeout(() => setShowPlateDropdown(false), 200)}
+                    placeholder="Digite a placa ou modelo..."
+                    className="w-full bg-neutral-50 border-none p-4 pr-10 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm relative z-0"
+                  />
+                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none z-10" />
+                  
+                  {showPlateDropdown && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                      <div
+                        className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors text-neutral-400"
+                        onClick={() => {
+                          setFinanceForm({ ...financeForm, vehiclePlate: '' });
+                          setPlateSearch('');
+                          setShowPlateDropdown(false);
+                        }}
+                      >
+                        Nenhuma Placa
+                      </div>
+                      {vehicles
+                        .filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase()))
+                        .map(v => (
+                          <div
+                            key={v.id}
+                            className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
+                            onClick={() => {
+                              const vehicleInvestor = v.investor || '';
+                              const isInvestorResponsible = financeForm.responsible.startsWith('Investidor');
+                              setFinanceForm({ 
+                                ...financeForm, 
+                                vehiclePlate: v.plate,
+                                investorName: isInvestorResponsible && vehicleInvestor ? vehicleInvestor : (isInvestorResponsible ? financeForm.investorName : ''),
+                                responsible: isInvestorResponsible && vehicleInvestor ? `Investidor: ${vehicleInvestor}` : financeForm.responsible
+                              });
+                              setPlateSearch('');
+                              setShowPlateDropdown(false);
+                            }}
+                          >
+                            {v.plate} - <span className="font-medium text-neutral-500">{v.model}</span>
+                          </div>
+                      ))}
+                      {vehicles.filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase())).length === 0 && (
+                        <div className="p-4 text-sm text-neutral-400 text-center">Nenhum veículo encontrado</div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -189,7 +248,9 @@ const FinanceFormModal = ({
                   onChange={e => {
                     const val = e.target.value;
                     if (val === 'Investidor') {
-                      setFinanceForm({ ...financeForm, responsible: 'Investidor', investorName: '' });
+                      const selectedVehicle = vehicles.find(v => v.plate === financeForm.vehiclePlate);
+                      const invName = selectedVehicle?.investor || '';
+                      setFinanceForm({ ...financeForm, responsible: invName ? `Investidor: ${invName}` : 'Investidor', investorName: invName });
                     } else {
                       setFinanceForm({ ...financeForm, responsible: 'Administradora', investorName: '' });
                     }
