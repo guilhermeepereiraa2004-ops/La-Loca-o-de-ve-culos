@@ -447,12 +447,14 @@ const AdminDashboard = ({
             <AdminVistoria 
               inspections={inspections} vehicles={vehicles} rentals={rentals} 
               onAddInspection={async (ins) => {
-                await onAddInspection(ins);
+                const result = await onAddInspection(ins);
+                if (result && result.success === false) return result;
                 setShowAdminSuccess({
                   show: true,
                   title: 'Vistoria Registrada',
                   message: `O dossiê de ${ins.type} do veículo ${ins.vehiclePlate} foi salvo com sucesso no banco de dados.`
                 });
+                return result;
               }}
               onDeleteInspection={isAdmin ? onDeleteInspection : undefined}
               onViewDetail={(ins) => { setSelectedInspection(ins); setShowInspectionDetailModal(true); }}

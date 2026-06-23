@@ -249,9 +249,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
 
     try {
       setIsSaving(true);
-      await onAddInspection({
+      const result = await onAddInspection({
         ...inspectionForm
       });
+      
+      if (result && result.success === false) {
+        return;
+      }
+      
       try {
         await clearDraft();
       } catch (clearErr) {

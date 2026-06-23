@@ -2132,41 +2132,45 @@ export const useAppState = () => {
 
   const handleAddInspection = async (inspection) => {
     try {
-      // 1. Upload Gallery Photos in Parallel
+      // 1. Upload Gallery Photos Sequentially to avoid memory/rate limit issues
       const photoEntries = Object.entries(inspection.photos || {});
       const uploadedPhotos = { ...inspection.photos };
       
-      await Promise.all(photoEntries.map(async ([slot, photoObj]) => {
+      for (const [slot, photoObj] of photoEntries) {
         if (photoObj.file) {
           const url = await uploadFile(photoObj.file, `vistorias/${inspection.vehiclePlate}`);
           uploadedPhotos[slot] = { preview: url };
         }
-      }));
+      }
 
-      // 2. Upload Additional Photos in Parallel
+      // 2. Upload Additional Photos Sequentially
       const additionalPhotos = inspection.additionalPhotos || [];
-      const uploadedAdditional = await Promise.all(additionalPhotos.map(async (photoObj) => {
+      const uploadedAdditional = [];
+      for (const photoObj of additionalPhotos) {
         if (photoObj.file) {
           const url = await uploadFile(photoObj.file, `vistorias/${inspection.vehiclePlate}/adicionais`);
-          return { preview: url };
+          uploadedAdditional.push({ preview: url });
+        } else {
+          uploadedAdditional.push(photoObj);
         }
-        return photoObj;
-      }));
+      }
 
       // Store additional photos under 'additional' key of photos object
       if (uploadedAdditional.length > 0) {
         uploadedPhotos.additional = uploadedAdditional;
       }
 
-      // 3. Upload Damage Photos in Parallel
+      // 3. Upload Damage Photos Sequentially
       const validDamages = (inspection.damages || []).filter(d => d.photo || d.description);
-      const uploadedDamages = await Promise.all(validDamages.map(async (dmg) => {
+      const uploadedDamages = [];
+      for (const dmg of validDamages) {
         if (dmg.photo && dmg.photo.file) {
           const url = await uploadFile(dmg.photo.file, `vistorias/${inspection.vehiclePlate}/avarias`);
-          return { ...dmg, photo: { preview: url } };
+          uploadedDamages.push({ ...dmg, photo: { preview: url } });
+        } else {
+          uploadedDamages.push(dmg);
         }
-        return dmg;
-      }));
+      }
 
       // 4. Upload Video if exists
       let videoUrl = inspection.video;
@@ -2239,9 +2243,11 @@ export const useAppState = () => {
         setInspections(prev => [unpackedInsp, ...prev]);
         logActivity('Criar', 'Vistoria', unpackedInsp.id, `Realizou vistoria de ${unpackedInsp.type} para o veículo ${unpackedInsp.vehiclePlate}`);
       }
+      return { success: true };
     } catch (err) {
       console.error('Erro ao salvar vistoria com arquivos:', err.message);
       alert(`Erro ao salvar vistoria: ${parseDbError(err)}`);
+      return { success: false, error: err };
     }
   };
 
