@@ -37,6 +37,13 @@ const formatTransactionDateTime = (t) => {
   return t.date || '—';
 };
 
+const formatManualDate = (t) => {
+  if (t.date && t.date.includes('-')) {
+    return t.date.substring(0, 10).split('-').reverse().join('/');
+  }
+  return t.date || null;
+};
+
 const getCompanyShareForTransaction = (t, vehicles = [], rentals = []) => {
   if (!t) return 0;
   const val = parseFloat(t.val) || 0;
@@ -420,7 +427,12 @@ const AdminFinanceiro = ({
                             </div>
                             <div>
                               <p className="text-sm font-black text-neutral-900">{t.desc}</p>
-                              <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{formatTransactionDateTime(t)}</p>
+                              <div className="flex flex-col gap-0.5 mt-0.5">
+                                {formatManualDate(t) && (
+                                  <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">Ref: {formatManualDate(t)}</p>
+                                )}
+                                <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Gerado: {formatTransactionDateTime(t)}</p>
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -503,7 +515,12 @@ const AdminFinanceiro = ({
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
-                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mt-0.5">{formatTransactionDateTime(t)}</p>
+                          <div className="flex flex-col gap-0.5 mt-1">
+                            {formatManualDate(t) && (
+                              <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">Ref: {formatManualDate(t)}</p>
+                            )}
+                            <p className="text-[8px] uppercase tracking-widest text-neutral-400 font-bold">Gerado: {formatTransactionDateTime(t)}</p>
+                          </div>
                         </div>
                       </div>
                       <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>

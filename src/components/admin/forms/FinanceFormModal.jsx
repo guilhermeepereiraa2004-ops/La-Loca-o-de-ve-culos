@@ -3,8 +3,49 @@ import { X } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const FinanceFormModal = ({ 
-  isOpen, onClose, financeForm, setFinanceForm, vehicles, onSubmit, investors = []
+  isOpen, onClose, financeForm, setFinanceForm, vehicles, onSubmit, investors = [], transactions = []
 }) => {
+  const [isCustomCategory, setIsCustomCategory] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setIsCustomCategory(false);
+    }
+  }, [isOpen]);
+
+  const defaultCategories = [
+    'Aluguel', 'Manutenção', 'Proteção Veicular', 'Multas', 'Seguro', 'Taxa Pneus', 'Taxa Gateway / Asaas', 'Outros'
+  ];
+
+  const availableCategories = React.useMemo(() => {
+    const catsMap = new Map();
+    
+    defaultCategories.forEach(c => {
+      catsMap.set(c.toLowerCase(), c);
+    });
+
+    transactions.forEach(t => {
+      if (t.cat && t.cat.trim() !== '') {
+        let cat = t.cat.trim();
+        let lowerCat = cat.toLowerCase();
+        
+        // Merge variations of Taxa Pneus
+        if (lowerCat === 'taxa de pneus') {
+          lowerCat = 'taxa pneus';
+          cat = 'Taxa Pneus';
+        }
+
+        if (!catsMap.has(lowerCat)) {
+          // Capitalize first letter of custom categories for better display
+          const formattedCat = cat.charAt(0).toUpperCase() + cat.slice(1);
+          catsMap.set(lowerCat, formattedCat);
+        }
+      }
+    });
+
+    return Array.from(catsMap.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+  }, [transactions]);
+
   if (!isOpen) return null;
 
   return (
@@ -61,31 +102,63 @@ const FinanceFormModal = ({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Categoria</label>
-                <select 
-                  value={financeForm.cat} 
-                  onChange={e => {
-                    const cat = e.target.value;
-                    const isProtection = cat === 'Proteção Veicular';
-                    setFinanceForm({
-                      ...financeForm,
-                      cat,
-                      type: isProtection ? 'out' : financeForm.type,
-                      status: isProtection ? 'Pendente' : (financeForm.status || 'Concluído'),
-                      responsible: isProtection ? 'Administradora' : (financeForm.responsible || 'Administradora')
-                    });
-                  }} 
-                  className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm"
-                >
-                  <option value="Aluguel">Aluguel</option>
-                  <option value="Manutenção">Manutenção</option>
-                  <option value="Proteção Veicular">Proteção Veicular</option>
-                  <option value="Multas">Multas</option>
-                  <option value="Seguro">Seguro</option>
-                  <option value="Taxa Pneus">Taxa Pneus</option>
-                  <option value="Taxa Gateway / Asaas">Taxa Gateway / Asaas</option>
-                  <option value="Outros">Outros</option>
-                </select>
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Categoria</label>
+                  <button 
+                    type="button" 
+                    onClick={() => {
+                      setIsCustomCategory(!isCustomCategory);
+                      if (!isCustomCategory) {
+                        setFinanceForm({...financeForm, cat: ''});
+                      } else {
+                        setFinanceForm({...financeForm, cat: 'Aluguel'});
+                      }
+                    }} 
+                    className="text-[9px] text-[#C5A059] font-black uppercase tracking-widest hover:underline"
+                  >
+                    {isCustomCategory ? 'Selecionar da Lista' : 'Nova Categoria'}
+                  </button>
+                </div>
+                {isCustomCategory ? (
+                  <input 
+                    type="text" 
+                    required
+                    value={financeForm.cat} 
+                    onChange={e => {
+                      const cat = e.target.value;
+                      const isProtection = cat === 'Proteção Veicular';
+                      setFinanceForm({
+                        ...financeForm,
+                        cat,
+                        type: isProtection ? 'out' : financeForm.type,
+                        status: isProtection ? 'Pendente' : (financeForm.status || 'Concluído'),
+                        responsible: isProtection ? 'Administradora' : (financeForm.responsible || 'Administradora')
+                      });
+                    }}
+                    className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm" 
+                    placeholder="Digite a nova categoria..." 
+                  />
+                ) : (
+                  <select 
+                    value={financeForm.cat} 
+                    onChange={e => {
+                      const cat = e.target.value;
+                      const isProtection = cat === 'Proteção Veicular';
+                      setFinanceForm({
+                        ...financeForm,
+                        cat,
+                        type: isProtection ? 'out' : financeForm.type,
+                        status: isProtection ? 'Pendente' : (financeForm.status || 'Concluído'),
+                        responsible: isProtection ? 'Administradora' : (financeForm.responsible || 'Administradora')
+                      });
+                    }} 
+                    className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-black text-sm"
+                  >
+                    {availableCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                )}
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Placa (Opcional)</label>

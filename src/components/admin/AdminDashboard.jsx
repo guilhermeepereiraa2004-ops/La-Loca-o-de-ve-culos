@@ -518,7 +518,7 @@ const AdminDashboard = ({
         isOpen={showFinanceForm} onClose={() => setShowFinanceForm(false)}
         financeForm={financeForm} setFinanceForm={setFinanceForm}
         vehicles={vehicles} onSubmit={handleSaveTransaction}
-        investors={investors}
+        investors={investors} transactions={transactions}
       />
 
       {/* Delete Auth Modal */}
