@@ -49,10 +49,13 @@ export const compressImage = async (file, options = { maxWidth: 1280, quality: 0
           'image/jpeg',
           options.quality
         );
-      img.onerror = (err) => {
-        URL.revokeObjectURL(objectUrl);
-        reject(err);
-      };
-      img.src = objectUrl;
-    });
-  };
+    }; // FECHAMENTO DO img.onload FALTANDO AQUI
+    
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+    
+    img.src = objectUrl;
+  });
+};
