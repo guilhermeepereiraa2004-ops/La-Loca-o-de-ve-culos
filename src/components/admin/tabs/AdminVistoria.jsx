@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Plus, Search, ClipboardCheck, Trash2, Eye, Calendar, Fuel, Gauge, Car, Check, AlertTriangle, X, Loader2, ShieldCheck } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
+import { uploadFile } from '../../../utils/supabaseStorage';
 import { saveDraft, getDraft, clearDraft } from '../../../utils/indexedDbHelper';
 
 const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection }) => {
   const [showForm, setShowForm] = useState(false);
   const [isCompressing, setIsCompressing] = useState(false);
+  // Per-slot upload state: { slotId: true/false } for named slots, damage-{id} for damages, additional-{id} for extra
+  const [uploadingSlots, setUploadingSlots] = useState({});
   const [inspectionSearch, setInspectionSearch] = useState('');
   const [filterType, setFilterType] = useState('Todos');
   const [dateStart, setDateStart] = useState('');
@@ -338,31 +341,44 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
 
   const handleAddAdditionalPhoto = async (file) => {
     if (!file) return;
+    const tempId = `additional-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Add placeholder with uploading flag immediately so the user sees feedback
+    setInspectionForm(prev => ({
+      ...prev,
+      additionalPhotos: [...(prev.additionalPhotos || []), { id: tempId, preview: null, file: null, uploading: true }]
+    }));
+    setUploadingSlots(prev => ({ ...prev, [tempId]: true }));
     try {
-      setIsCompressing(true);
       const compressed = await compressImage(file);
-      const newPhoto = {
-        id: Date.now() + Math.random().toString(36).substr(2, 9),
-        file: compressed,
-        preview: URL.createObjectURL(compressed)
-      };
+      const plate = inspectionForm.vehiclePlate || 'temp';
+      const url = await uploadFile(compressed, `vistorias/${plate}/adicionais`);
       setInspectionForm(prev => ({
         ...prev,
-        additionalPhotos: [...(prev.additionalPhotos || []), newPhoto]
+        additionalPhotos: (prev.additionalPhotos || []).map(p =>
+          p.id === tempId ? { id: tempId, preview: url, file: null, uploading: false } : p
+        )
       }));
     } catch (err) {
-      console.error("Compression failed:", err);
-      const newPhoto = {
-        id: Date.now() + Math.random().toString(36).substr(2, 9),
-        file,
-        preview: URL.createObjectURL(file)
-      };
-      setInspectionForm(prev => ({
-        ...prev,
-        additionalPhotos: [...(prev.additionalPhotos || []), newPhoto]
-      }));
+      console.error("Upload failed for additional photo:", err);
+      // Fallback: store compressed file in memory if upload failed
+      try {
+        const compressed = await compressImage(file);
+        const blobUrl = URL.createObjectURL(compressed);
+        setInspectionForm(prev => ({
+          ...prev,
+          additionalPhotos: (prev.additionalPhotos || []).map(p =>
+            p.id === tempId ? { id: tempId, preview: blobUrl, file: compressed, uploading: false } : p
+          )
+        }));
+      } catch {
+        // Remove failed placeholder
+        setInspectionForm(prev => ({
+          ...prev,
+          additionalPhotos: (prev.additionalPhotos || []).filter(p => p.id !== tempId)
+        }));
+      }
     } finally {
-      setIsCompressing(false);
+      setUploadingSlots(prev => ({ ...prev, [tempId]: false }));
     }
   };
 
@@ -877,8 +893,17 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                 ].map((slot) => (
                   <div key={slot.id} className="space-y-2">
                     <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">{slot.label}</p>
-                    <label className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative group ${inspectionForm.photos[slot.id] ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 hover:border-[#C5A059]/30 hover:bg-neutral-50'}`}>
-                      {inspectionForm.photos[slot.id] ? (
+                    <label className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative group ${
+                        uploadingSlots[slot.id] ? 'border-[#C5A059]/50 bg-amber-50 cursor-not-allowed' :
+                        inspectionForm.photos[slot.id] ? 'border-emerald-500 bg-emerald-50' : 
+                        'border-neutral-100 hover:border-[#C5A059]/30 hover:bg-neutral-50'
+                      }`}>
+                      {uploadingSlots[slot.id] ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 size={20} className="text-[#C5A059] animate-spin" />
+                          <span className="text-[6px] font-black uppercase tracking-widest text-[#C5A059]">Enviando...</span>
+                        </div>
+                      ) : inspectionForm.photos[slot.id] ? (
                         <>
                           <img src={inspectionForm.photos[slot.id].preview} className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-neutral-900/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -895,16 +920,34 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                         type="file" 
                         accept="image/*" 
                         capture="environment"
-                        className="hidden" 
+                        className="hidden"
+                        disabled={!!uploadingSlots[slot.id]} 
                         onChange={async (e) => {
                           const file = e.target.files[0];
-                          if (file) {
-                            try {
-                              setIsCompressing(true);
-                              const compressed = await compressImage(file);
-                              if (inspectionForm.photos[slot.id]?.preview) {
-                                URL.revokeObjectURL(inspectionForm.photos[slot.id].preview);
+                          if (!file) return;
+                          // Mark this slot as uploading
+                          setUploadingSlots(prev => ({ ...prev, [slot.id]: true }));
+                          // Revoke old blob URL if present
+                          const oldPreview = inspectionForm.photos[slot.id]?.preview;
+                          if (oldPreview && oldPreview.startsWith('blob:')) {
+                            URL.revokeObjectURL(oldPreview);
+                          }
+                          try {
+                            const compressed = await compressImage(file);
+                            const plate = inspectionForm.vehiclePlate || 'temp';
+                            const url = await uploadFile(compressed, `vistorias/${plate}`);
+                            setInspectionForm(prev => ({
+                              ...prev,
+                              photos: {
+                                ...prev.photos,
+                                [slot.id]: { file: null, preview: url }
                               }
+                            }));
+                          } catch (err) {
+                            console.error("Upload failed for slot", slot.id, err);
+                            // Fallback: store in memory if upload fails
+                            try {
+                              const compressed = await compressImage(file);
                               setInspectionForm(prev => ({
                                 ...prev,
                                 photos: {
@@ -912,9 +955,8 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                                   [slot.id]: { file: compressed, preview: URL.createObjectURL(compressed) }
                                 }
                               }));
-                            } catch (err) {
-                              console.error("Compression failed:", err);
-                              // Fallback to original
+                            } catch {
+                              // Worst case: use original uncompressed file
                               setInspectionForm(prev => ({
                                 ...prev,
                                 photos: {
@@ -922,16 +964,16 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                                   [slot.id]: { file, preview: URL.createObjectURL(file) }
                                 }
                               }));
-                            } finally {
-                              setIsCompressing(false);
                             }
+                          } finally {
+                            setUploadingSlots(prev => ({ ...prev, [slot.id]: false }));
                           }
                         }} 
                       />
-                      {isCompressing && (
-                        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 z-10">
+                      {uploadingSlots[slot.id] && (
+                        <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 z-10 rounded-2xl">
                           <Loader2 size={16} className="text-[#C5A059] animate-spin" />
-                          <span className="text-[6px] font-black uppercase tracking-widest text-[#C5A059]">Otimizando...</span>
+                          <span className="text-[6px] font-black uppercase tracking-widest text-[#C5A059]">Enviando...</span>
                         </div>
                       )}
                     </label>
@@ -980,15 +1022,24 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                 {(inspectionForm.additionalPhotos || []).map((photoObj) => (
                   <div key={photoObj.id} className="space-y-2 relative group">
                     <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicional</p>
-                    <div className="aspect-square rounded-2xl border border-neutral-100 overflow-hidden relative bg-neutral-50 shadow-inner">
-                      <img src={photoObj.preview} className="w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveAdditionalPhoto(photoObj.id)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
-                      >
-                        <Trash2 size={12} />
-                      </button>
+                    <div className="aspect-square rounded-2xl border border-neutral-100 overflow-hidden relative bg-neutral-50 shadow-inner flex items-center justify-center">
+                      {photoObj.uploading ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <Loader2 size={20} className="text-[#C5A059] animate-spin" />
+                          <span className="text-[7px] font-black uppercase tracking-widest text-[#C5A059]">Enviando...</span>
+                        </div>
+                      ) : (
+                        <>
+                          <img src={photoObj.preview} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveAdditionalPhoto(photoObj.id)}
+                            className="absolute top-2 right-2 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-md hover:bg-red-600"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -1175,14 +1226,27 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                                   className="hidden" 
                                   onChange={async (e) => {
                                     const file = e.target.files[0];
-                                    if (file) {
-                                      setIsCompressing(true);
+                                    if (!file) return;
+                                    const slotKey = `damage-${dmg.id}`;
+                                    setUploadingSlots(prev => ({ ...prev, [slotKey]: true }));
+                                    if (dmg.photo?.preview && dmg.photo.preview.startsWith('blob:')) {
+                                      URL.revokeObjectURL(dmg.photo.preview);
+                                    }
+                                    try {
                                       const compressed = await compressImage(file);
-                                      if (dmg.photo?.preview) {
-                                        URL.revokeObjectURL(dmg.photo.preview);
+                                      const plate = inspectionForm.vehiclePlate || 'temp';
+                                      const url = await uploadFile(compressed, `vistorias/${plate}/avarias`);
+                                      handleUpdateDamage(dmg.id, 'photo', { file: null, preview: url });
+                                    } catch (err) {
+                                      console.error("Upload failed for damage photo:", err);
+                                      try {
+                                        const compressed = await compressImage(file);
+                                        handleUpdateDamage(dmg.id, 'photo', { file: compressed, preview: URL.createObjectURL(compressed) });
+                                      } catch {
+                                        handleUpdateDamage(dmg.id, 'photo', { file, preview: URL.createObjectURL(file) });
                                       }
-                                      handleUpdateDamage(dmg.id, 'photo', { file: compressed, preview: URL.createObjectURL(compressed) });
-                                      setIsCompressing(false);
+                                    } finally {
+                                      setUploadingSlots(prev => ({ ...prev, [slotKey]: false }));
                                     }
                                   }} 
                                 />
