@@ -326,10 +326,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
   };
 
   const handleRemoveDamage = (id) => {
-    setInspectionForm(prev => ({
-      ...prev,
-      damages: prev.damages.filter(d => d.id !== id)
-    }));
+    setInspectionForm(prev => {
+      const dmg = prev.damages.find(d => d.id === id);
+      if (dmg?.photo?.preview) URL.revokeObjectURL(dmg.photo.preview);
+      return {
+        ...prev,
+        damages: prev.damages.filter(d => d.id !== id)
+      };
+    });
   };
 
   const handleAddAdditionalPhoto = async (file) => {
@@ -363,10 +367,14 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
   };
 
   const handleRemoveAdditionalPhoto = (id) => {
-    setInspectionForm(prev => ({
-      ...prev,
-      additionalPhotos: (prev.additionalPhotos || []).filter(p => p.id !== id)
-    }));
+    setInspectionForm(prev => {
+      const photo = (prev.additionalPhotos || []).find(p => p.id === id);
+      if (photo?.preview) URL.revokeObjectURL(photo.preview);
+      return {
+        ...prev,
+        additionalPhotos: (prev.additionalPhotos || []).filter(p => p.id !== id)
+      };
+    });
   };
 
   const handleConfirmDelete = () => {
@@ -894,6 +902,9 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                             try {
                               setIsCompressing(true);
                               const compressed = await compressImage(file);
+                              if (inspectionForm.photos[slot.id]?.preview) {
+                                URL.revokeObjectURL(inspectionForm.photos[slot.id].preview);
+                              }
                               setInspectionForm(prev => ({
                                 ...prev,
                                 photos: {
@@ -1167,6 +1178,9 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
                                     if (file) {
                                       setIsCompressing(true);
                                       const compressed = await compressImage(file);
+                                      if (dmg.photo?.preview) {
+                                        URL.revokeObjectURL(dmg.photo.preview);
+                                      }
                                       handleUpdateDamage(dmg.id, 'photo', { file: compressed, preview: URL.createObjectURL(compressed) });
                                       setIsCompressing(false);
                                     }

@@ -6,13 +6,12 @@
  */
 export const compressImage = async (file, options = { maxWidth: 1280, quality: 0.6 }) => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = (event) => {
-      const img = new Image();
-      img.src = event.target.result;
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      const canvas = document.createElement('canvas');
         let width = img.width;
         let height = img.height;
 
@@ -50,9 +49,10 @@ export const compressImage = async (file, options = { maxWidth: 1280, quality: 0
           'image/jpeg',
           options.quality
         );
+      img.onerror = (err) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(err);
       };
-      img.onerror = (err) => reject(err);
-    };
-    reader.onerror = (err) => reject(err);
-  });
-};
+      img.src = objectUrl;
+    });
+  };
