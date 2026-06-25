@@ -7,7 +7,7 @@ import { uploadFile } from '../utils/supabaseStorage';
 try {
   localStorage.removeItem('la_rl_block_upload_file');
   localStorage.removeItem('la_rl_upload_file');
-} catch (e) {}
+} catch (e) { /* ignore error */ }
 
 // Robust Mapping System for Portuguese Database Schema (Audited from Supabase)
 const TABLE_MAPPINGS = {
@@ -1845,7 +1845,7 @@ export const useAppState = () => {
     const val = typeof fine.value === 'number' 
       ? fine.value 
       : parseFloat(String(fine.value || '0').replace(/\./g, '').replace(',', '.')) || 0;
-    let installments = 1;
+    let installments;
     if (val <= 150) {
       installments = 2;
     } else if (val <= 200) {

@@ -241,7 +241,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           }
         }
       }
-    } catch (e) {}
+    } catch (e) { /* ignore error */ }
   });
 
   const sortedMonthsKeys = Object.keys(monthlyPerformance).sort();
@@ -745,7 +745,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   // Utility to extract URL from notes if present
                   const extractUrl = (text) => {
                     if (!text) return null;
-                    const match = text.match(/https?:\/\/[^\s\)\],;]+/);
+                    const match = text.match(/https?:\/\/[^\s)\],;]+/);
                     return match ? match[0] : null;
                   };
 
