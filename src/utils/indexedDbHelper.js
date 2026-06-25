@@ -90,13 +90,18 @@ export const getDraft = async () => {
           resolve(null);
           return;
         }
-        // Draft now contains only text metadata (no binary files).
-        // Ensure photos/additionalPhotos/video are always empty objects/arrays.
-        draft.photos = {};
-        draft.additionalPhotos = [];
-        draft.video = null;
+        // Photos are stored as Supabase URLs — return them as-is.
+        // Ensure defaults for fields that might be missing in older drafts.
+        if (!draft.photos) draft.photos = {};
+        if (!draft.additionalPhotos) draft.additionalPhotos = [];
+        if (!draft.video) draft.video = null;
+        // Damages: ensure photo objects have no leftover binary files
         if (draft.damages) {
-          draft.damages = draft.damages.map(d => ({ ...d, photo: null }));
+          draft.damages = draft.damages.map(d => ({
+            ...d,
+            // Keep photo URL if present, otherwise null
+            photo: d.photo?.preview ? { preview: d.photo.preview } : null
+          }));
         }
         resolve(draft);
       };
