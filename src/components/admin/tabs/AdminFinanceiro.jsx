@@ -101,9 +101,19 @@ const AdminFinanceiro = ({
   const [selectedMonth, setSelectedMonth] = useState('Todos'); // 'Todos' or 'YYYY-MM'
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [visibleLimit, setVisibleLimit] = useState(50);
+
+  // Exclude vehicle protection transactions before June 2026
+  const filteredRawTransactions = React.useMemo(() => {
+    return (transactions || []).filter(t => {
+      const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+      const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+      return !(isProtection && isBeforeJune2026);
+    });
+  }, [transactions]);
 
   // Extract available categories dynamically from transactions list
-  const getAvailableCategories = () => {
+  const availableCategories = React.useMemo(() => {
     const categoriesSet = new Set();
     filteredRawTransactions.forEach(t => {
       if (t.cat) {
@@ -111,17 +121,10 @@ const AdminFinanceiro = ({
       }
     });
     return Array.from(categoriesSet).sort();
-  };
-
-  // Exclude vehicle protection transactions before June 2026
-  const filteredRawTransactions = (transactions || []).filter(t => {
-    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
-    const isBeforeJune2026 = t.date && t.date < '2026-06-01';
-    return !(isProtection && isBeforeJune2026);
-  });
+  }, [filteredRawTransactions]);
 
   // Extract available months from transaction dates
-  const getAvailableMonths = () => {
+  const availableMonths = React.useMemo(() => {
     const monthsSet = new Set();
     filteredRawTransactions.forEach(t => {
       if (t.date) {
@@ -129,7 +132,7 @@ const AdminFinanceiro = ({
       }
     });
     return Array.from(monthsSet).sort().reverse();
-  };
+  }, [filteredRawTransactions]);
 
   const formatMonthYear = (monthStr) => {
     if (!monthStr || monthStr === 'Todos') return 'Todos os Meses';
@@ -142,71 +145,81 @@ const AdminFinanceiro = ({
   };
 
   // Filter transactions for totals display based on selectedMonth (only company transactions)
-  const displayedTransactionsForTotals = filteredRawTransactions.filter(t => {
-    const matchesMonth = selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth);
-    const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
-    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
-    const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
-    
-    // Hide manual rent transactions (gross rent) from the company cash flow totals
-    const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
-      !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+  const displayedTransactionsForTotals = React.useMemo(() => {
+    return filteredRawTransactions.filter(t => {
+      const matchesMonth = selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth);
+      const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+      const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+      const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
+      
+      // Hide manual rent transactions (gross rent) from the company cash flow totals
+      const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
+        !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
 
-    return matchesMonth && (!isInvestor || isProtection || isInsurance) && !isManualRent;
-  });
+      return matchesMonth && (!isInvestor || isProtection || isInsurance) && !isManualRent;
+    });
+  }, [filteredRawTransactions, selectedMonth]);
 
-  const totalIn = displayedTransactionsForTotals
+  const totalIn = React.useMemo(() => displayedTransactionsForTotals
     .filter(t => t.type === 'in')
-    .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0);
-  const totalOut = Math.abs(
+    .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0), [displayedTransactionsForTotals, vehicles, rentals]);
+    
+  const totalOut = React.useMemo(() => Math.abs(
     displayedTransactionsForTotals
       .filter(t => t.type === 'out')
       .reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0)
-  );
+  ), [displayedTransactionsForTotals, vehicles, rentals]);
+
   const netBalance = totalIn - totalOut;
 
   // Filter transaction list based on type, month, category, and search term
-  const filteredTransactions = filteredRawTransactions.filter(t => {
-    const matchesType = 
-      financeFilter === 'Todos' || 
-      (financeFilter === 'Entradas' && t.type === 'in') || 
-      (financeFilter === 'Saídas' && t.type === 'out');
-      
-    const matchesMonth = 
-      selectedMonth === 'Todos' || 
-      (t.date && t.date.substring(0, 7) === selectedMonth);
-      
-    const matchesCategory = 
-      selectedCategory === 'Todos' || 
-      (t.cat && t.cat.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
-      
-    const matchesSearch = 
-      !searchTerm || 
-      (t.desc && t.desc.toLowerCase().includes(searchTerm.toLowerCase())) || 
-      (t.responsible && t.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (t.vehiclePlate && t.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filteredTransactions = React.useMemo(() => {
+    return filteredRawTransactions.filter(t => {
+      const matchesType = 
+        financeFilter === 'Todos' || 
+        (financeFilter === 'Entradas' && t.type === 'in') || 
+        (financeFilter === 'Saídas' && t.type === 'out');
+        
+      const matchesMonth = 
+        selectedMonth === 'Todos' || 
+        (t.date && t.date.substring(0, 7) === selectedMonth);
+        
+      const matchesCategory = 
+        selectedCategory === 'Todos' || 
+        (t.cat && t.cat.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
+        
+      const matchesSearch = 
+        !searchTerm || 
+        (t.desc && t.desc.toLowerCase().includes(searchTerm.toLowerCase())) || 
+        (t.responsible && t.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (t.vehiclePlate && t.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    // Hide manual rent transactions (gross rent) from the company transactions list
-    const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
-      !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+      // Hide manual rent transactions (gross rent) from the company transactions list
+      const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
+        !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
 
-    return matchesType && matchesMonth && matchesCategory && matchesSearch && !isManualRent;
-  }).sort((a, b) => {
-    const getMs = (t) => {
-      if (t.createdAt) {
-        const d = new Date(t.createdAt);
-        if (!isNaN(d.getTime())) return d.getTime();
-      }
-      if (t.date) {
-        const d = new Date(t.date.includes('T') ? t.date : `${t.date}T00:00:00`);
-        if (!isNaN(d.getTime())) return d.getTime();
-      }
-      return 0;
-    };
-    const diff = getMs(b) - getMs(a);
-    if (diff !== 0) return diff;
-    return (b.id || 0) - (a.id || 0);
-  });
+      return matchesType && matchesMonth && matchesCategory && matchesSearch && !isManualRent;
+    }).sort((a, b) => {
+      const getMs = (t) => {
+        if (t.createdAt) {
+          const d = new Date(t.createdAt);
+          if (!isNaN(d.getTime())) return d.getTime();
+        }
+        if (t.date) {
+          const d = new Date(t.date.includes('T') ? t.date : `${t.date}T00:00:00`);
+          if (!isNaN(d.getTime())) return d.getTime();
+        }
+        return 0;
+      };
+      const diff = getMs(b) - getMs(a);
+      if (diff !== 0) return diff;
+      return (b.id || 0) - (a.id || 0);
+    });
+  }, [filteredRawTransactions, financeFilter, selectedMonth, selectedCategory, searchTerm]);
+
+  const displayedTransactions = React.useMemo(() => {
+    return filteredTransactions.slice(0, visibleLimit);
+  }, [filteredTransactions, visibleLimit]);
 
   return (
     <div className="space-y-16 animate-in fade-in slide-in-from-right-4 duration-700">
@@ -227,7 +240,7 @@ const AdminFinanceiro = ({
               className="bg-neutral-50 border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
             >
               <option value="Todos">Todos os Meses</option>
-              {getAvailableMonths().map(m => (
+              {availableMonths.map(m => (
                 <option key={m} value={m}>{formatMonthYear(m)}</option>
               ))}
             </select>
@@ -346,7 +359,7 @@ const AdminFinanceiro = ({
                 className="bg-neutral-50 border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
               >
                 <option value="Todos">Todas</option>
-                {getAvailableCategories().map(cat => (
+                {availableCategories.map(cat => (
                   <option key={cat} value={cat}>{cat}</option>
                 ))}
               </select>
@@ -416,7 +429,7 @@ const AdminFinanceiro = ({
                     </td>
                   </tr>
                 ) : (
-                  filteredTransactions.map((t, i) => {
+                  displayedTransactions.map((t, i) => {
                     const veh = t.vehiclePlate ? (vehicles || []).find(v => v.plate === t.vehiclePlate) : null;
                     return (
                       <tr key={i} className="group hover:bg-neutral-50/50 transition-colors">
@@ -507,7 +520,7 @@ const AdminFinanceiro = ({
                 </button>
               </div>
             ) : (
-              filteredTransactions.map((t, i) => {
+              displayedTransactions.map((t, i) => {
                 const veh = t.vehiclePlate ? (vehicles || []).find(v => v.plate === t.vehiclePlate) : null;
                 return (
                   <div key={i} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
@@ -583,6 +596,18 @@ const AdminFinanceiro = ({
             )}
           </div>
         </div>
+
+        {/* Botão Ver Mais */}
+        {visibleLimit < filteredTransactions.length && (
+          <div className="flex justify-center mt-6 pb-6">
+            <button
+              onClick={() => setVisibleLimit(prev => prev + 50)}
+              className="px-8 py-3 bg-white border border-neutral-200 text-neutral-900 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all shadow-sm active:scale-95"
+            >
+              Ver Mais ({filteredTransactions.length - visibleLimit} restantes)
+            </button>
+          </div>
+        )}
       </div>
 
 
