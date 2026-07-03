@@ -114,8 +114,10 @@ const RentalDetailModal = ({
 
   const rentalInspections = useMemo(() => {
     if (!rental || (!rental.plate && !rental.vehiclePlate)) return [];
+    const normalizePlate = (p) => (p || '').replace(/-/g, '').toUpperCase();
+    const rentalPlateNorm = normalizePlate(rental.plate || rental.vehiclePlate);
     return inspections.filter(ins => 
-      (ins.vehiclePlate === rental.plate || ins.vehiclePlate === rental.vehiclePlate) && 
+      normalizePlate(ins.vehiclePlate) === rentalPlateNorm && 
       new Date(ins.date) >= new Date(rental.startDate || rental.date) &&
       ins.type !== 'Coleta'
     ).sort((a, b) => new Date(b.date) - new Date(a.date));

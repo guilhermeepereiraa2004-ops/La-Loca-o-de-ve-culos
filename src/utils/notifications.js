@@ -118,16 +118,17 @@ export function computeNotifications(params = {}) {
   }
 
   // ─── VISTORIA ─────────────────────────────────────────────────────────────
-  // Vistorias de saída sem vistoria de retorno correspondente
-  const exitInspections = inspections.filter(i => i.type === 'saida');
-  const returnInspections = inspections.filter(i => i.type === 'retorno');
-  const pendingReturns = exitInspections.filter(exit =>
-    !returnInspections.some(ret => ret.rentalId === exit.rentalId || ret.vehiclePlate === exit.vehiclePlate)
+  // Vistorias de entrega sem vistoria de devolução correspondente
+  const normalizePlate = (p) => (p || '').replace(/-/g, '').toUpperCase();
+  const entregaInspections = inspections.filter(i => i.type === 'Entrega');
+  const devolucaoInspections = inspections.filter(i => i.type === 'Devolução');
+  const pendingReturns = entregaInspections.filter(exit =>
+    !devolucaoInspections.some(ret => ret.rentalId === exit.rentalId || normalizePlate(ret.vehiclePlate) === normalizePlate(exit.vehiclePlate))
   );
 
-  // Veículos com documentação vencendo (CRLV, CNH do motorista, etc.)
+  // Aluguéis ativos sem vistoria de entrega
   const activeRentalsWithoutInspection = rentals.filter(r =>
-    r.status === 'Ativo' && !exitInspections.some(i => i.rentalId === r.id || i.vehiclePlate === (r.plate || r.vehiclePlate))
+    r.status === 'Ativo' && !entregaInspections.some(i => i.rentalId === r.id || normalizePlate(i.vehiclePlate) === normalizePlate(r.plate || r.vehiclePlate))
   );
 
   const vistoriaCount = pendingReturns.length + activeRentalsWithoutInspection.length;

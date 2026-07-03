@@ -219,8 +219,9 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     return vehicles
       .filter(v => v.status === 'Alugado' || v.status === 'Alugado (Reserva)')
       .map(v => {
+        const normalizedPlate = (v.plate || '').replace(/-/g, '').toUpperCase();
         const recentPeriodicInspections = inspections.filter(ins => 
-          ins.vehiclePlate === v.plate && 
+          (ins.vehiclePlate || '').replace(/-/g, '').toUpperCase() === normalizedPlate && 
           ins.type === 'Periódica' && 
           new Date(ins.date) >= thirtyDaysAgo
         );

@@ -204,8 +204,9 @@ export const getDynamicAlerts = (vehicles, maintenances, inspections, clients) =
     }
 
     if (v.status === 'Alugado' || v.status === 'Alugado (Reserva)') {
+      const normalizedPlate = (v.plate || '').replace(/-/g, '').toUpperCase();
       const lastMonthInspections = (inspections || []).filter(ins => 
-        ins.vehiclePlate === v.plate && 
+        (ins.vehiclePlate || '').replace(/-/g, '').toUpperCase() === normalizedPlate && 
         ins.type === 'Periódica' &&
         (today - new Date(ins.date)) / (1000 * 60 * 60 * 24) <= 30
       ).length;

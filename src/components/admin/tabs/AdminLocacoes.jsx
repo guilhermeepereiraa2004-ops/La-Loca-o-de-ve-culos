@@ -269,8 +269,10 @@ const AdminLocacoes = ({
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
               {filteredRentals.map((rental) => {
                 try {
+                  const normPlate = (p) => (p || '').replace(/-/g, '').toUpperCase();
+                  const rentalPlateNorm = normPlate(rental.vehiclePlate || rental.plate);
                   const hasEntrega = inspections.some(ins => 
-                    ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && 
+                    normPlate(ins.vehiclePlate) === rentalPlateNorm && 
                     ins.type === 'Entrega' && 
                     new Date(ins.date) >= new Date(rental.startDate || rental.date)
                   );
@@ -304,7 +306,7 @@ const AdminLocacoes = ({
                     }
                   })();
 
-                  const hasDevolucao = inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.startDate || rental.date));
+                  const hasDevolucao = inspections.some(ins => normPlate(ins.vehiclePlate) === rentalPlateNorm && ins.type === 'Devolução' && new Date(ins.date) >= new Date(rental.startDate || rental.date));
                   const isClosed = dates.isClosed;
 
                   return (
