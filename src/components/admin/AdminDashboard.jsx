@@ -44,7 +44,7 @@ import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 import { computeNotifications } from '../../utils/notifications';
 
 const AdminDashboard = ({
-  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransactionStatus, onDeleteTransaction,
+  leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransaction, onUpdateTransactionStatus, onDeleteTransaction,
   onUpdateStatus, onDeleteLead, onAddRental, onDeleteRental, onUpdateRental, onAddClient, onUpdateClient, onDeleteClient,
   onAddInvestor, onUpdateInvestor, onDeleteInvestor,
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
@@ -173,11 +173,18 @@ const AdminDashboard = ({
       return parseFloat(clean) || 0;
     };
 
-    const result = await onAddTransaction({
+    const transactionData = {
       ...financeForm,
       val: cleanNumeric(financeForm.val) * (financeForm.type === 'out' ? -1 : 1),
       status: financeForm.status || 'Concluído'
-    });
+    };
+
+    let result;
+    if (financeForm.id) {
+      result = await onUpdateTransaction(transactionData);
+    } else {
+      result = await onAddTransaction(transactionData);
+    }
 
     if (result && result.success) {
       setShowFinanceForm(false);
@@ -191,8 +198,10 @@ const AdminDashboard = ({
       });
       setShowAdminSuccess({
         show: true,
-        title: 'Lançamento Realizado',
-        message: 'A transação foi registrada com sucesso no fluxo financeiro.'
+        title: financeForm.id ? 'Edição Realizada' : 'Lançamento Realizado',
+        message: financeForm.id 
+          ? 'A transação foi atualizada com sucesso no fluxo financeiro.'
+          : 'A transação foi registrada com sucesso no fluxo financeiro.'
       });
     }
   };

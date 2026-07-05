@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowDownLeft, ArrowUpRight, Wallet, Plus, X, Search, Trash2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight, Wallet, Plus, X, Search, Trash2, Edit } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const formatTransactionDateTime = (t) => {
@@ -487,17 +487,29 @@ const AdminFinanceiro = ({
                               </button>
                             )}
                           </div>
-                          <button
-                            onClick={() => {
-                              setItemToDelete(t);
-                              setDeleteType('transaction');
-                              setShowDeleteAuthModal(true);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-red-500 rounded-lg hover:bg-neutral-100 transition-all active:scale-95"
-                            title="Excluir Transação"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setFinanceForm(t);
+                                setShowFinanceForm(true);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-[#C5A059] rounded-lg hover:bg-neutral-100 transition-all active:scale-95"
+                              title="Editar Transação"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setItemToDelete(t);
+                                setDeleteType('transaction');
+                                setShowDeleteAuthModal(true);
+                              }}
+                              className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-red-500 rounded-lg hover:bg-neutral-100 transition-all active:scale-95"
+                              title="Excluir Transação"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </tr>
@@ -578,17 +590,29 @@ const AdminFinanceiro = ({
                         </button>
                       )}
                     </div>
-                    <button
-                      onClick={() => {
-                        setItemToDelete(t);
-                        setDeleteType('transaction');
-                        setShowDeleteAuthModal(true);
-                      }}
-                      className="p-2 text-neutral-400 hover:text-red-500 rounded-lg bg-neutral-50 hover:bg-red-50 transition-all active:scale-95 border border-neutral-100"
-                      title="Excluir Transação"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setFinanceForm(t);
+                          setShowFinanceForm(true);
+                        }}
+                        className="p-2 text-neutral-400 hover:text-[#C5A059] rounded-lg bg-neutral-50 hover:bg-[#C5A059]/10 transition-all active:scale-95 border border-neutral-100"
+                        title="Editar Transação"
+                      >
+                        <Edit size={14} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setItemToDelete(t);
+                          setDeleteType('transaction');
+                          setShowDeleteAuthModal(true);
+                        }}
+                        className="p-2 text-neutral-400 hover:text-red-500 rounded-lg bg-neutral-50 hover:bg-red-50 transition-all active:scale-95 border border-neutral-100"
+                        title="Excluir Transação"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
                 </div>
                 );

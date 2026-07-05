@@ -1556,6 +1556,22 @@ export const useAppState = () => {
     }
   };
 
+  const handleUpdateTransaction = async (transaction) => {
+    try {
+      const payload = mapToSnake(transaction, 'transactions');
+      const { error } = await supabase.from('transactions').update(payload).eq('id', transaction.id);
+      if (error) throw error;
+      
+      setTransactions(prev => prev.map(t => t.id === transaction.id ? { ...t, ...transaction } : t));
+      logActivity('Atualizar', 'Financeiro', transaction.id, `Atualizou transação de ${transaction.type === 'in' ? 'Recebimento' : 'Pagamento'}: R$ ${transaction.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - Desc: ${transaction.desc}`);
+      return { success: true };
+    } catch (err) {
+      console.error("Erro ao atualizar transação:", err);
+      alert(`Erro ao atualizar lançamento financeiro: ${parseDbError(err)}`);
+      return { success: false, error: err };
+    }
+  };
+
   const handleDeleteTransaction = async (id) => {
     try {
       const transaction = transactions.find(t => t.id === id);
@@ -2480,7 +2496,7 @@ export const useAppState = () => {
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,
     handleAddLead, handleUpdateLeadStatus, handleDeleteLead, handleAddRental, handleDeleteRental,
     handleUpdateRental, handleRenewRental, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
-    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleDeleteClient, handleAddClient, handleAddTransaction,
+    handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleUpdateClient, handleDeleteClient, handleAddClient, handleAddTransaction, handleUpdateTransaction,
     handleUpdateTransactionStatus,
     handleDeleteTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
