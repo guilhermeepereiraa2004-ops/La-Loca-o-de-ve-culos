@@ -276,32 +276,36 @@ const AdminInvestidores = ({
     }
   }, [isEditing]);
 
-  // Pending investors list (unpaid previous month payout)
-  const pendingInvestorsList = React.useMemo(() => {
-    return (investors || []).filter(inv => {
-      const { payout, prevMonthPaid } = calculateInvestorPayout(inv);
-      return !prevMonthPaid && payout > 0;
-    });
+
+  // --- CACHE DE PERFORMANCE ---
+  // Calcula a matemática pesada (transações, veículos, locações) uma ÚNICA vez por investidor
+  const investorsWithPayoutData = React.useMemo(() => {
+    return (investors || []).map(inv => ({
+      ...inv,
+      payoutData: calculateInvestorPayout(inv)
+    }));
   }, [investors, vehicles, transactions, rentals, payoutHistory]);
 
+  // Pending investors list (unpaid previous month payout)
+  const pendingInvestorsList = React.useMemo(() => {
+    return investorsWithPayoutData.filter(inv => {
+      const { payout, prevMonthPaid } = inv.payoutData;
+      return !prevMonthPaid && payout > 0;
+    });
+  }, [investorsWithPayoutData]);
+
   // Filter and sort investors: pending first, then positive payouts, then others
-  const filteredAndSortedInvestors = [...(investors || [])]
+  const filteredAndSortedInvestors = [...investorsWithPayoutData]
     .filter(inv => (inv.name || '').toLowerCase().includes(investorSearch.toLowerCase()))
     .sort((a, b) => {
-      const isPendingA = (() => {
-        const { payout, prevMonthPaid } = calculateInvestorPayout(a);
-        return !prevMonthPaid && payout > 0;
-      })();
-      const isPendingB = (() => {
-        const { payout, prevMonthPaid } = calculateInvestorPayout(b);
-        return !prevMonthPaid && payout > 0;
-      })();
+      const isPendingA = !a.payoutData.prevMonthPaid && a.payoutData.payout > 0;
+      const isPendingB = !b.payoutData.prevMonthPaid && b.payoutData.payout > 0;
 
       if (isPendingA && !isPendingB) return -1;
       if (!isPendingA && isPendingB) return 1;
 
-      const payoutA = calculateInvestorPayout(a).payout;
-      const payoutB = calculateInvestorPayout(b).payout;
+      const payoutA = a.payoutData.payout;
+      const payoutB = b.payoutData.payout;
       
       if (payoutA > 0 && payoutB <= 0) return -1;
       if (payoutB > 0 && payoutA <= 0) return 1;
@@ -315,21 +319,15 @@ const AdminInvestidores = ({
     let countGeneratingRevenue = 0;
     let totalManagedVehicles = 0;
 
-    (investors || []).forEach(inv => {
-      const { payout } = calculateInvestorPayout(inv);
+    investorsWithPayoutData.forEach(inv => {
+      const { payout, vehicles: invVehs } = inv.payoutData;
       if (payout > 0) {
         totalToPay += payout;
         countGeneratingRevenue += 1;
       } else if (payout < 0) {
         totalDeficit += Math.abs(payout);
       }
-
-      const invVehs = (vehicles || []).filter(v => {
-        const invNameMatch = v.investor?.toLowerCase().trim() === inv.name?.toLowerCase().trim();
-        const invIdMatch = v.investorId === inv.id;
-        return invNameMatch || invIdMatch;
-      });
-      totalManagedVehicles += invVehs.length;
+      totalManagedVehicles += (invVehs || []).length;
     });
 
     return {
@@ -338,7 +336,7 @@ const AdminInvestidores = ({
       countGeneratingRevenue,
       totalManagedVehicles
     };
-  }, [investors, vehicles, transactions, rentals, payoutHistory]);
+  }, [investorsWithPayoutData]);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">

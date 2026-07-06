@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { parseDbError } from '../utils/errorHelper';
 import { uploadFile } from '../utils/supabaseStorage';
+import { parseCurrency } from '../utils/currencyUtils';
 
 // Limpar temporariamente o bloqueio antigo do rate limiter de uploads salvo no localStorage
 try {
@@ -549,7 +550,7 @@ export const useAppState = () => {
 
               // 1. Proteção Veicular (Vence todo dia 10, entra como receita da empresa)
               const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
-              const protVal = parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+              const protVal = parseCurrency(v.protectionValue || 0) || 0;
               
               if (hasProt && protVal > 0) {
                 const paymentDayProt = 10; // Padrão dia 10 de cada mês
@@ -830,7 +831,7 @@ export const useAppState = () => {
       const parseBRL = (val) => {
         if (typeof val === 'number') return val;
         if (!val) return 0;
-        return parseFloat(String(val).replace(/\./g, '').replace(',', '.')) || 0;
+        return parseCurrency(val) || 0;
       };
 
       // Ensure specific fields are correctly formatted via mapping or direct assignment
@@ -1212,7 +1213,7 @@ export const useAppState = () => {
       delete payload.vehicle_year;
       delete payload.vehicle_renavam;
       
-      if (payload.value) payload.value = parseFloat(String(payload.value).replace(/\./g, '').replace(',', '.'));
+      if (payload.value) payload.value = parseCurrency(payload.value);
       if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
       if (payload['data_de_nascimento'] === '') payload['data_de_nascimento'] = null;
       if (payload['start_date'] === '') payload['start_date'] = null;
@@ -1407,7 +1408,7 @@ export const useAppState = () => {
     const parseBRL = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
-      return parseFloat(String(val).replace(/\./g, '').replace(',', '.')) || 0;
+      return parseCurrency(val) || 0;
     };
 
     // Busca o UUID do investidor pelo nome
@@ -1486,7 +1487,7 @@ export const useAppState = () => {
     const parseBRL = (val) => {
       if (typeof val === 'number') return val;
       if (!val) return 0;
-      return parseFloat(String(val).replace(/\./g, '').replace(',', '.')) || 0;
+      return parseCurrency(val) || 0;
     };
 
     // Busca o UUID do investidor pelo nome
@@ -1613,7 +1614,7 @@ export const useAppState = () => {
         const responsibleStr = maintenance.responsible === 'Investidor' 
           ? (investorName ? `Investidor: ${investorName}` : 'Investidor') 
           : 'Administradora';
-        const rawVal = parseFloat(String(maintenance.value).replace(/\./g, '').replace(',', '.')) || 0;
+        const rawVal = parseCurrency(maintenance.value) || 0;
 
         const newTrans = {
           type: 'out',
@@ -1652,7 +1653,7 @@ export const useAppState = () => {
         const responsibleStr = updatedMaintenance.responsible === 'Investidor' 
           ? (investorName ? `Investidor: ${investorName}` : 'Investidor') 
           : 'Administradora';
-        const rawVal = parseFloat(String(updatedMaintenance.value).replace(/\./g, '').replace(',', '.')) || 0;
+        const rawVal = parseCurrency(updatedMaintenance.value) || 0;
 
         const txData = {
           type: 'out',
@@ -1791,7 +1792,7 @@ export const useAppState = () => {
       if (!rental) return;
 
       const paidInstallments = [...(rental.paidInstallments || []), installmentNumber];
-      const currentReceived = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+      const currentReceived = parseCurrency(rental.depositReceived || rental.depositPaid || 0) || 0;
       const newReceived = currentReceived + value;
 
       // Usando nomes de colunas do mapeamento para garantir compatibilidade
@@ -1860,7 +1861,7 @@ export const useAppState = () => {
 
     const val = typeof fine.value === 'number' 
       ? fine.value 
-      : parseFloat(String(fine.value || '0').replace(/\./g, '').replace(',', '.')) || 0;
+      : parseCurrency(fine.value || '0') || 0;
     let installments;
     if (val <= 150) {
       installments = 2;
@@ -2026,7 +2027,7 @@ export const useAppState = () => {
         date: todayStr,
         type: 'in',
         val: mainRent,
-        desc: `Pagamento Aluguel - ${rental.user}`,
+        desc: billingData.customDescription || `Pagamento Aluguel - ${rental.user}`,
         cat: 'Aluguel',
         vehiclePlate: rental.plate,
         status: 'Concluído',
@@ -2040,7 +2041,7 @@ export const useAppState = () => {
         date: todayStr,
         type: 'in',
         val: repRent,
-        desc: `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`,
+        desc: billingData.customRepDescription || `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`,
         cat: 'Aluguel',
         vehiclePlate: replacementPlate,
         status: 'Concluído',

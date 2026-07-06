@@ -42,6 +42,7 @@ import { AlertTriangle } from 'lucide-react';
 import { useAdminState } from '../../hooks/useAdminState';
 import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 import { computeNotifications } from '../../utils/notifications';
+import { parseCurrency } from '../../utils/currencyUtils';
 
 const AdminDashboard = ({
   leads, rentals, clients, investors, vehicles, transactions, onAddTransaction, onUpdateTransaction, onUpdateTransactionStatus, onDeleteTransaction,
@@ -132,7 +133,7 @@ const AdminDashboard = ({
     const cleanNumeric = (val) => {
       if (!val) return 0;
       if (typeof val === 'number') return val;
-      const clean = val.toString().replace(/\./g, '').replace(',', '.');
+      const clean = parseCurrency(val);
       return parseFloat(clean) || 0;
     };
 
@@ -169,7 +170,7 @@ const AdminDashboard = ({
     const cleanNumeric = (val) => {
       if (!val) return 0;
       if (typeof val === 'number') return val;
-      const clean = val.toString().replace(/\./g, '').replace(',', '.');
+      const clean = parseCurrency(val);
       return parseFloat(clean) || 0;
     };
 
@@ -226,7 +227,7 @@ const AdminDashboard = ({
     const cleanNumeric = (val) => {
       if (!val) return 0;
       if (typeof val === 'number') return val;
-      const clean = val.toString().replace(/\./g, '').replace(',', '.');
+      const clean = parseCurrency(val);
       return parseFloat(clean) || 0;
     };
 

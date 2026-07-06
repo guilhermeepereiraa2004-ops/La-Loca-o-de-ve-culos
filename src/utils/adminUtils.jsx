@@ -1,5 +1,6 @@
 import React from 'react';
 import { Car, Wrench, TrendingUp, Landmark, Calendar, ClipboardList } from 'lucide-react';
+import { parseCurrency } from '../utils/currencyUtils';
 
 const getCompanyShareForTransaction = (t, vehicles = [], rentals = []) => {
   if (!t) return 0;
@@ -73,7 +74,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
   const utilizationRate = Math.round((activeVehicles / totalVehicles) * 100);
 
   const totalCaucao = rentals.reduce((acc, r) => {
-    const val = parseFloat(String(r.depositReceived || r.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const val = parseCurrency(r.depositReceived || r.depositPaid || 0) || 0;
     return acc + val;
   }, 0);
 

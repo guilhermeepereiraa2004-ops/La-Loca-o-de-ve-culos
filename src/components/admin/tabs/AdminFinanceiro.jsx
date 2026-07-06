@@ -99,6 +99,8 @@ const AdminFinanceiro = ({
   setShowDeleteAuthModal
 }) => {
   const [selectedMonth, setSelectedMonth] = useState('Todos'); // 'Todos' or 'YYYY-MM'
+  const [dateFilterStart, setDateFilterStart] = useState('');
+  const [dateFilterEnd, setDateFilterEnd] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [visibleLimit, setVisibleLimit] = useState(50);
@@ -156,9 +158,12 @@ const AdminFinanceiro = ({
       const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
         !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
 
-      return matchesMonth && (!isInvestor || isProtection || isInsurance) && !isManualRent;
+      const tDate = t.date ? t.date.substring(0, 10) : '';
+      const matchesExactDate = (!dateFilterStart || tDate >= dateFilterStart) && (!dateFilterEnd || tDate <= dateFilterEnd);
+
+      return matchesMonth && matchesExactDate && (!isInvestor || isProtection || isInsurance) && !isManualRent;
     });
-  }, [filteredRawTransactions, selectedMonth]);
+  }, [filteredRawTransactions, selectedMonth, dateFilterStart, dateFilterEnd]);
 
   const totalIn = React.useMemo(() => displayedTransactionsForTotals
     .filter(t => t.type === 'in')
@@ -197,8 +202,11 @@ const AdminFinanceiro = ({
       // Hide manual rent transactions (gross rent) from the company transactions list
       const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
         !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+        
+      const tDate = t.date ? t.date.substring(0, 10) : '';
+      const matchesExactDate = (!dateFilterStart || tDate >= dateFilterStart) && (!dateFilterEnd || tDate <= dateFilterEnd);
 
-      return matchesType && matchesMonth && matchesCategory && matchesSearch && !isManualRent;
+      return matchesType && matchesMonth && matchesCategory && matchesSearch && matchesExactDate && !isManualRent;
     }).sort((a, b) => {
       const getMs = (t) => {
         if (t.createdAt) {
@@ -215,7 +223,7 @@ const AdminFinanceiro = ({
       if (diff !== 0) return diff;
       return (b.id || 0) - (a.id || 0);
     });
-  }, [filteredRawTransactions, financeFilter, selectedMonth, selectedCategory, searchTerm]);
+  }, [filteredRawTransactions, financeFilter, selectedMonth, dateFilterStart, dateFilterEnd, selectedCategory, searchTerm]);
 
   const displayedTransactions = React.useMemo(() => {
     return filteredTransactions.slice(0, visibleLimit);
@@ -231,6 +239,33 @@ const AdminFinanceiro = ({
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
+          {/* Date Range Selector */}
+          <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
+            <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400 ml-2">Período:</span>
+            <input
+              type="date"
+              value={dateFilterStart}
+              onChange={(e) => setDateFilterStart(e.target.value)}
+              className="bg-neutral-50 border-none px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
+            />
+            <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400">Até</span>
+            <input
+              type="date"
+              value={dateFilterEnd}
+              onChange={(e) => setDateFilterEnd(e.target.value)}
+              className="bg-neutral-50 border-none px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
+            />
+            {(dateFilterStart || dateFilterEnd) && (
+              <button
+                type="button"
+                onClick={() => { setDateFilterStart(''); setDateFilterEnd(''); }}
+                className="text-neutral-400 hover:text-neutral-900 transition-colors ml-1 p-1"
+                title="Limpar período"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
           {/* Month Selector */}
           <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
             <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400 ml-2">Filtrar por Mês:</span>

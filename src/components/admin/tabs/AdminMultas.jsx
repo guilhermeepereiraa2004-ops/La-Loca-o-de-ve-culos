@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { EditorialLabel } from '../../ui/EditorialLabel';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const AdminMultas = ({
   fines = [],
@@ -418,7 +419,7 @@ const AdminMultas = ({
 
     while ((valueMatch = valueRegex.exec(text)) !== null) {
       const vStr = valueMatch[1];
-      const numericVal = parseFloat(vStr.replace(/\./g, '').replace(',', '.'));
+      const numericVal = parseCurrency(vStr);
       const context = getMultilineContext(text, valueMatch.index, valueMatch[0].length);
       
       if (isNaN(numericVal) || numericVal < 40) continue;
@@ -912,7 +913,7 @@ const AdminMultas = ({
       return;
     }
 
-    const valueNum = parseFloat(String(fineForm.value).replace(/\./g, '').replace(',', '.')) || 0;
+    const valueNum = parseCurrency(fineForm.value) || 0;
     
     const selectedClient = manualDriverId && manualDriverId !== 'Administradora' 
       ? clients.find(c => String(c.id) === String(manualDriverId)) 
@@ -1521,7 +1522,7 @@ const AdminMultas = ({
                         if (typeof fine.value === 'number') {
                           parsedVal = fine.value;
                         } else if (typeof fine.value === 'string') {
-                          parsedVal = parseFloat(fine.value.replace(/\./g, '').replace(',', '.')) || 0;
+                          parsedVal = parseCurrency(fine.value) || 0;
                         } else if (fine.value) {
                           parsedVal = parseFloat(fine.value) || 0;
                         }

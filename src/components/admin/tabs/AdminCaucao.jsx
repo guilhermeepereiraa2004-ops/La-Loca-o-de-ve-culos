@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as BankIcon, Receipt, AlertTriangle } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const AdminCaucao = ({
   rentals = [],
@@ -13,13 +14,13 @@ const AdminCaucao = ({
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
-  const totalCustodia = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositReceived || r.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+  const totalCustodia = safeRentals.reduce((acc, r) => acc + (parseCurrency(r.depositReceived || r.depositPaid || 0) || 0), 0);
   const totalReceber = safeRentals.reduce((acc, r) => {
-    const total = parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-    const received = parseFloat(String(r.depositReceived || r.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const total = parseCurrency(r.depositTotal || 0) || 0;
+    const received = parseCurrency(r.depositReceived || r.depositPaid || 0) || 0;
     return acc + (total - received);
   }, 0);
-  const totalContratado = safeRentals.reduce((acc, r) => acc + (parseFloat(String(r.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+  const totalContratado = safeRentals.reduce((acc, r) => acc + (parseCurrency(r.depositTotal || 0) || 0), 0);
 
   const filteredRentals = safeRentals.filter(r => {
     const searchLower = search.toLowerCase();
@@ -149,8 +150,8 @@ const AdminCaucao = ({
             <tbody className="font-light">
               {filteredRentals.length > 0 ? (
                 filteredRentals.map((rental) => {
-                  const total = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-                  const received = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                  const total = parseCurrency(rental.depositTotal || 0) || 0;
+                  const received = parseCurrency(rental.depositReceived || rental.depositPaid || 0) || 0;
                   const remaining = total - received;
 
                   // Calculate Next Due Date (First installment is due next week since down payment is paid on start date)
@@ -281,8 +282,8 @@ const AdminCaucao = ({
         <div className="lg:hidden p-4 md:p-6 space-y-4">
           {filteredRentals.length > 0 ? (
             filteredRentals.map((rental) => {
-              const total = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-              const received = parseFloat(String(rental.depositReceived || rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+              const total = parseCurrency(rental.depositTotal || 0) || 0;
+              const received = parseCurrency(rental.depositReceived || rental.depositPaid || 0) || 0;
               const remaining = total - received;
 
               // Calculate Next Due Date (First installment is due next week since down payment is paid on start date)
@@ -413,8 +414,8 @@ const AdminCaucao = ({
                       {Array.from({ length: selectedRental.depositInstallments || 1 }).map((_, i) => {
                         const installmentNum = i + 1;
                         const isPaid = (selectedRental.paidInstallments || []).includes(installmentNum);
-                        const total = parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-                        const received = parseFloat(String(selectedRental.depositReceived || selectedRental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                        const total = parseCurrency(selectedRental.depositTotal || 0) || 0;
+                        const received = parseCurrency(selectedRental.depositReceived || selectedRental.depositPaid || 0) || 0;
                         const paidCount = (selectedRental.paidInstallments || []).length;
                         const totalInstallments = parseInt(selectedRental.depositInstallments) || 1;
                         const remainingInstallments = Math.max(1, totalInstallments - paidCount);
@@ -470,8 +471,8 @@ const AdminCaucao = ({
                         <p className="text-[8px] font-black text-emerald-600 uppercase tracking-widest mb-1">Saldo Final</p>
                         <p className="text-sm font-black text-emerald-900">
                           R$ {(
-                            (parseFloat(String(selectedRental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0) -
-                            (parseFloat(String(selectedRental.depositReceived || selectedRental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0) -
+                            (parseCurrency(selectedRental.depositTotal || 0) || 0) -
+                            (parseCurrency(selectedRental.depositReceived || selectedRental.depositPaid || 0) || 0) -
                             pendingInstallment.value
                           ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>

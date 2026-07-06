@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Wrench, Car, X, Check, Printer, Package, User, ChevronDown, Eye, Clock, CheckCircle2, AlertTriangle, Trash2, Pencil } from 'lucide-react';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const parseBrValue = (val) => {
-  if (typeof val === 'number') return val;
-  if (!val) return 0;
-  const cleanVal = String(val).replace(/\./g, '').replace(',', '.');
-  return parseFloat(cleanVal) || 0;
+  return parseCurrency(val);
 };
 
 const formatDate = (dateStr) => {

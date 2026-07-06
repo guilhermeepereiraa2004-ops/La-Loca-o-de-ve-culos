@@ -2,6 +2,7 @@ import React from 'react';
 import { Plus, Search, ShieldCheck, TrendingUp, Clock, ClipboardList, User, Phone, Pencil, Trash2, Calendar, X, RefreshCw } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getPublicUrl } from '../../../utils/supabaseStorage';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const AdminLocacoes = ({
   rentals,
@@ -79,7 +80,7 @@ const AdminLocacoes = ({
   const totalFaturamento = safeRentals.reduce((acc, r) => {
     try {
       const val = typeof r.value === 'string' 
-        ? parseFloat(r.value.replace('R$ ', '').replace(/\./g, '').replace(',', '.')) 
+        ? parseCurrency(r.value) 
         : (parseFloat(r.value) || 0);
       return acc + val;
     } catch (e) { return acc; }

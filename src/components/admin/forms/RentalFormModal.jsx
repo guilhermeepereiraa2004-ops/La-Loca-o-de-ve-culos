@@ -4,7 +4,8 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { generateRentalContract } from '../../../utils/contractGenerator';
 import { compressImage } from '../../../utils/imageCompression';
-import { formatCPF } from '../../../utils/cpfFormatter';
+import { formatCPF } from '../../../utils/cpfFormatter';import { parseCurrency } from '../../../utils/currencyUtils';
+
 
 
 const RentalFormModal = ({ 
@@ -227,7 +228,7 @@ const RentalFormModal = ({
                             <span className="text-[8px] uppercase tracking-widest font-black opacity-50 mb-1">Valor Semanal</span>
                             <span className={`text-lg font-black tracking-tight ${rentalForm.plate === v.plate ? 'text-white' : 'text-neutral-900'}`}>
                               {(v.weeklyRental ? 
-                                (typeof v.weeklyRental === 'string' ? parseFloat(v.weeklyRental.replace(/\./g, '').replace(',', '.')) : v.weeklyRental)
+                                (typeof v.weeklyRental === 'string' ? parseCurrency(v.weeklyRental) : v.weeklyRental)
                                   .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
                                 : 'Sob Consulta')}
                             </span>
@@ -553,13 +554,13 @@ const RentalFormModal = ({
 
                     <div className="space-y-6 flex-1 relative">
                       {(() => {
-                        const total = parseFloat(String(rentalForm.depositTotal).replace(/\./g, '').replace(',', '.')) || 0;
-                        const paid = parseFloat(String(rentalForm.depositPaid).replace(/\./g, '').replace(',', '.')) || 0;
+                        const total = parseCurrency(rentalForm.depositTotal) || 0;
+                        const paid = parseCurrency(rentalForm.depositPaid) || 0;
                         const balance = total - paid;
                         const installments = parseInt(rentalForm.depositInstallments) || 1;
                         const installmentVal = balance > 0 ? balance / installments : 0;
                         
-                        const baseVal = parseFloat(String(rentalForm.value).replace(/\./g, '').replace(',', '.')) || 0;
+                        const baseVal = parseCurrency(rentalForm.value) || 0;
                         const tireVal = parseFloat(rentalForm.tireTax) || 0;
                         const duration = parseInt(rentalForm.durationWeeks) || 1;
                         const totalRentalContract = baseVal * duration;

@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, ImageRun } from 'docx';
+import { parseCurrency } from '../utils/currencyUtils';
 
 const numeroParaExtenso = (num) => {
   const unidades = ['', 'um', 'dois', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'];
@@ -46,7 +47,7 @@ const numeroParaExtenso = (num) => {
 
 const formatarValorBRL = (valorStr) => {
   if (!valorStr) return { formatado: 'R$ 0,00', extenso: 'zero reais' };
-  const valor = parseFloat(String(valorStr).replace(/\./g, '').replace(',', '.')) || 0;
+  const valor = parseCurrency(valorStr) || 0;
   const formatado = valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   
   const inteira = Math.floor(valor);
@@ -93,15 +94,15 @@ export const generateRentalContract = async (rental) => {
     const vehicleRenavam = rental.vehicleRenavam || "---";
     const vehiclePlate = rental.plate || "---";
 
-    const baseVal = parseFloat(String(rental.value || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const baseVal = parseCurrency(rental.value || 0) || 0;
     const duration = parseInt(rental.durationWeeks || 0) || 1;
     const totalContractVal = baseVal * duration;
 
     const totalContractBrl = formatarValorBRL(totalContractVal);
     const weeklyBrl = formatarValorBRL(baseVal);
     
-    const depositTotalVal = parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.')) || 0;
-    const depositPaidVal = parseFloat(String(rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const depositTotalVal = parseCurrency(rental.depositTotal || 0) || 0;
+    const depositPaidVal = parseCurrency(rental.depositPaid || 0) || 0;
     const depositBalance = depositTotalVal - depositPaidVal;
     const depositInstallments = parseInt(rental.depositInstallments || 1) || 1;
     const depositInstallmentVal = depositBalance > 0 ? depositBalance / depositInstallments : 0;
@@ -111,7 +112,7 @@ export const generateRentalContract = async (rental) => {
     const depositBalanceBrl = formatarValorBRL(depositBalance);
     const depositInstallmentBrl = formatarValorBRL(depositInstallmentVal);
 
-    const tireTaxVal = parseFloat(String(rental.tireTax || 0).replace(/\./g, '').replace(',', '.')) || 25;
+    const tireTaxVal = parseCurrency(rental.tireTax || 0) || 25;
     const tireTaxBrl = formatarValorBRL(tireTaxVal);
 
     const lateFineVal = rental.lateFine || "10";

@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
+import { parseCurrency } from '../../utils/currencyUtils';
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '---';
@@ -72,7 +73,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
   const myVehicles = rawVehicles.map(v => {
     // Calculate investment value safely
-    const investValue = parseFloat(String(v.investmentValue || v.investValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+    const investValue = parseCurrency(v.investmentValue || v.investValue || 0) || 0;
 
     // Sum all transactions for this vehicle plate
     const vehicleTrans = transactions.filter(t => t.vehiclePlate === v.plate);
@@ -175,7 +176,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
   const totalProtectionDiscount = myVehicles
     .filter(v => v.hasProtection)
-    .reduce((acc, v) => acc + (parseFloat(String(v.protectionValue || 0).replace(/\./g, '').replace(',', '.')) || 0), 0);
+    .reduce((acc, v) => acc + (parseCurrency(v.protectionValue || 0) || 0), 0);
 
   // Dynamic grouping by month for the last 6 months
   const getMonthYearLabel = (date) => {
@@ -1026,7 +1027,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                       </thead>
                       <tbody className="divide-y divide-neutral-50">
                         {viewingSO.parts.map((p, i) => {
-                          const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseFloat(String(p.unitValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                          const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseCurrency(p.unitValue || 0) || 0;
                           return (
                             <tr key={i}>
                               <td className="py-3 font-bold">{p.name}</td>
@@ -1045,9 +1046,9 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
               <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
                 <div className="space-y-1">
                   {(() => {
-                    const laborVal = typeof viewingSO.laborValue === 'number' ? viewingSO.laborValue : parseFloat(String(viewingSO.laborValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                    const laborVal = typeof viewingSO.laborValue === 'number' ? viewingSO.laborValue : parseCurrency(viewingSO.laborValue || 0) || 0;
                     const partsSum = (viewingSO.parts || []).reduce((a, p) => {
-                      const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseFloat(String(p.unitValue || 0).replace(/\./g, '').replace(',', '.')) || 0;
+                      const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseCurrency(p.unitValue || 0) || 0;
                       return a + ((p.qty || 0) * unitVal);
                     }, 0);
                     return (

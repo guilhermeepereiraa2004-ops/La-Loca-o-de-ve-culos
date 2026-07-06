@@ -10,6 +10,7 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 import { generateRentalContract } from '../../../utils/contractGenerator';
 import ImageViewer from '../../ui/ImageViewer';
 import { getPublicUrl } from '../../../utils/supabaseStorage';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const RentalDetailModal = ({ 
   rental, 
@@ -128,7 +129,7 @@ const RentalDetailModal = ({
   const formatCurrency = (val) => {
     if (val === undefined || val === null) return 'R$ 0,00';
     try {
-      const numeric = typeof val === 'number' ? val : parseFloat(String(val).replace(/\./g, '').replace(',', '.'));
+      const numeric = typeof val === 'number' ? val : parseCurrency(val);
       return isNaN(numeric) ? 'R$ 0,00' : numeric.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
     } catch (e) {
       return 'R$ 0,00';
@@ -407,8 +408,8 @@ const RentalDetailModal = ({
                     <span className="text-neutral-400 font-bold uppercase tracking-widest">Saldo de Caução Pendente</span>
                     <span className="font-black text-amber-600">
                       {formatCurrency(Math.max(0, 
-                        (typeof rental.depositTotal === 'number' ? rental.depositTotal : parseFloat(String(rental.depositTotal || 0).replace(/\./g, '').replace(',', '.'))) - 
-                        (typeof rental.depositPaid === 'number' ? rental.depositPaid : parseFloat(String(rental.depositPaid || 0).replace(/\./g, '').replace(',', '.')))
+                        (typeof rental.depositTotal === 'number' ? rental.depositTotal : parseCurrency(rental.depositTotal || 0)) - 
+                        (typeof rental.depositPaid === 'number' ? rental.depositPaid : parseCurrency(rental.depositPaid || 0))
                       ))}
                     </span>
                   </div>
@@ -416,7 +417,7 @@ const RentalDetailModal = ({
                     <span className="text-neutral-900 font-black uppercase tracking-[0.2em]">Total Bruto do Contrato</span>
                     <span className="text-2xl font-black text-[#C5A059]">
                       {formatCurrency(
-                        (typeof rental.value === 'number' ? rental.value : parseFloat(String(rental.value || 0).replace(/\./g, '').replace(',', '.'))) * 
+                        (typeof rental.value === 'number' ? rental.value : parseCurrency(rental.value || 0)) * 
                         parseInt(rental.durationWeeks || rental.period || 1)
                       )}
                     </span>

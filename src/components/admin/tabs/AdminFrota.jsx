@@ -1,5 +1,6 @@
 import { Plus, Search, Pencil, Power, PowerOff, Trash2, Car, Star, AlertTriangle } from 'lucide-react';
 import { getPublicUrl } from '../../../utils/supabaseStorage';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const AdminFrota = ({
   vehicles,
@@ -242,7 +243,7 @@ const AdminFrota = ({
                       <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Valor FIPE</p>
                       <p className="text-sm font-black text-neutral-900">
                         {car.fipeValue ? 
-                          (typeof car.fipeValue === 'string' ? parseFloat(car.fipeValue.replace(/\./g, '').replace(',', '.')) : car.fipeValue)
+                          (typeof car.fipeValue === 'string' ? parseCurrency(car.fipeValue) : car.fipeValue)
                             .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
                           : 'Sob Consulta'}
                       </p>
@@ -253,7 +254,7 @@ const AdminFrota = ({
                     <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center">
                       <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black">Valor de Investimento</p>
                       <p className="text-xs font-black text-emerald-700">
-                        {(typeof car.investmentValue === 'string' ? parseFloat(car.investmentValue.replace(/\./g, '').replace(',', '.')) : car.investmentValue)
+                        {(typeof car.investmentValue === 'string' ? parseCurrency(car.investmentValue) : car.investmentValue)
                           .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                       </p>
                     </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, ShieldAlert, Check, AlertTriangle, ArrowRight, Wallet, Landmark, FileText, Landmark as BankIcon, Receipt, Ban } from 'lucide-react';
+import { parseCurrency } from '../../../utils/currencyUtils';
 
 const ContractClosureModal = ({ inspection, rental, rentals = [], transactions = [], onClose, onConfirm }) => {
   const [closureData, setClosureData] = useState({
@@ -31,8 +32,8 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
 
       // 4. Unpaid Caucao (Balance remaining)
-      const totalCaucao = parseFloat(String(rental.depositTotal).replace(/\./g, '').replace(',', '.')) || 0;
-      const paidCaucao = parseFloat(String(rental.depositPaid || rental.depositReceived || 0).replace(/\./g, '').replace(',', '.')) || 0;
+      const totalCaucao = parseCurrency(rental.depositTotal) || 0;
+      const paidCaucao = parseCurrency(rental.depositPaid || rental.depositReceived || 0) || 0;
       const unpaidCaucao = totalCaucao - paidCaucao;
 
       // Comparação de datas YYYY-MM-DD para verificar se é rescisão antecipada
