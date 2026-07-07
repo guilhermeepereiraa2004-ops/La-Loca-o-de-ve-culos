@@ -6,6 +6,7 @@ import { EditorialLabel } from '../../ui/EditorialLabel';
 
 const AdminClientes = ({ 
   clients = [], 
+  rentals = [],
   onUpdateClient, 
   onAddClient,
   setItemToDelete, 
@@ -25,15 +26,21 @@ const AdminClientes = ({
     return expDate < today;
   };
 
+  const activeClientIds = new Set(
+    rentals.filter(r => r.status === 'Ativo').map(r => String(r.clientId || r.client_id))
+  );
+
   const filteredClients = clients.filter(c => {
     const matchesSearch = (c.nome || c.name || '').toLowerCase().includes(search.toLowerCase()) ||
                           (c.cpf || '').includes(search) ||
                           (c.telefone || c.phone || '').includes(search);
     
     const expired = isExpired(c.cnhExpiration || c.cnhValidity);
+    const hasActiveRental = activeClientIds.has(String(c.id));
     const matchesStatus = statusFilter === 'todos' || 
                           (statusFilter === 'vencidos' && expired) || 
-                          (statusFilter === 'ativos' && !expired);
+                          (statusFilter === 'ativos' && !expired) ||
+                          (statusFilter === 'com_locacao' && hasActiveRental);
 
     return matchesSearch && matchesStatus;
   });
@@ -49,6 +56,16 @@ const AdminClientes = ({
           </div>
           <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Clientes</h3>
           <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Base de condutores cadastrados e histórico de conformidade de documentos.</p>
+          <div className="flex flex-wrap items-center gap-3 mt-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-100 text-neutral-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-neutral-200">
+              <User size={12} className="text-neutral-400" />
+              {clients.length} {clients.length === 1 ? 'cliente total' : 'clientes totais'}
+            </div>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              {activeClientIds.size} com locação ativa
+            </div>
+          </div>
         </div>
       </div>
 
@@ -69,7 +86,8 @@ const AdminClientes = ({
             {[
               { id: 'todos', label: 'Todos' },
               { id: 'ativos', label: 'CNH Ativa' },
-              { id: 'vencidos', label: 'CNH Vencida' }
+              { id: 'vencidos', label: 'CNH Vencida' },
+              { id: 'com_locacao', label: 'Com Locação' }
             ].map((item) => (
               <button
                 key={item.id}

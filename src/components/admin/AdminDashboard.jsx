@@ -407,6 +407,7 @@ const AdminDashboard = ({
           {activeTab === 'clientes' && canAccess('clientes') && (
             <AdminClientes 
               clients={clients} 
+              rentals={rentals}
               onAddClient={onAddClient}
               onUpdateClient={onUpdateClient} 
               setItemToDelete={setItemToDelete}

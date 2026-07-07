@@ -99,7 +99,7 @@ const InvestorPayoutModal = ({ investor, amount, referenceMonth, onClose, onSucc
             </div>
             <h5 className="text-xl font-black text-neutral-900 tracking-tight">Repasse Registrado!</h5>
             <p className="text-sm text-neutral-400 font-medium">
-              O repasse de <strong>R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong> foi
+              O repasse de <strong>R$ {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> foi
               registrado no histórico de <strong>{investor?.name}</strong>.
             </p>
           </div>
@@ -110,7 +110,7 @@ const InvestorPayoutModal = ({ investor, amount, referenceMonth, onClose, onSucc
               <p className="text-[9px] font-black uppercase tracking-widest text-neutral-400 mb-1">Valor do Repasse</p>
               <p className="text-3xl font-black text-neutral-900 tracking-tighter">
                 <span className="text-lg text-[#C5A059] mr-1">R$</span>
-                {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                {amount.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest mt-1">
                 Calculado automaticamente pelo sistema

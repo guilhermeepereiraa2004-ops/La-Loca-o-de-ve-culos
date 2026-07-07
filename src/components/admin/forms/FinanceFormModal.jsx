@@ -18,7 +18,7 @@ const FinanceFormModal = ({
   }, [isOpen]);
 
   const defaultCategories = [
-    'Aluguel', 'Manutenção', 'Proteção Veicular', 'Multas', 'Seguro', 'Taxa Pneus', 'Taxa Gateway / Asaas', 'Outros'
+    'Aluguel', 'Manutenção', 'Proteção Veicular', 'Multas', 'Seguro', 'taxa de pneus', 'Taxa Gateway / Asaas', 'Outros'
   ];
 
   const availableCategories = React.useMemo(() => {
@@ -33,10 +33,10 @@ const FinanceFormModal = ({
         let cat = t.cat.trim();
         let lowerCat = cat.toLowerCase();
         
-        // Merge variations of Taxa Pneus
-        if (lowerCat === 'taxa de pneus') {
-          lowerCat = 'taxa pneus';
-          cat = 'Taxa Pneus';
+        // Merge variations of taxa de pneus
+        if (lowerCat === 'taxa pneus' || lowerCat === 'taxa de pneus') {
+          lowerCat = 'taxa de pneus';
+          cat = 'taxa de pneus';
         }
 
         if (!catsMap.has(lowerCat)) {
