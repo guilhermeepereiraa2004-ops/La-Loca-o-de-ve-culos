@@ -2018,13 +2018,13 @@ export const useAppState = () => {
 
     // A taxa do Asaas agora é lançada automaticamente via Webhook apenas quando o boleto/pix for pago.
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const transactionDate = billingData.dueDate || new Date().toISOString().split('T')[0];
     const trans = [];
 
     // 1a. Pagamento de Aluguel Carro Principal (Entrada - base do investidor principal)
     if (mainRent > 0) {
       trans.push({
-        date: todayStr,
+        date: transactionDate,
         type: 'in',
         val: mainRent,
         desc: billingData.customDescription || `Pagamento Aluguel - ${rental.user}`,
@@ -2038,7 +2038,7 @@ export const useAppState = () => {
     // 1b. Pagamento de Aluguel Carro Reserva (Entrada - base do investidor reserva)
     if (repRent > 0 && replacementPlate) {
       trans.push({
-        date: todayStr,
+        date: transactionDate,
         type: 'in',
         val: repRent,
         desc: billingData.customRepDescription || `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`,
@@ -2052,7 +2052,7 @@ export const useAppState = () => {
     // 2a. Taxa de Administração - Carro Principal (Entrada - Empresa)
     if (mainAdminRevenue > 0) {
       trans.push({
-        date: todayStr,
+        date: transactionDate,
         type: 'in',
         val: mainAdminRevenue,
         desc: `Taxa Adm - ${rental.user}`,
@@ -2066,7 +2066,7 @@ export const useAppState = () => {
     // 2b. Taxa de Administração - Carro Reserva (Entrada - Empresa)
     if (repAdminRevenue > 0 && replacementPlate) {
       trans.push({
-        date: todayStr,
+        date: transactionDate,
         type: 'in',
         val: repAdminRevenue,
         desc: `Taxa Adm Reserva - ${rental.user}`,
@@ -2080,7 +2080,7 @@ export const useAppState = () => {
     // 3. Taxa de Pneus (Entrada - Empresa)
     if (billingData.tireTax > 0) {
       trans.push({
-        date: todayStr,
+        date: transactionDate,
         type: 'in',
         val: billingData.tireTax,
         desc: `Taxa de Pneus - ${rental.user}`,
@@ -2094,7 +2094,7 @@ export const useAppState = () => {
     // 4. Multas / Juros (Entrada - Empresa)
     if (billingData.lateFee > 0) {
       trans.push({
-        date: todayStr,
+        date: transactionDate,
         type: 'in',
         val: billingData.lateFee,
         desc: `Multa por atraso - ${rental.user}`,
@@ -2129,7 +2129,7 @@ export const useAppState = () => {
 
           // Lançar transação de pagamento no financeiro (entrada para a empresa dedicada à multa)
           const newFineTrans = {
-            date: todayStr,
+            date: transactionDate,
             type: 'in',
             val: fd.value,
             desc: `Cobrança Multa (${fine.infraction} - parc. ${fd.installment}) - ${rental.user}`,

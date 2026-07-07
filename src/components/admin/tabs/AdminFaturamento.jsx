@@ -831,16 +831,15 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     {/* Actions Panel */}
                     <div className="space-y-3">
                       <button
-                        onClick={() => !hasPaidToday && setPaymentSelectionRental({ rental, calc, history })}
-                        disabled={hasPaidToday}
+                        onClick={() => setPaymentSelectionRental({ rental, calc, history })}
                         className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${
                           hasPaidToday 
-                            ? 'bg-neutral-200 text-neutral-400 cursor-not-allowed border border-neutral-300/40 shadow-none' 
+                            ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300 border border-neutral-300' 
                             : 'bg-[#C5A059] text-neutral-900 hover:bg-neutral-950 hover:text-white'
                         }`}
                       >
-                        {hasPaidToday ? 'Pagamento Já Confirmado Hoje' : 'Confirmar Pagamento Manual'}
-                        {!hasPaidToday && <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />}
+                        {hasPaidToday ? 'ABRIR CICLOS / PAGAMENTOS' : 'Confirmar Pagamento Manual'}
+                        <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />
                       </button>
                     </div>
                   </div>

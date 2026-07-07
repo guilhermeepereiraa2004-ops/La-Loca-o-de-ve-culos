@@ -536,7 +536,7 @@ const AdminDashboard = ({
 
       {/* Delete Auth Modal */}
       {showDeleteAuthModal && (
-        <div className="fixed inset-0 z-[150] flex items-center justify-center px-6">
+        <div className="fixed inset-0 flex items-center justify-center px-6" style={{ zIndex: 9999 }}>
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setShowDeleteAuthModal(false)} />
           <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-10 text-center shadow-2xl">
             <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">

@@ -638,15 +638,29 @@ const AdminInvestidores = ({
                                         {td.explanation}
                                       </td>
                                       <td className="px-4 py-3.5 text-right">
-                                        <span className={`inline-block px-2.5 py-1 text-[11px] font-mono font-black rounded-lg border ${
-                                          td.share > 0 
-                                            ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
-                                            : td.share < 0 
-                                              ? 'bg-red-50 border-red-100 text-red-700' 
-                                              : 'bg-neutral-50 border-neutral-200 text-neutral-400'
-                                        }`}>
-                                          {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
-                                        </span>
+                                        <div className="flex items-center justify-end gap-3">
+                                          <span className={`inline-block px-2.5 py-1 text-[11px] font-mono font-black rounded-lg border ${
+                                            td.share > 0 
+                                              ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                                              : td.share < 0 
+                                                ? 'bg-red-50 border-red-100 text-red-700' 
+                                                : 'bg-neutral-50 border-neutral-200 text-neutral-400'
+                                          }`}>
+                                            {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
+                                          </span>
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setItemToDelete(td);
+                                              setDeleteType('transaction');
+                                              setShowDeleteAuthModal(true);
+                                            }}
+                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                            title="Apagar transação"
+                                          >
+                                            <Trash2 size={13} />
+                                          </button>
+                                        </div>
                                       </td>
                                     </tr>
                                   );
@@ -700,17 +714,31 @@ const AdminInvestidores = ({
                                       {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
                                     </span>
                                   </div>
-                                  <div className="text-right">
-                                    <span className="text-[9px] uppercase font-black text-neutral-400 block tracking-wider">Efeito Líquido</span>
-                                    <span className={`inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-mono font-black rounded-lg border ${
-                                      td.share > 0 
-                                        ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
-                                        : td.share < 0 
-                                          ? 'bg-red-50 border-red-100 text-red-700' 
-                                          : 'bg-neutral-50 border-neutral-200 text-neutral-400'
-                                    }`}>
-                                      {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
-                                    </span>
+                                  <div className="text-right flex items-center justify-end gap-3">
+                                    <div>
+                                      <span className="text-[9px] uppercase font-black text-neutral-400 block tracking-wider">Efeito Líquido</span>
+                                      <span className={`inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-mono font-black rounded-lg border ${
+                                        td.share > 0 
+                                          ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                                          : td.share < 0 
+                                            ? 'bg-red-50 border-red-100 text-red-700' 
+                                            : 'bg-neutral-50 border-neutral-200 text-neutral-400'
+                                      }`}>
+                                        {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
+                                      </span>
+                                    </div>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setItemToDelete(td);
+                                        setDeleteType('transaction');
+                                        setShowDeleteAuthModal(true);
+                                      }}
+                                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0 self-end mt-2"
+                                      title="Apagar transação"
+                                    >
+                                      <Trash2 size={14} />
+                                    </button>
                                   </div>
                                 </div>
                               </div>
