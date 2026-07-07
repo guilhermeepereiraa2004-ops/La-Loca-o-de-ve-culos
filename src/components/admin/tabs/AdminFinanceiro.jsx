@@ -197,7 +197,7 @@ const AdminFinanceiro = ({
         !searchTerm || 
         (t.desc && t.desc.toLowerCase().includes(searchTerm.toLowerCase())) || 
         (t.responsible && t.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (t.vehiclePlate && t.vehiclePlate.toLowerCase().includes(searchTerm.toLowerCase()));
+        (t.vehiclePlate && t.vehiclePlate.replace(/-/g, '').toLowerCase().includes(searchTerm.replace(/-/g, '').toLowerCase()));
 
       // Hide manual rent transactions (gross rent) from the company transactions list
       const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 

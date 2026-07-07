@@ -296,7 +296,10 @@ const AdminInvestidores = ({
 
   // Filter and sort investors: pending first, then positive payouts, then others
   const filteredAndSortedInvestors = [...investorsWithPayoutData]
-    .filter(inv => (inv.name || '').toLowerCase().includes(investorSearch.toLowerCase()))
+    .filter(inv => 
+      (inv.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase()
+        .includes((investorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase())
+    )
     .sort((a, b) => {
       const isPendingA = !a.payoutData.prevMonthPaid && a.payoutData.payout > 0;
       const isPendingB = !b.payoutData.prevMonthPaid && b.payoutData.payout > 0;

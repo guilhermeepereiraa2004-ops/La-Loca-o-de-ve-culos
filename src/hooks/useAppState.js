@@ -183,7 +183,7 @@ const mapToCamel = (data, tableName) => {
 const mapToSnake = (obj, tableName) => {
   const mappings = TABLE_MAPPINGS[tableName] || {};
   const newObj = {};
-  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax', 'investorName'];
+  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax', 'investorName', 'payoutData'];
   const effectiveSkip = tableName === 'fines' ? skipKeys.filter(k => k !== 'id') : skipKeys;
   for (const key in obj) {
     if (effectiveSkip.includes(key)) continue;
