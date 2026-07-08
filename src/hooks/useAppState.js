@@ -439,12 +439,23 @@ export const useAppState = () => {
           // Pulamos veículos pois já carregamos acima
           if (item.table === 'vehicles') continue;
 
-          let query = supabase.from(item.table).select('*');
-          if (item.table === 'rentals' || item.table === 'leads') query = query.order('created_at', { ascending: false });
+          // Paginação para contornar o limite padrão de 1000 linhas do Supabase
+          let allData = [];
+          let from = 0;
+          const pageSize = 1000;
+          while (true) {
+            let query = supabase.from(item.table).select('*').range(from, from + pageSize - 1);
+            if (item.table === 'rentals' || item.table === 'leads') query = query.order('created_at', { ascending: false });
+            
+            const { data, error: fetchError } = await query;
+            if (fetchError || !data || data.length === 0) break;
+            allData = allData.concat(data);
+            if (data.length < pageSize) break;
+            from += pageSize;
+          }
           
-          const { data, error } = await query;
-          if (!error && data) {
-            let mappedData = mapToCamel(data, item.table);
+          if (allData.length > 0) {
+            let mappedData = mapToCamel(allData, item.table);
             
             if (item.table === 'transactions') {
               loadedTransactions = mappedData;
@@ -1065,27 +1076,33 @@ export const useAppState = () => {
       const { error } = await supabase.from('rentals').delete().eq('id', id);
       if (error) throw error;
 
-      // Ao excluir a locação, remove também as transações automáticas geradas no momento da criação.
-      // Critério: mesma placa, data igual ao início da locação, categorias automáticas e status Concluído.
+      // Ao excluir a locação, remove SOMENTE as transações automáticas de "Primeiro Aluguel"
+      // geradas especificamente para esta locação. Usa placa + data + categoria + nome do condutor
+      // para evitar apagar transações de outras locações no mesmo veículo.
       if (rental) {
         const plate = rental.plate || rental.vehiclePlate || rental.placa;
         const startDate = rental.startDate || rental.date;
+        const userName = rental.userName || rental.user || '';
 
-        if (plate && startDate) {
+        if (plate && startDate && userName) {
           const startDateStr = String(startDate).substring(0, 10); // "YYYY-MM-DD"
           const autoCategories = ['Aluguel', 'Taxa Adm', 'taxa de pneus'];
 
           const { data: txToDelete, error: fetchErr } = await supabase
             .from('transactions')
-            .select('id, cat, val, date')
+            .select('id, cat, val, date, desc')
             .eq('vehicle_plate', plate)
             .eq('status', 'Concluído')
             .in('cat', autoCategories);
 
           if (!fetchErr && txToDelete && txToDelete.length > 0) {
-            // Filtra só as que têm data igual ao início da locação
+            // Filtro seguro: data do início da locação E nome do condutor na descrição
             const idsToDelete = txToDelete
-              .filter(t => t.date && String(t.date).substring(0, 10) === startDateStr)
+              .filter(t => {
+                const dateMatch = t.date && String(t.date).substring(0, 10) === startDateStr;
+                const nameMatch = userName && t.desc && t.desc.includes(userName);
+                return dateMatch && nameMatch;
+              })
               .map(t => t.id);
 
             if (idsToDelete.length > 0) {
@@ -1096,12 +1113,15 @@ export const useAppState = () => {
 
               if (!delTxErr) {
                 setTransactions(prev => prev.filter(t => !idsToDelete.includes(t.id)));
-                console.log(`✅ ${idsToDelete.length} transação(ões) automática(s) removida(s) junto com a locação excluída.`);
+                console.log(`✅ ${idsToDelete.length} transação(ões) automática(s) de "${userName}" removida(s) junto com a locação excluída.`);
               } else {
                 console.warn('Aviso: Não foi possível remover transações automáticas da locação:', delTxErr.message);
               }
             }
           }
+        } else if (plate && startDate && !userName) {
+          // Se não tem nome do condutor, NÃO apaga transações automaticamente por segurança.
+          console.warn('⚠️ Locação excluída sem nome do condutor — transações automáticas NÃO foram removidas por segurança. Remova-as manualmente se necessário.');
         }
 
         await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
