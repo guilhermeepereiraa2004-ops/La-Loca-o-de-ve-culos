@@ -183,7 +183,8 @@ const AdminInvestidores = ({
     const competenciaKey = prevMonthPaid ? currentMonthKey : prevMonthKey;
     const previewKey = prevMonthPaid ? null : currentMonthKey;
 
-    // ── PASSO 3: Construir detalhes de transações da competência vigente ──────
+    // ── PASSO 3: Construir detalhes de transações por mês ──────
+    const transactionsByMonth = {};
     const transactionsDetails = [];
     const previewDetails = [];
     investorTrans.forEach(t => {
@@ -192,21 +193,24 @@ const AdminInvestidores = ({
         const tDate = new Date(t.date + 'T12:00:00');
         const monthKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
         const detail = getInvestorShareForTransaction(t, invVehicles, rentals);
+        
+        const detailObj = {
+          id: t.id || Math.random().toString(),
+          date: t.date, desc: t.desc, cat: t.cat, val: t.val,
+          type: t.type, share: detail.share, explanation: detail.explanation,
+          vehiclePlate: t.vehiclePlate
+        };
+
+        if (!transactionsByMonth[monthKey]) {
+          transactionsByMonth[monthKey] = [];
+        }
+        transactionsByMonth[monthKey].push(detailObj);
+
         if (monthKey === competenciaKey) {
-          transactionsDetails.push({
-            id: t.id || Math.random().toString(),
-            date: t.date, desc: t.desc, cat: t.cat, val: t.val,
-            type: t.type, share: detail.share, explanation: detail.explanation,
-            vehiclePlate: t.vehiclePlate
-          });
+          transactionsDetails.push(detailObj);
         }
         if (previewKey && monthKey === previewKey) {
-          previewDetails.push({
-            id: t.id || Math.random().toString(),
-            date: t.date, desc: t.desc, cat: t.cat, val: t.val,
-            type: t.type, share: detail.share, explanation: detail.explanation,
-            vehiclePlate: t.vehiclePlate
-          });
+          previewDetails.push(detailObj);
         }
       } catch (e) { console.error(e); }
     });
@@ -244,6 +248,7 @@ const AdminInvestidores = ({
       vehicles: invVehicles,
       transactionsDetails: transactionsDetails.sort((a, b) => b.date.localeCompare(a.date)),
       previewDetails: previewDetails.sort((a, b) => b.date.localeCompare(a.date)),
+      transactionsByMonth,
       previewNet,
       monthlySummaries
     };
@@ -256,6 +261,7 @@ const AdminInvestidores = ({
   const [payoutHistory, setPayoutHistory] = useState({}); // investorId → []
   const [expandedHistory, setExpandedHistory] = useState({}); // investorId → bool
   const [selectedInvForCalc, setSelectedInvForCalc] = useState(null); // For memory modal
+  const [selectedMonthForCalc, setSelectedMonthForCalc] = useState(null); // For memory modal month filter
   const [selectedPlateFilter, setSelectedPlateFilter] = useState('all');
   const [investorSearch, setInvestorSearch] = useState('');
 
@@ -359,7 +365,7 @@ const AdminInvestidores = ({
 
       {/* Modal de Memória de Cálculo */}
       {selectedInvForCalc && (() => {
-        const { payout, currentMonthNet, competenciaKey, prevMonthKey, currentMonthKey, prevMonthPaid, autoAdvance, carriedDebt, transactionsDetails, previewDetails, previewNet, monthlySummaries, vehicles: invVehs } = calculateInvestorPayout(selectedInvForCalc);
+        const { payout, currentMonthNet, competenciaKey, prevMonthKey, currentMonthKey, prevMonthPaid, autoAdvance, carriedDebt, transactionsDetails, previewDetails, previewNet, monthlySummaries, vehicles: invVehs, transactionsByMonth } = calculateInvestorPayout(selectedInvForCalc);
         const monthLabelsLong = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         // Label da competência vigente (mês que serve de base para o próximo pagamento)
         const competenciaLabel = competenciaKey
@@ -377,7 +383,10 @@ const AdminInvestidores = ({
         const previewFiltered = previewDetails.filter(td => td.share !== 0);
         const formatCurrency = (val) => val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         
-        const filteredTransactions = transactionsDetails.filter(td => {
+        const activeMonth = selectedMonthForCalc || competenciaKey;
+        const activeTransactions = (transactionsByMonth && transactionsByMonth[activeMonth] ? transactionsByMonth[activeMonth] : []).sort((a, b) => b.date.localeCompare(a.date));
+
+        const filteredTransactions = activeTransactions.filter(td => {
           if (td.share === 0) return false;
           if (selectedPlateFilter === 'all') return true;
           if (selectedPlateFilter === 'none') return !td.vehiclePlate;
@@ -427,7 +436,7 @@ const AdminInvestidores = ({
                     </h4>
                   </div>
                 </div>
-                <button onClick={() => setSelectedInvForCalc(null)} className="w-8 h-8 sm:w-10 sm:h-10 bg-white flex items-center justify-center rounded-full hover:bg-neutral-150 transition-all shadow-sm border border-neutral-100 active:scale-95 duration-200 shrink-0">
+                <button onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }} className="w-8 h-8 sm:w-10 sm:h-10 bg-white flex items-center justify-center rounded-full hover:bg-neutral-150 transition-all shadow-sm border border-neutral-100 active:scale-95 duration-200 shrink-0">
                   <X size={16} />
                 </button>
               </div>
@@ -543,14 +552,32 @@ const AdminInvestidores = ({
                     <div>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-2 border-b border-neutral-200">
                         <div>
-                          <h5 className="text-sm font-black text-neutral-900 uppercase tracking-tight">Transações do Período</h5>
-                          <p className="text-[10px] text-neutral-400 font-medium mt-0.5">
-                            {!prevMonthPaid
-                              ? <>Competência fechada: <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Receitas do mês corrente estarão disponíveis após o pagamento ser registrado.</>
-                              : payout <= 0
-                              ? <>Nada a pagar em <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Competência avançada automaticamente após o 5º dia útil.</>
-                              : <>Competência em andamento: <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Será pago no 5º dia útil do próximo mês.</>
-                            }
+                          <h5 className="text-sm font-black text-neutral-900 uppercase tracking-tight flex items-center gap-2">
+                            Transações
+                            <select
+                              value={activeMonth}
+                              onChange={(e) => setSelectedMonthForCalc(e.target.value)}
+                              className="ml-2 bg-neutral-100 border border-neutral-200 text-neutral-800 text-xs rounded-lg px-2 py-1 outline-none font-black cursor-pointer hover:bg-neutral-200 transition-colors"
+                            >
+                              {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
+                                const [yr, mo] = m.split('-');
+                                const label = `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`;
+                                return <option key={m} value={m}>{label} {m === competenciaKey ? '(Vigente)' : ''}</option>
+                              })}
+                            </select>
+                          </h5>
+                          <p className="text-[10px] text-neutral-400 font-medium mt-1">
+                            {activeMonth === competenciaKey ? (
+                              !prevMonthPaid
+                                ? <>Competência fechada: <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Receitas do mês corrente estarão disponíveis após o pagamento ser registrado.</>
+                                : payout <= 0
+                                ? <>Nada a pagar em <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Competência avançada automaticamente após o 5º dia útil.</>
+                                : <>Competência em andamento: <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Será pago no 5º dia útil do próximo mês.</>
+                            ) : (
+                               <>Cálculos do mês de <span className="font-bold text-neutral-600">{
+                                 (() => { const [yr, mo] = activeMonth.split('-'); return `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`; })()
+                               }</span>.</>
+                            )}
                           </p>
                         </div>
                         
@@ -937,7 +964,7 @@ const AdminInvestidores = ({
               {/* Modal Footer */}
               <div className="p-4 sm:p-6 border-t border-neutral-100 bg-neutral-50/30 flex justify-end shrink-0">
                 <button 
-                  onClick={() => setSelectedInvForCalc(null)}
+                  onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }}
                   className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-neutral-950 text-white text-[10px] uppercase tracking-widest font-black hover:bg-[#C5A059] transition-all rounded-xl shadow-md flex items-center justify-center"
                 >
                   Fechar Detalhes
@@ -1246,6 +1273,7 @@ const AdminInvestidores = ({
                           <button
                             onClick={() => {
                               setSelectedPlateFilter('all');
+                              setSelectedMonthForCalc(null);
                               setSelectedInvForCalc(investor);
                             }}
                             className="mt-2 text-[9.5px] text-[#C5A059] font-black uppercase tracking-widest underline flex items-center gap-1 hover:text-neutral-950 transition-colors"
