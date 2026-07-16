@@ -1,29 +1,38 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
+import { Loader2, AlertTriangle } from 'lucide-react';
 
-// Tabs
-import AdminLeads from './tabs/AdminLeads';
-import AdminFrota from './tabs/AdminFrota';
-import AdminLocacoes from './tabs/AdminLocacoes';
-import AdminInvestidores from './tabs/AdminInvestidores';
-import AdminFinanceiro from './tabs/AdminFinanceiro';
-import AdminCaucao from './tabs/AdminCaucao';
-import AdminBI from './tabs/AdminBI';
-import AdminManutencao from './tabs/AdminManutencao';
-import AdminVistoria from './tabs/AdminVistoria';
-import AdminUsuarios from './tabs/AdminUsuarios';
-import AdminOficina from './tabs/AdminOficina';
-import AdminClientes from './tabs/AdminClientes';
-import AdminFaturamento from './tabs/AdminFaturamento';
-import AdminMultas from './tabs/AdminMultas';
+// Lazy-loaded Tabs — only the active tab's code is downloaded
+const AdminLeads = React.lazy(() => import('./tabs/AdminLeads'));
+const AdminFrota = React.lazy(() => import('./tabs/AdminFrota'));
+const AdminLocacoes = React.lazy(() => import('./tabs/AdminLocacoes'));
+const AdminInvestidores = React.lazy(() => import('./tabs/AdminInvestidores'));
+const AdminFinanceiro = React.lazy(() => import('./tabs/AdminFinanceiro'));
+const AdminCaucao = React.lazy(() => import('./tabs/AdminCaucao'));
+const AdminBI = React.lazy(() => import('./tabs/AdminBI'));
+const AdminManutencao = React.lazy(() => import('./tabs/AdminManutencao'));
+const AdminVistoria = React.lazy(() => import('./tabs/AdminVistoria'));
+const AdminUsuarios = React.lazy(() => import('./tabs/AdminUsuarios'));
+const AdminOficina = React.lazy(() => import('./tabs/AdminOficina'));
+const AdminClientes = React.lazy(() => import('./tabs/AdminClientes'));
+const AdminFaturamento = React.lazy(() => import('./tabs/AdminFaturamento'));
+const AdminMultas = React.lazy(() => import('./tabs/AdminMultas'));
+const AdminLogs = React.lazy(() => import('./tabs/AdminLogs'));
 
-// Modals
+// Tab loading fallback
+const TabLoader = () => (
+  <div className="flex flex-col items-center justify-center py-32 gap-4 animate-in fade-in duration-300">
+    <Loader2 size={32} className="text-[#C5A059] animate-spin" />
+    <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Carregando módulo...</p>
+  </div>
+);
+
+// Modals (static — may be triggered from any tab)
 import RentalDetailModal from './modals/RentalDetailModal';
 import RentalRenewalModal from './modals/RentalRenewalModal';
 import InspectionDetailModal from './modals/InspectionDetailModal';
 import ContractClosureModal from './modals/ContractClosureModal';
 import TerminationTermModal from './modals/TerminationTermModal';
-import AdminLogs from './tabs/AdminLogs';
 import VehicleDetailModal from './modals/VehicleDetailModal';
 import AdminSuccessModal from './modals/AdminSuccessModal';
 import ImageViewer from '../ui/ImageViewer';
@@ -38,7 +47,6 @@ import AdminSidebar from './AdminSidebar';
 import AdminHeader from './AdminHeader';
 
 // Hooks & Utils
-import { AlertTriangle } from 'lucide-react';
 import { useAdminState } from '../../hooks/useAdminState';
 import { calculateBIStats, getDynamicAlerts } from '../../utils/adminUtils.jsx';
 import { computeNotifications } from '../../utils/notifications';
@@ -354,6 +362,7 @@ const AdminDashboard = ({
         />
 
         <div className="flex-1 overflow-y-auto p-4 md:p-5 xl:p-6 2xl:p-8">
+          <Suspense fallback={<TabLoader />}>
           {activeTab === 'bi' && canAccess('bi') && <AdminBI stats={biData.mainStats} chartData={biData.chartData} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
           {activeTab === 'leads' && canAccess('leads') && (
             <AdminLeads 
@@ -504,6 +513,7 @@ const AdminDashboard = ({
               onDeleteServiceOrder={onDeleteServiceOrder}
             />
           )}
+          </Suspense>
         </div>
       </main>
 

@@ -201,7 +201,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                     <div className="aspect-square bg-neutral-100 rounded-3xl overflow-hidden relative group border border-neutral-200 shadow-inner">
                       {photo ? (
                         <>
-                          <img src={photo.preview} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={slot.label} />
+                          <img src={photo.preview} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={slot.label} />
                           <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
                             <button 
                               onClick={() => setSelectedMedia({ type: 'image', url: photo.preview })}
@@ -267,7 +267,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                   <div key={index} className="space-y-3">
                     <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicional {index + 1}</p>
                     <div className="aspect-square bg-neutral-100 rounded-3xl overflow-hidden relative group border border-neutral-200 shadow-inner">
-                      <img src={photo.preview} className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Foto Adicional ${index + 1}`} />
+                      <img src={photo.preview} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Foto Adicional ${index + 1}`} />
                       <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
                         <button 
                           onClick={() => setSelectedMedia({ type: 'image', url: photo.preview })}
@@ -298,7 +298,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                        <div className="aspect-video bg-neutral-100 rounded-2xl overflow-hidden relative group">
                           {dmg.photo ? (
                             <>
-                              <img src={dmg.photo.preview} className="w-full h-full object-cover" alt={`Avaria ${idx + 1}`} />
+                              <img src={dmg.photo.preview} loading="lazy" className="w-full h-full object-cover" alt={`Avaria ${idx + 1}`} />
                               <button 
                                 onClick={() => setSelectedMedia({ type: 'image', url: dmg.photo.preview })}
                                 className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white"
