@@ -16,6 +16,46 @@ const RentalFormModal = ({
   const [conductorType, setConductorType] = React.useState('cadastrar');
   const [vehicleSearch, setVehicleSearch] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [clientSearch, setClientSearch] = React.useState('');
+
+  const handleSelectClient = React.useCallback((client) => {
+    setRentalForm({
+      ...rentalForm,
+      clientId: client.id,
+      user: client.nome || client.name || '',
+      clientPhone: client.telefone || client.phone || '',
+      email: client.email || '',
+      cpf: client.cpf || '',
+      cnhNumber: client.cnhNumber || client.cnh || '',
+      cnhRegisterNumber: client.cnhRegisterNumber || '',
+      birthDate: client.birthDate || '',
+      cnhValidity: client.cnhExpiration || client.cnhValidity || '',
+      address: client.address || client.docs?.address || '',
+      rg: client.docs?.rg || '',
+      nacionalidade: client.docs?.nacionalidade || 'brasileiro(a)',
+      estadoCivil: client.docs?.estadoCivil || 'solteiro(a)',
+      cep: client.docs?.cep || '',
+      cidadeUf: client.docs?.cidadeUf || 'Aracaju/SE',
+      docs: {
+        cnh: client.docs?.cnh || null,
+        residence: client.docs?.residence || null,
+        appPrints: client.docs?.appPrints || [],
+        signedContract: client.docs?.signedContract || null
+      }
+    });
+  }, [rentalForm, setRentalForm]);
+
+  const filteredClients = React.useMemo(() => {
+    if (!clients) return [];
+    if (!clientSearch) return clients;
+    const searchLower = clientSearch.toLowerCase();
+    return clients.filter(c => {
+      const name = (c.nome || c.name || '').toLowerCase();
+      const cpf = (c.cpf || '').replace(/\D/g, '');
+      const searchCpf = searchLower.replace(/\D/g, '');
+      return name.includes(searchLower) || (searchCpf && cpf.includes(searchCpf));
+    });
+  }, [clients, clientSearch]);
 
   React.useEffect(() => {
     if (!isOpen) {
@@ -301,50 +341,55 @@ const RentalFormModal = ({
 
               {/* Dropdown to Autocomplete Registered Conductor */}
               {conductorType === 'cadastrado' && (
-                <div className="bg-neutral-50 p-8 rounded-[2.5rem] border border-neutral-100 space-y-4 max-w-2xl mx-auto animate-in slide-in-from-top-4 duration-500">
+                <div className="bg-neutral-50 p-6 rounded-[2.5rem] border border-neutral-100 space-y-4 max-w-2xl mx-auto animate-in slide-in-from-top-4 duration-500">
                   <label className="text-[10px] uppercase tracking-[0.2em] text-[#C5A059] font-black ml-1">Selecionar Condutor Cadastrado</label>
-                  <select
-                    onChange={(e) => {
-                      const selectedId = e.target.value;
-                      if (selectedId === '') return;
-                      const client = clients.find(c => c.id === selectedId);
-                      if (client) {
-                        setRentalForm({
-                          ...rentalForm,
-                          clientId: client.id,
-                          user: client.nome || client.name || '',
-                          clientPhone: client.telefone || client.phone || '',
-                          email: client.email || '',
-                          cpf: client.cpf || '',
-                          cnhNumber: client.cnhNumber || client.cnh || '',
-                          cnhRegisterNumber: client.cnhRegisterNumber || '',
-                          birthDate: client.birthDate || '',
-                          cnhValidity: client.cnhExpiration || client.cnhValidity || '',
-                          address: client.address || client.docs?.address || '',
-                          rg: client.docs?.rg || '',
-                          nacionalidade: client.docs?.nacionalidade || 'brasileiro(a)',
-                          estadoCivil: client.docs?.estadoCivil || 'solteiro(a)',
-                          cep: client.docs?.cep || '',
-                          cidadeUf: client.docs?.cidadeUf || 'Aracaju/SE',
-                          docs: {
-                            cnh: client.docs?.cnh || null,
-                            residence: client.docs?.residence || null,
-                            appPrints: client.docs?.appPrints || [],
-                            signedContract: client.docs?.signedContract || null
-                          }
-                        });
-                      }
-                    }}
-                    className="w-full bg-white border border-neutral-200 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-bold text-neutral-900 text-xs cursor-pointer"
-                    defaultValue=""
-                  >
-                    <option value="" disabled>-- Selecione um cliente da lista --</option>
-                    {clients.map(c => (
-                      <option key={c.id} value={c.id}>
-                        {c.nome || c.name} (CPF: {c.cpf || 'Não Informado'})
-                      </option>
-                    ))}
-                  </select>
+                  
+                  <div className="relative group">
+                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#C5A059] transition-colors" size={18} />
+                     <input 
+                       type="text"
+                       placeholder="Buscar por nome ou CPF..."
+                       value={clientSearch}
+                       onChange={(e) => setClientSearch(e.target.value)}
+                       className="w-full bg-white border border-neutral-200 pl-11 pr-4 py-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-bold text-neutral-900 text-xs"
+                     />
+                     {clientSearch && (
+                       <button
+                         type="button"
+                         onClick={() => setClientSearch('')}
+                         className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors"
+                       >
+                         <X size={14} />
+                       </button>
+                     )}
+                  </div>
+                  
+                  <div className="max-h-64 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                     {filteredClients.map(c => (
+                        <button
+                           key={c.id}
+                           type="button"
+                           onClick={() => handleSelectClient(c)}
+                           className={`w-full text-left p-4 rounded-2xl border transition-all flex items-center justify-between ${rentalForm.clientId === c.id ? 'border-[#C5A059] bg-[#C5A059]/5' : 'border-transparent hover:bg-white hover:border-neutral-200'}`}
+                        >
+                           <div>
+                             <p className="font-bold text-sm text-neutral-900">{c.nome || c.name}</p>
+                             <p className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mt-1">CPF: {c.cpf || 'Não Informado'}</p>
+                           </div>
+                           {rentalForm.clientId === c.id && (
+                             <div className="w-8 h-8 bg-[#C5A059] rounded-full flex items-center justify-center shadow-lg animate-in zoom-in duration-300">
+                               <Check size={14} className="text-white" />
+                             </div>
+                           )}
+                        </button>
+                     ))}
+                     {filteredClients.length === 0 && (
+                        <div className="flex flex-col items-center justify-center py-8">
+                          <User size={32} className="text-neutral-200 mb-3" />
+                          <p className="text-center text-xs font-bold text-neutral-400 uppercase tracking-widest">Nenhum condutor encontrado</p>
+                        </div>
+                     )}
+                  </div>
                 </div>
               )}
 

@@ -200,8 +200,32 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
                           const valNum = parseFloat(customValue);
                           if (isNaN(valNum) || valNum <= 0) return alert('Por favor, informe um valor numérico válido maior que zero.');
                           
-                          // Cria uma cópia do cálculo original alterando apenas o valor total
-                          const modifiedCalc = { ...cycle.calc, total: valNum, manualAdjustment: true };
+                          // Calcula a proporção para manter a separação do carro reserva e principal correta para o investidor
+                          const oldRentTotal = (cycle.calc.weeklyRate || 0) - (cycle.calc.abatimento || 0) + (cycle.calc.replacementCharge || 0);
+                          const tireTax = cycle.calc.tireTax || 0;
+                          const lateFee = cycle.calc.lateFee || 0;
+                          
+                          let newWeeklyRate = (cycle.calc.weeklyRate || 0) - (cycle.calc.abatimento || 0);
+                          let newReplacementCharge = cycle.calc.replacementCharge || 0;
+                          
+                          if (oldRentTotal > 0) {
+                            const newRentTotal = valNum - tireTax - lateFee;
+                            const ratio = Math.max(0, newRentTotal) / oldRentTotal;
+                            newWeeklyRate = newWeeklyRate * ratio;
+                            newReplacementCharge = newReplacementCharge * ratio;
+                          } else {
+                            newWeeklyRate = valNum - tireTax - lateFee;
+                          }
+                          
+                          // Cria uma cópia do cálculo alterando os valores proporcionais para o backend processar
+                          const modifiedCalc = { 
+                            ...cycle.calc, 
+                            total: valNum,
+                            weeklyRate: Math.max(0, newWeeklyRate),
+                            abatimento: 0,
+                            replacementCharge: Math.max(0, newReplacementCharge),
+                            manualAdjustment: true 
+                          };
                           const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName}`;
                           
                           onConfirmPayment(rental.id, modifiedCalc, desc);
@@ -566,6 +590,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                 const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
                 const isMatchingPlate = tPlate && (tPlate === rentalPlate || (replacementPlate && tPlate === replacementPlate));
                 if (!isMatchingPlate) return false;
+
+                // Apenas incluir transações a partir da data de início da locação para evitar herdar pagamentos antigos de outros motoristas do mesmo veículo
+                const rentalStartDate = rental.startDate || rental.date;
+                if (rentalStartDate && t.date && t.date < rentalStartDate) {
+                  return false;
+                }
 
                 // Show rental, fine and tire tax payments from the client (type 'in' of category 'Aluguel', 'multa' or 'taxa de pneus')
                 const category = (t.cat || '').toLowerCase();
