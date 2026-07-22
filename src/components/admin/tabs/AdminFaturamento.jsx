@@ -130,7 +130,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
         dueDate: currentCalc.dueDate,
         calc: currentCalc,
         label: labelRef,
-        isPaid: currentCalc.hasPaidToday // se já pagou hoje
+        isPaid: false // se hasPaidToday é true, significa que o pagamento de hoje cobriu a semana passada/atual. A *nova* semana gerada (currentCalc) deve ficar pendente
       });
     }
     
@@ -472,6 +472,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       const rHistory = (transactions || []).filter(t => {
         const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
         const isMatch = tPlate === rPlate || (repPlate && tPlate === repPlate);
+        
+        // Excluir transações anteriores ao início da locação para não puxar histórico do veículo com outros motoristas
+        const rentalStartDate = r.startDate || r.date;
+        if (rentalStartDate && t.date && t.date < rentalStartDate) {
+          return false;
+        }
+
         return isMatch && t.type === 'in' && (t.cat || '').toLowerCase() === 'aluguel';
       });
 
