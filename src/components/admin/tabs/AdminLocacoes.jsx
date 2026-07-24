@@ -33,9 +33,9 @@ const AdminLocacoes = ({
 
       // 1. Search term filter
       if (searchTerm) {
-        const term = searchTerm.toLowerCase();
+        const term = searchTerm.toLowerCase().replace(/-/g, '');
         const condutor = (rental.userName || rental.user || '').toLowerCase();
-        const placa = (rental.vehiclePlate || rental.plate || '').toLowerCase();
+        const placa = (rental.vehiclePlate || rental.plate || '').toLowerCase().replace(/-/g, '');
         const modelo = (rental.vehicleModel || rental.vehicle || '').toLowerCase();
         if (!condutor.includes(term) && !placa.includes(term) && !modelo.includes(term)) {
           return false;
