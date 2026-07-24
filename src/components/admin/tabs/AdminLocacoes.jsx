@@ -33,10 +33,11 @@ const AdminLocacoes = ({
 
       // 1. Search term filter
       if (searchTerm) {
-        const term = searchTerm.toLowerCase().replace(/-/g, '');
-        const condutor = (rental.userName || rental.user || '').toLowerCase();
-        const placa = (rental.vehiclePlate || rental.plate || '').toLowerCase().replace(/-/g, '');
-        const modelo = (rental.vehicleModel || rental.vehicle || '').toLowerCase();
+        const normalizeString = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+        const term = normalizeString(searchTerm).replace(/-/g, '');
+        const condutor = normalizeString(rental.userName || rental.user);
+        const placa = normalizeString(rental.vehiclePlate || rental.plate).replace(/-/g, '');
+        const modelo = normalizeString(rental.vehicleModel || rental.vehicle);
         if (!condutor.includes(term) && !placa.includes(term) && !modelo.includes(term)) {
           return false;
         }

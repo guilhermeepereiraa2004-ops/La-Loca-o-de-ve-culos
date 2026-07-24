@@ -31,7 +31,9 @@ const AdminClientes = ({
   );
 
   const filteredClients = clients.filter(c => {
-    const matchesSearch = (c.nome || c.name || '').toLowerCase().includes(search.toLowerCase()) ||
+    const normalizeString = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const searchNorm = normalizeString(search);
+    const matchesSearch = normalizeString(c.nome || c.name).includes(searchNorm) ||
                           (c.cpf || '').includes(search) ||
                           (c.telefone || c.phone || '').includes(search);
     
