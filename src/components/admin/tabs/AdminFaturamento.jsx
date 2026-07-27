@@ -59,11 +59,107 @@ const PaymentStatusBadge = ({ status }) => {
   );
 };
 
+const ConfirmDialog = ({ title, message, onConfirm, onCancel, confirmText = 'Confirmar', cancelText = 'Cancelar' }) => (
+  <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" onClick={onCancel} />
+    <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="p-6">
+        <h3 className="text-lg font-black text-neutral-900 mb-2">{title}</h3>
+        <p className="text-sm text-neutral-600">{message}</p>
+      </div>
+      <div className="flex bg-neutral-50 p-4 gap-3 justify-end">
+        <button 
+          onClick={onCancel}
+          className="px-4 py-2 bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg transition-colors"
+        >
+          {cancelText}
+        </button>
+        <button 
+          onClick={onConfirm}
+          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+        >
+          {confirmText}
+        </button>
+      </div>
+    </div>
+  </div>
+);
 
-const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfirmPayment, calculateBoletoForCycle }) => {
+const CategorySelect = ({ value, onChange, options, placeholder, className }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState(value);
+  const wrapperRef = React.useRef(null);
+
+  React.useEffect(() => {
+    setSearch(value);
+  }, [value]);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt => opt.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div ref={wrapperRef} className="relative w-full">
+      <input
+        type="text"
+        value={search}
+        onChange={(e) => {
+          setSearch(e.target.value);
+          onChange(e.target.value);
+          setIsOpen(true);
+        }}
+        onFocus={() => setIsOpen(true)}
+        placeholder={placeholder}
+        className={className}
+      />
+      {isOpen && (
+        <div className="absolute z-[200] w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt, idx) => (
+              <div
+                key={idx}
+                className="px-3 py-2 text-xs font-bold text-neutral-600 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors border-b border-neutral-100 last:border-0"
+                onClick={() => {
+                  onChange(opt);
+                  setSearch(opt);
+                  setIsOpen(false);
+                }}
+              >
+                {opt}
+              </div>
+            ))
+          ) : (
+            <div className="px-3 py-2 text-xs text-neutral-400 italic font-medium">Usar nova categoria: "{search}"</div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, onClose, onConfirmPayment, calculateBoletoForCycle, availableCategories }) => {
   const [pastCycles, setPastCycles] = useState([]);
   const [editingCycle, setEditingCycle] = useState(null);
   const [customValue, setCustomValue] = useState('');
+  const [pendingConfirm, setPendingConfirm] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  
+  // Novos campos para desconto da empresa e pagamento adicional
+  const [companyDiscount, setCompanyDiscount] = useState('');
+  const [companyDiscountCat, setCompanyDiscountCat] = useState('');
+  const [companyDiscountDesc, setCompanyDiscountDesc] = useState('');
+  const [additionalPaymentValue, setAdditionalPaymentValue] = useState('');
+  const [additionalPaymentCat, setAdditionalPaymentCat] = useState('');
+  const [additionalPaymentDesc, setAdditionalPaymentDesc] = useState('');
+  const [showAdditionalFields, setShowAdditionalFields] = useState(false);
   
   React.useEffect(() => {
     const startStr = (rental.startDate || rental.date).substring(0, 10);
@@ -96,12 +192,29 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
       const labelRef = `Ref: ${calc.cycleStart.split('-').reverse().join('/')} a ${calc.cycleEnd.split('-').reverse().join('/')}`;
       
       let isPaid = false;
+      let actualTotal = null;
+      let cycleAdjustments = [];
       
       // 1. Verifica se tem pagamento específico para esta semana
-      const hasSpecific = specificPayments.some(t => t.desc.includes(labelRef));
+      const specificPayment = specificPayments.find(t => t.desc.includes(labelRef));
       
-      if (hasSpecific) {
+      if (specificPayment) {
         isPaid = true;
+        actualTotal = parseFloat(specificPayment.val || 0);
+        
+        // Procurar em allTransactions descontos ou adicionais vinculados a este labelRef
+        if (allTransactions) {
+          const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
+          cycleAdjustments = allTransactions.filter(t => {
+            const tPlate = (t.vehiclePlate || '').toLowerCase().trim();
+            const matchesPlate = tPlate === rentalPlate;
+            const matchesRef = (t.desc || '').includes(labelRef);
+            // Pegamos saídas que sejam desconto, ou entradas que sejam adicionais, não aluguel
+            const isAdjustment = t.cat?.toLowerCase() !== 'aluguel' && t.cat?.toLowerCase() !== 'taxa adm' && t.cat?.toLowerCase() !== 'taxa de pneus';
+            
+            return matchesPlate && matchesRef && isAdjustment;
+          });
+        }
       } else if (legacyCount > 0) {
         // 2. Se não tem específico, consome um genérico da fila cronológica
         isPaid = true;
@@ -113,7 +226,9 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
         dueDate: dueStr,
         calc,
         label: labelRef,
-        isPaid
+        isPaid,
+        actualTotal,
+        adjustments: cycleAdjustments
       });
       
       iterDate.setDate(iterDate.getDate() + 7);
@@ -125,16 +240,43 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
     // Vamos adicioná-la se já não estiver na lista
     if (cycles.length === 0 || cycles[cycles.length - 1].dueDate !== currentCalc.dueDate) {
       const labelRef = `Ref: ${currentCalc.cycleStart.split('-').reverse().join('/')} a ${currentCalc.cycleEnd.split('-').reverse().join('/')}`;
+      
+      let isPaid = false;
+      let actualTotal = null;
+      let cycleAdjustments = [];
+      
+      const specificPayment = specificPayments.find(t => t.desc.includes(labelRef));
+      if (specificPayment) {
+        isPaid = true;
+        actualTotal = parseFloat(specificPayment.val || 0);
+        
+        if (allTransactions) {
+          const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
+          cycleAdjustments = allTransactions.filter(t => {
+            const tPlate = (t.vehiclePlate || '').toLowerCase().trim();
+            const matchesPlate = tPlate === rentalPlate;
+            const matchesRef = (t.desc || '').includes(labelRef);
+            const isAdjustment = t.cat?.toLowerCase() !== 'aluguel' && t.cat?.toLowerCase() !== 'taxa adm' && t.cat?.toLowerCase() !== 'taxa de pneus';
+            
+            return matchesPlate && matchesRef && isAdjustment;
+          });
+        }
+      } else if (legacyCount > 0) {
+        isPaid = true;
+        legacyCount--;
+      }
+
       cycles.push({
         weekNumber,
         dueDate: currentCalc.dueDate,
         calc: currentCalc,
         label: labelRef,
-        isPaid: false // se hasPaidToday é true, significa que o pagamento de hoje cobriu a semana passada/atual. A *nova* semana gerada (currentCalc) deve ficar pendente
+        isPaid,
+        actualTotal,
+        adjustments: cycleAdjustments
       });
     }
     
-    // Inverte para mostrar as semanas mais novas no topo e a Semana 1 no fim
     setPastCycles(cycles.reverse());
   }, [rental, currentCalc, calculateBoletoForCycle, history]);
 
@@ -174,31 +316,134 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
               <div className="flex items-center justify-end gap-4 w-full md:w-auto min-w-[200px]">
                 {!cycle.isPaid && editingCycle === cycle.weekNumber ? (
                   <div className="flex flex-col items-end gap-2 w-full animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Ajustar:</span>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">R$</span>
-                        <input 
-                          type="number"
-                          step="0.01"
-                          value={customValue}
-                          onChange={e => setCustomValue(e.target.value)}
-                          className="w-32 bg-white border border-neutral-300 rounded-lg py-2 pl-9 pr-3 text-sm font-black text-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-inner"
-                          autoFocus
-                        />
+                    <div className="flex flex-col gap-3 w-full bg-neutral-100/50 p-3 rounded-xl border border-neutral-200/60 mt-2">
+                      <div className="flex items-center gap-2 justify-between">
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Base:</span>
+                        <div className="relative">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">R$</span>
+                          <input 
+                            type="number"
+                            step="0.01"
+                            value={customValue}
+                            onChange={e => setCustomValue(e.target.value)}
+                            className="w-28 bg-white border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-inner text-right"
+                            autoFocus
+                          />
+                        </div>
+                      </div>
+
+                      <button 
+                        onClick={() => setShowAdditionalFields(!showAdditionalFields)}
+                        className="text-[9px] font-black text-emerald-600 hover:text-emerald-700 uppercase tracking-widest text-right flex items-center justify-end gap-1"
+                      >
+                        {showAdditionalFields ? 'Ocultar Desconto/Adicional' : '+ Adicionar Desconto ou Pagamento Extra'}
+                      </button>
+
+                      {showAdditionalFields && (
+                        <div className="space-y-3 pt-2 border-t border-neutral-200/60 animate-in fade-in slide-in-from-top-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider leading-tight">Desconto<br/><span className="text-[8px] text-neutral-400">(Abate da Empresa)</span></span>
+                            <div className="relative shrink-0">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">R$</span>
+                              <input 
+                                type="number"
+                                step="0.01"
+                                value={companyDiscount}
+                                onChange={e => setCompanyDiscount(e.target.value)}
+                                placeholder="0.00"
+                                className="w-28 bg-white border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-right"
+                              />
+                            </div>
+                          </div>
+                          {parseFloat(companyDiscount) > 0 && (
+                            <div className="flex flex-col gap-2 mt-1">
+                              <CategorySelect 
+                                options={availableCategories}
+                                value={companyDiscountCat}
+                                onChange={setCompanyDiscountCat}
+                                placeholder="Selecione ou digite a categoria do desconto"
+                                className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                              />
+                              <input 
+                                type="text"
+                                value={companyDiscountDesc}
+                                onChange={e => setCompanyDiscountDesc(e.target.value)}
+                                placeholder="Descrição do Desconto (ex: Combinado via WhatsApp)"
+                                className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 mb-2"
+                              />
+                            </div>
+                          )}
+                          
+                          <div className="flex flex-col gap-2 pt-1 border-t border-neutral-200/60">
+                            <div className="flex items-center justify-between gap-2 mt-2">
+                              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider leading-tight">Adicional<br/><span className="text-[8px] text-neutral-400">(Entra para Empresa)</span></span>
+                              <div className="relative shrink-0">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">R$</span>
+                                <input 
+                                  type="number"
+                                  step="0.01"
+                                  value={additionalPaymentValue}
+                                  onChange={e => setAdditionalPaymentValue(e.target.value)}
+                                  placeholder="0.00"
+                                  className="w-28 bg-white border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-right"
+                                />
+                              </div>
+                            </div>
+                            {parseFloat(additionalPaymentValue) > 0 && (
+                              <div className="flex flex-col gap-2 mt-1">
+                                <CategorySelect 
+                                  options={availableCategories}
+                                  value={additionalPaymentCat}
+                                  onChange={setAdditionalPaymentCat}
+                                  placeholder="Selecione ou digite a categoria do adicional"
+                                  className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                                <input 
+                                  type="text"
+                                  value={additionalPaymentDesc}
+                                  onChange={e => setAdditionalPaymentDesc(e.target.value)}
+                                  placeholder="Descrição do Adicional (ex: Lavagem)"
+                                  className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between pt-2 border-t border-neutral-300">
+                        <span className="text-[10px] font-black text-neutral-800 uppercase tracking-wider">Total a Pagar:</span>
+                        <span className="text-sm font-black text-emerald-700">
+                          R$ {((parseFloat(customValue) || 0) - (parseFloat(companyDiscount) || 0) + (parseFloat(additionalPaymentValue) || 0)).toFixed(2).replace('.', ',')}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    
+                    <div className="flex gap-2 w-full justify-end mt-2">
                       <button 
-                        onClick={() => { setEditingCycle(null); setCustomValue(''); }}
-                        className="px-4 py-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-bold rounded-md transition-colors"
+                        onClick={() => { 
+                          setEditingCycle(null); 
+                          setCustomValue(''); 
+                          setCompanyDiscount('');
+                          setCompanyDiscountCat('');
+                          setCompanyDiscountDesc('');
+                          setAdditionalPaymentValue('');
+                          setAdditionalPaymentCat('');
+                          setAdditionalPaymentDesc('');
+                          setShowAdditionalFields(false);
+                        }}
+                        className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 text-xs font-bold rounded-md transition-colors"
                       >
                         Cancelar
                       </button>
                       <button 
                         onClick={() => {
                           const valNum = parseFloat(customValue);
-                          if (isNaN(valNum) || valNum <= 0) return alert('Por favor, informe um valor numérico válido maior que zero.');
+                          if (isNaN(valNum) || valNum <= 0) return alert('Por favor, informe um valor base válido maior que zero.');
+                          
+                          const discountVal = parseFloat(companyDiscount) || 0;
+                          const additionalVal = parseFloat(additionalPaymentValue) || 0;
+                          const finalTotal = valNum - discountVal + additionalVal;
                           
                           // Calcula a proporção para manter a separação do carro reserva e principal correta para o investidor
                           const oldRentTotal = (cycle.calc.weeklyRate || 0) - (cycle.calc.abatimento || 0) + (cycle.calc.replacementCharge || 0);
@@ -220,16 +465,21 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
                           // Cria uma cópia do cálculo alterando os valores proporcionais para o backend processar
                           const modifiedCalc = { 
                             ...cycle.calc, 
-                            total: valNum,
+                            total: finalTotal, // Total efetivamente pago pelo motorista
                             weeklyRate: Math.max(0, newWeeklyRate),
                             abatimento: 0,
                             replacementCharge: Math.max(0, newReplacementCharge),
-                            manualAdjustment: true 
+                            manualAdjustment: true,
+                            companyDiscount: discountVal,
+                            companyDiscountCat: companyDiscountCat || 'Descontos',
+                            companyDiscountDesc: companyDiscountDesc || '',
+                            additionalPaymentValue: additionalVal,
+                            additionalPaymentCat: additionalPaymentCat || 'Adicional',
+                            additionalPaymentDesc: additionalPaymentDesc || ''
                           };
                           const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName}`;
                           
-                          onConfirmPayment(rental.id, modifiedCalc, desc);
-                          setEditingCycle(null);
+                          setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc });
                         }}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md transition-colors shadow-sm"
                       >
@@ -239,9 +489,26 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
                   </div>
                 ) : (
                   <>
-                    <div className={`text-lg font-black ${cycle.isPaid ? 'text-emerald-700' : 'text-[#C5A059]'}`}>
-                      R$ {cycle.calc.total.toFixed(2).replace('.', ',')}
+                    <div className="flex flex-col items-end">
+                      <div className={`text-lg font-black ${cycle.isPaid ? 'text-emerald-700' : 'text-[#C5A059]'}`}>
+                        R$ {(cycle.actualTotal !== null && cycle.actualTotal !== undefined ? cycle.actualTotal : cycle.calc.total).toFixed(2).replace('.', ',')}
+                      </div>
+                      {cycle.isPaid && cycle.adjustments && cycle.adjustments.length > 0 && (
+                        <div className="mt-1 space-y-0.5 w-full text-right">
+                          {cycle.adjustments.map((adj, idx) => (
+                            <div key={idx} className="flex justify-end items-center gap-2 text-[9px] font-bold">
+                              <span className={adj.type === 'out' ? 'text-amber-600/80 uppercase' : 'text-blue-600/80 uppercase'}>
+                                {adj.cat}
+                              </span>
+                              <span className={adj.type === 'out' ? 'text-amber-700' : 'text-blue-700'}>
+                                {adj.type === 'out' ? '-' : '+'} R$ {parseFloat(adj.val || 0).toFixed(2).replace('.', ',')}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
+                    
                     {!cycle.isPaid && (
                       <button 
                         onClick={() => {
@@ -260,6 +527,30 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, onClose, onConfir
           ))}
         </div>
       </div>
+
+      {pendingConfirm && (
+        <ConfirmDialog 
+          title="Confirmar Ajuste"
+          message="Tem certeza que deseja confirmar este pagamento? A receita será enviada ao financeiro."
+          confirmText="Sim, confirmar"
+          cancelText="Não, cancelar"
+          onConfirm={() => {
+            onConfirmPayment(pendingConfirm.rentalId, pendingConfirm.modifiedCalc, pendingConfirm.desc);
+            setPendingConfirm(null);
+            setEditingCycle(null);
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+          }}
+          onCancel={() => setPendingConfirm(null)}
+        />
+      )}
+      
+      {showSuccess && (
+        <div className="fixed top-4 right-4 z-[1000] bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
+          <CheckCircle2 size={20} />
+          <span className="font-bold text-sm">Pagamento confirmado e receita enviada ao financeiro!</span>
+        </div>
+      )}
     </div>
   );
 };
@@ -270,6 +561,14 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
   const [lateFees, setLateFees] = useState({});
   const [openHistories, setOpenHistories] = useState({});
   const [paymentSelectionRental, setPaymentSelectionRental] = useState(null);
+
+  const availableCategories = React.useMemo(() => {
+    const categoriesSet = new Set();
+    (transactions || []).forEach(t => {
+      if (t.cat) categoriesSet.add(t.cat.trim());
+    });
+    return Array.from(categoriesSet).sort();
+  }, [transactions]);
 
   const handleConfirm = (rentalId, calc) => {
     const lateFee = parseFloat(lateFees[rentalId] || 0);
@@ -454,7 +753,6 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       today.setHours(12, 0, 0, 0);
 
       let iterDate = new Date(startObj);
-      iterDate.setDate(iterDate.getDate() + 7);
       let totalWeeks = 0;
       while (iterDate <= today && totalWeeks < 300) {
         totalWeeks++;
@@ -868,7 +1166,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     {/* Actions Panel */}
                     <div className="space-y-3">
                       <button
-                        onClick={() => setPaymentSelectionRental({ rental, calc, history })}
+                        onClick={() => setPaymentSelectionRental(rental.id)}
                         className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${
                           hasPaidToday 
                             ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300 border border-neutral-300' 
@@ -881,6 +1179,22 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     </div>
                   </div>
                 </div>
+                
+                {/* Modal de Confirmação de Pagamento Unificado */}
+                {paymentSelectionRental === rental.id && (
+                  <PaymentSelectionModal
+                    rental={rental}
+                    currentCalc={calc}
+                    history={history}
+                    allTransactions={transactions}
+                    availableCategories={availableCategories}
+                    onClose={() => setPaymentSelectionRental(null)}
+                    onConfirmPayment={(rentalId, calcObj, customDesc) => {
+                      onConfirmPayment(rentalId, { ...calcObj, customDescription: customDesc, customRepDescription: customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva') });
+                    }}
+                    calculateBoletoForCycle={calculateBoletoForCycle}
+                  />
+                )}
               </div>
             );
           })
@@ -892,22 +1206,6 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
           </div>
         )}
       </div>
-
-      {/* Modal de Confirmação de Pagamento Unificado */}
-      {paymentSelectionRental && (
-        <PaymentSelectionModal
-          rental={paymentSelectionRental.rental}
-          currentCalc={paymentSelectionRental.calc}
-          history={paymentSelectionRental.history}
-          onClose={() => setPaymentSelectionRental(null)}
-          onConfirmPayment={(rentalId, calc, customDesc) => {
-            onConfirmPayment(rentalId, { ...calc, customDescription: customDesc, customRepDescription: customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva') });
-            alert('Pagamento confirmado e receita enviada ao financeiro!');
-            setPaymentSelectionRental(null);
-          }}
-          calculateBoletoForCycle={calculateBoletoForCycle}
-        />
-      )}
     </div>
   );
 };

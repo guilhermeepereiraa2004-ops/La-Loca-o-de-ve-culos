@@ -205,7 +205,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-neutral-300">Nenhum veículo em destaque</p>
               </div>
             )}
-            {vehicles.filter(v => v.isFavorite).map((car, i) => {
+            {vehicles.filter(v => v.isFavorite && v.status !== 'Em preparação').map((car, i) => {
               const isRented = car.status === 'Alugado' || car.status === 'Alugado (Reserva)';
               return (
                 <Reveal key={car.id} delay={`reveal-delay-${Math.min(i + 1, 3)}`}>

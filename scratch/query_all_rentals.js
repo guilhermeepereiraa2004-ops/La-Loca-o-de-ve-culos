@@ -2,7 +2,7 @@ const supabaseUrl = 'https://ucfzkzpmvjekgotexriq.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVjZnprenBtdmpla2dvdGV4cmlxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MjM3OTcsImV4cCI6MjA5NDA5OTc5N30.44Q5UUNaUwrAThI1460paHH-FBndlfVRvpjcYR5Q69E';
 
 async function run() {
-  const res = await fetch(`${supabaseUrl}/rest/v1/rentals?select=id,user_name,documentos,contrato_assinado&limit=5`, {
+  const res = await fetch(`${supabaseUrl}/rest/v1/rentals?id=eq.TOA2F88`, {
     headers: {
       'apikey': supabaseKey,
       'Authorization': `Bearer ${supabaseKey}`

@@ -108,13 +108,29 @@ const VehicleFormModal = ({
                       <input type="text" required value={vehicleForm.renavam ?? ''} onChange={e => setVehicleForm({...vehicleForm, renavam: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="00000000000" />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
-                      <select value={vehicleForm.status ?? 'Disponível'} onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm">
+                      <div className="flex items-center justify-between">
+                        <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
+                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && (
+                          <span className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md">Trava de Locação</span>
+                        )}
+                      </div>
+                      <select 
+                        value={vehicleForm.status ?? 'Disponível'} 
+                        onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} 
+                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)')}
+                        className={`w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm ${
+                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') ? 'opacity-70 cursor-not-allowed' : ''
+                        }`}
+                      >
                         <option value="Disponível">Disponível</option>
                         <option value="Alugado">Alugado</option>
                         <option value="Manutenção">Manutenção</option>
+                        <option value="Em preparação">Em preparação</option>
                         <option value="Indisponível">Indisponível</option>
                       </select>
+                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && (
+                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">Status bloqueado. Encerre o contrato para liberar o veículo.</p>
+                      )}
                     </div>
                   </div>
 

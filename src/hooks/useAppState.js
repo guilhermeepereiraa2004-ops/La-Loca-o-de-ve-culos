@@ -1447,6 +1447,7 @@ export const useAppState = () => {
 
     // Override with parsed numbers
     dbVehicle['year'] = vehicle.year ? String(vehicle.year).trim() : null;
+    delete dbVehicle['description']; // Prevents Supabase crash if column doesn't exist
     dbVehicle['initial_km'] = parseFloat(vehicle.initialKm) || 0;
     dbVehicle['km'] = parseFloat(vehicle.initialKm) || 0;
     dbVehicle['fipe_value'] = parseBRL(vehicle.fipeValue);
@@ -1519,6 +1520,7 @@ export const useAppState = () => {
     
     // Manual overrides for parsed values
     dbVehicle['year'] = vehicle.year ? String(vehicle.year).trim() : null;
+    delete dbVehicle['description']; // Prevents Supabase crash if column doesn't exist
     dbVehicle['fipe_value'] = parseBRL(vehicle.fipeValue);
     dbVehicle['weekly_rental'] = parseBRL(vehicle.weeklyRental);
     dbVehicle['investment_value'] = parseBRL(vehicle.investmentValue);
@@ -1759,7 +1761,7 @@ export const useAppState = () => {
         docs: updatedDocs 
       } : r));
 
-      await handleUpdateVehicle({ id: rental.vehicleId, status: 'Disponível' });
+      await handleUpdateVehicle({ id: rental.vehicleId, status: 'Em preparação' });
 
       const transactionsToAdd = [];
       const today = todayStr;
@@ -2027,6 +2029,17 @@ export const useAppState = () => {
     const mainRent = (billingData.weeklyRate || 0) - (billingData.abatimento || 0);
     const repRent = billingData.replacementCharge || 0;
     
+    // Extrai o (Ref: xx/xx a xx/xx) se existir para vincular os ajustes ao ciclo
+    const matchRef = billingData.customDescription?.match(/\(Ref: .*?\)/);
+    const refStr = matchRef ? ` ${matchRef[0]}` : '';
+
+    const companyDiscount = billingData.companyDiscount || 0;
+    const additionalPaymentValue = billingData.additionalPaymentValue || 0;
+    const additionalPaymentDesc = (billingData.additionalPaymentDesc || `Pagamento Adicional - ${rental.user}`) + refStr;
+    const discountDesc = billingData.companyDiscountDesc 
+      ? `${billingData.companyDiscountDesc}${refStr} - ${rental.user}` 
+      : `Desconto Concedido${refStr} - ${rental.user}`;
+    
     const mainAdminRevenue = mainRent > 0 ? mainRent * mainAdminTaxPercent : 0;
     
     let repAdminRevenue = 0;
@@ -2083,6 +2096,20 @@ export const useAppState = () => {
       });
     }
 
+    // 2a2. Desconto da Empresa (Saída - Empresa)
+    if (companyDiscount > 0) {
+      trans.push({
+        date: transactionDate,
+        type: 'out',
+        val: companyDiscount,
+        desc: discountDesc,
+        cat: billingData.companyDiscountCat || 'Descontos',
+        vehiclePlate: rental.plate,
+        status: 'Concluído',
+        responsible: 'Administradora'
+      });
+    }
+
     // 2b. Taxa de Administração - Carro Reserva (Entrada - Empresa)
     if (repAdminRevenue > 0 && replacementPlate) {
       trans.push({
@@ -2119,6 +2146,20 @@ export const useAppState = () => {
         val: billingData.lateFee,
         desc: `Multa por atraso - ${rental.user}`,
         cat: 'multa',
+        vehiclePlate: rental.plate,
+        status: 'Concluído',
+        responsible: 'Administradora'
+      });
+    }
+
+    // 5. Pagamento Adicional (Entrada - Empresa)
+    if (additionalPaymentValue > 0) {
+      trans.push({
+        date: transactionDate,
+        type: 'in',
+        val: additionalPaymentValue,
+        desc: additionalPaymentDesc,
+        cat: billingData.additionalPaymentCat || 'Adicional',
         vehiclePlate: rental.plate,
         status: 'Concluído',
         responsible: 'Administradora'

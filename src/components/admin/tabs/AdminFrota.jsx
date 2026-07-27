@@ -27,7 +27,7 @@ const AdminFrota = ({
     const cleanPlate = (car.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (car.model || '').toLowerCase().includes(searchLower) ||
       cleanPlate.includes(cleanSearch);
-    const matchesStatus = vehicleStatusFilter === 'Todos' || car.status === vehicleStatusFilter;
+    const matchesStatus = vehicleStatusFilter === 'Todos' || car.status === vehicleStatusFilter || (vehicleStatusFilter === 'Alugado' && car.status === 'Alugado (Reserva)');
     return matchesSearch && matchesStatus;
   });
 
@@ -62,19 +62,25 @@ const AdminFrota = ({
             className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light shadow-sm"
           />
         </div>
-        <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
-          {['Todos', 'Disponível', 'Alugado', 'Manutenção'].map((status) => (
-            <button
-              key={status}
-              onClick={() => setVehicleStatusFilter(status)}
-              className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${vehicleStatusFilter === status
-                ? 'bg-neutral-900 text-white shadow-lg'
-                : 'text-neutral-400 hover:text-neutral-900'
-              }`}
-            >
-              {status}
-            </button>
-          ))}
+        <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0 overflow-x-auto no-scrollbar">
+          {['Todos', 'Disponível', 'Alugado', 'Manutenção', 'Em preparação', 'Indisponível'].map((status) => {
+            const count = status === 'Todos' 
+              ? vehicles.length 
+              : vehicles.filter(v => v.status === status || (status === 'Alugado' && v.status === 'Alugado (Reserva)')).length;
+            
+            return (
+              <button
+                key={status}
+                onClick={() => setVehicleStatusFilter(status)}
+                className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap ${vehicleStatusFilter === status
+                  ? 'bg-neutral-900 text-white shadow-lg'
+                  : 'text-neutral-400 hover:text-neutral-900'
+                }`}
+              >
+                {status} ({count})
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -145,7 +151,9 @@ const AdminFrota = ({
                         ? 'bg-amber-500/90 border-amber-400 text-white'
                         : (car.status === 'Manutenção' || car.status === 'Indisponível')
                           ? 'bg-red-500/90 border-red-400 text-white'
-                          : 'bg-emerald-500/90 border-emerald-400 text-white'
+                          : car.status === 'Em preparação'
+                            ? 'bg-blue-500/90 border-blue-400 text-white'
+                            : 'bg-emerald-500/90 border-emerald-400 text-white'
                       }`}>
                       <div className={`w-1.5 h-1.5 rounded-full ${(car.status === 'Alugado' || car.status === 'Alugado (Reserva)') ? 'bg-white animate-pulse' : 'bg-white'}`} />
                       <span className="text-[8px] font-black uppercase tracking-widest">{car.status || 'Disponível'}</span>
@@ -203,15 +211,24 @@ const AdminFrota = ({
                         <Pencil size={14} />
                       </button>
                       <button
+                        disabled={car.status === 'Alugado' || car.status === 'Alugado (Reserva)'}
                         onClick={() => {
+                          if (car.status === 'Alugado' || car.status === 'Alugado (Reserva)') return;
                           const newStatus = car.status === 'Indisponível' ? 'Disponível' : 'Indisponível';
                           onUpdateVehicle({ ...car, status: newStatus });
                         }}
-                        className={`w-10 h-10 backdrop-blur-md rounded-full flex items-center justify-center transition-all ${car.status === 'Indisponível'
-                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                          : 'bg-white/20 text-white hover:bg-red-500 shadow-lg'
+                        className={`w-10 h-10 backdrop-blur-md rounded-full flex items-center justify-center transition-all ${
+                          car.status === 'Alugado' || car.status === 'Alugado (Reserva)'
+                            ? 'bg-white/10 text-white/50 cursor-not-allowed'
+                            : car.status === 'Indisponível'
+                              ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
+                              : 'bg-white/20 text-white hover:bg-red-500 shadow-lg'
                         }`}
-                        title={car.status === 'Indisponível' ? 'Tornar Disponível' : 'Marcar Indisponível'}
+                        title={
+                          car.status === 'Alugado' || car.status === 'Alugado (Reserva)'
+                            ? 'Status bloqueado por locação'
+                            : car.status === 'Indisponível' ? 'Tornar Disponível' : 'Marcar Indisponível'
+                        }
                       >
                         {car.status === 'Indisponível' ? <Power size={14} /> : <PowerOff size={14} />}
                       </button>

@@ -302,10 +302,17 @@ const AdminInvestidores = ({
 
   // Filter and sort investors: pending first, then positive payouts, then others
   const filteredAndSortedInvestors = [...investorsWithPayoutData]
-    .filter(inv => 
-      (inv.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase()
-        .includes((investorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase())
-    )
+    .filter(inv => {
+      const searchNormalized = (investorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      if (!searchNormalized) return true;
+      
+      const nameMatch = (inv.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(searchNormalized);
+      
+      const invVehs = (vehicles || []).filter(v => v.investorId === inv.id || v.investor === inv.name);
+      const plateMatch = invVehs.some(v => (v.plate || '').replace(/-/g, '').toLowerCase().includes(searchNormalized.replace(/-/g, '')));
+      
+      return nameMatch || plateMatch;
+    })
     .sort((a, b) => {
       const isPendingA = !a.payoutData.prevMonthPaid && a.payoutData.payout > 0;
       const isPendingB = !b.payoutData.prevMonthPaid && b.payoutData.payout > 0;
