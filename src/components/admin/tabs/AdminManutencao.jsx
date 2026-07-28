@@ -119,7 +119,7 @@ const AdminManutencao = ({
       {/* Header & Stats */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
         <div>
-          <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Gestão de Manutenção</h3>
+          <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">Gestão de Manutenção</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Controle total preventivo e corretivo da frota.</p>
         </div>
         {!showForm && (
@@ -139,9 +139,9 @@ const AdminManutencao = ({
               setIsEditing(false);
               setShowForm(true);
             }}
-            className="flex items-center gap-3 px-8 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#D4AF37] transition-all shadow-xl group"
+            className="flex items-center gap-3 px-8 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl group"
           >
-            <Plus size={16} className="text-[#D4AF37] group-hover:text-white transition-colors" />
+            <Plus size={16} className="text-[#C5A059] group-hover:text-white transition-colors" />
             Nova Manutenção
           </button>
         )}
@@ -156,14 +156,14 @@ const AdminManutencao = ({
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {activeAlerts.map((alert, idx) => (
-              <div key={idx} className="bg-amber-500/10 border border-amber-500/30 p-6 rounded-2xl flex gap-4 items-start shadow-sm animate-in zoom-in duration-500">
-                <div className="w-10 h-10 bg-amber-500/20 rounded-xl flex items-center justify-center text-amber-500 shrink-0">
+              <div key={idx} className="bg-amber-50 border border-amber-100 p-6 rounded-[2rem] flex gap-4 items-start shadow-sm animate-in zoom-in duration-500">
+                <div className="w-10 h-10 bg-amber-500/10 rounded-xl flex items-center justify-center text-amber-600 shrink-0">
                   <Wrench size={18} />
                 </div>
                 <div>
-                  <p className="text-xs font-black text-amber-500 uppercase tracking-tight">{alert.vehicle}</p>
-                  <p className="text-[10px] text-amber-500/70 font-bold mb-2">{alert.plate}</p>
-                  <p className="text-xs text-amber-400 leading-relaxed font-medium">{alert.message}</p>
+                  <p className="text-xs font-black text-amber-900 uppercase tracking-tight">{alert.vehicle}</p>
+                  <p className="text-[10px] text-amber-700/70 font-bold mb-2">{alert.plate}</p>
+                  <p className="text-xs text-amber-800 leading-relaxed font-medium">{alert.message}</p>
                 </div>
               </div>
             ))}
@@ -172,14 +172,14 @@ const AdminManutencao = ({
       )}
 
       {showForm ? (
-        <div className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
+        <div className="bg-white p-10 rounded-[2.5rem] border border-neutral-100 shadow-sm animate-in fade-in slide-in-from-right-4 duration-500">
           <div className="flex justify-between items-center mb-10 pb-6 border-b border-neutral-50">
-            <h4 className="text-xl font-black uppercase tracking-tight text-white">
+            <h4 className="text-xl font-black uppercase tracking-tight text-neutral-900">
               {isEditing ? 'Editar Registro' : 'Lançar Manutenção'}
             </h4>
             <button 
               onClick={() => setShowForm(false)}
-              className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 hover:text-white transition-colors"
+              className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 hover:text-neutral-900 transition-colors"
             >
               Cancelar
             </button>
@@ -205,18 +205,18 @@ const AdminManutencao = ({
                     }}
                     onBlur={() => setTimeout(() => setShowPlateDropdown(false), 200)}
                     placeholder="Digite a placa ou modelo..."
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm relative z-0 text-white"
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm relative z-0"
                   />
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none z-10" />
                   
                   {showPlateDropdown && (
-                    <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
                       {vehicles
                         .filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase()))
                         .map(v => (
                           <div
                             key={v.id}
-                            className="p-4 hover:bg-black cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
+                            className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
                             onClick={() => {
                               setMaintenanceForm({ ...maintenanceForm, vehiclePlate: v.plate });
                               setPlateSearch('');
@@ -242,7 +242,7 @@ const AdminManutencao = ({
                     type="text" 
                     readOnly
                     value={maintenanceForm.vehicleModel}
-                    className="w-full bg-neutral-900/50 border-none p-5 pl-12 rounded-2xl outline-none font-bold text-sm text-neutral-500" 
+                    className="w-full bg-neutral-100 border-none p-5 pl-12 rounded-2xl outline-none font-bold text-sm text-neutral-500" 
                     placeholder="Auto-preenchido" 
                   />
                 </div>
@@ -250,8 +250,8 @@ const AdminManutencao = ({
 
               {maintenanceForm.vehicleDescription && (
                 <div className="space-y-3 md:col-span-3">
-                  <label className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-black ml-1">Observações do Veículo</label>
-                  <div className="w-full bg-[#D4AF37]/10 text-neutral-300 border border-[#D4AF37]/20 p-5 rounded-2xl font-medium text-xs whitespace-pre-line leading-relaxed">
+                  <label className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black ml-1">Observações do Veículo</label>
+                  <div className="w-full bg-[#C5A059]/10 text-neutral-700 border border-[#C5A059]/20 p-5 rounded-2xl font-medium text-xs whitespace-pre-line leading-relaxed">
                     {maintenanceForm.vehicleDescription}
                   </div>
                 </div>
@@ -265,7 +265,7 @@ const AdminManutencao = ({
                     type="date" 
                     value={maintenanceForm.date}
                     onChange={e => setMaintenanceForm({ ...maintenanceForm, date: e.target.value })}
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm text-white" 
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
                   />
                 </div>
               </div>
@@ -279,7 +279,7 @@ const AdminManutencao = ({
                     value={maintenanceForm.serviceType}
                     onChange={e => setMaintenanceForm({ ...maintenanceForm, serviceType: e.target.value })}
                     placeholder="Ex: Troca de óleo, Freios..."
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light text-sm text-white" 
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm" 
                   />
                 </div>
               </div>
@@ -293,7 +293,7 @@ const AdminManutencao = ({
                     value={maintenanceForm.value}
                     onChange={e => setMaintenanceForm({ ...maintenanceForm, value: e.target.value })}
                     placeholder="0,00"
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm text-white" 
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
                   />
                 </div>
               </div>
@@ -307,7 +307,7 @@ const AdminManutencao = ({
                     value={maintenanceForm.currentKm}
                     onChange={e => setMaintenanceForm({ ...maintenanceForm, currentKm: e.target.value })}
                     placeholder="000.000"
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm text-white" 
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" 
                   />
                 </div>
               </div>
@@ -321,7 +321,7 @@ const AdminManutencao = ({
                     value={maintenanceForm.provider}
                     onChange={e => setMaintenanceForm({ ...maintenanceForm, provider: e.target.value })}
                     placeholder="Nome da oficina"
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light text-sm text-white" 
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm" 
                   />
                 </div>
               </div>
@@ -333,7 +333,7 @@ const AdminManutencao = ({
                   <select
                     value={maintenanceForm.responsible}
                     onChange={e => setMaintenanceForm({ ...maintenanceForm, responsible: e.target.value })}
-                    className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm appearance-none text-white"
+                    className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm appearance-none"
                   >
                     <option value="Administradora">Administradora</option>
                     <option value="Investidor">Investidor</option>
@@ -351,7 +351,7 @@ const AdminManutencao = ({
                   value={maintenanceForm.observations}
                   onChange={e => setMaintenanceForm({ ...maintenanceForm, observations: e.target.value })}
                   rows="4"
-                  className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light text-sm resize-none text-white"
+                  className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm resize-none"
                   placeholder="Descreva detalhes do serviço, peças trocadas, etc."
                 />
               </div>
@@ -361,7 +361,7 @@ const AdminManutencao = ({
               <button
                 type="button"
                 onClick={() => setShowForm(false)}
-                className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 hover:text-white transition-colors"
+                className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 hover:text-neutral-900 transition-colors"
               >
                 Descartar
               </button>
@@ -386,7 +386,7 @@ const AdminManutencao = ({
                   }
                   setShowForm(false);
                 }}
-                className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#D4AF37] transition-all shadow-xl"
+                className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-[2rem] hover:bg-[#C5A059] transition-all shadow-xl"
               >
                 {isEditing ? 'Salvar Alterações' : 'Lançar Registro'}
               </button>
@@ -396,7 +396,7 @@ const AdminManutencao = ({
       ) : (
         <div className="space-y-8">
           {/* Filters */}
-          <div className="bg-[#0a0a0a] p-6 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors">
+          <div className="bg-white p-6 rounded-[2rem] border border-neutral-100 flex flex-col md:flex-row gap-6 items-center shadow-sm">
             <div className="relative flex-1 w-full">
               <Search size={18} className="absolute left-6 top-1/2 -translate-y-1/2 text-neutral-300" />
               <input 
@@ -404,10 +404,10 @@ const AdminManutencao = ({
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
                 placeholder="Buscar por placa, serviço ou oficina..."
-                className="w-full bg-black border-none p-4 pl-14 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/10 transition-all font-light text-sm text-white"
+                className="w-full bg-neutral-50 border-none p-4 pl-14 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/10 transition-all font-light text-sm"
               />
             </div>
-            <div className="flex items-center gap-4 text-neutral-400 bg-black px-6 py-4 rounded-2xl border border-neutral-800/50">
+            <div className="flex items-center gap-4 text-neutral-400 bg-neutral-50 px-6 py-4 rounded-2xl border border-neutral-100/50">
               <ClipboardList size={16} />
               <span className="text-[10px] uppercase tracking-widest font-bold">Total: {filteredMaintenances.length} registros</span>
             </div>
@@ -416,16 +416,16 @@ const AdminManutencao = ({
           {/* List */}
           <div className="grid grid-cols-1 gap-4">
             {filteredMaintenances.map((m) => (
-              <div key={m.id} className="bg-[#0a0a0a] p-6 md:p-8 rounded-3xl border border-neutral-800 shadow-sm hover:shadow-md hover:border-[#D4AF37]/30 transition-all group flex flex-col md:flex-row justify-between gap-8">
+              <div key={m.id} className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md hover:border-[#C5A059]/30 transition-all group flex flex-col md:flex-row justify-between gap-8">
                 <div className="flex flex-col md:flex-row gap-8 flex-1">
                   <div className="flex items-start gap-5">
-                    <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex flex-col items-center justify-center text-white shrink-0 shadow-lg group-hover:bg-[#D4AF37] transition-colors">
-                      <Wrench size={20} className="text-[#D4AF37] group-hover:text-white mb-1" />
+                    <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex flex-col items-center justify-center text-white shrink-0 shadow-lg group-hover:bg-[#C5A059] transition-colors">
+                      <Wrench size={20} className="text-[#C5A059] group-hover:text-white mb-1" />
                       <span className="text-[8px] font-black uppercase tracking-tighter">MNT</span>
                     </div>
                     <div>
                       <div className="flex items-center gap-3 mb-1">
-                        <span className="text-lg font-black text-white uppercase tracking-tighter">{m.vehiclePlate}</span>
+                        <span className="text-lg font-black text-neutral-900 uppercase tracking-tighter">{m.vehiclePlate}</span>
                         <span className="px-3 py-1 bg-neutral-100 text-neutral-400 text-[9px] font-black uppercase tracking-widest rounded-lg">{m.vehicleModel}</span>
                       </div>
                       <p className="text-sm font-bold text-neutral-600 mb-4">{m.serviceType}</p>
@@ -433,23 +433,23 @@ const AdminManutencao = ({
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-x-8 gap-y-4">
                         <div className="space-y-1">
                           <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Data</p>
-                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-300">
-                            <Calendar size={12} className="text-[#D4AF37]" /> {m.date && m.date.includes('-') ? m.date.substring(0, 10).split('-').reverse().join('/') : m.date || '—'}
+                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-700">
+                            <Calendar size={12} className="text-[#C5A059]" /> {m.date && m.date.includes('-') ? m.date.substring(0, 10).split('-').reverse().join('/') : m.date || '—'}
                           </div>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Valor</p>
-                          <p className="text-xs font-bold text-[#D4AF37]">R$ {m.value}</p>
+                          <p className="text-xs font-bold text-[#C5A059]">R$ {m.value}</p>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Quilometragem</p>
-                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-300">
+                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-700">
                             <Clock size={12} className="text-neutral-300" /> {m.currentKm} KM
                           </div>
                         </div>
                         <div className="space-y-1">
                           <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Responsável</p>
-                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${m.responsible === 'Administradora' ? 'bg-blue-500/10 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                          <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${m.responsible === 'Administradora' ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
                             {m.responsible}
                           </span>
                         </div>
@@ -466,14 +466,14 @@ const AdminManutencao = ({
                         setIsEditing(true);
                         setShowForm(true);
                       }}
-                      className="w-10 h-10 bg-black text-neutral-400 rounded-xl flex items-center justify-center hover:bg-neutral-900 hover:text-white transition-all shadow-sm"
+                      className="w-10 h-10 bg-neutral-50 text-neutral-400 rounded-xl flex items-center justify-center hover:bg-neutral-900 hover:text-white transition-all shadow-sm"
                       title="Editar"
                     >
                       <Pencil size={14} />
                     </button>
                     <button
                       onClick={() => onDeleteMaintenance(m.id)}
-                      className="w-10 h-10 bg-red-500/10 text-red-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
+                      className="w-10 h-10 bg-red-50 text-red-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
                       title="Excluir"
                     >
                       <Trash2 size={14} />
@@ -481,14 +481,14 @@ const AdminManutencao = ({
                   </div>
                   <div className="text-right">
                     <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Oficina</p>
-                    <p className="text-xs font-bold text-white">{m.provider}</p>
+                    <p className="text-xs font-bold text-neutral-900">{m.provider}</p>
                   </div>
                 </div>
               </div>
             ))}
 
             {filteredMaintenances.length === 0 && (
-              <div className="py-20 flex flex-col items-center justify-center text-neutral-400 space-y-4 bg-[#0a0a0a] rounded-3xl border border-dashed border-neutral-700">
+              <div className="py-20 flex flex-col items-center justify-center text-neutral-400 space-y-4 bg-white rounded-[2.5rem] border border-dashed border-neutral-200">
                 <Wrench size={48} className="text-neutral-100" />
                 <p className="font-light tracking-wide text-sm">Nenhum registro encontrado.</p>
               </div>

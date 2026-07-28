@@ -130,14 +130,14 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   return {
     mainStats: [
-      { label: 'Veículos Ativos', value: activeVehicles, icon: <Car size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Disponíveis', value: availableVehicles, icon: <Car size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Em Manutenção', value: maintenanceVehicles, icon: <Wrench size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Receita (Mês)', value: `R$ ${monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <TrendingUp size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Despesa (Mês)', value: `R$ ${monthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <TrendingUp size={20} className="transform rotate-180" />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Saldo Acumulado', value: `R$ ${saldoAcumulado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <Landmark size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Inadimplências', value: pendingCharges, icon: <Calendar size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
-      { label: 'Total de Caução', value: `R$ ${totalCaucao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <ClipboardList size={20} />, color: 'text-[#D4AF37]', bg: 'bg-[#D4AF37]/10' },
+      { label: 'Veículos Ativos', value: activeVehicles, icon: <Car size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+      { label: 'Disponíveis', value: availableVehicles, icon: <Car size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+      { label: 'Em Manutenção', value: maintenanceVehicles, icon: <Wrench size={20} />, color: 'text-red-600', bg: 'bg-red-50' },
+      { label: 'Receita (Mês)', value: `R$ ${monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <TrendingUp size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+      { label: 'Despesa (Mês)', value: `R$ ${monthlyExpenses.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <TrendingUp size={20} className="transform rotate-180" />, color: 'text-red-600', bg: 'bg-red-50' },
+      { label: 'Saldo Acumulado', value: `R$ ${saldoAcumulado.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <Landmark size={20} />, color: 'text-[#C5A059]', bg: 'bg-[#C5A059]/10' },
+      { label: 'Inadimplências', value: pendingCharges, icon: <Calendar size={20} />, color: 'text-red-600', bg: 'bg-red-50' },
+      { label: 'Total de Caução', value: `R$ ${totalCaucao.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <ClipboardList size={20} />, color: 'text-neutral-600', bg: 'bg-neutral-100' },
     ],
     chartData,
     operationalSummary: {

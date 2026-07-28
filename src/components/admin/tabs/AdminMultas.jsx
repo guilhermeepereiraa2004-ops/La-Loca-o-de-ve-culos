@@ -1129,7 +1129,7 @@ const AdminMultas = ({
             <div className="w-2 h-2 bg-red-600 rounded-full animate-pulse" />
             <EditorialLabel className="text-red-600 tracking-[0.3em]">Módulo de Controle e Infrações</EditorialLabel>
           </div>
-          <h3 className="text-5xl font-black uppercase tracking-tighter text-white leading-none">Multas de Trânsito</h3>
+          <h3 className="text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Multas de Trânsito</h3>
           <p className="text-neutral-500 font-medium italic text-lg tracking-tight">
             Gestão inteligente de infrações, identificação automática do condutor e conciliação financeira.
           </p>
@@ -1143,12 +1143,12 @@ const AdminMultas = ({
           >
             {syncLoading ? (
               <>
-                <Loader2 size={14} className="animate-spin text-[#D4AF37]" />
+                <Loader2 size={14} className="animate-spin text-[#C5A059]" />
                 Sincronizando API...
               </>
             ) : (
               <>
-                <RefreshCw size={14} className="text-[#D4AF37]" />
+                <RefreshCw size={14} className="text-[#C5A059]" />
                 Sincronizar API
               </>
             )}
@@ -1159,7 +1159,7 @@ const AdminMultas = ({
               resetFineForm();
               setShowAddModal(true);
             }}
-            className="flex-1 xl:flex-none py-5 px-8 bg-[#D4AF37] text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#b08d4b] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#D4AF37]/10"
+            className="flex-1 xl:flex-none py-5 px-8 bg-[#C5A059] text-neutral-900 text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl hover:bg-[#b08d4b] transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#C5A059]/10"
           >
             <Plus size={14} />
             Cadastrar Multa
@@ -1171,7 +1171,7 @@ const AdminMultas = ({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 xl:gap-8">
         
         {/* Card 1: Pending */}
-        <div className="p-8 bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+        <div className="p-8 bg-white rounded-[2.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-neutral-900 text-red-500 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:rotate-12 duration-500">
@@ -1184,7 +1184,7 @@ const AdminMultas = ({
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-2xl font-black text-red-600 tracking-tighter">R$</span>
-            <h4 className="text-4xl xl:text-5xl font-black text-white tracking-tighter leading-none">
+            <h4 className="text-4xl xl:text-5xl font-black text-neutral-900 tracking-tighter leading-none">
               {stats.pendingTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </h4>
           </div>
@@ -1192,7 +1192,7 @@ const AdminMultas = ({
         </div>
 
         {/* Card 2: Installments Billing */}
-        <div className="p-8 bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+        <div className="p-8 bg-white rounded-[2.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
           <div className="flex items-center gap-4 mb-8">
             <div className="w-12 h-12 bg-neutral-900 text-amber-500 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:-rotate-12 duration-500">
@@ -1204,7 +1204,7 @@ const AdminMultas = ({
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <h4 className="text-4xl xl:text-5xl font-black text-white tracking-tighter leading-none">
+            <h4 className="text-4xl xl:text-5xl font-black text-neutral-900 tracking-tighter leading-none">
               {stats.inBillingCount}
             </h4>
             <span className="text-xs font-bold text-neutral-400">multas</span>
@@ -1213,19 +1213,19 @@ const AdminMultas = ({
         </div>
 
         {/* Card 3: Paid this month */}
-        <div className="p-8 bg-neutral-900 rounded-3xl shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/10 blur-[100px] -mr-24 -mt-24" />
+        <div className="p-8 bg-neutral-900 rounded-[2.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#C5A059]/10 blur-[100px] -mr-24 -mt-24" />
           <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 bg-[#D4AF37] text-white rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 duration-500">
+            <div className="w-12 h-12 bg-[#C5A059] text-neutral-900 rounded-2xl flex items-center justify-center shadow-lg transition-transform group-hover:scale-110 duration-500">
               <CheckCircle size={22} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Liquidadas</p>
-              <p className="text-[9px] text-[#D4AF37] font-black uppercase tracking-widest mt-0.5">Este Mês</p>
+              <p className="text-[9px] text-[#C5A059] font-black uppercase tracking-widest mt-0.5">Este Mês</p>
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-2xl font-black text-[#D4AF37] tracking-tighter">R$</span>
+            <span className="text-2xl font-black text-[#C5A059] tracking-tighter">R$</span>
             <h4 className="text-4xl xl:text-5xl font-black text-white tracking-tighter leading-none">
               {stats.paidThisMonthVal.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
@@ -1236,17 +1236,17 @@ const AdminMultas = ({
       </div>
 
       {/* Filter and Search Section */}
-      <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 p-8 shadow-sm flex flex-col gap-6">
+      <div className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm flex flex-col gap-6">
         <div className="flex flex-col lg:flex-row gap-6 justify-between">
           
           <div className="relative flex-1 group">
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar por placa, infração, motorista ou local..."
-              className="w-full bg-black text-white border border-neutral-800 py-4.5 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] transition-all"
+              className="w-full bg-neutral-50 border border-neutral-100 py-4.5 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all"
             />
           </div>
 
@@ -1257,7 +1257,7 @@ const AdminMultas = ({
               <select
                 value={statusFilter}
                 onChange={e => setStatusFilter(e.target.value)}
-                className="w-full bg-black text-white border border-neutral-800 p-4 rounded-xl text-[10px] font-black uppercase tracking-wider text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/20"
+                className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-xl text-[10px] font-black uppercase tracking-wider text-neutral-900 outline-none focus:ring-2 focus:ring-[#C5A059]/20"
               >
                 <option value="Todos">Todos os Status</option>
                 <option value="Pendente">Pendente</option>
@@ -1273,7 +1273,7 @@ const AdminMultas = ({
               <select
                 value={driverFilter}
                 onChange={e => setDriverFilter(e.target.value)}
-                className="w-full bg-black text-white border border-neutral-800 p-4 rounded-xl text-[10px] font-black uppercase tracking-wider text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/20"
+                className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-xl text-[10px] font-black uppercase tracking-wider text-neutral-900 outline-none focus:ring-2 focus:ring-[#C5A059]/20"
               >
                 <option value="Todos">Todos os Motoristas</option>
                 {filterOptions.drivers.map(d => (
@@ -1288,7 +1288,7 @@ const AdminMultas = ({
               <select
                 value={vehicleFilter}
                 onChange={e => setVehicleFilter(e.target.value)}
-                className="w-full bg-black text-white border border-neutral-800 p-4 rounded-xl text-[10px] font-black uppercase tracking-wider text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/20"
+                className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-xl text-[10px] font-black uppercase tracking-wider text-neutral-900 outline-none focus:ring-2 focus:ring-[#C5A059]/20"
               >
                 <option value="Todos">Todas as Placas</option>
                 {filterOptions.plates.map(p => (
@@ -1315,11 +1315,11 @@ const AdminMultas = ({
               return (
                 <div 
                   key={fine.id} 
-                  className={`bg-[#0a0a0a] border rounded-3xl shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col xl:flex-row ${fine.status === 'Contestada' ? 'border-amber-200' : 'border-neutral-800'}`}
+                  className={`bg-white border rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all duration-500 overflow-hidden flex flex-col xl:flex-row ${fine.status === 'Contestada' ? 'border-amber-200' : 'border-neutral-100'}`}
                 >
                   
                   {/* Left Side: General Info */}
-                  <div className="p-8 xl:w-96 flex flex-col justify-between border-b xl:border-b-0 xl:border-r border-neutral-50 bg-black/20">
+                  <div className="p-8 xl:w-96 flex flex-col justify-between border-b xl:border-b-0 xl:border-r border-neutral-50 bg-neutral-50/20">
                     <div className="space-y-4">
                       
                       <div className="flex justify-between items-center">
@@ -1328,10 +1328,10 @@ const AdminMultas = ({
                         </span>
                         
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-wider ${
-                          fine.status === 'Paga' ? 'bg-emerald-500/10 text-emerald-700 border-emerald-200' :
-                          fine.status === 'Em Cobrança' ? 'bg-amber-500/10 text-amber-700 border-amber-200' :
+                          fine.status === 'Paga' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                          fine.status === 'Em Cobrança' ? 'bg-amber-50 text-amber-700 border-amber-200' :
                           fine.status === 'Contestada' ? 'bg-indigo-50 text-indigo-700 border-indigo-200' :
-                          'bg-red-500/10 text-red-700 border-red-200'
+                          'bg-red-50 text-red-700 border-red-200'
                         }`}>
                           <div className={`w-1.5 h-1.5 rounded-full ${
                             fine.status === 'Paga' ? 'bg-emerald-500' :
@@ -1344,10 +1344,10 @@ const AdminMultas = ({
                       </div>
 
                       <div className="space-y-1.5">
-                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#D4AF37] font-black">Condutor Responsável</p>
+                        <p className="text-[10px] uppercase tracking-[0.2em] text-[#C5A059] font-black">Condutor Responsável</p>
                         {fine.driverName && fine.driverName !== 'Não Identificado' ? (
                           <div className="space-y-1">
-                            <h5 className="text-lg font-black text-white uppercase tracking-tighter leading-none">
+                            <h5 className="text-lg font-black text-neutral-900 uppercase tracking-tighter leading-none">
                               {fine.driverName}
                             </h5>
                             <div className="flex items-center justify-between mt-1">
@@ -1357,7 +1357,7 @@ const AdminMultas = ({
                               <button 
                                 type="button"
                                 onClick={() => handleOpenDriverSelector(fine)}
-                                className="text-[8px] text-[#D4AF37] hover:underline uppercase font-bold tracking-widest ml-2"
+                                className="text-[8px] text-[#C5A059] hover:underline uppercase font-bold tracking-widest ml-2"
                               >
                                 Alterar
                               </button>
@@ -1371,7 +1371,7 @@ const AdminMultas = ({
                             <button
                               type="button"
                               onClick={() => handleOpenDriverSelector(fine)}
-                              className="py-2 px-4 bg-amber-500 hover:bg-[#D4AF37] hover:text-white text-neutral-950 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1 inline-flex shadow-sm"
+                              className="py-2 px-4 bg-amber-500 hover:bg-[#C5A059] hover:text-white text-neutral-950 text-[8px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-1 inline-flex shadow-sm"
                             >
                               Vincular Condutor
                             </button>
@@ -1379,7 +1379,7 @@ const AdminMultas = ({
                         )}
                       </div>
 
-                      <div className="p-4 bg-[#0a0a0a] rounded-2xl border border-neutral-800 space-y-2">
+                      <div className="p-4 bg-white rounded-2xl border border-neutral-100 space-y-2">
                         <div className="flex items-center gap-2 text-neutral-500 text-[10px] font-bold">
                           <Calendar size={14} className="text-neutral-400 shrink-0" />
                           <span>{fine.date && fine.date.includes('-') ? fine.date.substring(0, 10).split('-').reverse().join('/') : fine.date || '—'}</span>
@@ -1403,12 +1403,12 @@ const AdminMultas = ({
                         <FileText size={14} className="text-red-500 shrink-0" />
                         <span className="text-[9px] font-black uppercase tracking-[0.2em] text-red-600">Descrição da Infração</span>
                         {fine.code && (
-                          <span className="bg-red-500/10 text-red-700 text-[8px] font-black px-2 py-0.5 rounded border border-red-100 font-mono">
+                          <span className="bg-red-50 text-red-700 text-[8px] font-black px-2 py-0.5 rounded border border-red-100 font-mono">
                             Cód. {fine.code}
                           </span>
                         )}
                       </div>
-                      <p className="text-neutral-200 text-sm font-bold uppercase tracking-tight leading-snug">
+                      <p className="text-neutral-800 text-sm font-bold uppercase tracking-tight leading-snug">
                         {fine.infraction}
                       </p>
                     </div>
@@ -1417,14 +1417,14 @@ const AdminMultas = ({
                       
                       <div className="space-y-0.5">
                         <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-black">Valor Total</span>
-                        <p className="text-base font-black text-white">
+                        <p className="text-base font-black text-neutral-900">
                           R$ {totalVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </div>
 
                       <div className="space-y-0.5">
                         <span className="text-[8px] uppercase tracking-widest text-neutral-400 font-black">Parcelamento</span>
-                        <p className="text-sm font-bold text-neutral-300">
+                        <p className="text-sm font-bold text-neutral-700">
                           {fine.installments}x de R$ {fine.installmentValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || '—'}
                         </p>
                       </div>
@@ -1447,7 +1447,7 @@ const AdminMultas = ({
                   </div>
 
                   {/* Right Side: Actions Buttons */}
-                  <div className="p-8 xl:w-72 flex flex-col justify-center gap-3 bg-black/10 border-t xl:border-t-0 xl:border-l border-neutral-50">
+                  <div className="p-8 xl:w-72 flex flex-col justify-center gap-3 bg-neutral-50/10 border-t xl:border-t-0 xl:border-l border-neutral-50">
                     
                     {fine.status !== 'Paga' && (
                       <button
@@ -1465,7 +1465,7 @@ const AdminMultas = ({
                         className={`py-3 px-2 border text-[9px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 ${
                           fine.status === 'Contestada'
                             ? 'bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100'
-                            : 'bg-[#0a0a0a] border-neutral-700 text-neutral-600 hover:bg-black'
+                            : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
                         }`}
                       >
                         {fine.status === 'Contestada' ? 'Reativar' : 'Contestar'}
@@ -1476,7 +1476,7 @@ const AdminMultas = ({
                         className={`py-3 px-2 border text-[9px] font-black uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-1 ${
                           fine.billingSuspended
                             ? 'bg-amber-100 border-amber-300 text-amber-800'
-                            : 'bg-[#0a0a0a] border-neutral-700 text-neutral-600 hover:bg-black'
+                            : 'bg-white border-neutral-200 text-neutral-600 hover:bg-neutral-50'
                         }`}
                       >
                         {fine.billingSuspended ? 'Retomar' : 'Susp. Parc.'}
@@ -1485,7 +1485,7 @@ const AdminMultas = ({
 
                     <button
                       onClick={() => handlePrintIndication(fine)}
-                      className="w-full py-3.5 bg-[#0a0a0a] border border-neutral-700 text-neutral-300 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5"
+                      className="w-full py-3.5 bg-white border border-neutral-200 text-neutral-700 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5"
                     >
                       <Printer size={12} />
                       Indicar Condutor
@@ -1540,7 +1540,7 @@ const AdminMultas = ({
                         setManualDriverId(fine.driverName === 'Administradora' ? 'Administradora' : fine.driverId ? String(fine.driverId) : '');
                         setShowAddModal(true);
                       }}
-                      className="w-full py-3.5 bg-[#0a0a0a] border border-neutral-700 text-neutral-300 hover:border-[#D4AF37] hover:text-[#D4AF37] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5"
+                      className="w-full py-3.5 bg-white border border-neutral-200 text-neutral-700 hover:border-[#C5A059] hover:text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5"
                     >
                       <Pencil size={12} />
                       Editar Registro
@@ -1552,7 +1552,7 @@ const AdminMultas = ({
                           onDeleteFine(fine.id);
                         }
                       }}
-                      className="w-full py-3.5 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 border border-red-100"
+                      className="w-full py-3.5 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white text-[9px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-1.5 border border-red-100"
                     >
                       <Trash2 size={12} />
                       Excluir Registro
@@ -1565,9 +1565,9 @@ const AdminMultas = ({
             })}
           </div>
         ) : (
-          <div className="p-32 text-center bg-[#0a0a0a] border border-neutral-800 rounded-3xl">
+          <div className="p-32 text-center bg-white border border-neutral-100 rounded-[3rem]">
             <ShieldAlert size={48} className="mx-auto mb-6 text-neutral-100" />
-            <h4 className="text-2xl font-black text-white uppercase tracking-tighter mb-2">Nenhuma multa registrada</h4>
+            <h4 className="text-2xl font-black text-neutral-900 uppercase tracking-tighter mb-2">Nenhuma multa registrada</h4>
             <p className="text-xs text-neutral-400 font-black uppercase tracking-widest">Todas as infrações de trânsito estão regularizadas ou os filtros não retornaram resultados.</p>
           </div>
         )}
@@ -1577,24 +1577,24 @@ const AdminMultas = ({
       {showAddModal && createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={resetFineForm} />
-          <div className="relative bg-[#0a0a0a] w-full max-w-4xl h-full md:max-h-[90vh] rounded-none md:rounded-3xl shadow-2xl flex flex-col overflow-hidden">
+          <div className="relative bg-white w-full max-w-4xl h-full md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
             
             {/* Header */}
-            <div className="p-8 md:p-12 pb-6 border-b border-neutral-50 shrink-0 bg-black/50 flex justify-between items-center">
+            <div className="p-8 md:p-12 pb-6 border-b border-neutral-50 shrink-0 bg-neutral-50/50 flex justify-between items-center">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
-                  <EditorialLabel className="text-[#D4AF37]">
+                  <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+                  <EditorialLabel className="text-[#C5A059]">
                     {editingFine ? 'Alteração de Registro de Infração' : 'Novo Registro de Infração'}
                   </EditorialLabel>
                 </div>
-                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-white leading-none">
+                <h3 className="text-2xl md:text-3xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
                   {editingFine ? 'Editar Multa de Trânsito' : 'Cadastrar Multa de Trânsito'}
                 </h3>
               </div>
               <button 
                 onClick={resetFineForm} 
-                className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white hover:border-neutral-900 transition-all shadow-sm"
+                className="w-10 h-10 bg-white border border-neutral-100 rounded-xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm"
               >
                 <X size={20} />
               </button>
@@ -1607,32 +1607,32 @@ const AdminMultas = ({
               {!editingFine && (
                 <label 
                   htmlFor="ocr-file-input"
-                  className={`p-10 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${
-                    ocrLoading ? 'border-[#D4AF37] bg-[#D4AF37]/5' : 'border-neutral-700 bg-black hover:border-[#D4AF37]/50 hover:bg-[#0a0a0a] hover:shadow-xl'
+                  className={`p-10 border-2 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center gap-4 cursor-pointer transition-all duration-500 group relative ${
+                    ocrLoading ? 'border-[#C5A059] bg-[#C5A059]/5' : 'border-neutral-200 bg-neutral-50 hover:border-[#C5A059]/50 hover:bg-white hover:shadow-xl'
                   }`}
                 >
                 <input 
                   type="file" 
                   id="ocr-file-input" 
                   accept="image/*,application/pdf" 
-                  className="hidden text-white" 
+                  className="hidden" 
                   onChange={handleOcrFileChange} 
                 />
                 {ocrLoading ? (
                   <div className="flex flex-col items-center gap-4 py-4">
-                    <Loader2 size={36} className="animate-spin text-[#D4AF37]" />
+                    <Loader2 size={36} className="animate-spin text-[#C5A059]" />
                     <div className="text-center">
-                      <p className="text-xs font-black uppercase tracking-wider text-[#D4AF37]">{ocrStatus || 'Analisando documento...'}</p>
+                      <p className="text-xs font-black uppercase tracking-wider text-[#C5A059]">{ocrStatus || 'Analisando documento...'}</p>
                       <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">Extraindo placa, valor, código de infração e local...</p>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <div className="w-16 h-16 bg-[#0a0a0a] text-neutral-400 rounded-2xl flex items-center justify-center shadow-lg group-hover:text-[#D4AF37] group-hover:scale-110 transition-transform">
+                    <div className="w-16 h-16 bg-white text-neutral-400 rounded-2xl flex items-center justify-center shadow-lg group-hover:text-[#C5A059] group-hover:scale-110 transition-transform">
                       <UploadCloud size={32} />
                     </div>
                     <div className="text-center">
-                      <span className="text-xs font-black uppercase tracking-widest block mb-1 text-white">Cadastrar com OCR inteligente (Recomendado)</span>
+                      <span className="text-xs font-black uppercase tracking-widest block mb-1 text-neutral-900">Cadastrar com OCR inteligente (Recomendado)</span>
                       <span className="text-[9px] text-neutral-400 font-black uppercase tracking-widest">Arraste ou clique para fazer upload da foto/PDF da Notificação</span>
                     </div>
                   </>
@@ -1646,24 +1646,24 @@ const AdminMultas = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
                   <div className="space-y-3">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Placa do Veículo *</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Placa do Veículo *</label>
                     <div className="relative group">
-                      <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" size={18} />
+                      <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                       <input 
                         type="text" 
                         required 
                         value={fineForm.vehiclePlate} 
                         onChange={e => setFineForm({...fineForm, vehiclePlate: e.target.value})} 
-                        className="w-full bg-black text-white border border-neutral-800 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm" 
+                        className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" 
                         placeholder="Ex: ABC-1234" 
                       />
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Valor da Infração (R$) *</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Valor da Infração (R$) *</label>
                     <div className="relative group">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" size={18} />
+                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                       <input 
                         type="text" 
                         required 
@@ -1673,21 +1673,21 @@ const AdminMultas = ({
                           v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                           setFineForm({...fineForm, value: v});
                         }} 
-                        className="w-full bg-black text-white border border-neutral-800 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm" 
+                        className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" 
                         placeholder="0,00" 
                       />
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Código de Infração</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Código de Infração</label>
                     <div className="relative group">
-                      <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" size={18} />
+                      <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                       <input 
                         type="text" 
                         value={fineForm.code} 
                         onChange={e => setFineForm({...fineForm, code: e.target.value})} 
-                        className="w-full bg-black text-white border border-neutral-800 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm" 
+                        className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" 
                         placeholder="Ex: 745-50" 
                       />
                     </div>
@@ -1698,28 +1698,28 @@ const AdminMultas = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   
                   <div className="space-y-3">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Data da Infração *</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Data da Infração *</label>
                     <div className="relative group">
-                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" size={18} />
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                       <input 
                         type="date" 
                         required 
                         value={fineForm.date} 
                         onChange={e => setFineForm({...fineForm, date: e.target.value})} 
-                        className="w-full bg-black text-white border border-neutral-800 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm" 
+                        className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" 
                       />
                     </div>
                   </div>
 
                   <div className="space-y-3">
-                    <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Horário da Infração</label>
+                    <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Horário da Infração</label>
                     <div className="relative group">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" size={18} />
+                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" size={18} />
                       <input 
                         type="time" 
                         value={fineForm.time} 
                         onChange={e => setFineForm({...fineForm, time: e.target.value})} 
-                        className="w-full bg-black text-white border border-neutral-800 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm" 
+                        className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" 
                       />
                     </div>
                   </div>
@@ -1727,34 +1727,34 @@ const AdminMultas = ({
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Local da Infração</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Local da Infração</label>
                   <input 
                     type="text" 
                     value={fineForm.location} 
                     onChange={e => setFineForm({...fineForm, location: e.target.value})} 
-                    className="w-full bg-black text-white border border-neutral-800 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm" 
+                    className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" 
                     placeholder="Ex: Avenida Paulista, 1000 - São Paulo/SP" 
                   />
                 </div>
 
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Descrição da Infração *</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Descrição da Infração *</label>
                   <textarea 
                     required 
                     rows={2}
                     value={fineForm.infraction} 
                     onChange={e => setFineForm({...fineForm, infraction: e.target.value})} 
-                    className="w-full bg-black text-white border border-neutral-800 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm resize-none" 
+                    className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm resize-none" 
                     placeholder="Descreva detalhadamente a infração cometida" 
                   />
                 </div>
 
                 {/* Driver auto matching feedback area */}
                 {fineForm.vehiclePlate && fineForm.date && (
-                  <div className={`p-6 rounded-2xl border animate-in fade-in duration-500 flex items-center gap-4 ${
+                  <div className={`p-6 rounded-[2rem] border animate-in fade-in duration-500 flex items-center gap-4 ${
                     currentMatchedDriver.driverName !== 'Não Identificado'
-                      ? 'bg-emerald-500/10 border-emerald-100 text-emerald-900'
-                      : 'bg-amber-500/10 border-amber-100 text-amber-900'
+                      ? 'bg-emerald-50 border-emerald-100 text-emerald-900'
+                      : 'bg-amber-50 border-amber-100 text-amber-900'
                   }`}>
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${
                       currentMatchedDriver.driverName !== 'Não Identificado' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'
@@ -1778,11 +1778,11 @@ const AdminMultas = ({
 
                 {/* Manual driver select override */}
                 <div className="space-y-3">
-                  <label className="text-[10px] uppercase tracking-[0.2em] text-white font-black ml-1">Vincular Condutor Manualmente (Opcional)</label>
+                  <label className="text-[10px] uppercase tracking-[0.2em] text-neutral-900 font-black ml-1">Vincular Condutor Manualmente (Opcional)</label>
                   <select
                     value={manualDriverId}
                     onChange={e => setManualDriverId(e.target.value)}
-                    className="w-full bg-black text-white border border-neutral-800 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-sm text-white"
+                    className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm text-neutral-900"
                   >
                     <option value="">-- Usar identificação automática do sistema --</option>
                     <option value="Administradora">L.A Veículos (Administradora / Sem Condutor)</option>
@@ -1796,7 +1796,7 @@ const AdminMultas = ({
                 </div>
 
                 {/* Submit / Cancel Buttons */}
-                <div className="flex justify-end gap-4 pt-6 border-t border-neutral-800">
+                <div className="flex justify-end gap-4 pt-6 border-t border-neutral-100">
                   <button
                     type="button"
                     onClick={resetFineForm}
@@ -1806,7 +1806,7 @@ const AdminMultas = ({
                   </button>
                   <button
                     type="submit"
-                    className="py-4.5 px-12 bg-neutral-900 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-[#D4AF37]/10"
+                    className="py-4.5 px-12 bg-neutral-900 text-[#C5A059] hover:bg-[#C5A059] hover:text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-[#C5A059]/10"
                   >
                     Salvar Registro
                   </button>
@@ -1825,12 +1825,12 @@ const AdminMultas = ({
       {indicationFine && createPortal(
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500 print:relative print:p-0 print:z-0">
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md print:hidden" onClick={() => setIndicationFine(null)} />
-          <div className="relative bg-[#0a0a0a] w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-3xl shadow-2xl flex flex-col overflow-hidden print:shadow-none print:rounded-none print:h-auto print:max-h-none print:overflow-visible">
+          <div className="relative bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden print:shadow-none print:rounded-none print:h-auto print:max-h-none print:overflow-visible">
             
             {/* Modal Header */}
-            <div className="p-8 border-b border-neutral-800 flex justify-between items-center print:hidden">
+            <div className="p-8 border-b border-neutral-100 flex justify-between items-center print:hidden">
               <div className="flex items-center gap-2">
-                <Printer size={18} className="text-[#D4AF37]" />
+                <Printer size={18} className="text-[#C5A059]" />
                 <span className="text-[10px] font-black uppercase tracking-widest text-neutral-500">Formulário de Indicação do Condutor</span>
               </div>
               <div className="flex gap-2">
@@ -1843,7 +1843,7 @@ const AdminMultas = ({
                 </button>
                 <button
                   onClick={() => setIndicationFine(null)}
-                  className="w-10 h-10 bg-[#0a0a0a] border border-neutral-800 rounded-xl flex items-center justify-center text-neutral-400 hover:text-white transition-all shadow-sm"
+                  className="w-10 h-10 bg-white border border-neutral-100 rounded-xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-all shadow-sm"
                 >
                   <X size={16} />
                 </button>
@@ -1851,7 +1851,7 @@ const AdminMultas = ({
             </div>
 
             {/* Print Area */}
-            <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-10 font-sans print:p-0 print:overflow-visible text-white">
+            <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-10 font-sans print:p-0 print:overflow-visible text-neutral-900">
               
               {/* Document Header */}
               <div className="text-center space-y-2 border-b-2 border-neutral-900 pb-6">
@@ -1862,7 +1862,7 @@ const AdminMultas = ({
 
               {/* Vehicle & Infraction Data */}
               <div className="space-y-4">
-                <h5 className="text-[10px] font-black uppercase tracking-widest border-b border-neutral-700 pb-2">1. Dados do Veículo e da Infração</h5>
+                <h5 className="text-[10px] font-black uppercase tracking-widest border-b border-neutral-200 pb-2">1. Dados do Veículo e da Infração</h5>
                 <div className="grid grid-cols-2 gap-4 text-xs">
                   <div>
                     <span className="text-[8px] font-black text-neutral-400 uppercase block">Placa do Veículo</span>
@@ -1885,18 +1885,18 @@ const AdminMultas = ({
                   </div>
                   <div className="col-span-2">
                     <span className="text-[8px] font-black text-neutral-400 uppercase block">Infração Cometida</span>
-                    <span className="font-bold text-neutral-200 uppercase tracking-tight">{indicationFine.infraction}</span>
+                    <span className="font-bold text-neutral-800 uppercase tracking-tight">{indicationFine.infraction}</span>
                   </div>
                   <div className="col-span-2">
                     <span className="text-[8px] font-black text-neutral-400 uppercase block">Local da Ocorrência</span>
-                    <span className="font-bold text-neutral-200">{indicationFine.location || 'Não informado'}</span>
+                    <span className="font-bold text-neutral-800">{indicationFine.location || 'Não informado'}</span>
                   </div>
                 </div>
               </div>
 
               {/* Driver Data */}
               <div className="space-y-4">
-                <h5 className="text-[10px] font-black uppercase tracking-widest border-b border-neutral-700 pb-2">2. Identificação do Condutor Infrator</h5>
+                <h5 className="text-[10px] font-black uppercase tracking-widest border-b border-neutral-200 pb-2">2. Identificação do Condutor Infrator</h5>
                 {(() => {
                   const clientObj = clients.find(c => 
                     (c.nome || c.name || '').toLowerCase() === (indicationFine.driverName || '').toLowerCase()
@@ -1905,7 +1905,7 @@ const AdminMultas = ({
                     <div className="grid grid-cols-2 gap-4 text-xs">
                       <div className="col-span-2">
                         <span className="text-[8px] font-black text-neutral-400 uppercase block">Nome Completo do Condutor</span>
-                        <span className="font-bold text-neutral-200 uppercase">{indicationFine.driverName || 'Não Identificado'}</span>
+                        <span className="font-bold text-neutral-800 uppercase">{indicationFine.driverName || 'Não Identificado'}</span>
                       </div>
                       <div>
                         <span className="text-[8px] font-black text-neutral-400 uppercase block">Documento de Identidade (CPF)</span>
@@ -1957,22 +1957,22 @@ const AdminMultas = ({
       {assigningFine && createPortal(
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setAssigningFine(null)} />
-          <div className="relative bg-[#0a0a0a] w-full max-w-md rounded-3xl p-8 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 duration-300">
+          <div className="relative bg-white w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl flex flex-col gap-6 animate-in zoom-in-95 duration-300">
             <div className="flex justify-between items-center">
               <div>
-                <span className="text-[9px] uppercase tracking-[0.2em] font-black text-[#D4AF37]">Gerenciamento de Infrações</span>
-                <h4 className="text-xl font-black uppercase text-white mt-1 tracking-tight">Vincular Condutor</h4>
+                <span className="text-[9px] uppercase tracking-[0.2em] font-black text-[#C5A059]">Gerenciamento de Infrações</span>
+                <h4 className="text-xl font-black uppercase text-neutral-900 mt-1 tracking-tight">Vincular Condutor</h4>
               </div>
               <button 
                 onClick={() => setAssigningFine(null)}
-                className="w-8 h-8 rounded-xl border border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-white transition-all"
+                className="w-8 h-8 rounded-xl border border-neutral-100 flex items-center justify-center text-neutral-400 hover:text-neutral-900 transition-all"
               >
                 <X size={14} />
               </button>
             </div>
 
             <p className="text-xs text-neutral-500 font-light leading-relaxed">
-              Selecione o condutor responsável pela multa do veículo <span className="font-bold text-white">{assigningFine.vehiclePlate}</span> ocorrida em <span className="font-bold text-white">{assigningFine.date && assigningFine.date.includes('-') ? assigningFine.date.substring(0, 10).split('-').reverse().join('/') : assigningFine.date || '—'}</span>.
+              Selecione o condutor responsável pela multa do veículo <span className="font-bold text-neutral-900">{assigningFine.vehiclePlate}</span> ocorrida em <span className="font-bold text-neutral-900">{assigningFine.date && assigningFine.date.includes('-') ? assigningFine.date.substring(0, 10).split('-').reverse().join('/') : assigningFine.date || '—'}</span>.
             </p>
 
             <div className="space-y-2">
@@ -1980,7 +1980,7 @@ const AdminMultas = ({
               <select
                 value={selectedAssignDriverId}
                 onChange={e => setSelectedAssignDriverId(e.target.value)}
-                className="w-full bg-black text-white border border-neutral-800 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-bold text-xs text-white"
+                className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-xs text-neutral-900"
               >
                 <option value="">-- Selecione o Motorista --</option>
                 <option value="Administradora">L.A Veículos (Administradora / Sem Condutor)</option>
@@ -1990,7 +1990,7 @@ const AdminMultas = ({
               </select>
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-800">
+            <div className="flex justify-end gap-3 pt-4 border-t border-neutral-100">
               <button 
                 onClick={() => setAssigningFine(null)} 
                 className="py-3 px-6 text-[9px] uppercase tracking-widest font-black text-neutral-400 hover:text-neutral-600 transition-colors"
@@ -1999,7 +1999,7 @@ const AdminMultas = ({
               </button>
               <button 
                 onClick={handleSaveManualDriver}
-                className="py-3.5 px-8 bg-neutral-900 text-[#D4AF37] text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#D4AF37] hover:text-white transition-all shadow-md"
+                className="py-3.5 px-8 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#C5A059] hover:text-white transition-all shadow-md"
               >
                 Confirmar Vínculo
               </button>

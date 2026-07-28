@@ -264,11 +264,6 @@ const AdminInvestidores = ({
   const [selectedMonthForCalc, setSelectedMonthForCalc] = useState(null); // For memory modal month filter
   const [selectedPlateFilter, setSelectedPlateFilter] = useState('all');
   const [investorSearch, setInvestorSearch] = useState('');
-  const [visibleCount, setVisibleCount] = useState(6);
-
-  useEffect(() => {
-    setVisibleCount(6);
-  }, [investorSearch]);
 
   const loadPayoutHistory = useCallback(async (investorId) => {
     const records = await getPayoutsForInvestor(investorId);
@@ -411,13 +406,13 @@ const AdminInvestidores = ({
         const getCategoryBadge = (catName) => {
           const cat = (catName || '').toLowerCase().trim();
           if (cat.includes('aluguel')) {
-            return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-emerald-500/10 text-emerald-600 border border-emerald-100">Aluguel</span>;
+            return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-emerald-50 text-emerald-600 border border-emerald-100">Aluguel</span>;
           }
           if (cat.includes('taxa adm') || cat.includes('adm')) {
-            return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-neutral-100 text-neutral-600 border border-neutral-700">Taxa Adm</span>;
+            return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-neutral-100 text-neutral-600 border border-neutral-200">Taxa Adm</span>;
           }
           if (cat.includes('seguro') || cat.includes('franquia')) {
-            return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-amber-500/10 text-amber-600 border border-amber-100">Seguro</span>;
+            return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-amber-50 text-amber-600 border border-amber-100">Seguro</span>;
           }
           if (cat.includes('prote') || cat.includes('veicular')) {
             return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-indigo-50 text-indigo-600 border border-indigo-100">Proteção</span>;
@@ -425,36 +420,36 @@ const AdminInvestidores = ({
           if (cat.includes('dívida') || cat.includes('divida')) {
             return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-sky-50 text-sky-600 border border-sky-100">Quitação</span>;
           }
-          return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-black text-neutral-500 border border-neutral-150">{catName || 'Outros'}</span>;
+          return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-neutral-50 text-neutral-500 border border-neutral-150">{catName || 'Outros'}</span>;
         };
 
         return (
           <div className="fixed inset-0 z-[160] flex items-center justify-center bg-neutral-900/80 backdrop-blur-sm p-0 sm:p-4 font-sans animate-in fade-in duration-300">
-            <div className="bg-[#0a0a0a] w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-6xl overflow-hidden shadow-2xl relative flex flex-col sm:rounded-2xl rounded-none border border-neutral-700">
+            <div className="bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-6xl overflow-hidden shadow-2xl relative flex flex-col sm:rounded-2xl rounded-none border border-neutral-200">
               
               {/* Modal Header */}
-              <div className="p-4 sm:p-6 border-b border-neutral-800 flex justify-between items-center bg-[#0a0a0a] shrink-0">
+              <div className="p-4 sm:p-6 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                   <div className="w-10 h-10 sm:w-11 sm:h-11 bg-neutral-900 text-white rounded-lg flex items-center justify-center font-bold text-lg select-none shrink-0">
                     {selectedInvForCalc.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
                     <span className="text-[9px] uppercase tracking-widest font-semibold text-neutral-400">Extrato Consolidado</span>
-                    <h4 className="text-base md:text-lg font-bold text-white leading-tight flex flex-wrap items-center gap-2 min-w-0">
+                    <h4 className="text-base md:text-lg font-bold text-neutral-900 leading-tight flex flex-wrap items-center gap-2 min-w-0">
                       <span className="truncate max-w-[120px] xs:max-w-[180px] sm:max-w-none">{selectedInvForCalc.name}</span>
-                      <span className="bg-neutral-100 text-neutral-600 text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded border border-neutral-700 whitespace-nowrap">
+                      <span className="bg-neutral-100 text-neutral-600 text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded border border-neutral-200 whitespace-nowrap">
                         Painel do Investidor
                       </span>
                     </h4>
                   </div>
                 </div>
-                <button onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-neutral-100 transition-colors text-neutral-500 hover:text-white shrink-0">
+                <button onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-neutral-100 transition-colors text-neutral-500 hover:text-neutral-900 shrink-0">
                   <X size={18} />
                 </button>
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto bg-black p-4 sm:p-6">
+              <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 sm:p-6">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
                   {/* Coluna Esquerda: Resumo Consolidado */}
@@ -466,22 +461,22 @@ const AdminInvestidores = ({
                       </h5>
                       <div className="grid grid-cols-1 gap-3">
                         {/* Competência Vigente Card */}
-                        <div className="bg-[#0a0a0a] p-4 rounded-xl border border-neutral-700 flex flex-col justify-between relative overflow-hidden">
+                        <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col justify-between relative overflow-hidden">
                           <div className="space-y-1 z-10">
                             <p className="text-[10px] uppercase text-neutral-500 font-medium tracking-wide">Receita Bruta Vigente</p>
-                            <p className="text-xl font-medium text-white font-mono tracking-tight">{formatCurrency(currentMonthNet)}</p>
+                            <p className="text-xl font-medium text-neutral-900 font-mono tracking-tight">{formatCurrency(currentMonthNet)}</p>
                           </div>
                           <div className="mt-3 z-10 flex">
                             {!prevMonthPaid ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-500/10 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
                                 Aguardando pagamento
                               </span>
                             ) : payout <= 0 ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-700">
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
                                 Nada a pagar
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-emerald-500/10 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
                                 Em andamento
                               </span>
                             )}
@@ -492,7 +487,7 @@ const AdminInvestidores = ({
                         <div className={`p-4 rounded-xl border flex flex-col justify-between relative overflow-hidden ${
                           carriedDebt < 0 
                             ? 'bg-rose-50/30 border-rose-200 text-rose-800' 
-                            : 'bg-[#0a0a0a] border-neutral-700 text-neutral-200'
+                            : 'bg-white border-neutral-200 text-neutral-800'
                         }`}>
                           <div className="space-y-1">
                             <p className={`text-[10px] uppercase font-medium tracking-wide ${carriedDebt < 0 ? 'text-rose-600' : 'text-neutral-500'}`}>Despesas / Saldo Negativo</p>
@@ -516,23 +511,23 @@ const AdminInvestidores = ({
                       <h5 className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold mb-3 flex items-center gap-1.5">
                         <Car size={14} className="text-neutral-400" /> Ativos Vinculados ({invVehs.length})
                       </h5>
-                      <div className="bg-[#0a0a0a] border border-neutral-700 rounded-xl overflow-hidden">
+                      <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
                         {invVehs.length > 0 ? (
                           <div className="divide-y divide-neutral-100">
                             {invVehs.map(v => (
-                              <div key={v.id} className="p-3 flex justify-between items-center hover:bg-black/50 transition-colors">
+                              <div key={v.id} className="p-3 flex justify-between items-center hover:bg-neutral-50/50 transition-colors">
                                 <div className="flex items-center gap-3 min-w-0">
                                   <div className="w-7 h-7 bg-neutral-100 rounded flex items-center justify-center text-neutral-400 shrink-0">
                                     <Car size={12} />
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-semibold text-neutral-200 truncate">{v.model}</p>
+                                    <p className="text-xs font-semibold text-neutral-800 truncate">{v.model}</p>
                                     <p className="text-[10px] font-mono text-neutral-500">{v.plate}</p>
                                   </div>
                                 </div>
                                 <div className="text-right shrink-0">
                                   <span className="text-[9px] font-semibold uppercase text-neutral-400 tracking-wider block">Taxa Adm</span>
-                                  <span className="text-xs font-semibold text-neutral-200">{v.adminTax || 20}%</span>
+                                  <span className="text-xs font-semibold text-neutral-800">{v.adminTax || 20}%</span>
                                 </div>
                               </div>
                             ))}
@@ -552,14 +547,14 @@ const AdminInvestidores = ({
                     
                     {/* Seção de Transações */}
                     <div>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-2 border-b border-neutral-700">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-2 border-b border-neutral-200">
                         <div>
-                          <h5 className="text-sm font-bold text-neutral-200 uppercase tracking-tight flex items-center gap-2">
+                          <h5 className="text-sm font-bold text-neutral-800 uppercase tracking-tight flex items-center gap-2">
                             Transações
                             <select
                               value={activeMonth}
                               onChange={(e) => setSelectedMonthForCalc(e.target.value)}
-                              className="ml-2 bg-neutral-100 border border-neutral-700 text-neutral-300 text-xs rounded-md px-2 py-1 outline-none font-semibold cursor-pointer hover:bg-neutral-200 transition-colors"
+                              className="ml-2 bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs rounded-md px-2 py-1 outline-none font-semibold cursor-pointer hover:bg-neutral-200 transition-colors"
                             >
                               {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
                                 const [yr, mo] = m.split('-');
@@ -571,12 +566,12 @@ const AdminInvestidores = ({
                           <p className="text-[10px] text-neutral-500 font-medium mt-1">
                             {activeMonth === competenciaKey ? (
                               !prevMonthPaid
-                                ? <>Competência fechada: <span className="font-semibold text-neutral-300">{competenciaLabel}</span>. Receitas do mês corrente estarão disponíveis após o pagamento ser registrado.</>
+                                ? <>Competência fechada: <span className="font-semibold text-neutral-700">{competenciaLabel}</span>. Receitas do mês corrente estarão disponíveis após o pagamento ser registrado.</>
                                 : payout <= 0
-                                ? <>Nada a pagar em <span className="font-semibold text-neutral-300">{competenciaLabel}</span>. Competência avançada automaticamente após o 5º dia útil.</>
-                                : <>Competência em andamento: <span className="font-semibold text-neutral-300">{competenciaLabel}</span>. Será pago no 5º dia útil do próximo mês.</>
+                                ? <>Nada a pagar em <span className="font-semibold text-neutral-700">{competenciaLabel}</span>. Competência avançada automaticamente após o 5º dia útil.</>
+                                : <>Competência em andamento: <span className="font-semibold text-neutral-700">{competenciaLabel}</span>. Será pago no 5º dia útil do próximo mês.</>
                             ) : (
-                               <>Cálculos do mês de <span className="font-semibold text-neutral-300">{
+                               <>Cálculos do mês de <span className="font-semibold text-neutral-700">{
                                  (() => { const [yr, mo] = activeMonth.split('-'); return `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`; })()
                                }</span>.</>
                             )}
@@ -585,7 +580,7 @@ const AdminInvestidores = ({
                         
                         {invVehs.length > 0 && (
                           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-                            <div className="flex items-center gap-2 bg-[#0a0a0a] border border-neutral-700 px-3 py-1.5 rounded-lg w-full sm:w-auto justify-between sm:justify-start hover:border-neutral-300 transition-colors">
+                            <div className="flex items-center gap-2 bg-white border border-neutral-200 px-3 py-1.5 rounded-lg w-full sm:w-auto justify-between sm:justify-start hover:border-neutral-300 transition-colors">
                               <div className="flex items-center gap-2 w-full">
                                 <Filter size={12} className="text-neutral-400 shrink-0" />
                                 <select
@@ -604,7 +599,7 @@ const AdminInvestidores = ({
                             {selectedPlateFilter !== 'all' && (
                               <div className={`text-[10px] font-semibold px-3 py-1.5 rounded-lg border flex items-center justify-center sm:justify-start gap-1.5 w-full sm:w-auto shrink-0 ${
                                 filteredTotalNet >= 0 
-                                  ? 'bg-emerald-500/10 border-emerald-100 text-emerald-800' 
+                                  ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
                                   : 'bg-rose-50 border-rose-100 text-rose-800'
                               }`}>
                                 Líquido no Filtro: {formatCurrency(filteredTotalNet)}
@@ -615,11 +610,11 @@ const AdminInvestidores = ({
                       </div>
 
                       {/* Tabela de Transações (Desktop) */}
-                      <div className="hidden md:block border border-neutral-700 rounded-xl overflow-hidden bg-[#0a0a0a] shadow-sm">
+                      <div className="hidden md:block border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm">
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse text-xs">
                             <thead>
-                              <tr className="bg-black border-b border-neutral-700">
+                              <tr className="bg-neutral-50 border-b border-neutral-200">
                                 <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider">Data / Descrição</th>
                                 <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider">Veículo</th>
                                 <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider text-right">Valor Bruto</th>
@@ -638,10 +633,10 @@ const AdminInvestidores = ({
                                 filteredTransactions.map(td => {
                                   const vehicle = invVehs.find(v => v.plate === td.vehiclePlate);
                                   return (
-                                    <tr key={td.id} className="hover:bg-black/70 transition-colors group">
+                                    <tr key={td.id} className="hover:bg-neutral-50/70 transition-colors group">
                                       <td className="px-4 py-3">
                                         <div className="space-y-1">
-                                          <p className="font-semibold text-neutral-200">{td.desc}</p>
+                                          <p className="font-semibold text-neutral-800">{td.desc}</p>
                                           <div className="flex items-center gap-2">
                                             <span className="text-[9px] text-neutral-400 font-medium">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                                             {getCategoryBadge(td.cat)}
@@ -651,16 +646,16 @@ const AdminInvestidores = ({
                                       <td className="px-4 py-3">
                                         {vehicle ? (
                                           <div className="flex flex-col">
-                                            <span className="font-semibold text-neutral-300 text-[10px] leading-tight">{vehicle.model}</span>
+                                            <span className="font-semibold text-neutral-700 text-[10px] leading-tight">{vehicle.model}</span>
                                             <span className="font-mono text-[9px] text-neutral-400 mt-0.5">{vehicle.plate}</span>
                                           </div>
                                         ) : (
                                           <span className="text-neutral-400 font-medium italic text-[10px]">Geral</span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-3 text-right font-mono font-medium text-neutral-300">
+                                      <td className="px-4 py-3 text-right font-mono font-medium text-neutral-700">
                                         <div className="flex flex-col items-end">
-                                          <span className={td.type === 'in' ? 'text-neutral-300' : 'text-rose-600'}>
+                                          <span className={td.type === 'in' ? 'text-neutral-700' : 'text-rose-600'}>
                                             {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
                                           </span>
                                         </div>
@@ -686,7 +681,7 @@ const AdminInvestidores = ({
                                               setDeleteType('transaction');
                                               setShowDeleteAuthModal(true);
                                             }}
-                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                             title="Apagar transação"
                                           >
                                             <Trash2 size={13} />
@@ -705,7 +700,7 @@ const AdminInvestidores = ({
                       {/* Lista de Transações (Mobile) */}
                       <div className="block md:hidden space-y-4">
                         {filteredTransactions.length === 0 ? (
-                          <div className="p-8 text-center bg-black rounded-2xl border border-neutral-700 text-neutral-400 text-xs italic">
+                          <div className="p-8 text-center bg-neutral-50 rounded-2xl border border-neutral-200 text-neutral-400 text-xs italic">
                             {selectedPlateFilter === 'all' 
                               ? 'Nenhuma transação financeira registrada neste período.' 
                               : 'Nenhuma transação correspondente ao ativo filtrado.'}
@@ -714,7 +709,7 @@ const AdminInvestidores = ({
                           filteredTransactions.map(td => {
                             const vehicle = invVehs.find(v => v.plate === td.vehiclePlate);
                             return (
-                              <div key={td.id} className="p-4 sm:p-5 bg-[#0a0a0a] border border-neutral-700 rounded-xl sm:rounded-2xl shadow-sm space-y-3 sm:space-y-3.5 animate-in fade-in duration-200">
+                              <div key={td.id} className="p-4 sm:p-5 bg-white border border-neutral-200 rounded-xl sm:rounded-2xl shadow-sm space-y-3 sm:space-y-3.5 animate-in fade-in duration-200">
                                 <div className="flex justify-between items-start">
                                   <span className="text-[10px] text-neutral-400 font-bold">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                                   {getCategoryBadge(td.cat)}
@@ -723,25 +718,25 @@ const AdminInvestidores = ({
                                 <div>
                                   <h6 className="text-xs sm:text-sm font-black text-neutral-950 leading-snug">{td.desc}</h6>
                                   {vehicle ? (
-                                    <div className="mt-2 inline-flex flex-wrap items-center gap-1.5 bg-black border border-neutral-700/50 px-2.5 py-1.5 rounded-lg">
-                                      <Car size={10} className="text-[#D4AF37] shrink-0" />
-                                      <span className="text-[10px] font-bold text-neutral-300 leading-none">{vehicle.model}</span>
+                                    <div className="mt-2 inline-flex flex-wrap items-center gap-1.5 bg-neutral-50 border border-neutral-200/50 px-2.5 py-1.5 rounded-lg">
+                                      <Car size={10} className="text-[#C5A059] shrink-0" />
+                                      <span className="text-[10px] font-bold text-neutral-700 leading-none">{vehicle.model}</span>
                                       <span className="text-[9px] font-mono text-neutral-400">({vehicle.plate})</span>
                                     </div>
                                   ) : (
-                                    <span className="mt-2 inline-block text-[9.5px] text-neutral-400 font-bold bg-black px-2 py-0.5 rounded border border-neutral-800">Geral</span>
+                                    <span className="mt-2 inline-block text-[9.5px] text-neutral-400 font-bold bg-neutral-50 px-2 py-0.5 rounded border border-neutral-100">Geral</span>
                                   )}
                                 </div>
 
-                                <div className="text-[10px] sm:text-[10.5px] text-neutral-600 bg-black p-2.5 sm:p-3 rounded-xl border border-neutral-800/80 leading-relaxed font-medium">
+                                <div className="text-[10px] sm:text-[10.5px] text-neutral-600 bg-neutral-50 p-2.5 sm:p-3 rounded-xl border border-neutral-100/80 leading-relaxed font-medium">
                                   <span className="text-[8px] sm:text-[8.5px] uppercase font-black tracking-wider text-neutral-400 block mb-1">Memória de Cálculo (Fórmula)</span>
                                   {td.explanation}
                                 </div>
 
-                                <div className="flex justify-between items-center pt-3 sm:pt-3.5 border-t border-neutral-800">
+                                <div className="flex justify-between items-center pt-3 sm:pt-3.5 border-t border-neutral-100">
                                   <div>
                                     <span className="text-[9px] uppercase font-black text-neutral-400 block tracking-wider">Bruto</span>
-                                    <span className={`text-xs font-bold ${td.type === 'in' ? 'text-neutral-200' : 'text-red-500'}`}>
+                                    <span className={`text-xs font-bold ${td.type === 'in' ? 'text-neutral-800' : 'text-red-500'}`}>
                                       {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
                                     </span>
                                   </div>
@@ -750,10 +745,10 @@ const AdminInvestidores = ({
                                       <span className="text-[9px] uppercase font-black text-neutral-400 block tracking-wider">Efeito Líquido</span>
                                       <span className={`inline-block px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-mono font-black rounded-lg border ${
                                         td.share > 0 
-                                          ? 'bg-emerald-500/10 border-emerald-100 text-emerald-700' 
+                                          ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
                                           : td.share < 0 
-                                            ? 'bg-red-500/10 border-red-100 text-red-700' 
-                                            : 'bg-black border-neutral-700 text-neutral-400'
+                                            ? 'bg-red-50 border-red-100 text-red-700' 
+                                            : 'bg-neutral-50 border-neutral-200 text-neutral-400'
                                       }`}>
                                         {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
                                       </span>
@@ -765,7 +760,7 @@ const AdminInvestidores = ({
                                         setDeleteType('transaction');
                                         setShowDeleteAuthModal(true);
                                       }}
-                                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors shrink-0 self-end mt-2"
+                                      className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors shrink-0 self-end mt-2"
                                       title="Apagar transação"
                                     >
                                       <Trash2 size={14} />
@@ -781,20 +776,20 @@ const AdminInvestidores = ({
 
                     {/* Evolução de Dívidas (Saldo de Meses Passados) */}
                     {monthlySummaries.length > 0 && (
-                      <div className="bg-[#0a0a0a] border border-neutral-700 p-4 sm:p-6 rounded-xl">
-                        <h5 className="text-sm font-bold text-neutral-200 uppercase tracking-tight mb-4 flex items-center gap-2 border-b border-neutral-800 pb-3">
+                      <div className="bg-white border border-neutral-200 p-4 sm:p-6 rounded-xl">
+                        <h5 className="text-sm font-bold text-neutral-800 uppercase tracking-tight mb-4 flex items-center gap-2 border-b border-neutral-100 pb-3">
                           <History size={16} className="text-neutral-500" /> Histórico de Repasses
                         </h5>
-                        <div className="relative border-l-2 border-neutral-800 ml-2 pl-5 space-y-4 pt-2">
+                        <div className="relative border-l-2 border-neutral-100 ml-2 pl-5 space-y-4 pt-2">
                           {monthlySummaries.map((s, idx) => (
                             <div key={idx} className="relative">
                               {/* Timeline indicator node */}
                               <div className="absolute -left-[27px] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-neutral-300">
                               </div>
-                              <div className="bg-black/50 p-3 sm:p-4 border border-neutral-700/60 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 hover:border-neutral-300 transition-colors">
+                              <div className="bg-neutral-50/50 p-3 sm:p-4 border border-neutral-200/60 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 hover:border-neutral-300 transition-colors">
                                 <div>
                                   <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold block">Mês Referência</span>
-                                  <span className="text-sm font-semibold text-neutral-200">{s.month}</span>
+                                  <span className="text-sm font-semibold text-neutral-800">{s.month}</span>
                                 </div>
                                 <div className="space-y-1.5 font-mono text-xs w-full sm:w-auto">
                                   <div className="flex justify-between sm:justify-end gap-x-6">
@@ -803,7 +798,7 @@ const AdminInvestidores = ({
                                       {formatCurrency(s.net)}
                                     </span>
                                   </div>
-                                  <div className="flex justify-between sm:justify-end gap-x-6 pt-1 border-t border-neutral-700/50">
+                                  <div className="flex justify-between sm:justify-end gap-x-6 pt-1 border-t border-neutral-200/50">
                                     <span className="text-neutral-500 font-medium">Saldo Acumulado:</span>
                                     <span className={`font-bold ${s.totalAfter < 0 ? 'text-rose-700' : 'text-emerald-800'}`}>
                                       {formatCurrency(s.totalAfter)}
@@ -819,24 +814,24 @@ const AdminInvestidores = ({
 
                     {/* Previsão do Próximo Repasse (Mês Atual em Aberto) */}
                     {previewFiltered.length > 0 && (
-                      <div className="border-2 border-dashed border-neutral-700 rounded-2xl sm:rounded-2xl overflow-hidden">
+                      <div className="border-2 border-dashed border-neutral-200 rounded-2xl sm:rounded-[2rem] overflow-hidden">
                         {/* Header da seção */}
-                        <div className="bg-black px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-700">
+                        <div className="bg-neutral-50 px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-200">
                           <div className="flex items-center gap-2.5">
                             <div className="w-7 h-7 bg-neutral-200 rounded-lg flex items-center justify-center">
                               <Calendar size={13} className="text-neutral-500" />
                             </div>
                             <div>
-                              <p className="text-xs font-black text-neutral-200 uppercase tracking-tight">Previsão do Próximo Repasse</p>
+                              <p className="text-xs font-black text-neutral-800 uppercase tracking-tight">Previsão do Próximo Repasse</p>
                               <p className="text-[9px] text-neutral-400 font-medium">Competência em aberto: <span className="font-bold text-neutral-600">{previewMonthLabel}</span></p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2.5">
-                            <span className="text-[8px] uppercase font-black tracking-widest text-neutral-400 bg-neutral-100 border border-neutral-700 px-2.5 py-1 rounded-full">Em aberto · Não computado</span>
+                            <span className="text-[8px] uppercase font-black tracking-widest text-neutral-400 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-full">Em aberto · Não computado</span>
                             <span className={`text-[11px] font-mono font-black px-3 py-1.5 rounded-xl border ${
                               previewNet >= 0 
-                                ? 'bg-emerald-500/10 border-emerald-100 text-emerald-700'
-                                : 'bg-red-500/10 border-red-100 text-red-700'
+                                ? 'bg-emerald-50 border-emerald-100 text-emerald-700'
+                                : 'bg-red-50 border-red-100 text-red-700'
                             }`}>
                               {previewNet >= 0 ? '+' : ''}{formatCurrency(previewNet)}
                             </span>
@@ -847,7 +842,7 @@ const AdminInvestidores = ({
                         <div className="hidden md:block">
                           <table className="w-full text-left border-collapse text-xs">
                             <thead>
-                              <tr className="border-b border-neutral-800">
+                              <tr className="border-b border-neutral-100">
                                 <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px] tracking-wider">Data / Descrição</th>
                                 <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px] tracking-wider">Veículo</th>
                                 <th className="px-4 py-3 font-black text-neutral-400 uppercase text-[9px] tracking-wider text-right">Valor Bruto</th>
@@ -859,10 +854,10 @@ const AdminInvestidores = ({
                               {previewFiltered.map(td => {
                                 const vehicle = invVehs.find(v => v.plate === td.vehiclePlate);
                                 return (
-                                  <tr key={td.id} className="hover:bg-black/60 transition-colors opacity-80">
+                                  <tr key={td.id} className="hover:bg-neutral-50/60 transition-colors opacity-80">
                                     <td className="px-4 py-3">
                                       <div className="space-y-1">
-                                        <p className="font-bold text-neutral-300">{td.desc}</p>
+                                        <p className="font-bold text-neutral-700">{td.desc}</p>
                                         <div className="flex items-center gap-2">
                                           <span className="text-[9px] text-neutral-400 font-bold">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                                           {getCategoryBadge(td.cat)}
@@ -871,23 +866,23 @@ const AdminInvestidores = ({
                                     </td>
                                     <td className="px-4 py-3">
                                       {vehicle ? (
-                                        <div className="inline-flex flex-col bg-black border border-neutral-700/50 px-2 py-1 rounded-lg">
-                                          <span className="font-bold text-neutral-300 leading-tight text-[10px]">{vehicle.model}</span>
-                                          <span className="font-mono text-[9px] text-[#D4AF37] font-black mt-0.5">{vehicle.plate}</span>
+                                        <div className="inline-flex flex-col bg-neutral-50 border border-neutral-200/50 px-2 py-1 rounded-lg">
+                                          <span className="font-bold text-neutral-700 leading-tight text-[10px]">{vehicle.model}</span>
+                                          <span className="font-mono text-[9px] text-[#C5A059] font-black mt-0.5">{vehicle.plate}</span>
                                         </div>
                                       ) : (
                                         <span className="text-neutral-400 italic text-[10px]">Geral</span>
                                       )}
                                     </td>
                                     <td className="px-4 py-3 text-right font-mono font-bold text-neutral-600">
-                                      <span className={td.type === 'in' ? 'text-neutral-300' : 'text-red-400'}>
+                                      <span className={td.type === 'in' ? 'text-neutral-700' : 'text-red-400'}>
                                         {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
                                       </span>
                                     </td>
                                     <td className="px-4 py-3 text-[9px] text-neutral-400 leading-relaxed max-w-xs">{td.explanation}</td>
                                     <td className="px-4 py-3 text-right">
                                       <span className={`inline-block px-2 py-0.5 text-[10px] font-mono font-black rounded-lg border ${
-                                        td.share > 0 ? 'bg-emerald-500/10 border-emerald-100 text-emerald-600' : 'bg-red-500/10 border-red-100 text-red-600'
+                                        td.share > 0 ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-red-50 border-red-100 text-red-600'
                                       }`}>
                                         {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
                                       </span>
@@ -904,38 +899,38 @@ const AdminInvestidores = ({
                           {previewFiltered.map(td => {
                             const vehicle = invVehs.find(v => v.plate === td.vehiclePlate);
                             return (
-                              <div key={td.id} className="p-4 bg-[#0a0a0a] border border-neutral-800 rounded-xl shadow-sm space-y-3 opacity-90">
+                              <div key={td.id} className="p-4 bg-white border border-neutral-100 rounded-xl shadow-sm space-y-3 opacity-90">
                                 <div className="flex justify-between items-start">
                                   <span className="text-[10px] text-neutral-400 font-bold">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                                   {getCategoryBadge(td.cat)}
                                 </div>
                                 <div>
-                                  <h6 className="text-xs font-black text-neutral-200 leading-snug">{td.desc}</h6>
+                                  <h6 className="text-xs font-black text-neutral-800 leading-snug">{td.desc}</h6>
                                   {vehicle ? (
-                                    <div className="mt-1.5 inline-flex items-center gap-1.5 bg-black border border-neutral-800 px-2 py-1 rounded-lg">
-                                      <Car size={9} className="text-[#D4AF37] shrink-0" />
+                                    <div className="mt-1.5 inline-flex items-center gap-1.5 bg-neutral-50 border border-neutral-100 px-2 py-1 rounded-lg">
+                                      <Car size={9} className="text-[#C5A059] shrink-0" />
                                       <span className="text-[9px] font-bold text-neutral-600">{vehicle.model}</span>
                                       <span className="text-[8px] font-mono text-neutral-400">({vehicle.plate})</span>
                                     </div>
                                   ) : (
-                                    <span className="mt-1.5 inline-block text-[9px] text-neutral-400 font-bold bg-black px-1.5 py-0.5 rounded border border-neutral-800">Geral</span>
+                                    <span className="mt-1.5 inline-block text-[9px] text-neutral-400 font-bold bg-neutral-50 px-1.5 py-0.5 rounded border border-neutral-100">Geral</span>
                                   )}
                                 </div>
-                                <div className="text-[10px] text-neutral-500 bg-black p-2.5 rounded-lg border border-neutral-800 leading-relaxed">
+                                <div className="text-[10px] text-neutral-500 bg-neutral-50 p-2.5 rounded-lg border border-neutral-100 leading-relaxed">
                                   <span className="text-[8px] uppercase font-black tracking-wider text-neutral-400 block mb-0.5">Fórmula</span>
                                   {td.explanation}
                                 </div>
-                                <div className="flex justify-between items-center pt-2.5 border-t border-neutral-800">
+                                <div className="flex justify-between items-center pt-2.5 border-t border-neutral-100">
                                   <div>
                                     <span className="text-[9px] uppercase font-black text-neutral-400 block tracking-wider">Bruto</span>
-                                    <span className={`text-xs font-bold ${td.type === 'in' ? 'text-neutral-300' : 'text-red-400'}`}>
+                                    <span className={`text-xs font-bold ${td.type === 'in' ? 'text-neutral-700' : 'text-red-400'}`}>
                                       {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
                                     </span>
                                   </div>
                                   <div className="text-right">
                                     <span className="text-[9px] uppercase font-black text-neutral-400 block tracking-wider">Efeito Líquido</span>
                                     <span className={`inline-block px-2.5 py-0.5 text-xs font-mono font-black rounded-lg border ${
-                                      td.share > 0 ? 'bg-emerald-500/10 border-emerald-100 text-emerald-600' : 'bg-red-500/10 border-red-100 text-red-600'
+                                      td.share > 0 ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-red-50 border-red-100 text-red-600'
                                     }`}>
                                       {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
                                     </span>
@@ -947,7 +942,7 @@ const AdminInvestidores = ({
                         </div>
 
                         {/* Rodapé com aviso */}
-                        <div className="px-4 sm:px-6 py-3 bg-black border-t border-neutral-800 flex items-center gap-2">
+                        <div className="px-4 sm:px-6 py-3 bg-neutral-50 border-t border-neutral-100 flex items-center gap-2">
                           <AlertCircle size={11} className="text-neutral-400 shrink-0" />
                           <p className="text-[9px] text-neutral-400 font-medium">
                             Estas receitas ainda estão <strong>em aberto</strong> e serão incluídas no repasse do 5º dia útil de <strong>{nextMonthLabel}.</strong>
@@ -962,10 +957,10 @@ const AdminInvestidores = ({
               </div>
 
               {/* Modal Footer */}
-              <div className="p-4 sm:p-6 border-t border-neutral-800 bg-black/30 flex justify-end shrink-0">
+              <div className="p-4 sm:p-6 border-t border-neutral-100 bg-neutral-50/30 flex justify-end shrink-0">
                 <button 
                   onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }}
-                  className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-neutral-950 text-white text-[10px] uppercase tracking-widest font-black hover:bg-[#D4AF37] transition-all rounded-xl shadow-md flex items-center justify-center"
+                  className="w-full sm:w-auto px-8 py-3.5 sm:py-4 bg-neutral-950 text-white text-[10px] uppercase tracking-widest font-black hover:bg-[#C5A059] transition-all rounded-xl shadow-md flex items-center justify-center"
                 >
                   Fechar Detalhes
                 </button>
@@ -979,17 +974,17 @@ const AdminInvestidores = ({
       {/* Modal de Pagamento de Débito Manual */}
       {debtPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/70 backdrop-blur-sm p-4">
-          <div className="bg-[#0a0a0a] rounded-3xl p-8 w-full max-w-sm relative shadow-2xl">
+          <div className="bg-white rounded-[2.5rem] p-8 w-full max-w-sm relative shadow-2xl">
             <button onClick={() => setDebtPaymentModal(null)} className="absolute top-6 right-6 w-8 h-8 flex items-center justify-center bg-neutral-100 rounded-full hover:bg-neutral-200 transition-colors">
               <X size={16} />
             </button>
-            <div className="w-12 h-12 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center mb-6">
+            <div className="w-12 h-12 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center mb-6">
               <Landmark size={24} />
             </div>
-            <h3 className="text-xl font-black mb-2 text-white tracking-tight">Quitar Dívida</h3>
-            <p className="text-sm text-neutral-500 mb-6 font-medium">Investidor: <span className="font-black text-white">{debtPaymentModal.investor.name}</span></p>
+            <h3 className="text-xl font-black mb-2 text-neutral-900 tracking-tight">Quitar Dívida</h3>
+            <p className="text-sm text-neutral-500 mb-6 font-medium">Investidor: <span className="font-black text-neutral-900">{debtPaymentModal.investor.name}</span></p>
             
-            <div className="p-4 bg-red-500/10 border border-red-100 rounded-2xl mb-6">
+            <div className="p-4 bg-red-50 border border-red-100 rounded-2xl mb-6">
               <p className="text-[10px] font-black uppercase text-red-400 mb-1 tracking-widest">Saldo Devedor Atual</p>
               <p className="text-2xl font-black text-red-600">R$ {debtPaymentModal.debtAmount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
             </div>
@@ -1000,7 +995,7 @@ const AdminInvestidores = ({
                value={debtPaymentInput}
                onChange={(e) => setDebtPaymentInput(e.target.value)}
                placeholder="Ex: 150.00"
-               className="w-full bg-black border border-neutral-150 p-5 text-lg rounded-2xl mt-2 mb-6 outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all font-black text-white shadow-inner"
+               className="w-full bg-neutral-50 border border-neutral-150 p-5 text-lg rounded-2xl mt-2 mb-6 outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-neutral-900 shadow-inner"
             />
             
             <button 
@@ -1026,7 +1021,7 @@ const AdminInvestidores = ({
                    }
                  }
               }}
-              className="w-full py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#D4AF37] transition-all shadow-lg active:scale-95 duration-200"
+              className="w-full py-5 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-lg active:scale-95 duration-200"
             >
                Confirmar Pagamento
             </button>
@@ -1040,21 +1035,21 @@ const AdminInvestidores = ({
           <div className="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-6 mb-8 xl:mb-12">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
-                <EditorialLabel className="text-[#D4AF37] tracking-[0.3em]">Gestão de Ativos e Cotas</EditorialLabel>
+                <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+                <EditorialLabel className="text-[#C5A059] tracking-[0.3em]">Gestão de Ativos e Cotas</EditorialLabel>
               </div>
-              <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-white leading-none">Investidores</h3>
+              <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Investidores</h3>
               <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Painel de parceiros proprietários de ativos e controle financeiro de repasses.</p>
             </div>
             
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full xl:w-auto shrink-0">
               {/* Próximo Pagamento Info */}
               <div className="flex bg-neutral-900 px-6 py-4 rounded-2xl border border-neutral-800 shadow-xl items-center gap-4">
-                <div className="w-10 h-10 bg-[#D4AF37]/10 text-[#D4AF37] rounded-xl flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 bg-[#C5A059]/10 text-[#C5A059] rounded-xl flex items-center justify-center shrink-0">
                   <Calendar size={18} />
                 </div>
                 <div>
-                  <p className="text-[8px] uppercase tracking-widest text-[#D4AF37] font-black mb-0.5">Próximo Repasse (5º Dia Útil)</p>
+                  <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black mb-0.5">Próximo Repasse (5º Dia Útil)</p>
                   <p className="text-xs font-black text-white font-mono">
                     {(() => {
                       const getFifthBusinessDay = (date = new Date()) => {
@@ -1090,7 +1085,7 @@ const AdminInvestidores = ({
                   setIsEditing(false);
                   setShowForm(true);
                 }}
-                className="flex items-center justify-center gap-3 px-8 py-4 bg-neutral-950 text-[#D4AF37] text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:bg-[#D4AF37] hover:text-white transition-all shadow-xl shadow-neutral-950/10 group whitespace-nowrap"
+                className="flex items-center justify-center gap-3 px-8 py-4 bg-neutral-950 text-[#C5A059] text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-neutral-950/10 group whitespace-nowrap"
               >
                 <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
                 Novo Investidor
@@ -1122,14 +1117,14 @@ const AdminInvestidores = ({
                 color: 'neutral' 
               }
             ].map((card, i) => (
-              <div key={i} className="bg-[#0a0a0a] p-6 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors relative overflow-hidden group">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-black rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
+              <div key={i} className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm relative overflow-hidden group">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-neutral-50 rounded-full blur-2xl -mr-12 -mt-12 pointer-events-none group-hover:scale-110 transition-transform duration-300" />
                 <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">{card.label}</p>
                 <p className={`text-xl sm:text-2xl font-black font-sans leading-none ${
                   card.color === 'red' ? 'text-red-500' : 
                   card.color === 'emerald' ? 'text-emerald-600' : 
-                  card.color === 'gold' ? 'text-[#D4AF37]' : 
-                  'text-white'
+                  card.color === 'gold' ? 'text-[#C5A059]' : 
+                  'text-neutral-900'
                 }`}>
                   {card.value}
                 </p>
@@ -1139,17 +1134,17 @@ const AdminInvestidores = ({
 
           {/* Alerta de Repasses Pendentes */}
           {pendingInvestorsList.length > 0 && (
-            <div className="bg-amber-500/10 border border-amber-500/30 p-6 rounded-2xl mb-8 xl:mb-12 flex items-start gap-4 shadow-sm animate-in slide-in-from-top-4 duration-500">
-              <div className="w-12 h-12 bg-amber-500/20 text-amber-500 rounded-2xl flex items-center justify-center shrink-0 shadow-md">
+            <div className="bg-amber-50 border border-amber-200 p-6 rounded-[2rem] mb-8 xl:mb-12 flex items-start gap-4 shadow-sm animate-in slide-in-from-top-4 duration-500">
+              <div className="w-12 h-12 bg-amber-500 text-white rounded-2xl flex items-center justify-center shrink-0 shadow-md">
                 <AlertCircle size={22} className="animate-pulse" />
               </div>
               <div className="space-y-1.5 min-w-0 flex-1">
-                <h4 className="text-sm font-black text-amber-500 uppercase tracking-tight">Atenção: Repasses Pendentes</h4>
-                <p className="text-xs text-amber-400 font-medium leading-relaxed">
+                <h4 className="text-sm font-black text-amber-800 uppercase tracking-tight">Atenção: Repasses Pendentes</h4>
+                <p className="text-xs text-amber-700 font-medium leading-relaxed">
                   Há <span className="font-black">{pendingInvestorsList.length}</span> {pendingInvestorsList.length === 1 ? 'investidor' : 'investidores'} com repasse do mês anterior pendente de pagamento: 
                   <span className="font-bold"> {pendingInvestorsList.map(i => i.name).join(', ')}</span>.
                 </p>
-                <p className="text-[10px] text-amber-500/80 font-bold uppercase tracking-wider">
+                <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider">
                   Por favor, registre os pagamentos para que o sistema avance para a competência atual.
                 </p>
               </div>
@@ -1157,21 +1152,21 @@ const AdminInvestidores = ({
           )}
 
           {/* Barra de Pesquisa */}
-          <div className="bg-[#0a0a0a] rounded-2xl xl:rounded-3xl p-6 border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors mb-8 xl:mb-12 flex flex-col lg:flex-row gap-6 justify-between items-center">
+          <div className="bg-white rounded-[2rem] xl:rounded-[3rem] p-6 border border-neutral-100 shadow-sm mb-8 xl:mb-12 flex flex-col lg:flex-row gap-6 justify-between items-center">
             <div className="relative flex-1 w-full group">
-              <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
+              <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
               <input 
                 type="text" 
                 value={investorSearch} 
                 onChange={e => setInvestorSearch(e.target.value)} 
                 placeholder="Pesquisar por nome do investidor..." 
-                className="w-full bg-black text-white border border-neutral-800 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner text-neutral-200" 
+                className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner text-neutral-800" 
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
-            {filteredAndSortedInvestors.slice(0, visibleCount).map((investor) => {
+            {filteredAndSortedInvestors.map((investor) => {
               const { payout, currentMonthNet, carriedDebt, competenciaKey } = calculateInvestorPayout(investor);
               const invVehs = (vehicles || []).filter(v => {
                 const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
@@ -1180,19 +1175,19 @@ const AdminInvestidores = ({
               });
 
               return (
-                <div key={investor.id} className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card group">
+                <div key={investor.id} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">
                   {/* Background ambient light */}
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 blur-3xl -mr-16 -mt-16 animate-pulse pointer-events-none" />
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16 animate-pulse pointer-events-none" />
                   
                   <div>
                     {/* Card Top: Profile and quick actions */}
-                    <div className="flex justify-between items-start mb-5 pb-4 border-b border-neutral-800/60">
+                    <div className="flex justify-between items-start mb-5 pb-4 border-b border-neutral-100/60">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-12 h-12 bg-neutral-950 text-[#D4AF37] rounded-2xl flex items-center justify-center font-black text-lg shadow-md shrink-0 group-hover:scale-105 transition-transform duration-300 select-none">
+                        <div className="w-12 h-12 bg-neutral-950 text-[#C5A059] rounded-2xl flex items-center justify-center font-black text-lg shadow-md shrink-0 group-hover:scale-105 transition-transform duration-300 select-none">
                           {investor.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-base font-black text-white uppercase tracking-tight truncate" title={investor.name}>
+                          <p className="text-base font-black text-neutral-900 uppercase tracking-tight truncate" title={investor.name}>
                             {investor.name}
                           </p>
                           <div className="flex items-center gap-1.5 mt-0.5">
@@ -1209,7 +1204,7 @@ const AdminInvestidores = ({
                             setIsEditing(true);
                             setShowForm(true);
                           }}
-                          className="w-8 h-8 bg-black text-neutral-400 border border-neutral-700/50 rounded-lg flex items-center justify-center hover:border-[#D4AF37] hover:text-[#D4AF37] hover:bg-[#0a0a0a] transition-all shadow-sm active:scale-95"
+                          className="w-8 h-8 bg-neutral-50 text-neutral-400 border border-neutral-200/50 rounded-lg flex items-center justify-center hover:border-[#C5A059] hover:text-[#C5A059] hover:bg-white transition-all shadow-sm active:scale-95"
                           title="Editar"
                         >
                           <Pencil size={12} />
@@ -1221,7 +1216,7 @@ const AdminInvestidores = ({
                             setDeleteType('investor');
                             setShowDeleteAuthModal(true);
                           }}
-                          className="w-8 h-8 bg-red-500/10/50 text-red-400 border border-red-100/50 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
+                          className="w-8 h-8 bg-red-50/50 text-red-400 border border-red-100/50 rounded-lg flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm active:scale-95"
                           title="Excluir"
                         >
                           <Trash2 size={12} />
@@ -1230,7 +1225,7 @@ const AdminInvestidores = ({
                     </div>
 
                     {/* Personal & Bank info block */}
-                    <div className="bg-black/50 border border-neutral-800/70 p-4 rounded-2xl space-y-3.5 mb-5">
+                    <div className="bg-neutral-50/50 border border-neutral-100/70 p-4 rounded-2xl space-y-3.5 mb-5">
                       <div className="space-y-2">
                         <div className="flex justify-between text-[9px] font-black uppercase tracking-wider text-neutral-400">
                           <span>Identificação</span>
@@ -1240,33 +1235,33 @@ const AdminInvestidores = ({
                         <div className="flex justify-between items-start gap-4">
                           <div className="min-w-0">
                             <p className="text-[8px] uppercase text-neutral-400 font-black">CPF</p>
-                            <p className="text-xs font-mono font-bold text-neutral-200 truncate">{investor.cpf || 'Não Informado'}</p>
+                            <p className="text-xs font-mono font-bold text-neutral-800 truncate">{investor.cpf || 'Não Informado'}</p>
                           </div>
                           <div className="text-right min-w-0">
                             <p className="text-[8px] uppercase text-neutral-400 font-black">Telefone / E-mail</p>
-                            <p className="text-[11px] font-bold text-neutral-200 truncate">{investor.phone}</p>
+                            <p className="text-[11px] font-bold text-neutral-800 truncate">{investor.phone}</p>
                             <p className="text-[9px] font-medium text-neutral-400 truncate" title={investor.email}>{investor.email}</p>
                           </div>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-neutral-800/80 space-y-1">
+                      <div className="pt-3 border-t border-neutral-100/80 space-y-1">
                         <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-black">Dados para Payout / PIX</span>
-                        <p className="text-xs text-neutral-200 font-bold leading-tight truncate">
+                        <p className="text-xs text-neutral-800 font-bold leading-tight truncate">
                           {investor.bank ? `${investor.bank}` : 'Banco N/I'}
                         </p>
                         <p className="text-[10px] font-semibold text-neutral-500 truncate">
-                          Chave PIX: <span className="text-[#D4AF37] font-bold">{investor.pix || 'Não Informada'}</span>
+                          Chave PIX: <span className="text-[#C5A059] font-bold">{investor.pix || 'Não Informada'}</span>
                         </p>
                       </div>
                     </div>
 
                     {/* Financial details container */}
-                    <div className="bg-[#D4AF37]/5 border border-[#D4AF37]/10 p-4 rounded-2xl space-y-4 mb-6">
+                    <div className="bg-[#C5A059]/5 border border-[#C5A059]/10 p-4 rounded-2xl space-y-4 mb-6">
                       <div className="flex justify-between items-start">
                         <div>
-                          <span className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black">Saldo Repasse (Líquido)</span>
-                          <h4 className="text-xl font-mono font-black text-white leading-none mt-1">
+                          <span className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">Saldo Repasse (Líquido)</span>
+                          <h4 className="text-xl font-mono font-black text-neutral-900 leading-none mt-1">
                             R$ {Math.max(0, payout).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </h4>
                           
@@ -1276,14 +1271,14 @@ const AdminInvestidores = ({
                               setSelectedMonthForCalc(null);
                               setSelectedInvForCalc(investor);
                             }}
-                            className="mt-2 text-[9.5px] text-[#D4AF37] font-black uppercase tracking-widest underline flex items-center gap-1 hover:text-neutral-950 transition-colors"
+                            className="mt-2 text-[9.5px] text-[#C5A059] font-black uppercase tracking-widest underline flex items-center gap-1 hover:text-neutral-950 transition-colors"
                           >
                             Ver Memória de Cálculo
                           </button>
                           
                           {carriedDebt < 0 && (
                             <div className="mt-1.5 flex items-center gap-1">
-                              <span className="bg-red-500/10 border border-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
+                              <span className="bg-red-50 border border-red-100 text-red-600 text-[8px] font-black px-1.5 py-0.5 rounded uppercase">
                                 Débito: - R$ {Math.abs(carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
                             </div>
@@ -1297,17 +1292,17 @@ const AdminInvestidores = ({
                         </div>
                         
                         <span className={`text-[8px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
-                          payout > 0 ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100/50' : 
-                          payout < 0 ? 'bg-red-500/10 text-red-600 border-red-100/50' : 
-                          'bg-black text-neutral-400 border-neutral-700/50'
+                          payout > 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-100/50' : 
+                          payout < 0 ? 'bg-red-50 text-red-600 border-red-100/50' : 
+                          'bg-neutral-50 text-neutral-400 border-neutral-200/50'
                         }`}>
                           {payout > 0 ? 'A Repassar' : (payout < 0 ? 'Em Débito' : 'Sem Saldo')}
                         </span>
                       </div>
 
                       {/* Associated Vehicles & ADM Taxes */}
-                      <div className="pt-3 border-t border-[#D4AF37]/10 space-y-2">
-                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-[#D4AF37]">
+                      <div className="pt-3 border-t border-[#C5A059]/10 space-y-2">
+                        <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-wider text-[#C5A059]">
                           <span>Ativos Sob Gestão ({invVehs.length})</span>
                           <span>Taxa Adm</span>
                         </div>
@@ -1315,9 +1310,9 @@ const AdminInvestidores = ({
                         {invVehs.length > 0 ? (
                           <div className="space-y-1.5 max-h-24 overflow-y-auto pr-1">
                             {invVehs.map(v => (
-                              <div key={v.id} className="flex justify-between items-center text-[10px] text-neutral-300 font-bold bg-[#0a0a0a]/60 px-2.5 py-1 rounded-lg border border-neutral-800">
+                              <div key={v.id} className="flex justify-between items-center text-[10px] text-neutral-700 font-bold bg-white/60 px-2.5 py-1 rounded-lg border border-neutral-100">
                                 <span className="truncate max-w-[130px]">{v.model} <span className="font-mono text-[9px] text-neutral-400">({v.plate})</span></span>
-                                <span className="font-black text-white">{v.adminTax || 20}%</span>
+                                <span className="font-black text-neutral-900">{v.adminTax || 20}%</span>
                               </div>
                             ))}
                           </div>
@@ -1327,7 +1322,7 @@ const AdminInvestidores = ({
                         
                         <div className="flex justify-between items-center text-[9px] text-neutral-400 font-bold uppercase pt-1.5">
                           <span>Seguro Franquia Total (Fixo)</span>
-                          <span className="font-mono text-neutral-200">
+                          <span className="font-mono text-neutral-800">
                             R$ {(39.90 * invVehs.length).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -1355,7 +1350,7 @@ const AdminInvestidores = ({
                         const forecastDate = getFifthBusinessDay(now).toLocaleDateString('pt-BR');
 
                         return (
-                          <div className="pt-3 border-t border-[#D4AF37]/10 flex justify-between items-center text-[9px] font-bold uppercase tracking-wider text-neutral-400">
+                          <div className="pt-3 border-t border-[#C5A059]/10 flex justify-between items-center text-[9px] font-bold uppercase tracking-wider text-neutral-400">
                             <span>Status Repasse:</span>
                             <div className="text-right">
                               <span className={`inline-block text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${currentPayoutRecord ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-white'}`}>
@@ -1379,7 +1374,7 @@ const AdminInvestidores = ({
                     {payout > 0 ? (
                       <button
                         onClick={() => setPayoutModal({ investor, amount: payout, referenceMonth: competenciaKey })}
-                        className="w-full py-3.5 bg-neutral-950 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-[#D4AF37] transition-all flex items-center justify-center gap-2 group shadow-sm active:scale-95 duration-200"
+                        className="w-full py-3.5 bg-neutral-950 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 group shadow-sm active:scale-95 duration-200"
                       >
                         <SendHorizonal size={12} className="group-hover:translate-x-0.5 transition-transform" />
                         Registrar Repasse
@@ -1398,10 +1393,10 @@ const AdminInvestidores = ({
 
                     {/* Payout History Collapsible list */}
                     {(payoutHistory[investor.id] || []).length > 0 && (
-                      <div className="border-t border-neutral-800/80 pt-3">
+                      <div className="border-t border-neutral-100/80 pt-3">
                         <button
                           onClick={() => setExpandedHistory(prev => ({ ...prev, [investor.id]: !prev[investor.id] }))}
-                          className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors py-1"
+                          className="w-full flex items-center justify-between text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors py-1"
                         >
                           <span className="flex items-center gap-1.5"><History size={11} /> Histórico de Repasses</span>
                           {expandedHistory[investor.id] ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -1433,7 +1428,7 @@ const AdminInvestidores = ({
             })}
 
             {filteredAndSortedInvestors.length === 0 && (
-              <div className="col-span-full py-20 flex flex-col items-center justify-center text-neutral-400 space-y-4 bg-[#0a0a0a] rounded-3xl border border-dashed border-neutral-700">
+              <div className="col-span-full py-20 flex flex-col items-center justify-center text-neutral-400 space-y-4 bg-white rounded-[2.5rem] border border-dashed border-neutral-200">
                 <Users size={36} className="text-neutral-200" />
                 <p className="text-[10px] font-black uppercase tracking-widest text-neutral-300">
                   {investorSearch ? 'Nenhum investidor correspondente encontrado.' : 'Nenhum investidor cadastrado ainda.'}
@@ -1441,18 +1436,6 @@ const AdminInvestidores = ({
               </div>
             )}
           </div>
-
-          {visibleCount < filteredAndSortedInvestors.length && (
-            <div className="mt-8 flex justify-center">
-              <button
-                onClick={() => setVisibleCount(prev => prev + 6)}
-                className="bg-[#0a0a0a] text-neutral-300 font-bold uppercase tracking-widest text-[10px] px-8 py-4 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors active:scale-95 flex items-center gap-2"
-              >
-                <Plus size={14} />
-                Ver Mais
-              </button>
-            </div>
-          )}
         </>
       ) : (
         <>
@@ -1460,8 +1443,8 @@ const AdminInvestidores = ({
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 xl:mb-12">
             <div>
               <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
-                <h3 className="text-3xl font-black uppercase tracking-tighter text-white leading-none">
+                <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
+                <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900 leading-none">
                   {isEditing ? 'Editar Investidor' : 'Cadastro de Investidor'}
                 </h3>
               </div>
@@ -1479,25 +1462,25 @@ const AdminInvestidores = ({
             </button>
           </div>
 
-          <div className="bg-[#0a0a0a] p-8 xl:p-12 rounded-2xl xl:rounded-3xl border border-neutral-800 shadow-2xl shadow-neutral-900/5">
+          <div className="bg-white p-8 xl:p-12 rounded-[2rem] xl:rounded-[3rem] border border-neutral-100 shadow-2xl shadow-neutral-900/5">
             <form className="space-y-10" onSubmit={e => e.preventDefault()}>
               
               {/* Seção 1: Dados Cadastrais */}
               <div className="space-y-6">
-                <h5 className="text-[11px] uppercase tracking-[0.4em] text-white font-black flex items-center gap-2 pb-2 border-b border-neutral-800">
-                  <User size={14} className="text-[#D4AF37]" /> Informações Cadastrais
+                <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
+                  <User size={14} className="text-[#C5A059]" /> Informações Cadastrais
                 </h5>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 xl:gap-8">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nome Completo</label>
                     <div className="relative group">
-                      <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
+                      <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="text" 
                         value={investorForm.name || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, name: e.target.value })} 
-                        className="w-full bg-black text-white border border-neutral-800 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="Nome do parceiro investidor" 
                       />
                     </div>
@@ -1509,7 +1492,7 @@ const AdminInvestidores = ({
                       type="text" 
                       value={investorForm.cpf || ''} 
                       onChange={e => setInvestorForm({ ...investorForm, cpf: formatCPF(e.target.value) })} 
-                      className="w-full bg-black text-white border border-neutral-800 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
+                      className="w-full bg-neutral-50 border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                       placeholder="000.000.000-00" 
                     />
                   </div>
@@ -1517,12 +1500,12 @@ const AdminInvestidores = ({
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">E-mail Comercial</label>
                     <div className="relative group">
-                      <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
+                      <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="email" 
                         value={investorForm.email || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, email: e.target.value })} 
-                        className="w-full bg-black text-white border border-neutral-800 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="exemplo@laveiculos.com.br" 
                       />
                     </div>
@@ -1531,12 +1514,12 @@ const AdminInvestidores = ({
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Contato Telefônico</label>
                     <div className="relative group">
-                      <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
+                      <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="text" 
                         value={investorForm.phone || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, phone: e.target.value })} 
-                        className="w-full bg-black text-white border border-neutral-800 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="(00) 99999-9999" 
                       />
                     </div>
@@ -1545,12 +1528,12 @@ const AdminInvestidores = ({
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Endereço Residencial Completo</label>
                     <div className="relative group">
-                      <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
+                      <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="text" 
                         value={investorForm.address || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, address: e.target.value })} 
-                        className="w-full bg-black text-white border border-neutral-800 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
+                        className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="Rua, Número, Bairro, Cidade, Estado" 
                       />
                     </div>
@@ -1562,9 +1545,9 @@ const AdminInvestidores = ({
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 xl:gap-12 pt-4">
                 
                 {/* Seção 2: Acesso ao Portal */}
-                <div className="space-y-6 bg-black/50 p-6 rounded-3xl border border-neutral-800">
-                  <h5 className="text-[11px] uppercase tracking-[0.4em] text-white font-black flex items-center gap-2 pb-2 border-b border-neutral-800">
-                    <Key size={14} className="text-[#D4AF37]" /> Acesso ao Portal
+                <div className="space-y-6 bg-neutral-50/50 p-6 rounded-3xl border border-neutral-100">
+                  <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
+                    <Key size={14} className="text-[#C5A059]" /> Acesso ao Portal
                   </h5>
                   
                   <div className="space-y-4">
@@ -1574,7 +1557,7 @@ const AdminInvestidores = ({
                         type="text" 
                         value={investorForm.password || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, password: e.target.value })} 
-                        className="w-full bg-[#0a0a0a] text-white border border-neutral-800 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner font-mono tracking-widest" 
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner font-mono tracking-widest" 
                         placeholder="Senha segura de acesso" 
                       />
                     </div>
@@ -1584,7 +1567,7 @@ const AdminInvestidores = ({
                       <select 
                         value={investorForm.status || 'Ativo'} 
                         onChange={e => setInvestorForm({ ...investorForm, status: e.target.value })} 
-                        className="w-full bg-[#0a0a0a] text-white border border-neutral-800 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner"
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
                       >
                         <option value="Ativo">Ativo</option>
                         <option value="Inativo">Inativo</option>
@@ -1594,9 +1577,9 @@ const AdminInvestidores = ({
                 </div>
 
                 {/* Seção 3: Dados de Repasse */}
-                <div className="space-y-6 bg-black/50 p-6 rounded-3xl border border-neutral-800">
-                  <h5 className="text-[11px] uppercase tracking-[0.4em] text-white font-black flex items-center gap-2 pb-2 border-b border-neutral-800">
-                    <Landmark size={14} className="text-[#D4AF37]" /> Dados para Repasse
+                <div className="space-y-6 bg-neutral-50/50 p-6 rounded-3xl border border-neutral-100">
+                  <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
+                    <Landmark size={14} className="text-[#C5A059]" /> Dados para Repasse
                   </h5>
                   
                   <div className="space-y-4">
@@ -1606,7 +1589,7 @@ const AdminInvestidores = ({
                         type="text" 
                         value={investorForm.bank || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, bank: e.target.value })} 
-                        className="w-full bg-[#0a0a0a] text-white border border-neutral-800 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                         placeholder="Banco, Agência e Conta Corrente" 
                       />
                     </div>
@@ -1617,7 +1600,7 @@ const AdminInvestidores = ({
                         type="text" 
                         value={investorForm.pix || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, pix: e.target.value })} 
-                        className="w-full bg-[#0a0a0a] text-white border border-neutral-800 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner text-[#D4AF37]" 
+                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner text-[#C5A059]" 
                         placeholder="Celular, CPF/CNPJ, E-mail ou Chave Aleatória" 
                       />
                     </div>
@@ -1627,7 +1610,7 @@ const AdminInvestidores = ({
               </div>
 
               {/* Botões do Formulário */}
-              <div className="flex justify-end gap-6 pt-6 border-t border-neutral-800">
+              <div className="flex justify-end gap-6 pt-6 border-t border-neutral-100">
                 <button
                   type="button"
                   onClick={() => {
@@ -1638,7 +1621,7 @@ const AdminInvestidores = ({
                     });
                     setShowForm(false);
                   }}
-                  className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400 hover:text-white transition-colors"
+                  className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400 hover:text-neutral-900 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -1671,7 +1654,7 @@ const AdminInvestidores = ({
                     });
                     setShowForm(false);
                   }}
-                  className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#D4AF37] transition-all shadow-xl active:scale-95 duration-200"
+                  className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#C5A059] transition-all shadow-xl active:scale-95 duration-200"
                 >
                   {isEditing ? 'Salvar Alterações' : 'Confirmar Cadastro'}
                 </button>

@@ -47,11 +47,11 @@ const formatTransactionDateTime = (t) => {
 // ─── Badge de status do pagamento local ─────────────────────────────────────────────
 const PaymentStatusBadge = ({ status }) => {
   const map = {
-    'Concluído': { label: 'Concluído', cls: 'bg-emerald-500/10 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> },
-    'Pendente':  { label: 'Pendente',  cls: 'bg-amber-500/10 text-amber-700 border-amber-200',       icon: <Clock size={10} /> },
-    'Atrasado':  { label: 'Atrasado',  cls: 'bg-red-500/10 text-red-700 border-red-200',             icon: <AlertTriangle size={10} /> },
+    'Concluído': { label: 'Concluído', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> },
+    'Pendente':  { label: 'Pendente',  cls: 'bg-amber-50 text-amber-700 border-amber-200',       icon: <Clock size={10} /> },
+    'Atrasado':  { label: 'Atrasado',  cls: 'bg-red-50 text-red-700 border-red-200',             icon: <AlertTriangle size={10} /> },
   };
-  const s = map[status] || { label: status || 'Concluído', cls: 'bg-emerald-500/10 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> };
+  const s = map[status] || { label: status || 'Concluído', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: <CheckCircle2 size={10} /> };
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${s.cls}`}>
       {s.icon} {s.label}
@@ -62,15 +62,15 @@ const PaymentStatusBadge = ({ status }) => {
 const ConfirmDialog = ({ title, message, onConfirm, onCancel, confirmText = 'Confirmar', cancelText = 'Cancelar' }) => (
   <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
     <div className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" onClick={onCancel} />
-    <div className="relative bg-[#0a0a0a] w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="relative bg-white w-full max-w-sm rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
       <div className="p-6">
-        <h3 className="text-lg font-black text-white mb-2">{title}</h3>
+        <h3 className="text-lg font-black text-neutral-900 mb-2">{title}</h3>
         <p className="text-sm text-neutral-600">{message}</p>
       </div>
-      <div className="flex bg-black p-4 gap-3 justify-end">
+      <div className="flex bg-neutral-50 p-4 gap-3 justify-end">
         <button 
           onClick={onCancel}
-          className="px-4 py-2 bg-[#0a0a0a] border border-neutral-700 hover:bg-neutral-100 text-neutral-300 text-xs font-bold rounded-lg transition-colors"
+          className="px-4 py-2 bg-white border border-neutral-200 hover:bg-neutral-100 text-neutral-700 text-xs font-bold rounded-lg transition-colors"
         >
           {cancelText}
         </button>
@@ -121,12 +121,12 @@ const CategorySelect = ({ value, onChange, options, placeholder, className }) =>
         className={className}
       />
       {isOpen && (
-        <div className="absolute z-[200] w-full mt-1 bg-[#0a0a0a] border border-neutral-700 rounded-lg shadow-xl max-h-48 overflow-y-auto">
+        <div className="absolute z-[200] w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-xl max-h-48 overflow-y-auto">
           {filteredOptions.length > 0 ? (
             filteredOptions.map((opt, idx) => (
               <div
                 key={idx}
-                className="px-3 py-2 text-xs font-bold text-neutral-600 hover:bg-emerald-500/10 hover:text-emerald-700 cursor-pointer transition-colors border-b border-neutral-800 last:border-0"
+                className="px-3 py-2 text-xs font-bold text-neutral-600 hover:bg-emerald-50 hover:text-emerald-700 cursor-pointer transition-colors border-b border-neutral-100 last:border-0"
                 onClick={() => {
                   onChange(opt);
                   setSearch(opt);
@@ -283,30 +283,30 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-neutral-900/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-[#0a0a0a] w-full max-w-2xl rounded-3xl border border-neutral-800 shadow-2xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between p-6 border-b border-neutral-800 shrink-0">
+      <div className="relative bg-white w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[90vh]">
+        <div className="flex items-center justify-between p-6 border-b border-neutral-100 shrink-0">
           <div>
-            <h2 className="text-xl font-bold text-white">Histórico de Faturamento</h2>
+            <h2 className="text-xl font-bold text-neutral-900">Histórico de Faturamento</h2>
             <p className="text-sm text-neutral-500 mt-1">Semanas de {rental.user || rental.userName}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-neutral-800 rounded-full transition-colors text-white">
+          <button onClick={onClose} className="p-2 hover:bg-neutral-100 rounded-full transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-x text-neutral-500"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         </div>
         
-        <div className="p-6 overflow-y-auto bg-black space-y-4">
+        <div className="p-6 overflow-y-auto bg-neutral-50 space-y-4">
           {pastCycles.map((cycle, idx) => (
-            <div key={idx} className={`bg-[#111111] border ${cycle.isPaid ? 'border-emerald-500/30 opacity-70' : 'border-neutral-800 hover:border-[#D4AF37]/30'} rounded-2xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden transition-all`}>
+            <div key={idx} className={`bg-white border ${cycle.isPaid ? 'border-emerald-200/60 opacity-70' : 'border-neutral-200'} rounded-xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 relative overflow-hidden`}>
               {/* Barra lateral de status */}
               <div className={`absolute left-0 top-0 bottom-0 w-1 ${cycle.isPaid ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
               
               <div className="pl-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-black text-neutral-200 uppercase tracking-tight">Semana {cycle.weekNumber}</span>
+                  <span className="text-sm font-black text-neutral-800 uppercase tracking-tight">Semana {cycle.weekNumber}</span>
                   {cycle.isPaid ? (
-                    <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 px-2 py-0.5 rounded-full">Pago</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Pago</span>
                   ) : (
-                    <span className="text-[9px] font-black uppercase tracking-widest bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-0.5 rounded-full">Pendente</span>
+                    <span className="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Pendente</span>
                   )}
                 </div>
                 <div className="text-[11px] font-bold text-neutral-500">{cycle.label}</div>
@@ -316,7 +316,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
               <div className="flex items-center justify-end gap-4 w-full md:w-auto min-w-[200px]">
                 {!cycle.isPaid && editingCycle === cycle.weekNumber ? (
                   <div className="flex flex-col items-end gap-2 w-full animate-in fade-in zoom-in-95 duration-200">
-                    <div className="flex flex-col gap-3 w-full bg-black/50 p-4 rounded-xl border border-neutral-800 mt-2">
+                    <div className="flex flex-col gap-3 w-full bg-neutral-100/50 p-3 rounded-xl border border-neutral-200/60 mt-2">
                       <div className="flex items-center gap-2 justify-between">
                         <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Base:</span>
                         <div className="relative">
@@ -326,7 +326,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                             step="0.01"
                             value={customValue}
                             onChange={e => setCustomValue(e.target.value)}
-                            className="w-28 bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-inner text-right"
+                            className="w-28 bg-white border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-neutral-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 shadow-inner text-right"
                             autoFocus
                           />
                         </div>
@@ -340,7 +340,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                       </button>
 
                       {showAdditionalFields && (
-                        <div className="space-y-3 pt-2 border-t border-neutral-700/60 animate-in fade-in slide-in-from-top-2">
+                        <div className="space-y-3 pt-2 border-t border-neutral-200/60 animate-in fade-in slide-in-from-top-2">
                           <div className="flex items-center justify-between gap-2">
                             <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider leading-tight">Desconto<br/><span className="text-[8px] text-neutral-400">(Abate da Empresa)</span></span>
                             <div className="relative shrink-0">
@@ -351,7 +351,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                                 value={companyDiscount}
                                 onChange={e => setCompanyDiscount(e.target.value)}
                                 placeholder="0.00"
-                                className="w-28 bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-right text-white"
+                                className="w-28 bg-white border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 text-right"
                               />
                             </div>
                           </div>
@@ -362,19 +362,19 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                                 value={companyDiscountCat}
                                 onChange={setCompanyDiscountCat}
                                 placeholder="Selecione ou digite a categoria do desconto"
-                                className="w-full bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                                className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                               />
                               <input 
                                 type="text"
                                 value={companyDiscountDesc}
                                 onChange={e => setCompanyDiscountDesc(e.target.value)}
                                 placeholder="Descrição do Desconto (ex: Combinado via WhatsApp)"
-                                className="w-full bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-300 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 mb-2"
+                                className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 mb-2"
                               />
                             </div>
                           )}
                           
-                          <div className="flex flex-col gap-2 pt-1 border-t border-neutral-700/60">
+                          <div className="flex flex-col gap-2 pt-1 border-t border-neutral-200/60">
                             <div className="flex items-center justify-between gap-2 mt-2">
                               <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider leading-tight">Adicional<br/><span className="text-[8px] text-neutral-400">(Entra para Empresa)</span></span>
                               <div className="relative shrink-0">
@@ -385,7 +385,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                                   value={additionalPaymentValue}
                                   onChange={e => setAdditionalPaymentValue(e.target.value)}
                                   placeholder="0.00"
-                                  className="w-28 bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-right text-white"
+                                  className="w-28 bg-white border border-neutral-300 rounded-lg py-1.5 pl-9 pr-2 text-sm font-black text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-right"
                                 />
                               </div>
                             </div>
@@ -396,14 +396,14 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                                   value={additionalPaymentCat}
                                   onChange={setAdditionalPaymentCat}
                                   placeholder="Selecione ou digite a categoria do adicional"
-                                  className="w-full bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                                 <input 
                                   type="text"
                                   value={additionalPaymentDesc}
                                   onChange={e => setAdditionalPaymentDesc(e.target.value)}
                                   placeholder="Descrição do Adicional (ex: Lavagem)"
-                                  className="w-full bg-[#0a0a0a] border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-300 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                  className="w-full bg-white border border-neutral-300 rounded-lg py-1.5 px-3 text-[10px] font-bold text-neutral-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                               </div>
                             )}
@@ -412,7 +412,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                       )}
 
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-300">
-                        <span className="text-[10px] font-black text-neutral-200 uppercase tracking-wider">Total a Pagar:</span>
+                        <span className="text-[10px] font-black text-neutral-800 uppercase tracking-wider">Total a Pagar:</span>
                         <span className="text-sm font-black text-emerald-700">
                           R$ {((parseFloat(customValue) || 0) - (parseFloat(companyDiscount) || 0) + (parseFloat(additionalPaymentValue) || 0)).toFixed(2).replace('.', ',')}
                         </span>
@@ -432,7 +432,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           setAdditionalPaymentDesc('');
                           setShowAdditionalFields(false);
                         }}
-                        className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-300 text-xs font-bold rounded-md transition-colors"
+                        className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 text-xs font-bold rounded-md transition-colors"
                       >
                         Cancelar
                       </button>
@@ -490,7 +490,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                 ) : (
                   <>
                     <div className="flex flex-col items-end">
-                      <div className={`text-lg font-black ${cycle.isPaid ? 'text-emerald-700' : 'text-[#D4AF37]'}`}>
+                      <div className={`text-lg font-black ${cycle.isPaid ? 'text-emerald-700' : 'text-[#C5A059]'}`}>
                         R$ {(cycle.actualTotal !== null && cycle.actualTotal !== undefined ? cycle.actualTotal : cycle.calc.total).toFixed(2).replace('.', ',')}
                       </div>
                       {cycle.isPaid && cycle.adjustments && cycle.adjustments.length > 0 && (
@@ -814,10 +814,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-10">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-[#D4AF37] rounded-full animate-pulse" />
-            <EditorialLabel className="text-white tracking-[0.2em]">Módulo de Receita e Cobrança</EditorialLabel>
+            <div className="w-1.5 h-1.5 bg-[#C5A059] rounded-full animate-pulse" />
+            <EditorialLabel className="text-neutral-900 tracking-[0.2em]">Módulo de Receita e Cobrança</EditorialLabel>
           </div>
-          <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-white leading-none">Faturamento</h3>
+          <h3 className="text-3xl md:text-4xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Faturamento</h3>
           <p className="text-neutral-500 font-medium italic text-sm tracking-tight">
             Gestão individual de faturamento baseada no ciclo de cada contrato.
           </p>
@@ -825,32 +825,32 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
 
         <div className="flex flex-col items-end gap-3 w-full lg:w-auto">
           <div className="relative w-full lg:w-80 group">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#D4AF37] transition-colors" />
+            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#C5A059] transition-colors" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Buscar condutor ou placa..."
-              className="w-full bg-[#0a0a0a] border border-neutral-700/80 py-3.5 pl-11 pr-4 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all shadow-sm text-white"
+              className="w-full bg-white border border-neutral-200/80 py-3.5 pl-11 pr-4 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-[#C5A059]/20 focus:border-[#C5A059] transition-all shadow-sm"
             />
           </div>
           
           <div className="flex bg-neutral-100 p-1 rounded-lg w-full lg:w-auto overflow-x-auto no-scrollbar">
             <button
               onClick={() => setFilterMode('recentes')}
-              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap ${filterMode === 'recentes' ? 'bg-[#0a0a0a] text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap ${filterMode === 'recentes' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
             >
               Início Mais Recente
             </button>
             <button
               onClick={() => setFilterMode('antigos')}
-              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap ${filterMode === 'antigos' ? 'bg-[#0a0a0a] text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap ${filterMode === 'antigos' ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
             >
               Início Mais Antigo
             </button>
             <button
               onClick={() => setFilterMode('pendentes')}
-              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap flex items-center gap-1 ${filterMode === 'pendentes' ? 'bg-amber-100 text-amber-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-300'}`}
+              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap flex items-center gap-1 ${filterMode === 'pendentes' ? 'bg-amber-100 text-amber-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
             >
               <AlertCircle size={10} /> Pendentes
             </button>
@@ -860,20 +860,20 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-        <div className="p-6 bg-neutral-900 rounded-2xl border border-[#D4AF37]/20 shadow-lg shadow-[#D4AF37]/10 relative overflow-hidden group hover:border-[#D4AF37]/40 transition-colors">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 blur-2xl -mr-10 -mt-10 group-hover:bg-[#D4AF37]/20 transition-all duration-500" />
-          <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1 relative z-10">Previsão Semanal</p>
-          <div className="flex items-baseline gap-0.5 relative z-10">
-            <span className="text-base font-black text-[#D4AF37] tracking-tight">R$</span>
-            <h4 className="text-3xl font-black text-white tracking-tighter drop-shadow-md">
+        <div className="p-6 bg-neutral-900 rounded-2xl shadow-md relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#C5A059]/5 blur-xl -mr-10 -mt-10" />
+          <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Previsão Semanal</p>
+          <div className="flex items-baseline gap-0.5">
+            <span className="text-base font-black text-[#C5A059] tracking-tight">R$</span>
+            <h4 className="text-3xl font-black text-white tracking-tighter">
               {totalPrevisao.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
           </div>
         </div>
-        <div className="p-6 bg-[#0a0a0a] rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 flex flex-col justify-between hover:border-neutral-700 transition-colors">
+        <div className="p-6 bg-white rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-between">
           <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Ciclo Ativo</p>
           <div>
-            <h4 className="text-3xl font-black text-white tracking-tight leading-none">{filtered.length}</h4>
+            <h4 className="text-3xl font-black text-neutral-900 tracking-tight leading-none">{filtered.length}</h4>
             <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-wider mt-1">Condutores Ativos</p>
           </div>
         </div>
@@ -956,24 +956,23 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
             const paidWeeksCount = history.filter(t => (t.cat || '').toLowerCase() === 'aluguel').length;
 
             return (
-              <div key={rental.id} className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#D4AF37]/[0.02] to-transparent opacity-0 group-hover/card:opacity-100 pointer-events-none transition-opacity duration-1000" />
+              <div key={rental.id} className="bg-white rounded-3xl border border-neutral-150 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-neutral-200">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
                   {/* Left Section: Details (Main Info) */}
                   <div className="lg:col-span-8 p-6 md:p-8 space-y-6">
                     {/* Header Row */}
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-neutral-800/80">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 border-b border-neutral-100/80">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-neutral-900 text-[#D4AF37] rounded-xl flex items-center justify-center font-black text-lg shadow-sm">
+                        <div className="w-12 h-12 bg-neutral-900 text-[#C5A059] rounded-xl flex items-center justify-center font-black text-lg shadow-sm">
                           {(rental.userName || rental.user || '?').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h4 className="text-lg font-black text-white uppercase tracking-tight">{rental.userName || rental.user}</h4>
+                          <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tight">{rental.userName || rental.user}</h4>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] border border-[#D4AF37]/30">
+                            <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500">
                               Cobrança: {getDayOfWeek(rental.startDate || rental.date)}s
                             </span>
-                            <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-100" title="Data de Início do Contrato">
+                            <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100" title="Data de Início do Contrato">
                               Início: {(rental.startDate || rental.date || '').substring(0, 10).split('-').reverse().join('/')}
                             </span>
                           </div>
@@ -982,8 +981,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                       
                       <div className="flex sm:flex-col items-start sm:items-end gap-2 sm:gap-0.5">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-black text-white uppercase tracking-tight">{rental.vehicleModel || rental.vehicle}</span>
-                          <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-700/60 uppercase">{rental.plate || rental.vehiclePlate}</span>
+                          <span className="text-xs font-black text-neutral-900 uppercase tracking-tight">{rental.vehicleModel || rental.vehicle}</span>
+                          <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 uppercase">{rental.plate || rental.vehiclePlate}</span>
                         </div>
                         <p className="text-[10px] text-neutral-400 font-bold">Base: R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / sem</p>
                       </div>
@@ -992,21 +991,21 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     {/* Details Sub-grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       {/* Módulo 1: Detalhamento Financeiro */}
-                      <div className="p-5 rounded-2xl bg-black/50 border border-neutral-800/70 space-y-4">
-                        <h6 className="text-[10px] uppercase font-black tracking-widest text-[#D4AF37] border-b border-neutral-800 pb-2">Valores do Ciclo</h6>
+                      <div className="p-5 rounded-2xl bg-neutral-50/50 border border-neutral-100/70 space-y-4">
+                        <h6 className="text-[10px] uppercase font-black tracking-widest text-[#C5A059] border-b border-neutral-100 pb-2">Valores do Ciclo</h6>
                         <div className="space-y-3">
                           <div className="flex justify-between items-center text-xs font-medium text-neutral-500">
                             <span>Aluguel Base</span>
-                            <span className="font-bold text-neutral-200">R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="font-bold text-neutral-800">R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                           
                           <div className="flex justify-between items-center text-xs font-medium text-neutral-500">
                             <span>Taxa de Pneus</span>
-                            <span className="font-bold text-neutral-200">R$ {calc.tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="font-bold text-neutral-800">R$ {calc.tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
 
                           {calc.daysInMaintenance > 0 && (
-                            <div className="flex justify-between items-center text-xs p-2.5 bg-red-500/10/50 rounded-xl border border-red-100 text-red-700">
+                            <div className="flex justify-between items-center text-xs p-2.5 bg-red-50/50 rounded-xl border border-red-100 text-red-700">
                               <div className="space-y-0.5">
                                 <p className="font-black uppercase text-[8px] tracking-wider">Abatimento Oficina</p>
                                 <p className="text-[8px] text-red-500 font-bold">{calc.daysInMaintenance} dias de oficina</p>
@@ -1016,22 +1015,22 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                           )}
 
                           {calc.finesDetails && calc.finesDetails.length > 0 && (
-                            <div className="pt-2 border-t border-neutral-700/40 space-y-2">
+                            <div className="pt-2 border-t border-neutral-200/40 space-y-2">
                               <p className="text-[8px] font-black uppercase tracking-wider text-amber-600">Multas Inclusas</p>
                               {calc.finesDetails.map((fd, idx) => (
                                 <div key={idx} className="flex justify-between items-center text-[11px] text-neutral-600 border-l-2 border-amber-400 pl-3">
                                   <div>
-                                    <p className="font-bold text-neutral-200 line-clamp-1">{fd.infraction}</p>
+                                    <p className="font-bold text-neutral-800 line-clamp-1">{fd.infraction}</p>
                                     <p className="text-[8px] text-neutral-400 uppercase tracking-tighter">Parcela {fd.installment}</p>
                                   </div>
-                                  <span className="font-black text-white">R$ {fd.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  <span className="font-black text-neutral-900">R$ {fd.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               ))}
                             </div>
                           )}
 
-                          <div className="pt-3 border-t border-neutral-700/40 flex items-center justify-between">
-                            <span className="text-[10px] font-black text-neutral-200 uppercase tracking-widest">Ajuste Manual</span>
+                          <div className="pt-3 border-t border-neutral-200/40 flex items-center justify-between">
+                            <span className="text-[10px] font-black text-neutral-800 uppercase tracking-widest">Ajuste Manual</span>
                             <div className="flex items-center gap-1.5">
                               <span className="text-[10px] font-bold text-neutral-400">R$</span>
                               <input
@@ -1039,7 +1038,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                                 value={lateFees[rental.id] || ''}
                                 onChange={e => setLateFees({ ...lateFees, [rental.id]: e.target.value })}
                                 placeholder="0,00"
-                                className="w-20 bg-[#0a0a0a] border border-neutral-700 rounded-lg p-1.5 text-right text-xs font-black text-white outline-none focus:ring-2 focus:ring-[#D4AF37]/20 focus:border-[#D4AF37] transition-all"
+                                className="w-20 bg-white border border-neutral-200 rounded-lg p-1.5 text-right text-xs font-black outline-none focus:ring-2 focus:ring-[#C5A059]/20 focus:border-[#C5A059] transition-all"
                               />
                             </div>
                           </div>
@@ -1047,15 +1046,15 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                       </div>
 
                       {/* Módulo 2: Carro Reserva */}
-                      <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${calc.replacementCharge > 0 ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' : 'bg-black/30 border-neutral-800/70 opacity-60'}`}>
+                      <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${calc.replacementCharge > 0 ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' : 'bg-neutral-50/30 border-neutral-100/70 opacity-60'}`}>
                         <div className="w-full">
-                          <h6 className={`text-[10px] uppercase font-black tracking-widest border-b pb-2 ${calc.replacementCharge > 0 ? 'text-[#D4AF37] border-neutral-800' : 'text-neutral-200 border-neutral-800'}`}>Carro Reserva</h6>
+                          <h6 className={`text-[10px] uppercase font-black tracking-widest border-b pb-2 ${calc.replacementCharge > 0 ? 'text-[#C5A059] border-neutral-800' : 'text-neutral-800 border-neutral-100'}`}>Carro Reserva</h6>
                           {calc.replacementCharge > 0 ? (
                             <div className="space-y-4 pt-3">
                               {calc.rcsDetails.map((rc, idx) => (
                                 <div key={idx} className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 bg-neutral-800 rounded-lg flex items-center justify-center text-[#D4AF37]"><Car size={13} /></div>
+                                    <div className="w-7 h-7 bg-neutral-800 rounded-lg flex items-center justify-center text-[#C5A059]"><Car size={13} /></div>
                                     <div>
                                       <p className="text-xs font-black uppercase tracking-tight">{rc.plate}</p>
                                       <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider leading-none">
@@ -1079,7 +1078,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                         {calc.replacementCharge > 0 && (
                           <div className="flex justify-between items-center pt-3 border-t border-neutral-800 mt-4">
                             <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Total Adicional</span>
-                            <span className="text-sm font-black text-[#D4AF37]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <span className="text-sm font-black text-[#C5A059]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                         )}
                       </div>
@@ -1087,11 +1086,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
 
                     {/* Módulo 3: Histórico de Pagamentos Confirmados */}
                     {history.length > 0 && (
-                      <div className="pt-6 border-t border-neutral-800/80 space-y-4">
+                      <div className="pt-6 border-t border-neutral-100/80 space-y-4">
                         <div className="flex justify-between items-center">
                           <button
                             onClick={() => setOpenHistories(prev => ({ ...prev, [rental.id]: !prev[rental.id] }))}
-                            className="text-[9px] font-black text-[#D4AF37] hover:text-white uppercase tracking-widest transition-colors flex items-center gap-1.5"
+                            className="text-[9px] font-black text-[#C5A059] hover:text-neutral-900 uppercase tracking-widest transition-colors flex items-center gap-1.5"
                           >
                             {openHistories[rental.id] ? 'Ocultar Histórico de Pagamentos' : 'Ver Histórico de Pagamentos'}
                           </button>
@@ -1100,13 +1099,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                         {openHistories[rental.id] && (
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
                             {history.map(p => (
-                              <div key={p.id} className="flex items-center justify-between p-3 bg-black/50 border border-neutral-800 rounded-xl">
+                              <div key={p.id} className="flex items-center justify-between p-3 bg-neutral-50/50 border border-neutral-100 rounded-xl">
                                 <div className="flex items-center gap-2">
-                                  <div className="w-6 h-6 bg-[#0a0a0a] border border-neutral-700/60 rounded-md flex items-center justify-center text-neutral-500 shrink-0">
+                                  <div className="w-6 h-6 bg-white border border-neutral-200/60 rounded-md flex items-center justify-center text-neutral-500 shrink-0">
                                     <Receipt size={11} />
                                   </div>
                                   <div>
-                                    <p className="text-[9px] font-black text-neutral-200 uppercase tracking-tight">
+                                    <p className="text-[9px] font-black text-neutral-800 uppercase tracking-tight">
                                       R$ {parseFloat(p.val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </p>
                                     <p className="text-[8px] text-neutral-600 font-bold leading-tight">
@@ -1133,16 +1132,16 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                   </div>
 
                   {/* Right Section: Actions & Checkout Panel */}
-                  <div className="lg:col-span-4 p-6 md:p-8 bg-black/40 border-t lg:border-t-0 lg:border-l border-neutral-800 flex flex-col justify-between space-y-6">
+                  <div className="lg:col-span-4 p-6 md:p-8 bg-neutral-50/40 border-t lg:border-t-0 lg:border-l border-neutral-100 flex flex-col justify-between space-y-6">
                     {/* Invoice Summary Card */}
-                    <div className="p-6 bg-neutral-900 rounded-2xl border border-[#D4AF37]/20 shadow-lg shadow-[#D4AF37]/10 relative overflow-hidden group hover:border-[#D4AF37]/40 transition-colors flex flex-col justify-between">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 blur-2xl -mr-10 -mt-10" />
+                    <div className="p-6 bg-neutral-900 rounded-2xl text-white shadow-md relative overflow-hidden flex flex-col justify-between">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-2xl -mr-10 -mt-10" />
                       
                       <div className="space-y-4 relative">
                         <div>
                           <p className="text-[8px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Total do Ciclo</p>
                           <div className="flex items-baseline gap-1">
-                            <span className="text-base text-[#D4AF37] font-black">R$</span>
+                            <span className="text-base text-[#C5A059] font-black">R$</span>
                             <span className="text-3xl font-black text-white tracking-tighter leading-none">
                               {calc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
@@ -1151,10 +1150,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                         </div>
                         
                         <div className="pt-4 border-t border-neutral-800 flex items-center gap-2">
-                          <CalendarDays size={12} className="text-[#D4AF37] shrink-0" />
+                          <CalendarDays size={12} className="text-[#C5A059] shrink-0" />
                           <div>
                             <p className="text-[7px] text-neutral-500 font-black uppercase tracking-widest">Próximo Vencimento</p>
-                            <p className="text-xs font-black text-[#D4AF37] uppercase tracking-tight">
+                            <p className="text-xs font-black text-[#C5A059] uppercase tracking-tight">
                               {calc.dueDate ? new Date(calc.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', {
                                 weekday: 'short', day: '2-digit', month: '2-digit'
                               }) : '—'}
@@ -1170,8 +1169,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                         onClick={() => setPaymentSelectionRental(rental.id)}
                         className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${
                           hasPaidToday 
-                            ? 'bg-neutral-900 text-neutral-500 hover:bg-neutral-800 border border-neutral-800' 
-                            : 'bg-[#D4AF37] text-white hover:bg-neutral-950 hover:text-white'
+                            ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300 border border-neutral-300' 
+                            : 'bg-[#C5A059] text-neutral-900 hover:bg-neutral-950 hover:text-white'
                         }`}
                       >
                         {hasPaidToday ? 'ABRIR CICLOS / PAGAMENTOS' : 'Confirmar Pagamento Manual'}
@@ -1200,9 +1199,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
             );
           })
         ) : (
-          <div className="p-20 text-center bg-[#0a0a0a] border border-neutral-800 rounded-3xl shadow-sm">
+          <div className="p-20 text-center bg-white border border-neutral-100 rounded-3xl shadow-sm">
             <Receipt size={32} className="mx-auto mb-4 text-neutral-200" />
-            <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-1">Sem faturamento ativo</h4>
+            <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tighter mb-1">Sem faturamento ativo</h4>
             <p className="text-[9px] text-neutral-400 font-black uppercase tracking-widest">Nenhum contrato ativo encontrado para este ciclo</p>
           </div>
         )}

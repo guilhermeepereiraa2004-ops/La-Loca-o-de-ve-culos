@@ -37,7 +37,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
   }, [showPanel]);
 
   return (
-    <header className="h-20 bg-[#0a0a0a] border-b border-neutral-800 flex items-center justify-between px-6 md:px-12 shadow-sm relative z-10 shrink-0">
+    <header className="h-20 bg-white border-b border-neutral-100 flex items-center justify-between px-6 md:px-12 shadow-sm relative z-10 shrink-0">
       <div className="flex items-center gap-4">
         {!isSidebarOpen && (
           <div className="xl:hidden">
@@ -60,8 +60,8 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
             onClick={() => setShowPanel(prev => !prev)}
             className={`relative w-10 h-10 rounded-full flex items-center justify-center transition-all border ${
               showPanel
-                ? 'bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#D4AF37]'
-                : 'bg-black border-neutral-800 text-neutral-500 hover:border-[#D4AF37]/30 hover:text-[#D4AF37] hover:bg-[#D4AF37]/5'
+                ? 'bg-[#C5A059]/10 border-[#C5A059]/30 text-[#C5A059]'
+                : 'bg-neutral-50 border-neutral-100 text-neutral-500 hover:border-[#C5A059]/30 hover:text-[#C5A059] hover:bg-[#C5A059]/5'
             }`}
             title="Notificações"
           >
@@ -75,11 +75,11 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
 
           {/* Dropdown Panel */}
           {showPanel && (
-            <div className="absolute right-0 top-12 w-80 bg-[#0a0a0a] rounded-2xl shadow-2xl border border-neutral-800 overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 top-12 w-80 bg-white rounded-2xl shadow-2xl border border-neutral-100 overflow-hidden z-[200] animate-in fade-in slide-in-from-top-2 duration-200">
               {/* Header */}
-              <div className="px-5 py-4 border-b border-neutral-800 flex items-center justify-between">
+              <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-widest text-white">Notificações</p>
+                  <p className="text-xs font-black uppercase tracking-widest text-neutral-900">Notificações</p>
                   <p className="text-[10px] text-neutral-400 font-light mt-0.5">
                     {alerts.length === 0 ? 'Nenhum alerta ativo' : `${alerts.length} módulo${alerts.length > 1 ? 's' : ''} com atenção necessária`}
                   </p>
@@ -96,7 +96,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
               <div className="max-h-80 overflow-y-auto divide-y divide-neutral-50">
                 {alerts.length === 0 ? (
                   <div className="py-10 text-center">
-                    <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Bell size={20} className="text-emerald-500" />
                     </div>
                     <p className="text-[10px] uppercase tracking-widest font-black text-neutral-400">Tudo em dia!</p>
@@ -112,7 +112,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
                           onNavigate && onNavigate(alert.module);
                           setShowPanel(false);
                         }}
-                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-black transition-all group text-left"
+                        className="w-full flex items-center gap-4 px-5 py-4 hover:bg-neutral-50 transition-all group text-left"
                       >
                         {/* Color dot */}
                         <div className={`w-2 h-2 rounded-full shrink-0 ${colors.dot}`} />
@@ -121,7 +121,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
                           <p className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-0.5">
                             {alert.label}
                           </p>
-                          <p className="text-xs font-medium text-neutral-300 leading-snug truncate">
+                          <p className="text-xs font-medium text-neutral-700 leading-snug truncate">
                             {alert.message}
                           </p>
                         </div>
@@ -140,7 +140,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
 
               {/* Footer */}
               {alerts.length > 0 && (
-                <div className="px-5 py-3 border-t border-neutral-50 bg-black/50">
+                <div className="px-5 py-3 border-t border-neutral-50 bg-neutral-50/50">
                   <p className="text-[9px] uppercase tracking-widest font-black text-neutral-400 text-center">
                     Clique em um item para navegar até o módulo
                   </p>
@@ -152,7 +152,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
 
         {/* User Info */}
         <div className="text-right hidden md:block">
-          <p className="text-xs font-bold uppercase tracking-widest text-white">
+          <p className="text-xs font-bold uppercase tracking-widest text-neutral-900">
             {currentUser?.name || 'Admin Principal'}
           </p>
           <p className="text-[10px] text-neutral-400 font-light">
@@ -160,7 +160,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
           </p>
         </div>
 
-        <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-[#D4AF37]/30">
+        <div className="w-10 h-10 bg-neutral-900 rounded-full flex items-center justify-center text-white text-xs font-bold border-2 border-[#C5A059]/30">
           {currentUser?.name ? currentUser.name.charAt(0).toUpperCase() : 'L.A'}
         </div>
       </div>

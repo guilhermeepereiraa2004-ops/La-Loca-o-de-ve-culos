@@ -74,20 +74,20 @@ const AdminLeads = ({
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
         <div>
-          <h3 className="text-3xl font-black uppercase tracking-tighter text-white">Leads de Contato</h3>
+          <h3 className="text-3xl font-black uppercase tracking-tighter">Leads de Contato</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Interessados e solicitações vindas do site.</p>
         </div>
         <div className="flex items-center gap-4">
           <button
             onClick={exportLeadsToExcel}
-            className="flex items-center gap-3 bg-emerald-500/10 text-emerald-600 px-6 py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-emerald-600 hover:text-white transition-all shadow-sm group"
+            className="flex items-center gap-3 bg-emerald-50 text-emerald-600 px-6 py-4 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-emerald-600 hover:text-white transition-all shadow-sm group"
           >
             <Download size={16} className="group-hover:translate-y-0.5 transition-transform" />
             Exportar Excel
           </button>
-          <div className="flex items-center gap-3 bg-[#0a0a0a] px-6 py-4 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors">
+          <div className="flex items-center gap-3 bg-white px-6 py-4 rounded-2xl border border-neutral-100 shadow-sm">
             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span className="text-[10px] uppercase tracking-widest font-black text-white">
+            <span className="text-[10px] uppercase tracking-widest font-black text-neutral-900">
               {leads.filter(l => (l.status || '').toLowerCase().trim() === 'novo').length} Novos Leads
             </span>
           </div>
@@ -103,17 +103,17 @@ const AdminLeads = ({
             value={leadSearch}
             onChange={(e) => setLeadSearch(e.target.value)}
             placeholder="Pesquisar por nome..."
-            className="w-full bg-[#0a0a0a] text-white border border-neutral-800 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light shadow-sm"
+            className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light shadow-sm"
           />
         </div>
-        <div className="flex bg-[#0a0a0a] p-1 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors shrink-0">
+        <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
           {['todos', 'novo', 'contatado', 'convertido', 'perdido'].map((status) => (
             <button
               key={status}
               onClick={() => setLeadStatusFilter(status)}
               className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all ${leadStatusFilter === status
                 ? 'bg-neutral-900 text-white shadow-lg'
-                : 'text-neutral-400 hover:text-white'
+                : 'text-neutral-400 hover:text-neutral-900'
               }`}
             >
               {status}
@@ -125,7 +125,7 @@ const AdminLeads = ({
       <div className="grid grid-cols-1 gap-6">
         {filteredLeads.length > 0 ? (
           filteredLeads.map((lead) => (
-            <div key={lead.id} className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
+            <div key={lead.id} className="bg-white rounded-3xl border border-neutral-100 shadow-sm hover:border-[#C5A059]/30 transition-all group overflow-hidden">
               <div className="flex flex-col lg:flex-row">
                 {/* Vehicle Image (if rental) */}
                 {lead.type === 'locacao' && lead.vehicleImage && (
@@ -139,25 +139,25 @@ const AdminLeads = ({
                 <div className="flex-1 p-8">
                   <div className="flex flex-col md:flex-row justify-between gap-6 mb-8">
                     <div className="flex items-center gap-4">
-                      <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#D4AF37] font-black text-xl shadow-xl">
+                      <div className="w-14 h-14 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xl shadow-xl">
                         {lead.name?.charAt(0) || '?'}
                       </div>
                       <div>
-                        <h4 className="text-xl font-black text-white uppercase tracking-tight">{lead.name}</h4>
+                        <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tight">{lead.name}</h4>
                         <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{lead.date}</p>
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className={`px-3 py-1 text-[9px] font-black uppercase tracking-widest rounded-full w-fit ${
-                          (lead.status || '').toLowerCase().trim() === 'novo' ? 'bg-emerald-500/10 text-emerald-600' :
-                          (lead.status || '').toLowerCase().trim() === 'contatado' ? 'bg-blue-500/10 text-blue-600' :
-                          (lead.status || '').toLowerCase().trim() === 'convertido' ? 'bg-amber-500/10 text-amber-600' :
+                          (lead.status || '').toLowerCase().trim() === 'novo' ? 'bg-emerald-50 text-emerald-600' :
+                          (lead.status || '').toLowerCase().trim() === 'contatado' ? 'bg-blue-50 text-blue-600' :
+                          (lead.status || '').toLowerCase().trim() === 'convertido' ? 'bg-amber-50 text-amber-600' :
                             'bg-neutral-100 text-neutral-500'
                           }`}>
                           {lead.status}
                         </span>
                         {lead.updatedBy && (lead.status || '').toLowerCase().trim() !== 'novo' && (
                           <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-widest ml-1">
-                            por: <span className="text-white">{lead.updatedBy}</span>
+                            por: <span className="text-neutral-900">{lead.updatedBy}</span>
                           </p>
                         )}
                       </div>
@@ -169,7 +169,7 @@ const AdminLeads = ({
                           <button
                             key={s}
                             onClick={() => onUpdateStatus(lead.id, s, currentUser?.name || 'Admin Principal')}
-                            className="px-4 py-2 border border-neutral-800 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all text-neutral-400 hover:text-white"
+                            className="px-4 py-2 border border-neutral-100 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all text-neutral-400 hover:text-neutral-900"
                           >
                             {s}
                           </button>
@@ -189,7 +189,7 @@ const AdminLeads = ({
                           setDeleteType('lead');
                           setShowDeleteAuthModal(true);
                         }}
-                        className="p-3 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center border border-red-100 hover:border-red-500 shadow-sm"
+                        className="p-3 bg-red-50 hover:bg-red-500 text-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center border border-red-100 hover:border-red-500 shadow-sm"
                         title="Excluir Lead"
                       >
                         <Trash2 size={14} />
@@ -198,27 +198,27 @@ const AdminLeads = ({
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                    <div className="p-4 bg-black rounded-2xl border border-neutral-800">
+                    <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Whats</p>
-                      <p className="text-xs font-bold text-white">{lead.contact}</p>
+                      <p className="text-xs font-bold text-neutral-900">{lead.contact}</p>
                     </div>
-                    <div className="p-4 bg-black rounded-2xl border border-neutral-800">
+                    <div className="p-4 bg-neutral-50 rounded-2xl border border-neutral-100">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">E-mail</p>
-                      <p className="text-xs font-bold text-white">{lead.email || 'Não informado'}</p>
+                      <p className="text-xs font-bold text-neutral-900">{lead.email || 'Não informado'}</p>
                     </div>
                     {lead.type === 'locacao' && (
                       <div className="p-4 bg-neutral-900 rounded-2xl border border-neutral-800">
-                        <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black mb-1">Veículo / Placa</p>
+                        <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black mb-1">Veículo / Placa</p>
                         <div className="flex items-center gap-2">
                           <p className="text-xs font-black text-white">{lead.vehicleModel}</p>
-                          <span className="text-[8px] font-black bg-[#0a0a0a] text-white px-1.5 py-0.5 rounded leading-none">
+                          <span className="text-[8px] font-black bg-white text-neutral-900 px-1.5 py-0.5 rounded leading-none">
                             {lead.vehiclePlate || 'S/ PLACA'}
                           </span>
                         </div>
                       </div>
                     )}
                     {lead.type !== 'locacao' && (
-                      <div className="p-4 bg-blue-500/10 rounded-2xl border border-blue-100 flex items-center gap-3">
+                      <div className="p-4 bg-blue-50 rounded-2xl border border-blue-100 flex items-center gap-3">
                         <div className="w-8 h-8 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center">
                           <Mail size={14} />
                         </div>
@@ -231,7 +231,7 @@ const AdminLeads = ({
                   </div>
 
                   {lead.message && (
-                    <div className="p-6 bg-black rounded-2xl border border-neutral-800">
+                    <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">Mensagem do Cliente</p>
                       <p className="text-sm text-neutral-600 font-light italic">"{lead.message}"</p>
                     </div>
@@ -241,8 +241,8 @@ const AdminLeads = ({
             </div>
           ))
         ) : (
-          <div className="text-center py-24 bg-[#0a0a0a] rounded-3xl border border-dashed border-neutral-700">
-            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-6 text-neutral-300">
+          <div className="text-center py-24 bg-white rounded-[3rem] border border-dashed border-neutral-200">
+            <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-6 text-neutral-300">
               <Mail size={32} />
             </div>
             <p className="text-neutral-400 uppercase tracking-[0.2em] text-[10px] font-black">Nenhum lead encontrado para os critérios de busca</p>

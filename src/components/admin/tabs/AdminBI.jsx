@@ -12,7 +12,7 @@ const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
       <div className="bg-neutral-900 text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs">
-        <p className="font-black uppercase tracking-widest text-[#D4AF37] mb-2">{label}</p>
+        <p className="font-black uppercase tracking-widest text-[#C5A059] mb-2">{label}</p>
         {payload.map((entry, i) => (
           <p key={i} style={{ color: entry.color }} className="font-bold">
             {entry.name}: {formatBRL(entry.value)}
@@ -33,12 +33,12 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
       {/* Stats Grid — 4 cols on desktop, 2 on tablet, 1 on mobile */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-[#0a0a0a] p-6 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors hover:border-[#D4AF37]/30 transition-all group">
+          <div key={stat.label} className="bg-white p-6 rounded-2xl border border-neutral-100 shadow-sm hover:border-[#C5A059]/30 transition-all group">
             <div className={`w-10 h-10 rounded-xl ${stat.bg} ${stat.color} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
               {stat.icon}
             </div>
             <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-bold mb-1">{stat.label}</p>
-            <p className="text-2xl font-black text-white truncate">{stat.value}</p>
+            <p className="text-2xl font-black text-neutral-900 truncate">{stat.value}</p>
           </div>
         ))}
       </div>
@@ -47,10 +47,10 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
 
         {/* Receitas vs Despesas */}
-        <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
-          <div className="p-6 border-b border-neutral-800/60 flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white">
-              <BarChart2 size={18} className="text-[#D4AF37]" />
+        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-neutral-50 flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+              <BarChart2 size={18} className="text-[#C5A059]" />
               Receitas vs Despesas
             </h3>
             <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">últimos 6 meses</span>
@@ -84,10 +84,10 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
         </div>
 
         {/* Evolução do Saldo */}
-        <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
-          <div className="p-6 border-b border-neutral-800/60 flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white">
-              <TrendingUp size={18} className="text-[#D4AF37]" />
+        <div className="bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
+          <div className="p-6 border-b border-neutral-50 flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+              <TrendingUp size={18} className="text-[#C5A059]" />
               Evolução do Saldo
             </h3>
             <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">últimos 6 meses</span>
@@ -97,8 +97,8 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
               <AreaChart data={chartData}>
                 <defs>
                   <linearGradient id="saldoGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#D4AF37" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#C5A059" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#C5A059" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f5f5f5" vertical={false} />
@@ -120,11 +120,11 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
                   type="monotone"
                   dataKey="saldo"
                   name="Saldo Acumulado"
-                  stroke="#D4AF37"
+                  stroke="#C5A059"
                   strokeWidth={3}
                   fill="url(#saldoGrad)"
-                  dot={{ fill: '#D4AF37', r: 5, strokeWidth: 2, stroke: '#fff' }}
-                  activeDot={{ r: 7, fill: '#D4AF37', stroke: '#fff', strokeWidth: 2 }}
+                  dot={{ fill: '#C5A059', r: 5, strokeWidth: 2, stroke: '#fff' }}
+                  activeDot={{ r: 7, fill: '#C5A059', stroke: '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -134,13 +134,13 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
 
       {/* Alerts & Operational Summary Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
+        <div className="lg:col-span-2 bg-white rounded-3xl border border-neutral-100 shadow-sm overflow-hidden">
           <div className="p-8 border-b border-neutral-50 flex items-center justify-between">
             <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
               <AlertTriangle size={18} className="text-red-500" />
               Alertas Prioritários
             </h3>
-            <span className="bg-red-500/10 text-red-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
+            <span className="bg-red-50 text-red-600 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest">
               {alerts.reduce((acc, curr) => acc + curr.count, 0)} Pendências
             </span>
           </div>
@@ -161,17 +161,17 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
                 <div
                   key={alert.title}
                   onClick={handleAlertClick}
-                  className="p-6 flex items-center justify-between hover:bg-black transition-colors cursor-pointer group"
+                  className="p-6 flex items-center justify-between hover:bg-neutral-50 transition-colors cursor-pointer group"
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      alert.type === 'critical' ? 'bg-red-500/10 text-red-500' :
-                      alert.type === 'warning' ? 'bg-amber-500/10 text-amber-500' : 'bg-blue-500/10 text-blue-500'
+                      alert.type === 'critical' ? 'bg-red-50 text-red-500' :
+                      alert.type === 'warning' ? 'bg-amber-50 text-amber-500' : 'bg-blue-50 text-blue-500'
                     }`}>
                       {alert.icon}
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-neutral-200">{alert.title}</p>
+                      <p className="text-sm font-bold text-neutral-800">{alert.title}</p>
                       <p className="text-[10px] text-neutral-400 uppercase tracking-widest font-medium">Revisão necessária</p>
                     </div>
                   </div>
@@ -193,7 +193,7 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
         {/* Operational Summary */}
         <div className="bg-neutral-900 rounded-3xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10 h-full flex flex-col">
-            <h3 className="text-sm font-black uppercase tracking-widest mb-8 text-[#D4AF37]">Resumo Operacional</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest mb-8 text-[#C5A059]">Resumo Operacional</h3>
             <div className="space-y-6 flex-1">
               <div className="flex justify-between items-end border-b border-white/10 pb-4">
                 <p className="text-neutral-400 text-xs uppercase tracking-widest">Utilização da Frota</p>
@@ -217,7 +217,7 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
               </div>
               <div className="flex justify-between items-end border-b border-white/10 pb-4">
                 <p className="text-neutral-400 text-xs uppercase tracking-widest">Novos Leads</p>
-                <p className="text-2xl font-black text-[#D4AF37]">{operationalData.newLeads}</p>
+                <p className="text-2xl font-black text-[#C5A059]">{operationalData.newLeads}</p>
               </div>
             </div>
           </div>

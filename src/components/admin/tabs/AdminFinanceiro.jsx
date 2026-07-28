@@ -234,32 +234,32 @@ const AdminFinanceiro = ({
       {/* Page Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h3 className="text-2xl xl:text-3xl 2xl:text-4xl font-black uppercase tracking-tighter text-white">Controle Financeiro</h3>
+          <h3 className="text-2xl xl:text-3xl 2xl:text-4xl font-black uppercase tracking-tighter">Controle Financeiro</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Gestão de fluxo de caixa, conciliação e histórico de lançamentos.</p>
         </div>
         
         <div className="flex flex-wrap items-center gap-4">
           {/* Date Range Selector */}
-          <div className="flex items-center gap-2 bg-[#0a0a0a] p-2 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors shrink-0">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
             <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400 ml-2">Período:</span>
             <input
               type="date"
               value={dateFilterStart}
               onChange={(e) => setDateFilterStart(e.target.value)}
-              className="bg-black border-none px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black text-white outline-none cursor-pointer focus:ring-2 focus:ring-[#D4AF37]/20"
+              className="bg-neutral-50 border-none px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
             />
             <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400">Até</span>
             <input
               type="date"
               value={dateFilterEnd}
               onChange={(e) => setDateFilterEnd(e.target.value)}
-              className="bg-black border-none px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black text-white outline-none cursor-pointer focus:ring-2 focus:ring-[#D4AF37]/20"
+              className="bg-neutral-50 border-none px-3 py-1.5 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
             />
             {(dateFilterStart || dateFilterEnd) && (
               <button
                 type="button"
                 onClick={() => { setDateFilterStart(''); setDateFilterEnd(''); }}
-                className="text-neutral-400 hover:text-white transition-colors ml-1 p-1"
+                className="text-neutral-400 hover:text-neutral-900 transition-colors ml-1 p-1"
                 title="Limpar período"
               >
                 <X size={12} />
@@ -267,12 +267,12 @@ const AdminFinanceiro = ({
             )}
           </div>
           {/* Month Selector */}
-          <div className="flex items-center gap-3 bg-[#0a0a0a] p-3 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors shrink-0">
+          <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-neutral-100 shadow-sm shrink-0">
             <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400 ml-2">Filtrar por Mês:</span>
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-black border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-white outline-none cursor-pointer focus:ring-2 focus:ring-[#D4AF37]/20"
+              className="bg-neutral-50 border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
             >
               <option value="Todos">Todos os Meses</option>
               {availableMonths.map(m => (
@@ -286,35 +286,35 @@ const AdminFinanceiro = ({
       {/* Section 1: Resumo do Caixa */}
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-1.5 h-6 bg-[#D4AF37] rounded-full" />
+          <div className="w-1.5 h-6 bg-[#C5A059] rounded-full" />
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
             Resumo de Caixa {selectedMonth !== 'Todos' && `(${formatMonthYear(selectedMonth)})`}
           </h4>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6 2xl:gap-8">
-          <div className="bg-[#0a0a0a] p-6 xl:p-8 2xl:p-10 rounded-2xl xl:rounded-2xl 2xl:rounded-3xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors hover:shadow-md transition-all">
+          <div className="bg-white p-6 xl:p-8 2xl:p-10 rounded-[1.5rem] xl:rounded-[2rem] 2xl:rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md transition-all">
             <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-4 flex items-center gap-2">
               <ArrowDownLeft size={14} className="text-emerald-500" /> Total de Entradas
             </p>
-            <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-white">
+            <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-neutral-900">
               R$ {totalIn.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-neutral-300 font-bold mt-4 uppercase tracking-widest">Baseado em lançamentos reais</p>
           </div>
-          <div className="bg-[#0a0a0a] p-6 xl:p-8 2xl:p-10 rounded-2xl xl:rounded-2xl 2xl:rounded-3xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors hover:shadow-md transition-all">
+          <div className="bg-white p-6 xl:p-8 2xl:p-10 rounded-[1.5rem] xl:rounded-[2rem] 2xl:rounded-[2.5rem] border border-neutral-100 shadow-sm hover:shadow-md transition-all">
             <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-4 flex items-center gap-2">
               <ArrowUpRight size={14} className="text-red-500" /> Total de Saídas
             </p>
-            <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-white">
+            <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-neutral-900">
               R$ {totalOut.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
             <p className="text-[10px] text-neutral-300 font-bold mt-4 uppercase tracking-widest">Fluxo de despesas atual</p>
           </div>
-          <div className="bg-neutral-950 p-6 xl:p-8 2xl:p-10 rounded-2xl xl:rounded-2xl 2xl:rounded-3xl text-white shadow-2xl relative overflow-hidden">
+          <div className="bg-neutral-950 p-6 xl:p-8 2xl:p-10 rounded-[1.5rem] xl:rounded-[2rem] 2xl:rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
             <div className="relative z-10">
               <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black mb-4">Saldo em Caixa (Net)</p>
-              <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-[#D4AF37]">
+              <p className="text-2xl xl:text-3xl 2xl:text-4xl font-black text-[#C5A059]">
                 R$ {netBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <div className="mt-6 flex gap-2">
@@ -330,19 +330,19 @@ const AdminFinanceiro = ({
         </div>
       </div>
 
-      <hr className="border-neutral-800" />
+      <hr className="border-neutral-100" />
 
       {/* Section 2: Histórico de Lançamentos */}
       <div className="space-y-8">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-1.5 h-6 bg-[#D4AF37] rounded-full" />
+            <div className="w-1.5 h-6 bg-[#C5A059] rounded-full" />
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Histórico de Transações</h4>
           </div>
 
           <button
             onClick={() => setShowFinanceForm(true)}
-            className="px-8 py-5 bg-[#D4AF37] text-neutral-950 text-[10px] uppercase tracking-widest font-black rounded-2xl hover:bg-neutral-950 hover:text-white transition-all flex items-center gap-3 shadow-lg shadow-[#D4AF37]/10"
+            className="px-8 py-5 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-widest font-black rounded-2xl hover:bg-neutral-950 hover:text-white transition-all flex items-center gap-3 shadow-lg shadow-[#C5A059]/10"
           >
             <Plus size={16} /> Novo Lançamento
           </button>
@@ -350,13 +350,13 @@ const AdminFinanceiro = ({
 
         <div className="flex flex-col lg:flex-row gap-4 justify-between items-stretch lg:items-center">
           {/* Entradas/Saídas Toggle */}
-          <div className="flex items-center gap-4 bg-[#0a0a0a] p-2 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors">
+          <div className="flex items-center gap-4 bg-white p-2 rounded-2xl border border-neutral-100 w-fit shadow-sm">
             {['Todos', 'Entradas', 'Saídas'].map(f => (
               <button
                 key={f}
                 type="button"
                 onClick={() => setFinanceFilter(f)}
-                className={`px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${financeFilter === f ? 'bg-neutral-950 text-white shadow-md' : 'text-neutral-400 hover:text-white'}`}
+                className={`px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all ${financeFilter === f ? 'bg-neutral-950 text-white shadow-md' : 'text-neutral-400 hover:text-neutral-900'}`}
               >
                 {f}
               </button>
@@ -366,19 +366,19 @@ const AdminFinanceiro = ({
           <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
             {/* Search Input */}
             <div className="relative group min-w-[260px]">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#D4AF37] transition-colors" size={16} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400 group-focus-within:text-[#C5A059] transition-colors" size={16} />
               <input
                 type="text"
                 placeholder="Pesquisar por nome ou placa..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#0a0a0a] text-white border border-neutral-800 pl-11 pr-10 py-3 rounded-2xl outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] transition-all font-bold text-[10px] text-white uppercase tracking-widest"
+                className="w-full bg-white border border-neutral-100 pl-11 pr-10 py-3 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] transition-all font-bold text-[10px] text-neutral-900 uppercase tracking-widest"
               />
               {searchTerm && (
                 <button
                   type="button"
                   onClick={() => setSearchTerm('')}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900 transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -386,12 +386,12 @@ const AdminFinanceiro = ({
             </div>
 
             {/* Category Filter */}
-            <div className="flex items-center gap-3 bg-[#0a0a0a] p-3 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors">
+            <div className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-neutral-100 shadow-sm">
               <span className="text-[9px] uppercase tracking-widest font-black text-neutral-400 ml-2">Categoria:</span>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="bg-black border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-white outline-none cursor-pointer focus:ring-2 focus:ring-[#D4AF37]/20"
+                className="bg-neutral-50 border-none px-4 py-2 rounded-xl text-[10px] uppercase tracking-widest font-black text-neutral-900 outline-none cursor-pointer focus:ring-2 focus:ring-[#C5A059]/20"
               >
                 <option value="Todos">Todas</option>
                 {availableCategories.map(cat => (
@@ -403,29 +403,29 @@ const AdminFinanceiro = ({
         </div>
 
         {/* Dynamic Filter Statistics */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-black p-6 rounded-2xl border border-neutral-800/80 shadow-sm">
-          <div className="bg-[#0a0a0a] p-5 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors flex flex-col justify-center">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 bg-neutral-50 p-6 rounded-[2rem] border border-neutral-100/80 shadow-sm">
+          <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
             <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Registros Filtrados</p>
-            <p className="text-xl font-black text-white">{filteredTransactions.length === 1 ? '1 item' : `${filteredTransactions.length} itens`}</p>
+            <p className="text-xl font-black text-neutral-900">{filteredTransactions.length === 1 ? '1 item' : `${filteredTransactions.length} itens`}</p>
           </div>
-          <div className="bg-[#0a0a0a] p-5 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
             <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black mb-1">Entradas no Filtro</p>
             <p className="text-xl font-black text-emerald-600">
               R$ {filteredTransactions.filter(t => t.type === 'in').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="bg-[#0a0a0a] p-5 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors flex flex-col justify-center">
+          <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
             <p className="text-[9px] uppercase tracking-widest text-red-500 font-black mb-1">Saídas no Filtro</p>
             <p className="text-xl font-black text-red-500">
               R$ {Math.abs(filteredTransactions.filter(t => t.type === 'out').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
-          <div className="bg-[#0a0a0a] p-5 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors flex flex-col justify-center">
-            <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black mb-1">Saldo Líquido (Filtro)</p>
+          <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
+            <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black mb-1">Saldo Líquido (Filtro)</p>
             <p className={`text-xl font-black ${
               (filteredTransactions.filter(t => t.type === 'in').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0) - 
                Math.abs(filteredTransactions.filter(t => t.type === 'out').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0))) >= 0 
-                ? 'text-[#D4AF37]' 
+                ? 'text-[#C5A059]' 
                 : 'text-red-600'
             }`}>
               R$ {(
@@ -437,11 +437,11 @@ const AdminFinanceiro = ({
         </div>
 
         {/* Transactions Table */}
-        <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
+        <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden">
           <div className="hidden lg:block overflow-x-auto">
             <table className="w-full text-left min-w-full">
               <thead>
-                <tr className="bg-black/50 border-b border-neutral-800">
+                <tr className="bg-neutral-50/50 border-b border-neutral-100">
                   <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Descrição / Data</th>
                   <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Categoria</th>
                   <th className="px-4 py-3 xl:px-6 xl:py-4 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Origem / Responsável</th>
@@ -456,7 +456,7 @@ const AdminFinanceiro = ({
                       <div className="flex flex-col items-center gap-4 text-neutral-300">
                         <button
                           onClick={() => setShowFinanceForm(true)}
-                          className="text-[9px] text-[#D4AF37] font-black uppercase underline tracking-widest hover:text-white transition-colors"
+                          className="text-[9px] text-[#C5A059] font-black uppercase underline tracking-widest hover:text-neutral-900 transition-colors"
                         >
                           Iniciar Fluxo de Caixa
                         </button>
@@ -467,17 +467,17 @@ const AdminFinanceiro = ({
                   displayedTransactions.map((t, i) => {
                     const veh = t.vehiclePlate ? (vehicles || []).find(v => v.plate === t.vehiclePlate) : null;
                     return (
-                      <tr key={i} className="group hover:bg-black/50 transition-colors">
+                      <tr key={i} className="group hover:bg-neutral-50/50 transition-colors">
                         <td className="px-4 py-3 xl:px-6 xl:py-4">
                           <div className="flex items-center gap-4">
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'in' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
                               {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                             </div>
                             <div>
-                              <p className="text-sm font-black text-white">{t.desc}</p>
+                              <p className="text-sm font-black text-neutral-900">{t.desc}</p>
                               <div className="flex flex-col gap-0.5 mt-0.5">
                                 {formatManualDate(t) && (
-                                  <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-black">Ref: {formatManualDate(t)}</p>
+                                  <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">Ref: {formatManualDate(t)}</p>
                                 )}
                                 {t.provider && (
                                   <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Forn: {t.provider}</p>
@@ -488,26 +488,26 @@ const AdminFinanceiro = ({
                           </div>
                         </td>
                         <td className="px-4 py-3 xl:px-6 xl:py-4">
-                          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-black px-3 py-1 rounded-full">{t.cat}</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-3 py-1 rounded-full">{t.cat}</span>
                         </td>
                         <td className="px-4 py-3 xl:px-6 xl:py-4">
-                          <p className="text-xs font-bold text-white">{t.vehiclePlate || 'N/A'}</p>
+                          <p className="text-xs font-bold text-neutral-900">{t.vehiclePlate || 'N/A'}</p>
                           <div className="flex flex-col">
-                            <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-black">{t.responsible}</p>
+                            <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black">{t.responsible}</p>
                             {veh?.investor && (
                               <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest mt-0.5">Inv: {veh.investor}</p>
                             )}
                           </div>
                         </td>
                       <td className="px-4 py-3 xl:px-6 xl:py-4 text-right">
-                        <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-white'}`}>
+                        <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
                           {t.type === 'in' ? '+' : '-'} R$ {Math.abs(getCompanyShareForTransaction(t, vehicles, rentals)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                       </td>
                       <td className="px-4 py-3 xl:px-6 xl:py-4">
                         <div className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3">
-                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${t.status === 'Concluído' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${t.status === 'Concluído' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
                               {t.status}
                             </span>
                             {t.status !== 'Concluído' && onUpdateTransactionStatus && (
@@ -516,7 +516,7 @@ const AdminFinanceiro = ({
                                   onUpdateTransactionStatus(t.id, 'Concluído');
                                   alert('Transação marcada como Concluída / Paga com sucesso!');
                                 }}
-                                className="px-3 py-1 bg-neutral-900 text-white hover:bg-[#D4AF37] text-[8px] font-black uppercase tracking-widest rounded-lg transition-all shadow-sm active:scale-95"
+                                className="px-3 py-1 bg-neutral-900 text-white hover:bg-[#C5A059] text-[8px] font-black uppercase tracking-widest rounded-lg transition-all shadow-sm active:scale-95"
                               >
                                 Pagar
                               </button>
@@ -528,7 +528,7 @@ const AdminFinanceiro = ({
                                 setFinanceForm(t);
                                 setShowFinanceForm(true);
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-[#D4AF37] rounded-lg hover:bg-neutral-100 transition-all active:scale-95"
+                              className="opacity-0 group-hover:opacity-100 p-2 text-neutral-400 hover:text-[#C5A059] rounded-lg hover:bg-neutral-100 transition-all active:scale-95"
                               title="Editar Transação"
                             >
                               <Edit size={14} />
@@ -561,7 +561,7 @@ const AdminFinanceiro = ({
               <div className="p-10 text-center text-neutral-300">
                 <button
                   onClick={() => setShowFinanceForm(true)}
-                  className="text-[9px] text-[#D4AF37] font-black uppercase underline tracking-widest hover:text-white transition-colors"
+                  className="text-[9px] text-[#C5A059] font-black uppercase underline tracking-widest hover:text-neutral-900 transition-colors"
                 >
                   Iniciar Fluxo de Caixa
                 </button>
@@ -570,17 +570,17 @@ const AdminFinanceiro = ({
               displayedTransactions.map((t, i) => {
                 const veh = t.vehiclePlate ? (vehicles || []).find(v => v.plate === t.vehiclePlate) : null;
                 return (
-                  <div key={i} className="p-5 flex flex-col gap-4 hover:bg-black/50 transition-colors">
+                  <div key={i} className="p-5 flex flex-col gap-4 hover:bg-neutral-50/50 transition-colors">
                     <div className="flex justify-between items-start gap-4">
                       <div className="flex items-center gap-3">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.type === 'in' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${t.type === 'in' ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-500'}`}>
                           {t.type === 'in' ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-sm font-black text-white leading-tight truncate">{t.desc}</p>
+                          <p className="text-sm font-black text-neutral-900 leading-tight truncate">{t.desc}</p>
                           <div className="flex flex-col gap-0.5 mt-1">
                             {formatManualDate(t) && (
-                              <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black">Ref: {formatManualDate(t)}</p>
+                              <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">Ref: {formatManualDate(t)}</p>
                             )}
                             {t.provider && (
                               <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Forn: {t.provider}</p>
@@ -589,20 +589,20 @@ const AdminFinanceiro = ({
                           </div>
                         </div>
                       </div>
-                      <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-black px-2.5 py-1 rounded-full shrink-0 border border-neutral-800">{t.cat}</span>
+                      <span className="text-[8px] font-black uppercase tracking-widest text-neutral-400 bg-neutral-50 px-2.5 py-1 rounded-full shrink-0 border border-neutral-100">{t.cat}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 py-2 border-t border-b border-neutral-50 text-xs">
                       <div>
                         <p className="text-[8px] uppercase text-neutral-400 font-black">Origem / Placa</p>
-                        <p className="font-bold text-neutral-200 truncate">{t.vehiclePlate || 'N/A'}</p>
-                        <p className="text-[8px] uppercase tracking-widest text-[#D4AF37] font-black truncate">
+                        <p className="font-bold text-neutral-800 truncate">{t.vehiclePlate || 'N/A'}</p>
+                        <p className="text-[8px] uppercase tracking-widest text-[#C5A059] font-black truncate">
                           {t.responsible} {veh?.investor ? `| Inv: ${veh.investor}` : ''}
                         </p>
                       </div>
                     <div className="text-right">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Valor</p>
-                      <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-white'}`}>
+                      <p className={`text-sm font-black ${t.type === 'in' ? 'text-emerald-600' : 'text-neutral-900'}`}>
                         {t.type === 'in' ? '+' : '-'} R$ {Math.abs(getCompanyShareForTransaction(t, vehicles, rentals)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </p>
                     </div>
@@ -610,7 +610,7 @@ const AdminFinanceiro = ({
 
                   <div className="flex items-center justify-between gap-2 pt-1">
                     <div className="flex items-center gap-2">
-                      <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${t.status === 'Concluído' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100' : 'bg-amber-500/10 text-amber-600 border-amber-200'}`}>
+                      <span className={`text-[8px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${t.status === 'Concluído' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
                         {t.status}
                       </span>
                       {t.status !== 'Concluído' && onUpdateTransactionStatus && (
@@ -619,7 +619,7 @@ const AdminFinanceiro = ({
                             onUpdateTransactionStatus(t.id, 'Concluído');
                             alert('Transação marcada como Concluída / Paga com sucesso!');
                           }}
-                          className="px-4 py-2 bg-neutral-900 text-white hover:bg-[#D4AF37] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 shrink-0"
+                          className="px-4 py-2 bg-neutral-900 text-white hover:bg-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-xl transition-all shadow-md active:scale-95 shrink-0"
                         >
                           Pagar
                         </button>
@@ -631,7 +631,7 @@ const AdminFinanceiro = ({
                           setFinanceForm(t);
                           setShowFinanceForm(true);
                         }}
-                        className="p-2 text-neutral-400 hover:text-[#D4AF37] rounded-lg bg-black hover:bg-[#D4AF37]/10 transition-all active:scale-95 border border-neutral-800"
+                        className="p-2 text-neutral-400 hover:text-[#C5A059] rounded-lg bg-neutral-50 hover:bg-[#C5A059]/10 transition-all active:scale-95 border border-neutral-100"
                         title="Editar Transação"
                       >
                         <Edit size={14} />
@@ -642,7 +642,7 @@ const AdminFinanceiro = ({
                           setDeleteType('transaction');
                           setShowDeleteAuthModal(true);
                         }}
-                        className="p-2 text-neutral-400 hover:text-red-500 rounded-lg bg-black hover:bg-red-500/10 transition-all active:scale-95 border border-neutral-800"
+                        className="p-2 text-neutral-400 hover:text-red-500 rounded-lg bg-neutral-50 hover:bg-red-50 transition-all active:scale-95 border border-neutral-100"
                         title="Excluir Transação"
                       >
                         <Trash2 size={14} />
@@ -661,7 +661,7 @@ const AdminFinanceiro = ({
           <div className="flex justify-center mt-6 pb-6">
             <button
               onClick={() => setVisibleLimit(prev => prev + 50)}
-              className="px-8 py-3 bg-[#0a0a0a] border border-neutral-700 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all shadow-sm active:scale-95"
+              className="px-8 py-3 bg-white border border-neutral-200 text-neutral-900 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all shadow-sm active:scale-95"
             >
               Ver Mais ({filteredTransactions.length - visibleLimit} restantes)
             </button>

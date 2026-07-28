@@ -143,12 +143,12 @@ const ImageEditorModal = ({ isOpen, imageSrc, onClose, onSave }) => {
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
       <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-md" onClick={onClose} />
       
-      <div className="relative bg-neutral-900 w-full max-w-4xl rounded-3xl p-6 md:p-10 shadow-2xl border border-neutral-800 flex flex-col overflow-hidden max-h-[95vh] animate-in zoom-in duration-300">
+      <div className="relative bg-neutral-900 w-full max-w-4xl rounded-[3rem] p-6 md:p-10 shadow-2xl border border-neutral-800 flex flex-col overflow-hidden max-h-[95vh] animate-in zoom-in duration-300">
         
         {/* Header */}
         <div className="flex justify-between items-center mb-6 border-b border-neutral-800 pb-4 shrink-0">
           <div>
-            <EditorialLabel className="text-[#D4AF37] mb-1">Editor de Imagem</EditorialLabel>
+            <EditorialLabel className="text-[#C5A059] mb-1">Editor de Imagem</EditorialLabel>
             <h4 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-white">Ajustar Foto do Veículo</h4>
           </div>
           <button 
@@ -189,9 +189,9 @@ const ImageEditorModal = ({ isOpen, imageSrc, onClose, onSave }) => {
               step="0.05"
               value={zoom} 
               onChange={(e) => setZoom(parseFloat(e.target.value))}
-              className="flex-1 accent-[#D4AF37] cursor-pointer bg-neutral-800 h-1.5 rounded-lg appearance-none"
+              className="flex-1 accent-[#C5A059] cursor-pointer bg-neutral-800 h-1.5 rounded-lg appearance-none"
             />
-            <span className="text-xs font-mono font-black text-[#D4AF37] w-12 text-right">
+            <span className="text-xs font-mono font-black text-[#C5A059] w-12 text-right">
               {Math.round(zoom * 100)}%
             </span>
           </div>
@@ -205,13 +205,13 @@ const ImageEditorModal = ({ isOpen, imageSrc, onClose, onSave }) => {
                 className="flex items-center gap-2 bg-neutral-800 text-neutral-300 hover:text-white px-5 py-3.5 rounded-xl text-[9px] uppercase tracking-widest font-black transition-all hover:bg-neutral-700"
                 title="Girar 90 graus"
               >
-                <RotateCw size={14} className="text-[#D4AF37]" /> Girar 90°
+                <RotateCw size={14} className="text-[#C5A059]" /> Girar 90°
               </button>
 
               {/* Flip Horizontal */}
               <button
                 onClick={() => setFlipH(prev => !prev)}
-                className={`flex items-center gap-2 px-5 py-3.5 rounded-xl text-[9px] uppercase tracking-widest font-black transition-all ${flipH ? 'bg-[#D4AF37] text-white' : 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'}`}
+                className={`flex items-center gap-2 px-5 py-3.5 rounded-xl text-[9px] uppercase tracking-widest font-black transition-all ${flipH ? 'bg-[#C5A059] text-neutral-900' : 'bg-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-700'}`}
                 title="Espelhar foto"
               >
                 <FlipHorizontal size={14} /> Espelhar
@@ -230,7 +230,7 @@ const ImageEditorModal = ({ isOpen, imageSrc, onClose, onSave }) => {
             {/* Save / Apply */}
             <button
               onClick={handleSave}
-              className="flex items-center gap-2.5 bg-[#D4AF37] text-white px-8 py-3.5 rounded-xl text-[9px] uppercase tracking-widest font-black hover:bg-[#0a0a0a] hover:text-white transition-all shadow-xl shadow-[#D4AF37]/10"
+              className="flex items-center gap-2.5 bg-[#C5A059] text-neutral-900 px-8 py-3.5 rounded-xl text-[9px] uppercase tracking-widest font-black hover:bg-white hover:text-neutral-900 transition-all shadow-xl shadow-[#C5A059]/10"
             >
               <Check size={16} /> Aplicar Ajustes
             </button>

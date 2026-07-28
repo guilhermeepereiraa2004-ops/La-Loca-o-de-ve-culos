@@ -262,15 +262,15 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
 
   return (
     <>
-      <div className="bg-[#0a0a0a] rounded-2xl md:rounded-3xl p-4 sm:p-6 md:p-12 border border-neutral-800 shadow-xl max-w-5xl mx-auto">
+      <div className="bg-white rounded-[1.5rem] md:rounded-[3rem] p-4 sm:p-6 md:p-12 border border-neutral-100 shadow-xl max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-6 md:mb-12">
           <div className="flex items-center gap-3 md:gap-4">
-            <div className="w-12 h-12 bg-[#D4AF37] rounded-2xl flex items-center justify-center text-neutral-950 shadow-lg shrink-0">
+            <div className="w-12 h-12 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-950 shadow-lg shrink-0">
               <ClipboardCheck size={24} />
             </div>
-            <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter text-[#D4AF37]">Registrar Nova Vistoria</h3>
+            <h3 className="text-xl md:text-2xl font-black uppercase tracking-tighter">Registrar Nova Vistoria</h3>
           </div>
-          <button onClick={onClose} className="text-neutral-400 hover:text-white p-2">
+          <button onClick={onClose} className="text-neutral-400 hover:text-neutral-900 p-2">
             <X size={24} />
           </button>
         </div>
@@ -282,7 +282,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
               <select
                 value={inspectionForm.type}
                 onChange={e => setInspectionForm({...inspectionForm, type: e.target.value})}
-                className="w-full bg-black border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white"
+                className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
               >
                 <option>Coleta</option>
                 <option>Entrega</option>
@@ -306,7 +306,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                     }
                   }}
                   onFocus={() => setIsDropdownOpen(true)}
-                  className="w-full bg-black border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm text-white"
+                  className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
                 />
                 <input type="hidden" name="vehiclePlate" value={inspectionForm.vehiclePlate} required />
                 {inspectionForm.vehiclePlate && (
@@ -316,14 +316,14 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                       setInspectionForm(prev => ({ ...prev, vehiclePlate: '' }));
                       setVehicleSearchQuery('');
                     }}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-white"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-900"
                   >
                     <X size={16} />
                   </button>
                 )}
               </div>
               {isDropdownOpen && (
-                <div className="absolute z-[200] left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-2xl p-2 space-y-1">
+                <div className="absolute z-[200] left-0 right-0 mt-2 max-h-60 overflow-y-auto bg-white border border-neutral-100 rounded-2xl shadow-2xl p-2 space-y-1">
                   {(() => {
                     const query = vehicleSearchQuery.toLowerCase().trim();
                     const selectedLabel = (() => {
@@ -362,7 +362,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                             setInspectionForm(prev => ({ ...prev, vehiclePlate: v.plate }));
                             setIsDropdownOpen(false);
                           }}
-                          className={`w-full flex flex-col items-start p-3 rounded-xl transition-all text-left ${isSelected ? 'bg-[#D4AF37]/10 text-[#D4AF37]' : 'hover:bg-black text-neutral-200'}`}
+                          className={`w-full flex flex-col items-start p-3 rounded-xl transition-all text-left ${isSelected ? 'bg-[#C5A059]/10 text-[#C5A059]' : 'hover:bg-neutral-50 text-neutral-800'}`}
                         >
                           <span className="text-xs font-black uppercase">{v.model} - {v.plate}</span>
                           {activeRental && (
@@ -382,7 +382,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                 type="date"
                 value={inspectionForm.date}
                 onChange={e => setInspectionForm({...inspectionForm, date: e.target.value})}
-                className="w-full bg-black border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white"
+                className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
               />
             </div>
 
@@ -395,7 +395,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                   value={inspectionForm.km}
                   onChange={e => setInspectionForm({...inspectionForm, km: e.target.value})}
                   placeholder="0"
-                  className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white"
+                  className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
                   required
                 />
               </div>
@@ -408,7 +408,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                 <select
                   value={inspectionForm.fuelLevel}
                   onChange={e => setInspectionForm({...inspectionForm, fuelLevel: e.target.value})}
-                  className="w-full bg-black border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white"
+                  className="w-full bg-neutral-50 border-none p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
                 >
                   <option>Reserva</option>
                   <option>1/4</option>
@@ -424,7 +424,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
               <select
                 value={inspectionForm.tireCondition}
                 onChange={e => setInspectionForm({...inspectionForm, tireCondition: e.target.value})}
-                className="w-full bg-black border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white"
+                className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold"
               >
                 <option>Novo</option>
                 <option>Bom</option>
@@ -435,13 +435,13 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
           </div>
 
           {/* Seção de Limpeza e Óleo */}
-          <div className="space-y-6 p-4 sm:p-6 md:p-10 bg-[#111111] rounded-2xl md:rounded-3xl border border-neutral-800">
+          <div className="space-y-6 p-4 sm:p-6 md:p-10 bg-gradient-to-br from-neutral-50 to-white rounded-[1.5rem] md:rounded-[3rem] border border-neutral-100">
             <div className="flex items-center gap-3 md:gap-4 mb-2">
-              <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#D4AF37] shrink-0">
+              <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059] shrink-0">
                 <ShieldCheck size={20} />
               </div>
               <div>
-                <h4 className="text-lg font-black text-white uppercase tracking-tighter">Limpeza & Manutenção</h4>
+                <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tighter">Limpeza & Manutenção</h4>
                 <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest">Estado de limpeza e controle de troca de óleo</p>
               </div>
             </div>
@@ -460,7 +460,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                           ? opt === 'Limpo' ? 'bg-emerald-500 text-white border-emerald-500 shadow-lg shadow-emerald-200'
                             : opt === 'Aceitável' ? 'bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-200'
                             : 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-200'
-                          : 'bg-[#0a0a0a] text-neutral-400 border-neutral-800 hover:border-neutral-300'
+                          : 'bg-white text-neutral-400 border-neutral-100 hover:border-neutral-300'
                       }`}
                     >
                       {opt}
@@ -483,7 +483,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                             : opt === 'Aceitável' ? 'bg-amber-500 text-white border-amber-500 shadow-lg shadow-amber-200'
                             : opt === 'Sujo' ? 'bg-red-500 text-white border-red-500 shadow-lg shadow-red-200'
                             : 'bg-rose-600 text-white border-rose-600 shadow-lg shadow-rose-200'
-                          : 'bg-[#0a0a0a] text-neutral-400 border-neutral-800 hover:border-neutral-300'
+                          : 'bg-white text-neutral-400 border-neutral-100 hover:border-neutral-300'
                       }`}
                     >
                       {opt}
@@ -493,7 +493,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
               </div>
             </div>
 
-            <div className="border-t border-neutral-800 pt-6">
+            <div className="border-t border-neutral-100 pt-6">
               <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1 mb-4">Controle de Troca de Óleo</p>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
                 <div className="space-y-2">
@@ -502,7 +502,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                     type="date"
                     value={inspectionForm.lastOilChangeDate}
                     onChange={e => setInspectionForm(prev => ({ ...prev, lastOilChangeDate: e.target.value }))}
-                    className="w-full bg-[#0a0a0a] text-white border border-neutral-800 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm"
+                    className="w-full bg-white border border-neutral-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -514,7 +514,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                       value={inspectionForm.lastOilChangeKm}
                       onChange={e => setInspectionForm(prev => ({ ...prev, lastOilChangeKm: e.target.value }))}
                       placeholder="Ex: 45.000"
-                      className="w-full bg-[#0a0a0a] text-white border border-neutral-800 p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm"
+                      className="w-full bg-white border border-neutral-100 p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
                     />
                   </div>
                 </div>
@@ -527,7 +527,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                       value={inspectionForm.nextOilChangeKm}
                       onChange={e => setInspectionForm(prev => ({ ...prev, nextOilChangeKm: e.target.value }))}
                       placeholder="Ex: 50.000"
-                      className="w-full bg-[#0a0a0a] text-white border border-neutral-800 p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-sm"
+                      className="w-full bg-white border border-neutral-100 p-4 pl-10 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
                     />
                   </div>
                   {inspectionForm.nextOilChangeKm && inspectionForm.km && parseInt(inspectionForm.km) >= parseInt(inspectionForm.nextOilChangeKm) && (
@@ -561,14 +561,14 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                 <div key={slot.id} className="space-y-2">
                   <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">{slot.label}</p>
                   <label className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative group ${
-                      uploadingSlots[slot.id] ? 'border-[#D4AF37]/50 bg-amber-500/10 cursor-not-allowed' :
-                      inspectionForm.photos[slot.id] ? 'border-emerald-500 bg-emerald-500/10' : 
-                      'border-neutral-800 hover:border-[#D4AF37]/30 hover:bg-black'
+                      uploadingSlots[slot.id] ? 'border-[#C5A059]/50 bg-amber-50 cursor-not-allowed' :
+                      inspectionForm.photos[slot.id] ? 'border-emerald-500 bg-emerald-50' : 
+                      'border-neutral-100 hover:border-[#C5A059]/30 hover:bg-neutral-50'
                     }`}>
                     {uploadingSlots[slot.id] ? (
                       <div className="flex flex-col items-center gap-2">
-                        <Loader2 size={20} className="text-[#D4AF37] animate-spin" />
-                        <span className="text-[6px] font-black uppercase tracking-widest text-[#D4AF37]">Enviando...</span>
+                        <Loader2 size={20} className="text-[#C5A059] animate-spin" />
+                        <span className="text-[6px] font-black uppercase tracking-widest text-[#C5A059]">Enviando...</span>
                       </div>
                     ) : inspectionForm.photos[slot.id] ? (
                       <>
@@ -579,7 +579,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                       </>
                     ) : (
                       <>
-                        <Camera size={20} className="text-neutral-300 group-hover:text-[#D4AF37]" />
+                        <Camera size={20} className="text-neutral-300 group-hover:text-[#C5A059]" />
                         <span className="text-[7px] font-black uppercase tracking-widest text-neutral-400">Anexar</span>
                       </>
                     )}
@@ -587,7 +587,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                       type="file" 
                       accept="image/*" 
                       capture="environment"
-                      className="hidden text-white"
+                      className="hidden"
                       disabled={!!uploadingSlots[slot.id]} 
                       onChange={async (e) => {
                         const file = e.target.files[0];
@@ -635,8 +635,8 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                     />
                     {uploadingSlots[slot.id] && (
                       <div className="absolute inset-0 bg-white/80 backdrop-blur-[1px] flex flex-col items-center justify-center gap-2 z-10 rounded-2xl">
-                        <Loader2 size={16} className="text-[#D4AF37] animate-spin" />
-                        <span className="text-[6px] font-black uppercase tracking-widest text-[#D4AF37]">Enviando...</span>
+                        <Loader2 size={16} className="text-[#C5A059] animate-spin" />
+                        <span className="text-[6px] font-black uppercase tracking-widest text-[#C5A059]">Enviando...</span>
                       </div>
                     )}
                   </label>
@@ -646,7 +646,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
               {/* Video Slot */}
               <div className="space-y-2">
                 <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">Vídeo Adicional</p>
-                <label className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative group ${inspectionForm.video ? 'border-emerald-500 bg-emerald-500/10' : 'border-neutral-800 hover:border-[#D4AF37]/30 hover:bg-black'}`}>
+                <label className={`aspect-square rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative group ${inspectionForm.video ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 hover:border-[#C5A059]/30 hover:bg-neutral-50'}`}>
                   {inspectionForm.video ? (
                     <div className="flex flex-col items-center gap-1 text-emerald-600">
                       <Check size={20} />
@@ -654,7 +654,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                     </div>
                   ) : (
                     <>
-                      <Plus size={20} className="text-neutral-300 group-hover:text-[#D4AF37]" />
+                      <Plus size={20} className="text-neutral-300 group-hover:text-[#C5A059]" />
                       <span className="text-[7px] font-black uppercase tracking-widest text-neutral-400">Anexar Vídeo</span>
                     </>
                   )}
@@ -662,7 +662,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                     type="file" 
                     accept="video/*" 
                     capture="environment"
-                    className="hidden text-white" 
+                    className="hidden" 
                     onChange={(e) => {
                       const file = e.target.files[0];
                       if (file) {
@@ -685,11 +685,11 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
               {(inspectionForm.additionalPhotos || []).map((photoObj) => (
                 <div key={photoObj.id} className="space-y-2 relative group">
                   <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicional</p>
-                  <div className="aspect-square rounded-2xl border border-neutral-800 overflow-hidden relative bg-black shadow-inner flex items-center justify-center">
+                  <div className="aspect-square rounded-2xl border border-neutral-100 overflow-hidden relative bg-neutral-50 shadow-inner flex items-center justify-center">
                     {photoObj.uploading ? (
                       <div className="flex flex-col items-center gap-2">
-                        <Loader2 size={20} className="text-[#D4AF37] animate-spin" />
-                        <span className="text-[7px] font-black uppercase tracking-widest text-[#D4AF37]">Enviando...</span>
+                        <Loader2 size={20} className="text-[#C5A059] animate-spin" />
+                        <span className="text-[7px] font-black uppercase tracking-widest text-[#C5A059]">Enviando...</span>
                       </div>
                     ) : (
                       <>
@@ -708,15 +708,15 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
               ))}
               <div className="space-y-2">
                 <p className="text-[8px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicionar Foto</p>
-                <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-800 hover:border-[#D4AF37]/30 hover:bg-black flex flex-col items-center justify-center gap-2 cursor-pointer transition-all relative">
+                <label className="aspect-square rounded-2xl border-2 border-dashed border-neutral-100 hover:border-[#C5A059]/30 hover:bg-neutral-50 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all relative">
                   {isCompressing ? (
                     <>
-                      <Loader2 size={20} className="text-[#D4AF37] animate-spin" />
-                      <span className="text-[7px] font-black uppercase tracking-widest text-[#D4AF37]">Processando...</span>
+                      <Loader2 size={20} className="text-[#C5A059] animate-spin" />
+                      <span className="text-[7px] font-black uppercase tracking-widest text-[#C5A059]">Processando...</span>
                     </>
                   ) : (
                     <>
-                      <Plus size={20} className="text-neutral-300 hover:text-[#D4AF37]" />
+                      <Plus size={20} className="text-neutral-300 hover:text-[#C5A059]" />
                       <span className="text-[7px] font-black uppercase tracking-widest text-neutral-400">Anexar</span>
                     </>
                   )}
@@ -724,7 +724,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    className="hidden text-white"
+                    className="hidden"
                     disabled={isCompressing}
                     onChange={(e) => {
                       const file = e.target.files[0];
@@ -739,12 +739,12 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
           </div>
 
           {inspectionForm.type === 'Devolução' && (
-            <div className="space-y-6 md:space-y-8 p-4 sm:p-6 md:p-10 bg-neutral-900 rounded-2xl md:rounded-3xl border border-[#D4AF37]/20 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/5 blur-3xl -mr-32 -mt-32" />
+            <div className="space-y-6 md:space-y-8 p-4 sm:p-6 md:p-10 bg-neutral-900 rounded-[1.5rem] md:rounded-[3rem] border border-[#C5A059]/20 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#C5A059]/5 blur-3xl -mr-32 -mt-32" />
               
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative z-10">
                 <div className="flex items-center gap-3 md:gap-4">
-                  <div className="w-12 h-12 bg-[#D4AF37]/10 rounded-2xl flex items-center justify-center text-[#D4AF37] shrink-0">
+                  <div className="w-12 h-12 bg-[#C5A059]/10 rounded-2xl flex items-center justify-center text-[#C5A059] shrink-0">
                     <Trash2 size={24} />
                   </div>
                   <div>
@@ -755,7 +755,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                 <button
                   type="button"
                   onClick={handleAddDeduction}
-                  className="w-full sm:w-auto bg-[#D4AF37] text-white px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-[#0a0a0a] transition-all flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto bg-[#C5A059] text-neutral-900 px-6 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black hover:bg-white transition-all flex items-center justify-center gap-2"
                 >
                   <Plus size={14} /> Adicionar Item
                 </button>
@@ -763,13 +763,13 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
 
               <div className="space-y-4 relative z-10">
                 {inspectionForm.deductions.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white/5 p-4 md:p-6 rounded-2xl md:rounded-2xl border border-white/5 items-end group">
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-white/5 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-white/5 items-end group">
                     <div className="md:col-span-3 space-y-2">
                       <label className="text-[8px] uppercase tracking-widest text-neutral-500 font-black ml-1">Categoria</label>
                       <select
                         value={item.category}
                         onChange={e => handleUpdateDeduction(index, 'category', e.target.value)}
-                        className="w-full bg-neutral-800 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all font-bold text-white text-xs"
+                        className="w-full bg-neutral-800 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#C5A059] transition-all font-bold text-white text-xs"
                       >
                         <option>Lavagem</option>
                         <option>Troca de óleo</option>
@@ -789,7 +789,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                         value={item.description}
                         onChange={e => handleUpdateDeduction(index, 'description', e.target.value)}
                         placeholder="Ex: Retrovisor direito"
-                        className="w-full bg-neutral-800 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all font-bold text-white text-xs"
+                        className="w-full bg-neutral-800 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#C5A059] transition-all font-bold text-white text-xs"
                       />
                     </div>
 
@@ -800,7 +800,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                         value={item.value}
                         onChange={e => handleUpdateDeduction(index, 'value', e.target.value)}
                         placeholder="0,00"
-                        className="w-full bg-neutral-800 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all font-bold text-white text-xs"
+                        className="w-full bg-neutral-800 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#C5A059] transition-all font-bold text-white text-xs"
                       />
                     </div>
 
@@ -808,7 +808,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                       <button
                         type="button"
                         onClick={() => handleUpdateDeduction(index, 'isProportional', !item.isProportional)}
-                        className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${item.isProportional ? 'bg-[#D4AF37] border-[#D4AF37] text-white' : 'bg-transparent border-white/10 text-neutral-500 hover:border-white/20'}`}
+                        className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${item.isProportional ? 'bg-[#C5A059] border-[#C5A059] text-neutral-900' : 'bg-transparent border-white/10 text-neutral-500 hover:border-white/20'}`}
                       >
                         {item.isProportional ? <Check size={16} /> : <div className="w-1.5 h-1.5 rounded-full bg-neutral-700" />}
                       </button>
@@ -831,7 +831,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                 ))}
 
                 {inspectionForm.deductions.length === 0 && (
-                  <div className="py-12 border-2 border-dashed border-white/5 rounded-2xl flex flex-col items-center justify-center gap-4 text-neutral-500">
+                  <div className="py-12 border-2 border-dashed border-white/5 rounded-[2rem] flex flex-col items-center justify-center gap-4 text-neutral-500">
                     <ClipboardCheck size={32} strokeWidth={1} />
                     <p className="text-[10px] font-black uppercase tracking-widest">Nenhum desconto lançado</p>
                   </div>
@@ -840,12 +840,12 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
 
               <div className="pt-8 border-t border-white/5 flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-6 relative z-10">
                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                  <AlertTriangle size={14} className="text-[#D4AF37] shrink-0" />
+                  <AlertTriangle size={14} className="text-[#C5A059] shrink-0" />
                   <span className="text-[9px] text-neutral-500 font-bold uppercase italic">Valores serão debitados automaticamente do caução no fechamento.</span>
                 </div>
                 <div className="text-left sm:text-right w-full sm:w-auto">
                   <p className="text-[9px] text-neutral-500 font-black uppercase tracking-widest mb-1">Total de Descontos</p>
-                  <h5 className="text-3xl sm:text-4xl font-black text-[#D4AF37] tracking-tighter">
+                  <h5 className="text-3xl sm:text-4xl font-black text-[#C5A059] tracking-tighter">
                     {totalDeductions.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
                   </h5>
                 </div>
@@ -853,18 +853,18 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             </div>
           )}
 
-          <div className="space-y-6 md:space-y-8 p-4 sm:p-6 md:p-10 bg-black rounded-2xl md:rounded-3xl border border-neutral-800">
+          <div className="space-y-6 md:space-y-8 p-4 sm:p-6 md:p-10 bg-neutral-50 rounded-[1.5rem] md:rounded-[3rem] border border-neutral-100">
              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                <div className="flex items-center gap-3 md:gap-4">
-                 <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#D4AF37] shrink-0">
+                 <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059] shrink-0">
                    <AlertTriangle size={24} />
                  </div>
                  <div>
-                   <h4 className="text-xl font-black text-white uppercase tracking-tighter">Existem Avarias?</h4>
+                   <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">Existem Avarias?</h4>
                    <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-1">Registre danos específicos no veículo</p>
                  </div>
                </div>
-               <div className="flex bg-[#0a0a0a] p-1 rounded-xl border border-neutral-800 w-full sm:w-auto justify-between sm:justify-start">
+               <div className="flex bg-white p-1 rounded-xl border border-neutral-100 w-full sm:w-auto justify-between sm:justify-start">
                  <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: true})} className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${inspectionForm.hasDamages ? 'bg-red-500 text-white shadow-lg' : 'text-neutral-400'}`}>Sim</button>
                  <button type="button" onClick={() => setInspectionForm({...inspectionForm, hasDamages: false, damages: []})} className={`flex-1 sm:flex-initial px-6 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${!inspectionForm.hasDamages ? 'bg-neutral-900 text-white shadow-lg' : 'text-neutral-400'}`}>Não</button>
                </div>
@@ -874,9 +874,9 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                <div className="space-y-6 animate-in slide-in-from-top-4 duration-500">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {inspectionForm.damages.map((dmg) => (
-                      <div key={dmg.id} className="bg-[#0a0a0a] p-4 md:p-6 rounded-2xl md:rounded-2xl border border-neutral-800 shadow-sm space-y-4">
+                      <div key={dmg.id} className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-neutral-100 shadow-sm space-y-4">
                          <div className="flex justify-between items-start">
-                            <label className={`w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative ${dmg.photo ? 'border-emerald-500 bg-emerald-500/10' : 'border-neutral-800 hover:border-[#D4AF37]/30'}`}>
+                            <label className={`w-24 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all overflow-hidden relative ${dmg.photo ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-100 hover:border-[#C5A059]/30'}`}>
                               {dmg.photo ? (
                                 <img src={dmg.photo.preview} loading="lazy" className="w-full h-full object-cover" />
                               ) : (
@@ -886,7 +886,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                                 type="file" 
                                 accept="image/*" 
                                 capture="environment"
-                                className="hidden text-white" 
+                                className="hidden" 
                                 onChange={async (e) => {
                                   const file = e.target.files[0];
                                   if (!file) return;
@@ -922,14 +922,14 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
                            placeholder="Descreva a avaria..."
                            value={dmg.description}
                            onChange={(e) => handleUpdateDamage(dmg.id, 'description', e.target.value)}
-                           className="w-full bg-black border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#D4AF37] transition-all font-bold text-xs min-h-[80px] text-white"
+                           className="w-full bg-neutral-50 border-none p-4 rounded-xl outline-none focus:ring-1 focus:ring-[#C5A059] transition-all font-bold text-xs min-h-[80px]"
                          />
                       </div>
                     ))}
                     <button 
                       type="button" 
                       onClick={handleAddDamage}
-                      className="border-2 border-dashed border-neutral-700 rounded-2xl md:rounded-2xl flex flex-col items-center justify-center gap-3 text-neutral-400 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all p-6 md:p-8"
+                      className="border-2 border-dashed border-neutral-200 rounded-[1.5rem] md:rounded-[2rem] flex flex-col items-center justify-center gap-3 text-neutral-400 hover:border-[#C5A059] hover:text-[#C5A059] transition-all p-6 md:p-8"
                     >
                       <Plus size={24} />
                       <span className="text-[10px] font-black uppercase tracking-widest">Adicionar Foto de Avaria</span>
@@ -944,7 +944,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             <textarea
               value={inspectionForm.observations}
               onChange={e => setInspectionForm({...inspectionForm, observations: e.target.value})}
-              className="w-full bg-black border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold min-h-[120px] text-white"
+              className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold min-h-[120px]"
               placeholder="Descreva aqui amassados, riscos ou observações mecânicas importantes..."
             />
           </div>
@@ -953,14 +953,14 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             <button
               type="button"
               onClick={onClose}
-              className="w-full sm:w-auto px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-black text-neutral-400 hover:text-white transition-all flex items-center justify-center"
+              className="w-full sm:w-auto px-10 py-4 text-[10px] uppercase tracking-[0.3em] font-black text-neutral-400 hover:text-neutral-900 transition-all flex items-center justify-center"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSaving}
-              className={`w-full sm:w-auto px-12 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center justify-center gap-3 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#D4AF37]'}`}
+              className={`w-full sm:w-auto px-12 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center justify-center gap-3 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#C5A059]'}`}
             >
               {isSaving ? (
                 <>
@@ -978,13 +978,13 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
       {/* Draft Recovery Modal */}
       {showDraftPrompt && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-[#0a0a0a] rounded-2xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-amber-500/10 text-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100">
+              <div className="w-16 h-16 bg-amber-50 text-amber-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-100">
                 <AlertTriangle size={32} />
               </div>
               <div>
-                <h3 className="text-xl font-black text-white uppercase tracking-tight">Rascunho Encontrado</h3>
+                <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Rascunho Encontrado</h3>
                 <p className="text-xs text-neutral-400 font-bold uppercase mt-1">
                   Você tem um rascunho de vistoria pendente. Deseja restaurar as fotos e informações?
                 </p>
@@ -994,13 +994,13 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             <div className="space-y-3">
               <button 
                 onClick={handleRestoreDraft}
-                className="w-full py-4 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#D4AF37] transition-all shadow-lg flex items-center justify-center gap-2 font-bold"
+                className="w-full py-4 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#C5A059] transition-all shadow-lg flex items-center justify-center gap-2 font-bold"
               >
                 Restaurar Rascunho
               </button>
               <button 
                 onClick={handleDiscardDraft}
-                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-500/10 rounded-xl transition-colors font-bold"
+                className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-red-500 hover:bg-red-50 rounded-xl transition-colors font-bold"
               >
                 Descartar Rascunho
               </button>
