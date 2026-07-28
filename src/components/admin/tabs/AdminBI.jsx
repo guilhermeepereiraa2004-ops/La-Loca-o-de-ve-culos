@@ -48,8 +48,8 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
 
         {/* Receitas vs Despesas */}
         <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
-          <div className="p-6 border-b border-neutral-50 flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+          <div className="p-6 border-b border-neutral-800/60 flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white">
               <BarChart2 size={18} className="text-[#D4AF37]" />
               Receitas vs Despesas
             </h3>
@@ -85,8 +85,8 @@ const AdminBI = ({ stats, chartData = [], alerts, operationalData, setActiveTab 
 
         {/* Evolução do Saldo */}
         <div className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card">
-          <div className="p-6 border-b border-neutral-50 flex items-center justify-between">
-            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3">
+          <div className="p-6 border-b border-neutral-800/60 flex items-center justify-between">
+            <h3 className="text-sm font-black uppercase tracking-widest flex items-center gap-3 text-white">
               <TrendingUp size={18} className="text-[#D4AF37]" />
               Evolução do Saldo
             </h3>
