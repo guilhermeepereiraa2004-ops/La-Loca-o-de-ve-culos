@@ -22,7 +22,7 @@ const AdminLogs = React.lazy(() => import('./tabs/AdminLogs'));
 // Tab loading fallback
 const TabLoader = () => (
   <div className="flex flex-col items-center justify-center py-32 gap-4 animate-in fade-in duration-300">
-    <Loader2 size={32} className="text-[#C5A059] animate-spin" />
+    <Loader2 size={32} className="text-[#D4AF37] animate-spin" />
     <p className="text-[10px] font-black uppercase tracking-widest text-neutral-400">Carregando módulo...</p>
   </div>
 );
@@ -336,7 +336,7 @@ const AdminDashboard = ({
   const filteredTotal = Object.values(filteredBadges).reduce((sum, n) => sum + n, 0);
 
   return (
-    <div className="min-h-screen xl:h-screen bg-neutral-50 flex animate-in fade-in duration-500 relative xl:overflow-hidden overflow-x-hidden w-full">
+    <div className="min-h-screen xl:h-screen bg-black flex animate-in fade-in duration-500 relative xl:overflow-hidden overflow-x-hidden w-full">
       <AdminSidebar 
         isSidebarOpen={isSidebarOpen} 
         setIsSidebarOpen={setIsSidebarOpen} 
@@ -549,18 +549,18 @@ const AdminDashboard = ({
       {showDeleteAuthModal && (
         <div className="fixed inset-0 flex items-center justify-center px-6" style={{ zIndex: 9999 }}>
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setShowDeleteAuthModal(false)} />
-          <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-10 text-center shadow-2xl">
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="relative bg-[#0a0a0a] w-full max-w-sm rounded-3xl p-10 text-center shadow-2xl">
+            <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
               <AlertTriangle size={32} />
             </div>
-            <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 mb-2">Ação Restrita</h3>
+            <h3 className="text-xl font-black uppercase tracking-tight text-white mb-2">Ação Restrita</h3>
             <p className="text-neutral-500 text-xs font-light mb-8">Esta operação requer a Senha Master para confirmar a exclusão permanente.</p>
             <input 
               type="password" 
               autoFocus
               value={deletePassword}
               onChange={e => setDeletePassword(e.target.value)}
-              className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-bold text-center mb-6"
+              className="w-full bg-black border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-bold text-center mb-6 text-white"
               placeholder="••••••••"
             />
             <div className="flex gap-3">

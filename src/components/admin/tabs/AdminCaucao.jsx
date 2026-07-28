@@ -43,17 +43,17 @@ const AdminCaucao = ({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-6 xl:mb-8 2xl:mb-12">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-emerald-50 rounded-full animate-pulse" />
+            <div className="w-2 h-2 bg-emerald-500/10 rounded-full animate-pulse" />
             <EditorialLabel className="text-emerald-600 tracking-[0.3em]">Gestão de Ativos em Custódia</EditorialLabel>
           </div>
-          <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Caução</h3>
+          <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-white leading-none">Caução</h3>
           <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Monitoramento de garantias contratuais e fluxos de recebimento.</p>
         </div>
       </div>
 
       {/* Editorial Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 xl:gap-6 2xl:gap-8 mb-8 xl:mb-10 2xl:mb-16">
-        <div className="p-6 xl:p-8 2xl:p-10 bg-white rounded-[2rem] xl:rounded-[2.5rem] 2xl:rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+        <div className="p-6 xl:p-8 2xl:p-10 bg-[#0a0a0a] rounded-2xl xl:rounded-3xl 2xl:rounded-[3.5rem] border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
           <div className="flex items-center gap-4 mb-6 xl:mb-8 2xl:mb-10 relative">
             <div className="w-10 h-10 xl:w-12 xl:h-12 bg-neutral-900 text-emerald-500 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
@@ -66,14 +66,14 @@ const AdminCaucao = ({
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-emerald-600 tracking-tighter">R$</span>
-            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-neutral-900 tracking-tighter leading-none">
+            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-white tracking-tighter leading-none">
               {totalCustodia.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
           </div>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Saldo Recebido</p>
         </div>
 
-        <div className="p-6 xl:p-8 2xl:p-10 bg-white rounded-[2rem] xl:rounded-[2.5rem] 2xl:rounded-[3.5rem] border border-neutral-100 shadow-sm relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
+        <div className="p-6 xl:p-8 2xl:p-10 bg-[#0a0a0a] rounded-2xl xl:rounded-3xl 2xl:rounded-[3.5rem] border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors relative overflow-hidden group hover:shadow-2xl hover:shadow-neutral-900/5 transition-all duration-700">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-bl-full transition-transform duration-1000 group-hover:scale-150" />
           <div className="flex items-center gap-4 mb-6 xl:mb-8 2xl:mb-10 relative">
             <div className="w-10 h-10 xl:w-12 xl:h-12 bg-neutral-900 text-amber-500 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:-rotate-12 transition-transform">
@@ -86,26 +86,26 @@ const AdminCaucao = ({
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-amber-600 tracking-tighter">R$</span>
-            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-neutral-900 tracking-tighter leading-none">
+            <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-white tracking-tighter leading-none">
               {totalReceber.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
           </div>
           <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">Parcelas Pendentes</p>
         </div>
 
-        <div className="p-6 xl:p-8 2xl:p-10 bg-neutral-900 rounded-[2rem] xl:rounded-[2.5rem] 2xl:rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#C5A059]/10 blur-[100px] -mr-24 -mt-24" />
+        <div className="p-6 xl:p-8 2xl:p-10 bg-neutral-900 rounded-2xl xl:rounded-3xl 2xl:rounded-[3.5rem] shadow-2xl relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#D4AF37]/10 blur-[100px] -mr-24 -mt-24" />
           <div className="flex items-center gap-4 mb-6 xl:mb-8 2xl:mb-10 relative">
-            <div className="w-10 h-10 xl:w-12 xl:h-12 bg-[#C5A059] text-neutral-900 rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 xl:w-12 xl:h-12 bg-[#D4AF37] text-white rounded-xl xl:rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <Landmark size={20} />
             </div>
             <div>
               <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-black">Garantia Total</p>
-              <p className="text-[9px] text-[#C5A059] font-bold uppercase tracking-widest mt-0.5">Frota Ativa</p>
+              <p className="text-[9px] text-[#D4AF37] font-bold uppercase tracking-widest mt-0.5">Frota Ativa</p>
             </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
-            <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-[#C5A059] tracking-tighter">R$</span>
+            <span className="text-xl xl:text-2xl 2xl:text-3xl font-black text-[#D4AF37] tracking-tighter">R$</span>
             <h4 className="text-4xl xl:text-5xl 2xl:text-6xl font-black text-white tracking-tighter leading-none">
               {totalContratado.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </h4>
@@ -115,21 +115,21 @@ const AdminCaucao = ({
       </div>
 
       {/* Main Table Container */}
-      <div className="bg-white rounded-[2rem] xl:rounded-[3rem] 2xl:rounded-[4rem] border border-neutral-50 shadow-2xl shadow-neutral-900/5 overflow-hidden">
-        <div className="px-6 py-5 xl:px-8 xl:py-6 2xl:px-12 2xl:py-10 border-b border-neutral-50 bg-white flex flex-col lg:flex-row justify-between items-center gap-6 xl:gap-8">
+      <div className="bg-[#0a0a0a] rounded-2xl xl:rounded-3xl 2xl:rounded-3xl border border-neutral-50 shadow-2xl shadow-neutral-900/5 overflow-hidden">
+        <div className="px-6 py-5 xl:px-8 xl:py-6 2xl:px-12 2xl:py-10 border-b border-neutral-50 bg-[#0a0a0a] flex flex-col lg:flex-row justify-between items-center gap-6 xl:gap-8">
           <div className="space-y-1">
-            <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black">Detalhamento Financeiro</h5>
+            <h5 className="text-[11px] uppercase tracking-[0.4em] text-white font-black">Detalhamento Financeiro</h5>
             <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-widest">Controle individual de garantias contratuais</p>
           </div>
 
           <div className="relative w-full lg:w-96 group">
-            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Pesquisar por condutor ou placa..."
-              className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
+              className="w-full bg-black text-white border border-neutral-800 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner"
             />
           </div>
         </div>
@@ -168,14 +168,14 @@ const AdminCaucao = ({
                   return (
                     <tr key={rental.id} className="group transition-all duration-500">
                       {/* Conductor Column */}
-                      <td className="px-2 py-2 xl:py-2.5 2xl:py-3 bg-white border border-neutral-100 rounded-l-[1.5rem] xl:rounded-l-[2rem] 2xl:rounded-l-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
+                      <td className="px-2 py-2 xl:py-2.5 2xl:py-3 bg-[#0a0a0a] border border-neutral-800 rounded-l-[1.5rem] xl:rounded-l-[2rem] 2xl:rounded-l-[3rem] group-hover:border-[#D4AF37]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5">
                         <div className="flex items-center gap-2 xl:gap-3 pl-2 xl:pl-3">
-                          <div className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-neutral-900 rounded-xl xl:rounded-2xl flex items-center justify-center text-[#C5A059] font-black text-xs xl:text-sm shadow-xl group-hover:rotate-6 transition-transform shrink-0">
+                          <div className="w-8 h-8 xl:w-10 xl:h-10 2xl:w-12 2xl:h-12 bg-neutral-900 rounded-xl xl:rounded-2xl flex items-center justify-center text-[#D4AF37] font-black text-xs xl:text-sm shadow-xl group-hover:rotate-6 transition-transform shrink-0">
                             {(rental.userName || rental.user || '?').charAt(0)}
                           </div>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2">
-                              <p className="text-sm xl:text-base font-black text-neutral-900 tracking-tight">{rental.userName || rental.user || 'Desconhecido'}</p>
+                              <p className="text-sm xl:text-base font-black text-white tracking-tight">{rental.userName || rental.user || 'Desconhecido'}</p>
                               {isDueToday && (
                                 <span className="bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1">
                                   <AlertTriangle size={8} /> Hoje
@@ -188,12 +188,12 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Due Date Column */}
-                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-[#0a0a0a] border-y border-neutral-800 transition-all group-hover:border-[#D4AF37]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1.5">
                           <span className={`text-[9px] xl:text-[10px] font-black uppercase tracking-widest px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border transition-all ${remaining <= 0
-                              ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                              : isOverdue || isDueToday ? 'bg-red-50 text-red-600 border-red-100 shadow-sm shadow-red-500/10'
-                              : 'bg-neutral-50 text-neutral-900 border-neutral-100'
+                              ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100'
+                              : isOverdue || isDueToday ? 'bg-red-500/10 text-red-600 border-red-100 shadow-sm shadow-red-500/10'
+                              : 'bg-black text-white border-neutral-800'
                             }`}>
                             {remaining <= 0 ? 'Liquidado' : nextDueDate.toLocaleDateString('pt-BR')}
                           </span>
@@ -201,15 +201,15 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Total Column */}
-                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
-                        <span className="text-sm xl:text-base font-black text-neutral-900 tracking-tight">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-[#0a0a0a] border-y border-neutral-800 transition-all group-hover:border-[#D4AF37]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <span className="text-sm xl:text-base font-black text-white tracking-tight">
                           R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </td>
 
                       {/* Received Column */}
-                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
-                        <div className="bg-emerald-50 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100 inline-block">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-[#0a0a0a] border-y border-neutral-800 transition-all group-hover:border-[#D4AF37]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                        <div className="bg-emerald-500/10 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100 inline-block">
                           <span className="text-sm xl:text-base font-black text-emerald-600 tracking-tight">
                             R$ {received.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </span>
@@ -217,7 +217,7 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Remaining Column */}
-                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-[#0a0a0a] border-y border-neutral-800 transition-all group-hover:border-[#D4AF37]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         <div className="flex flex-col items-center gap-1">
                           <span className={`text-sm xl:text-base font-black tracking-tight ${remaining > 0 ? 'text-amber-600' : 'text-neutral-300'}`}>
                             R$ {remaining.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -231,16 +231,16 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Actions Column */}
-                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-[#0a0a0a] border-y border-neutral-800 transition-all group-hover:border-[#D4AF37]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
                         {remaining > 0 ? (
                           <button
                             onClick={() => handleOpenPayModal(rental)}
-                            className="px-4 py-2.5 xl:px-4 xl:py-2.5 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
+                            className="px-4 py-2.5 xl:px-4 xl:py-2.5 bg-neutral-900 text-[#D4AF37] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#D4AF37] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
                           >
                             <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
                           </button>
                         ) : (
-                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100">
+                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-500/10 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100">
                             <FileCheck size={16} />
                             <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
                           </div>
@@ -248,10 +248,10 @@ const AdminCaucao = ({
                       </td>
 
                       {/* Status Column */}
-                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border border-neutral-100 rounded-r-[1.5rem] xl:rounded-r-[2rem] 2xl:rounded-r-[3rem] group-hover:border-[#C5A059]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-4 xl:pr-6 2xl:pr-8">
+                      <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-[#0a0a0a] border border-neutral-800 rounded-r-[1.5rem] xl:rounded-r-[2rem] 2xl:rounded-r-[3rem] group-hover:border-[#D4AF37]/30 transition-all shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-right pr-4 xl:pr-6 2xl:pr-8">
                         <span className={`px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border-2 transition-all duration-700 ${remaining <= 0
-                          ? 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-500/10'
-                          : 'bg-amber-50 text-amber-600 border-amber-100 shadow-sm shadow-amber-500/10 group-hover:scale-105'
+                          ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100 shadow-sm shadow-emerald-500/10'
+                          : 'bg-amber-500/10 text-amber-600 border-amber-100 shadow-sm shadow-amber-500/10 group-hover:scale-105'
                           }`}>
                           {remaining <= 0 ? 'Garantido' : 'Pendente'}
                         </span>
@@ -261,13 +261,13 @@ const AdminCaucao = ({
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="p-32 text-center bg-white border border-neutral-100 rounded-[3rem]">
+                  <td colSpan="7" className="p-32 text-center bg-[#0a0a0a] border border-neutral-800 rounded-3xl">
                     <div className="flex flex-col items-center gap-6">
-                      <div className="w-24 h-24 bg-neutral-50 rounded-[2.5rem] flex items-center justify-center text-neutral-200">
+                      <div className="w-24 h-24 bg-black rounded-3xl flex items-center justify-center text-neutral-200">
                         <Landmark size={48} />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-xl font-black uppercase tracking-tighter text-neutral-900">Nenhum Ativo Encontrado</p>
+                        <p className="text-xl font-black uppercase tracking-tighter text-white">Nenhum Ativo Encontrado</p>
                         <p className="text-[10px] text-neutral-400 uppercase tracking-[0.2em] font-bold">Refine sua busca ou aguarde novos contratos</p>
                       </div>
                     </div>
@@ -298,15 +298,15 @@ const AdminCaucao = ({
               const isOverdue = nextDueDate < today && remaining > 0;
 
               return (
-                <div key={rental.id} className="bg-white border border-neutral-100 rounded-3xl p-5 shadow-sm space-y-4 hover:border-[#C5A059]/30 transition-all duration-300">
+                <div key={rental.id} className="bg-[#0a0a0a] border border-neutral-800 rounded-3xl p-5 shadow-sm space-y-4 hover:border-[#D4AF37]/30 transition-all duration-300">
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#C5A059] font-black text-sm shrink-0">
+                      <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-[#D4AF37] font-black text-sm shrink-0">
                         {(rental.userName || rental.user || '?').charAt(0)}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <p className="text-sm font-black text-neutral-900 truncate">{rental.userName || rental.user || 'Desconhecido'}</p>
+                          <p className="text-sm font-black text-white truncate">{rental.userName || rental.user || 'Desconhecido'}</p>
                           {isDueToday && (
                             <span className="bg-red-500 text-white text-[7px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1 shrink-0">
                               <AlertTriangle size={8} /> Hoje
@@ -317,8 +317,8 @@ const AdminCaucao = ({
                       </div>
                     </div>
                     <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border shrink-0 ${remaining <= 0
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                      : 'bg-amber-50 text-amber-600 border-amber-100'
+                      ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100'
+                      : 'bg-amber-500/10 text-amber-600 border-amber-100'
                       }`}>
                       {remaining <= 0 ? 'Garantido' : 'Pendente'}
                     </span>
@@ -327,13 +327,13 @@ const AdminCaucao = ({
                   <div className="grid grid-cols-2 gap-4 py-3 border-t border-b border-neutral-50 text-xs">
                     <div className="space-y-0.5">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Vencimento</p>
-                      <p className={`font-bold ${remaining <= 0 ? 'text-emerald-600' : isOverdue || isDueToday ? 'text-red-500' : 'text-neutral-800'}`}>
+                      <p className={`font-bold ${remaining <= 0 ? 'text-emerald-600' : isOverdue || isDueToday ? 'text-red-500' : 'text-neutral-200'}`}>
                         {remaining <= 0 ? 'Liquidado' : nextDueDate.toLocaleDateString('pt-BR')}
                       </p>
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Total Contratado</p>
-                      <p className="font-bold text-neutral-800">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                      <p className="font-bold text-neutral-200">R$ {total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                     </div>
                     <div className="space-y-0.5">
                       <p className="text-[8px] uppercase text-neutral-400 font-black">Saldo Recebido</p>
@@ -358,12 +358,12 @@ const AdminCaucao = ({
                     {remaining > 0 ? (
                       <button
                         onClick={() => handleOpenPayModal(rental)}
-                        className="w-full py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 shadow-md group/btn active:scale-95"
+                        className="w-full py-3 bg-neutral-900 text-[#D4AF37] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#D4AF37] hover:text-white transition-all flex items-center justify-center gap-2 shadow-md group/btn active:scale-95"
                       >
                         <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 py-3 rounded-2xl border border-emerald-100">
+                      <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-500/10 py-3 rounded-2xl border border-emerald-100">
                         <FileCheck size={16} />
                         <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
                       </div>
@@ -373,11 +373,11 @@ const AdminCaucao = ({
               );
             })
           ) : (
-            <div className="py-16 text-center bg-white border border-neutral-100 rounded-3xl">
-              <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center text-neutral-200 mx-auto mb-4">
+            <div className="py-16 text-center bg-[#0a0a0a] border border-neutral-800 rounded-3xl">
+              <div className="w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-neutral-200 mx-auto mb-4">
                 <Landmark size={32} />
               </div>
-              <p className="text-sm font-black uppercase tracking-tighter text-neutral-900">Nenhum Ativo Encontrado</p>
+              <p className="text-sm font-black uppercase tracking-tighter text-white">Nenhum Ativo Encontrado</p>
             </div>
           )}
         </div>
@@ -387,20 +387,20 @@ const AdminCaucao = ({
       {showPayModal && selectedRental && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => { setShowPayModal(false); setPendingInstallment(null); }} />
-          <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-500">
-            <div className="p-8 border-b border-neutral-100 flex justify-between items-center bg-white">
+          <div className="bg-[#0a0a0a] w-full max-w-xl rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-500">
+            <div className="p-8 border-b border-neutral-800 flex justify-between items-center bg-[#0a0a0a]">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                <div className="w-12 h-12 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-600">
                   <Receipt size={24} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-black uppercase tracking-tighter text-neutral-900">
+                  <h4 className="text-xl font-black uppercase tracking-tighter text-white">
                     {pendingInstallment ? 'Confirmar Recebimento' : 'Marcar como Pago'}
                   </h4>
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-1">{selectedRental.userName || selectedRental.user}</p>
                 </div>
               </div>
-              <button onClick={() => { setShowPayModal(false); setPendingInstallment(null); }} className="text-neutral-300 hover:text-neutral-900 transition-colors">
+              <button onClick={() => { setShowPayModal(false); setPendingInstallment(null); }} className="text-neutral-300 hover:text-white transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -408,7 +408,7 @@ const AdminCaucao = ({
             <div className="p-8">
               {!pendingInstallment ? (
                 <div className="space-y-6">
-                  <div className="bg-neutral-50 p-8 rounded-[2rem] border border-neutral-100 shadow-inner">
+                  <div className="bg-black p-8 rounded-2xl border border-neutral-800 shadow-inner">
                     <p className="text-[10px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-6 text-center">Selecione a parcela para liquidar</p>
                     <div className="grid grid-cols-2 gap-4">
                       {Array.from({ length: selectedRental.depositInstallments || 1 }).map((_, i) => {
@@ -431,14 +431,14 @@ const AdminCaucao = ({
                                 value: valuePerInstallment
                               });
                             }}
-                            className={`p-6 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-2 group ${isPaid
-                              ? 'bg-emerald-50 border-emerald-100 opacity-50 cursor-not-allowed'
-                              : 'bg-white border-neutral-100 hover:border-[#C5A059] hover:shadow-2xl hover:scale-105 active:scale-95'}`}
+                            className={`p-6 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 group ${isPaid
+                              ? 'bg-emerald-500/10 border-emerald-100 opacity-50 cursor-not-allowed'
+                              : 'bg-[#0a0a0a] border-neutral-800 hover:border-[#D4AF37] hover:shadow-2xl hover:scale-105 active:scale-95'}`}
                           >
-                            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isPaid ? 'text-emerald-600' : 'text-neutral-400 group-hover:text-[#C5A059]'}`}>
+                            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isPaid ? 'text-emerald-600' : 'text-neutral-400 group-hover:text-[#D4AF37]'}`}>
                               Parcela {installmentNum}
                             </span>
-                            <span className={`text-lg font-black ${isPaid ? 'text-emerald-900' : 'text-neutral-900'}`}>
+                            <span className={`text-lg font-black ${isPaid ? 'text-emerald-900' : 'text-white'}`}>
                               R$ {valuePerInstallment.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             {isPaid && <Check size={18} className="text-emerald-600" />}
@@ -450,15 +450,15 @@ const AdminCaucao = ({
                 </div>
               ) : (
                 <div className="space-y-8 animate-in zoom-in-95 duration-500">
-                  <div className="bg-emerald-50 p-10 rounded-[3rem] border-2 border-emerald-100 text-center relative overflow-hidden">
+                  <div className="bg-emerald-500/10 p-10 rounded-3xl border-2 border-emerald-100 text-center relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100/50 rounded-bl-full -mr-16 -mt-16" />
                     <ShieldCheck size={48} className="text-emerald-500 mx-auto mb-6" />
                     <h5 className="text-2xl font-black text-emerald-900 tracking-tighter mb-2">Confirma o pagamento?</h5>
                     <p className="text-[10px] text-emerald-600 font-black uppercase tracking-widest mb-8">Dossiê de Liquidação Parcial</p>
 
-                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-emerald-100 mb-6">
+                    <div className="bg-[#0a0a0a] p-6 rounded-2xl shadow-sm border border-emerald-100 mb-6">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-1">Valor da Parcela {pendingInstallment.number}</p>
-                      <p className="text-3xl font-black text-neutral-900">R$ {pendingInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                      <p className="text-3xl font-black text-white">R$ {pendingInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
 
                     <div className="flex justify-center gap-4">
@@ -493,7 +493,7 @@ const AdminCaucao = ({
                     </button>
                     <button
                       onClick={() => setPendingInstallment(null)}
-                      className="w-full py-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all"
+                      className="w-full py-4 text-[9px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-all"
                     >
                       Voltar para seleção
                     </button>
@@ -502,7 +502,7 @@ const AdminCaucao = ({
               )}
             </div>
 
-            <div className="p-8 bg-neutral-50/50 flex justify-center border-t border-neutral-100">
+            <div className="p-8 bg-black/50 flex justify-center border-t border-neutral-800">
               <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-[0.2em]">Liquidando garantia contratual de {selectedRental.userName || selectedRental.user}</p>
             </div>
           </div>

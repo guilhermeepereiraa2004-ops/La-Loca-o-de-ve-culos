@@ -35,7 +35,7 @@ const AdminFrota = ({
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
         <div>
-          <h3 className="text-4xl font-black uppercase tracking-tighter">Frota de Ativos</h3>
+          <h3 className="text-4xl font-black uppercase tracking-tighter text-white">Frota de Ativos</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Gerencie o cadastro técnico, financeiro e visual da sua frota.</p>
         </div>
         <button
@@ -44,7 +44,7 @@ const AdminFrota = ({
             setIsEditing(false);
             setShowAddForm(true);
           }}
-          className="flex items-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
+          className="flex items-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#D4AF37] transition-all shadow-xl shadow-neutral-900/10"
         >
           <Plus size={16} /> Adicionar Novo Veículo
         </button>
@@ -59,10 +59,10 @@ const AdminFrota = ({
             value={vehicleSearch}
             onChange={(e) => setVehicleSearch(e.target.value)}
             placeholder="Pesquisar por modelo ou placa..."
-            className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light shadow-sm"
+            className="w-full bg-[#0a0a0a] text-white border border-neutral-800 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light shadow-sm"
           />
         </div>
-        <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex bg-[#0a0a0a] p-1 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors shrink-0 overflow-x-auto no-scrollbar">
           {['Todos', 'Disponível', 'Alugado', 'Manutenção', 'Em preparação', 'Indisponível'].map((status) => {
             const count = status === 'Todos' 
               ? vehicles.length 
@@ -74,7 +74,7 @@ const AdminFrota = ({
                 onClick={() => setVehicleStatusFilter(status)}
                 className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap ${vehicleStatusFilter === status
                   ? 'bg-neutral-900 text-white shadow-lg'
-                  : 'text-neutral-400 hover:text-neutral-900'
+                  : 'text-neutral-400 hover:text-white'
                 }`}
               >
                 {status} ({count})
@@ -92,7 +92,7 @@ const AdminFrota = ({
             const hasColeta = isExempt || inspections.some(ins => ins.vehiclePlate === car.plate && ins.type === 'Coleta');
 
             return (
-              <div key={car.id} className="group bg-white rounded-[2.5rem] border border-neutral-100 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#C5A059]/10 transition-all duration-500 hover:-translate-y-2 relative">
+              <div key={car.id} className="group bg-[#0a0a0a] rounded-3xl border border-neutral-800 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-[#D4AF37]/10 transition-all duration-500 hover:-translate-y-2 relative">
                 
                 {/* Coleta Alert */}
                 {!hasColeta && (
@@ -127,8 +127,8 @@ const AdminFrota = ({
                     }}
                     className={`absolute top-4 right-4 z-20 w-10 h-10 rounded-full flex items-center justify-center transition-all ${
                       car.isFavorite 
-                        ? 'bg-[#C5A059] text-white shadow-lg' 
-                        : 'bg-white/20 backdrop-blur-md text-white hover:bg-white/40'
+                        ? 'bg-[#D4AF37] text-white shadow-lg' 
+                        : 'bg-white/20 backdrop-blur-md text-white hover:bg-[#0a0a0a]/40'
                     }`}
                     title={car.isFavorite ? 'Remover dos Favoritos' : 'Definir como Favorito'}
                   >
@@ -138,7 +138,7 @@ const AdminFrota = ({
                   <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                   <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-                    <div className="flex flex-col w-20 h-10 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-2xl scale-90 origin-top-left">
+                    <div className="flex flex-col w-20 h-10 bg-[#0a0a0a] border-2 border-neutral-900 rounded-lg overflow-hidden shadow-2xl scale-90 origin-top-left">
                       <div className="h-2.5 bg-[#003399] flex items-center justify-center">
                         <span className="text-[5px] text-white font-black tracking-[0.2em]">BRASIL</span>
                       </div>
@@ -155,7 +155,7 @@ const AdminFrota = ({
                             ? 'bg-blue-500/90 border-blue-400 text-white'
                             : 'bg-emerald-500/90 border-emerald-400 text-white'
                       }`}>
-                      <div className={`w-1.5 h-1.5 rounded-full ${(car.status === 'Alugado' || car.status === 'Alugado (Reserva)') ? 'bg-white animate-pulse' : 'bg-white'}`} />
+                      <div className={`w-1.5 h-1.5 rounded-full ${(car.status === 'Alugado' || car.status === 'Alugado (Reserva)') ? 'bg-[#0a0a0a] animate-pulse' : 'bg-[#0a0a0a]'}`} />
                       <span className="text-[8px] font-black uppercase tracking-widest">{car.status || 'Disponível'}</span>
                     </div>
                   </div>
@@ -163,7 +163,7 @@ const AdminFrota = ({
                   <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 flex justify-between items-center">
                     <button
                       onClick={() => onViewVehicleDetail(car)}
-                      className="px-6 py-2 bg-white text-neutral-900 text-[9px] uppercase tracking-widest font-black rounded-full shadow-xl hover:bg-[#C5A059] hover:text-white transition-all"
+                      className="px-6 py-2 bg-[#0a0a0a] text-white text-[9px] uppercase tracking-widest font-black rounded-full shadow-xl hover:bg-[#D4AF37] hover:text-white transition-all"
                     >
                       Ver Detalhes
                     </button>
@@ -205,7 +205,7 @@ const AdminFrota = ({
                           setIsEditing(true);
                           setShowAddForm(true);
                         }}
-                        className="w-10 h-10 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-[#C5A059] transition-all"
+                        className="w-10 h-10 bg-white/20 backdrop-blur-md text-white rounded-full flex items-center justify-center hover:bg-[#D4AF37] transition-all"
                         title="Editar"
                       >
                         <Pencil size={14} />
@@ -250,15 +250,15 @@ const AdminFrota = ({
                 <div className="p-8">
                   <div className="flex justify-between items-start mb-6">
                     <div className="flex-1">
-                      <p className="text-[10px] uppercase tracking-widest text-[#C5A059] font-black mb-1">{car.year}</p>
-                      <h4 className="text-xl font-black text-neutral-900 tracking-tighter uppercase">{car.model || 'Sem Modelo'}</h4>
+                      <p className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-black mb-1">{car.year}</p>
+                      <h4 className="text-xl font-black text-white tracking-tighter uppercase">{car.model || 'Sem Modelo'}</h4>
                       {car.description && (
                         <p className="text-[10px] font-medium text-neutral-500 mt-2 line-clamp-2 pr-4">{car.description}</p>
                       )}
                     </div>
                     <div className="text-right shrink-0 ml-4">
                       <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Valor FIPE</p>
-                      <p className="text-sm font-black text-neutral-900">
+                      <p className="text-sm font-black text-white">
                         {car.fipeValue ? 
                           (typeof car.fipeValue === 'string' ? parseCurrency(car.fipeValue) : car.fipeValue)
                             .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
@@ -268,7 +268,7 @@ const AdminFrota = ({
                   </div>
 
                   {car.investmentValue && (
-                    <div className="mb-6 p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center">
+                    <div className="mb-6 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-100 flex justify-between items-center">
                       <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black">Valor de Investimento</p>
                       <p className="text-xs font-black text-emerald-700">
                         {(typeof car.investmentValue === 'string' ? parseCurrency(car.investmentValue) : car.investmentValue)
@@ -277,16 +277,16 @@ const AdminFrota = ({
                     </div>
                   )}
 
-                  <div className="h-[1px] bg-neutral-50 mb-6" />
+                  <div className="h-[1px] bg-black mb-6" />
 
                   <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="p-4 bg-neutral-50 rounded-2xl">
+                    <div className="p-4 bg-black rounded-2xl">
                       <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Investidor</p>
-                      <p className="text-xs font-black text-neutral-900 truncate">{car.investor || 'Nenhum'}</p>
+                      <p className="text-xs font-black text-white truncate">{car.investor || 'Nenhum'}</p>
                     </div>
-                    <div className="p-4 bg-[#C5A059]/5 rounded-2xl border border-[#C5A059]/10">
-                      <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-bold mb-1">Taxa Adm</p>
-                      <p className="text-xs font-black text-[#C5A059]">{car.adminTax}%</p>
+                    <div className="p-4 bg-[#D4AF37]/5 rounded-2xl border border-[#D4AF37]/10">
+                      <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-bold mb-1">Taxa Adm</p>
+                      <p className="text-xs font-black text-[#D4AF37]">{car.adminTax}%</p>
                     </div>
                   </div>
 
@@ -298,7 +298,7 @@ const AdminFrota = ({
                     <div className="w-[1px] h-6 bg-neutral-800" />
                     <div className="text-right">
                       <p className="text-[8px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Próxima em</p>
-                      <p className="text-[10px] font-black text-[#C5A059]">{car.beltChangeIntervalKm || '0'} KM</p>
+                      <p className="text-[10px] font-black text-[#D4AF37]">{car.beltChangeIntervalKm || '0'} KM</p>
                     </div>
                   </div>
                 </div>
@@ -306,8 +306,8 @@ const AdminFrota = ({
             );
           })
         ) : (
-          <div className="col-span-1 md:col-span-2 xl:col-span-3 text-center py-24 bg-white rounded-[2.5rem] border border-dashed border-neutral-200">
-            <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto mb-6 text-neutral-300">
+          <div className="col-span-1 md:col-span-2 xl:col-span-3 text-center py-24 bg-[#0a0a0a] rounded-3xl border border-dashed border-neutral-700">
+            <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-6 text-neutral-300">
               <Car size={32} />
             </div>
             <p className="text-neutral-400 uppercase tracking-[0.2em] text-[10px] font-black">Nenhum veículo encontrado para estes critérios</p>

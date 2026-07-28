@@ -53,17 +53,17 @@ const AdminClientes = ({
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-6 xl:mb-8 2xl:mb-12">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-[#C5A059] rounded-full animate-pulse" />
-            <EditorialLabel className="text-[#C5A059] tracking-[0.3em]">Gestão de Condutores</EditorialLabel>
+            <div className="w-2 h-2 bg-[#D4AF37] rounded-full animate-pulse" />
+            <EditorialLabel className="text-[#D4AF37] tracking-[0.3em]">Gestão de Condutores</EditorialLabel>
           </div>
-          <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-neutral-900 leading-none">Clientes</h3>
+          <h3 className="text-3xl xl:text-4xl 2xl:text-5xl font-black uppercase tracking-tighter text-white leading-none">Clientes</h3>
           <p className="text-neutral-500 font-medium italic text-lg tracking-tight">Base de condutores cadastrados e histórico de conformidade de documentos.</p>
           <div className="flex flex-wrap items-center gap-3 mt-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-100 text-neutral-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-neutral-200">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-100 text-neutral-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-neutral-700">
               <User size={12} className="text-neutral-400" />
               {clients.length} {clients.length === 1 ? 'cliente total' : 'clientes totais'}
             </div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-600 rounded-full text-[10px] font-black uppercase tracking-widest border border-emerald-100">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
               {activeClientIds.size} com locação ativa
             </div>
@@ -72,19 +72,19 @@ const AdminClientes = ({
       </div>
 
       {/* Search & Filters & Add */}
-      <div className="bg-white rounded-[2rem] xl:rounded-[3rem] p-6 border border-neutral-100 shadow-sm mb-8 xl:mb-12 flex flex-col lg:flex-row gap-6 justify-between items-center">
+      <div className="bg-[#0a0a0a] rounded-2xl xl:rounded-3xl p-6 border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors mb-8 xl:mb-12 flex flex-col lg:flex-row gap-6 justify-between items-center">
         <div className="relative flex-1 w-full group">
-          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
+          <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#D4AF37] transition-colors" />
           <input 
             type="text" 
             value={search} 
             onChange={e => setSearch(e.target.value)} 
             placeholder="Buscar por nome, CPF ou telefone..." 
-            className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
+            className="w-full bg-black text-white border border-neutral-800 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#D4AF37]/10 focus:border-[#D4AF37] focus:bg-[#0a0a0a] transition-all shadow-inner" 
           />
         </div>
         <div className="flex items-center gap-4 w-full lg:w-auto">
-          <div className="flex bg-neutral-50 p-1.5 rounded-[2rem] border border-neutral-100 shadow-inner shrink-0 w-full lg:w-auto">
+          <div className="flex bg-black p-1.5 rounded-2xl border border-neutral-800 shadow-inner shrink-0 w-full lg:w-auto">
             {[
               { id: 'todos', label: 'Todos' },
               { id: 'ativos', label: 'CNH Ativa' },
@@ -96,7 +96,7 @@ const AdminClientes = ({
                 onClick={() => setStatusFilter(item.id)}
                 className={`flex-1 lg:flex-none px-6 py-3.5 rounded-2xl text-[10px] uppercase tracking-widest font-black transition-all duration-500 ${statusFilter === item.id
                   ? 'bg-neutral-900 text-white shadow-xl shadow-neutral-900/20 scale-105'
-                  : 'text-neutral-400 hover:text-neutral-900 hover:bg-white'
+                  : 'text-neutral-400 hover:text-white hover:bg-[#0a0a0a]'
                 }`}
               >
                 {item.label}
@@ -105,7 +105,7 @@ const AdminClientes = ({
           </div>
           <button 
             onClick={() => setShowAddClientModal(true)}
-            className="px-6 py-4 bg-neutral-900 hover:bg-[#C5A059] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-neutral-900/20 whitespace-nowrap"
+            className="px-6 py-4 bg-neutral-900 hover:bg-[#D4AF37] text-white rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-neutral-900/20 whitespace-nowrap"
           >
             + Novo Cliente
           </button>
@@ -115,9 +115,9 @@ const AdminClientes = ({
       {/* Grid container */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
         {filteredClients.length === 0 ? (
-          <div className="col-span-full p-20 text-center bg-white border border-neutral-100 rounded-3xl shadow-sm max-w-md mx-auto">
+          <div className="col-span-full p-20 text-center bg-[#0a0a0a] border border-neutral-800 rounded-3xl shadow-sm max-w-md mx-auto">
             <User size={36} className="mx-auto mb-4 text-neutral-200" />
-            <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tighter mb-1">Nenhum cliente encontrado</h4>
+            <h4 className="text-lg font-black text-white uppercase tracking-tighter mb-1">Nenhum cliente encontrado</h4>
             <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest leading-none">Não encontramos registros para os filtros selecionados</p>
           </div>
         ) : (
@@ -140,41 +140,41 @@ const AdminClientes = ({
             })();
 
             return (
-              <div key={index} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">
+              <div key={index} className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 shadow-xl shadow-black/40 overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[#D4AF37]/5 hover:border-neutral-700 group/card group">
                 {/* Background ambient light */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/5 blur-3xl -mr-16 -mt-16 animate-pulse" />
+                <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/5 blur-3xl -mr-16 -mt-16 animate-pulse" />
                 
                 <div>
                   {/* Card Header: CNH status indicator & verify badge */}
-                  <div className="flex justify-between items-center mb-5 pb-4 border-b border-neutral-100/60">
+                  <div className="flex justify-between items-center mb-5 pb-4 border-b border-neutral-800/60">
                     <div className="flex items-center gap-2">
                       <span className={`w-2 h-2 rounded-full ${expired ? 'bg-red-500 animate-pulse' : 'bg-emerald-500 animate-pulse'}`} />
                       <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400">
                         {expired ? 'CNH Vencida' : 'CNH Regular'}
                       </span>
                     </div>
-                    <span className="bg-[#C5A059]/10 text-[#C5A059] text-[8px] font-black px-2 py-1 rounded-xl uppercase tracking-wider">
+                    <span className="bg-[#D4AF37]/10 text-[#D4AF37] text-[8px] font-black px-2 py-1 rounded-xl uppercase tracking-wider">
                       Verificado
                     </span>
                   </div>
 
                   {/* Main Profile Info: Avatar & Name & CPF */}
                   <div className="flex items-start gap-4 mb-6">
-                    <div className="w-14 h-14 bg-neutral-950 text-[#C5A059] rounded-2xl flex items-center justify-center font-black text-xl shadow-md shrink-0 select-none group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-14 h-14 bg-neutral-950 text-[#D4AF37] rounded-2xl flex items-center justify-center font-black text-xl shadow-md shrink-0 select-none group-hover:scale-105 transition-transform duration-300">
                       {(client.nome || client.name || '?').charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1 space-y-1">
-                      <h4 className="text-base font-black text-neutral-900 uppercase tracking-tight truncate" title={client.nome || client.name}>
+                      <h4 className="text-base font-black text-white uppercase tracking-tight truncate" title={client.nome || client.name}>
                         {client.nome || client.name}
                       </h4>
-                      <div className="inline-flex items-center gap-1.5 font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-50 text-neutral-600 border border-neutral-200/60 uppercase">
+                      <div className="inline-flex items-center gap-1.5 font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-900 text-white border border-neutral-700 uppercase">
                         CPF: {client.cpf || 'S/CPF'}
                       </div>
                     </div>
                   </div>
 
                   {/* Contacts and details */}
-                  <div className="bg-neutral-50/50 border border-neutral-100/70 p-4 rounded-2xl space-y-3.5 mb-6">
+                  <div className="bg-black/50 border border-neutral-800/70 p-4 rounded-2xl space-y-3.5 mb-6">
                     {/* Contacts info */}
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-neutral-400">
@@ -184,7 +184,7 @@ const AdminClientes = ({
                       {/* Phone / Whatsapp */}
                       {(client.telefone || client.phone) && (
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-800">
+                          <div className="flex items-center gap-2 text-xs font-bold text-neutral-200">
                             <Phone size={12} className="text-neutral-400" />
                             <span>{client.telefone || client.phone}</span>
                           </div>
@@ -192,7 +192,7 @@ const AdminClientes = ({
                             href={`https://wa.me/${(client.telefone || client.phone).replace(/\D/g, '')}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 p-1.5 rounded-lg transition-colors flex items-center justify-center"
+                            className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-100 p-1.5 rounded-lg transition-colors flex items-center justify-center"
                             title="WhatsApp"
                           >
                             <Phone size={12} />
@@ -202,7 +202,7 @@ const AdminClientes = ({
 
                       {/* Email */}
                       {(client.email) && (
-                        <div className="flex items-center gap-2 text-xs font-bold text-neutral-800 truncate" title={client.email}>
+                        <div className="flex items-center gap-2 text-xs font-bold text-neutral-200 truncate" title={client.email}>
                           <Mail size={12} className="text-neutral-400 shrink-0" />
                           <span className="truncate">{client.email}</span>
                         </div>
@@ -210,7 +210,7 @@ const AdminClientes = ({
 
                       {/* Address */}
                       {(client.address || client.docs?.address) && (
-                        <div className="flex items-start gap-2 text-xs font-bold text-neutral-800 mt-1">
+                        <div className="flex items-start gap-2 text-xs font-bold text-neutral-200 mt-1">
                           <MapPin size={12} className="text-neutral-400 shrink-0 mt-0.5" />
                           <span className="line-clamp-2 leading-tight">
                             {client.address || client.docs?.address}
@@ -221,20 +221,20 @@ const AdminClientes = ({
                     </div>
 
                     {/* CNH Details */}
-                    <div className="pt-3 border-t border-neutral-100/80 space-y-2">
+                    <div className="pt-3 border-t border-neutral-800/80 space-y-2">
                       <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-neutral-400">
                         <span>Carteira de Habilitação</span>
                       </div>
                       
                       <div className="flex justify-between items-baseline">
-                        <span className="text-xs font-black text-neutral-900">
+                        <span className="text-xs font-black text-white">
                           {client.cnhNumber ? `Nº ${client.cnhNumber}` : 'S/ CNH Cadastrada'}
                         </span>
                         {hasCnh && (
                           <span className={`text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
-                            expirationInfo.isExpired ? 'bg-red-50 text-red-600 border border-red-100/50' :
-                            expirationInfo.days <= 30 ? 'bg-amber-50 text-amber-600 border border-amber-100/50' :
-                            'bg-emerald-50 text-emerald-600 border border-emerald-100/50'
+                            expirationInfo.isExpired ? 'bg-red-500/10 text-red-600 border border-red-100/50' :
+                            expirationInfo.days <= 30 ? 'bg-amber-500/10 text-amber-600 border border-amber-100/50' :
+                            'bg-emerald-500/10 text-emerald-600 border border-emerald-100/50'
                           }`}>
                             {expirationInfo.isExpired ? 'Vencido' : `${expirationInfo.days} dias`}
                           </span>
@@ -242,7 +242,7 @@ const AdminClientes = ({
                       </div>
 
                       <div className="flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider text-neutral-400">
-                        <Calendar size={11} className="text-[#C5A059]" />
+                        <Calendar size={11} className="text-[#D4AF37]" />
                         <span>{expirationInfo.label}</span>
                       </div>
                     </div>
@@ -253,7 +253,7 @@ const AdminClientes = ({
                 <div className="flex gap-2">
                   <button 
                     onClick={() => setSelectedClient(client)}
-                    className="flex-1 py-3.5 bg-neutral-950 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-200"
+                    className="flex-1 py-3.5 bg-neutral-950 text-white text-[9px] uppercase tracking-[0.3em] font-black rounded-xl hover:bg-[#D4AF37] transition-all flex items-center justify-center gap-2 shadow-sm active:scale-95 duration-200"
                   >
                     <Eye size={13} /> Abrir Ficha do Cliente
                   </button>
@@ -263,7 +263,7 @@ const AdminClientes = ({
                       setDeleteType('client');
                       setShowDeleteAuthModal(true);
                     }}
-                    className="p-3.5 bg-white text-neutral-400 border border-neutral-200 rounded-xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm active:scale-95 duration-200"
+                    className="p-3.5 bg-[#0a0a0a] text-neutral-400 border border-neutral-700 rounded-xl hover:border-red-500 hover:text-red-500 transition-all flex items-center justify-center shadow-sm active:scale-95 duration-200"
                     title="Excluir Cliente"
                   >
                     <Trash2 size={13} />

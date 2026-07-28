@@ -45,7 +45,7 @@ const AdminSidebar = ({
     <>
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed bottom-6 right-6 z-[60] xl:hidden bg-neutral-900 text-[#C5A059] p-4 rounded-full shadow-2xl border border-neutral-800"
+        className="fixed bottom-6 right-6 z-[60] xl:hidden bg-neutral-900 text-[#D4AF37] p-4 rounded-full shadow-2xl border border-neutral-800"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
@@ -96,7 +96,7 @@ const AdminSidebar = ({
                 className={`w-full flex items-center rounded-xl transition-all relative ${
                   isExpanded ? 'p-2.5 gap-2.5' : 'p-2.5 justify-center'
                 } ${
-                  isActive ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-white/5'
+                  isActive ? 'text-[#D4AF37] bg-[#D4AF37]/10 shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-white/5'
                 }`}
                 title={item.label}
               >
@@ -105,7 +105,7 @@ const AdminSidebar = ({
                   <item.icon size={16} />
                   {/* Dot shown only when sidebar is collapsed and there's a badge */}
                   {badgeCount > 0 && !isExpanded && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C5A059] animate-pulse" />
+                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#D4AF37] animate-pulse" />
                   )}
                 </div>
 
@@ -118,7 +118,7 @@ const AdminSidebar = ({
 
                 {/* Badge pill — shown only when sidebar is expanded */}
                 {badgeCount > 0 && isExpanded && (
-                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#C5A059] text-neutral-950 text-[9px] font-black leading-none shadow-sm animate-in scale-in duration-300">
+                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#D4AF37] text-neutral-950 text-[9px] font-black leading-none shadow-sm animate-in scale-in duration-300">
                     {badgeCount > 99 ? '99+' : badgeCount}
                   </span>
                 )}
@@ -137,7 +137,7 @@ const AdminSidebar = ({
             } group`}
             title="Página Inicial"
           >
-            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#C5A059]/20 group-hover:text-[#C5A059] transition-all shrink-0">
+            <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-[#D4AF37]/20 group-hover:text-[#D4AF37] transition-all shrink-0">
               <Eye size={14} />
             </div>
             {isExpanded && (

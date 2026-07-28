@@ -141,12 +141,12 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
     <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 md:mb-12">
         <div>
-          <h3 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter">Vistorias Técnicas</h3>
+          <h3 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter text-white">Vistorias Técnicas</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Checklist de entrada, saída e manutenções preventivas.</p>
         </div>
         <button
           onClick={onNewInspection}
-          className="w-full sm:w-auto flex items-center justify-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
+          className="w-full sm:w-auto flex items-center justify-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#D4AF37] transition-all shadow-xl shadow-neutral-900/10"
         >
           <Plus size={16} /> Nova Vistoria
         </button>
@@ -154,19 +154,19 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
 
       {/* Alerts Section */}
       {alerts.length > 0 && (
-        <div className="mb-8 md:mb-12 p-6 md:p-8 bg-amber-50 rounded-[1.5rem] md:rounded-[2.5rem] border border-amber-100 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 animate-in slide-in-from-top-4 duration-500">
-          <div className="w-14 h-14 bg-amber-500 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-amber-200 shrink-0">
+        <div className="mb-8 md:mb-12 p-6 md:p-8 bg-amber-500/10 rounded-2xl md:rounded-3xl border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-6 animate-in slide-in-from-top-4 duration-500">
+          <div className="w-14 h-14 bg-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 shadow-sm shrink-0">
             <AlertTriangle size={28} />
           </div>
           <div className="flex-1">
-            <h4 className="text-sm font-black uppercase tracking-widest text-amber-900 mb-1">Alertas de Vistoria Periódica</h4>
-            <p className="text-xs text-amber-700/70 font-medium">Os veículos abaixo estão alugados e possuem menos de 2 vistorias periódicas nos últimos 30 dias.</p>
+            <h4 className="text-sm font-black uppercase tracking-widest text-amber-500 mb-1">Alertas de Vistoria Periódica</h4>
+            <p className="text-xs text-amber-400 font-medium">Os veículos abaixo estão alugados e possuem menos de 2 vistorias periódicas nos últimos 30 dias.</p>
             <div className="flex flex-wrap gap-2 mt-4">
               {alerts.map(alert => (
-                <div key={alert.plate} className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-xl border border-amber-200 flex items-center gap-3">
-                  <span className="text-[10px] font-black text-amber-900 uppercase">{alert.plate}</span>
-                  <div className="w-px h-3 bg-amber-200" />
-                  <span className="text-[9px] font-bold text-amber-600 uppercase tracking-tight">{alert.count === 0 ? 'Nenhuma' : 'Apenas 1'} Realizada</span>
+                <div key={alert.plate} className="bg-[#111111] px-4 py-2 rounded-xl border border-amber-500/30 flex items-center gap-3">
+                  <span className="text-[10px] font-black text-amber-500 uppercase">{alert.plate}</span>
+                  <div className="w-px h-3 bg-amber-500/30" />
+                  <span className="text-[9px] font-bold text-amber-500/80 uppercase tracking-tight">{alert.count === 0 ? 'Nenhuma' : 'Apenas 1'} Realizada</span>
                 </div>
               ))}
             </div>
@@ -183,7 +183,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             placeholder="Buscar por placa ou tipo..."
             value={inspectionSearch}
             onChange={(e) => { setInspectionSearch(e.target.value); setVisibleCount(ITEMS_PER_PAGE); }}
-            className="w-full bg-white border border-neutral-100 pl-12 pr-4 py-3 rounded-2xl text-sm focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-medium"
+            className="w-full bg-[#0a0a0a] text-white border border-neutral-800 pl-12 pr-4 py-3 rounded-2xl text-sm focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-medium"
           />
         </div>
         
@@ -191,7 +191,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
           <select 
             value={filterType}
             onChange={(e) => { setFilterType(e.target.value); setVisibleCount(ITEMS_PER_PAGE); }}
-            className="w-full sm:w-auto bg-white border border-neutral-100 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#C5A059]/20 outline-none"
+            className="w-full sm:w-auto bg-[#0a0a0a] border border-neutral-800 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#D4AF37]/20 outline-none text-white"
           >
             <option value="Todos">Todos os Tipos</option>
             <option value="Entrega">Entrega</option>
@@ -200,7 +200,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             <option value="Devolução">Devolução</option>
           </select>
 
-          <div className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-neutral-100 px-3 py-2 rounded-2xl w-full sm:w-auto overflow-x-auto">
+          <div className="flex items-center justify-between sm:justify-start gap-2 bg-[#0a0a0a] border border-neutral-800 px-3 py-2 rounded-2xl w-full sm:w-auto overflow-x-auto">
             <Calendar size={14} className="text-neutral-400 shrink-0" />
             <input 
               type="date" 
@@ -220,7 +220,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
           {(filterType !== 'Todos' || dateStart || dateEnd) && (
             <button 
               onClick={() => { setFilterType('Todos'); setDateStart(''); setDateEnd(''); setVisibleCount(ITEMS_PER_PAGE); }}
-              className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center self-end sm:self-auto"
+              className="p-3 text-red-500 hover:bg-red-500/10 rounded-xl transition-colors flex items-center justify-center self-end sm:self-auto"
               title="Limpar Filtros"
             >
               <X size={18} />
@@ -231,12 +231,12 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 md:gap-8">
         {visibleInspections.map((ins) => (
-          <div key={ins.id} className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-neutral-100 p-6 md:p-8 shadow-sm hover:shadow-xl transition-all group">
+          <div key={ins.id} className="bg-[#0a0a0a] rounded-2xl md:rounded-3xl border border-neutral-800 p-6 md:p-8 shadow-sm hover:shadow-xl transition-all group">
             <div className="flex justify-between items-start mb-6">
               <div className={`px-4 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest ${
-                ins.type === 'Entrega' ? 'bg-emerald-50 text-emerald-600' :
-                ins.type === 'Devolução' ? 'bg-blue-50 text-blue-600' :
-                ins.type === 'Coleta' ? 'bg-amber-50 text-amber-600' : 'bg-neutral-50 text-neutral-600'
+                ins.type === 'Entrega' ? 'bg-emerald-500/10 text-emerald-600' :
+                ins.type === 'Devolução' ? 'bg-blue-500/10 text-blue-600' :
+                ins.type === 'Coleta' ? 'bg-amber-500/10 text-amber-600' : 'bg-black text-neutral-600'
               }`}>
                 {ins.type}
               </div>
@@ -255,12 +255,12 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             </div>
 
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#C5A059] shadow-lg">
+              <div className="w-12 h-12 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#D4AF37] shadow-lg">
                 <Car size={24} />
               </div>
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{ins.vehiclePlate}</h4>
+                  <h4 className="text-xl font-black text-white uppercase tracking-tighter">{ins.vehiclePlate}</h4>
                   {ins.type === 'Entrega' || ins.type === 'Devolução' ? (
                     <span className="px-2 py-0.5 bg-neutral-900 text-white text-[7px] font-black uppercase tracking-widest rounded">
                       {getDriverForInspection(ins)}
@@ -272,22 +272,22 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             </div>
 
             <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="p-3 bg-neutral-50 rounded-xl">
+              <div className="p-3 bg-black rounded-xl">
                 <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Km Atual</p>
-                <p className="text-xs font-black text-neutral-900">{ins.km} KM</p>
+                <p className="text-xs font-black text-white">{ins.km} KM</p>
               </div>
-              <div className="p-3 bg-neutral-50 rounded-xl">
+              <div className="p-3 bg-black rounded-xl">
                 <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Combustível</p>
-                <p className="text-xs font-black text-neutral-900">{ins.fuelLevel}</p>
+                <p className="text-xs font-black text-white">{ins.fuelLevel}</p>
               </div>
               {ins.externalCleanliness && (
-                <div className="p-3 bg-neutral-50 rounded-xl">
+                <div className="p-3 bg-black rounded-xl">
                   <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Limpeza Ext.</p>
                   <p className={`text-xs font-black ${ins.externalCleanliness === 'Limpo' ? 'text-emerald-600' : ins.externalCleanliness === 'Aceitável' ? 'text-amber-600' : 'text-red-600'}`}>{ins.externalCleanliness}</p>
                 </div>
               )}
               {ins.internalCleanliness && (
-                <div className="p-3 bg-neutral-50 rounded-xl">
+                <div className="p-3 bg-black rounded-xl">
                   <p className="text-[8px] uppercase font-bold text-neutral-400 mb-1">Limpeza Int.</p>
                   <p className={`text-xs font-black ${ins.internalCleanliness === 'Limpo' ? 'text-emerald-600' : ins.internalCleanliness === 'Aceitável' ? 'text-amber-600' : 'text-red-600'}`}>{ins.internalCleanliness}</p>
                 </div>
@@ -298,18 +298,18 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
               {Object.entries(ins.photos || {})
                 .filter(([key]) => key !== 'additional')
                 .map(([key, photo], i) => (
-                  <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0">
+                  <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-800 bg-neutral-100 shrink-0">
                     <img src={photo.preview} loading="lazy" className="w-full h-full object-cover" />
                   </div>
                 ))}
               {ins.photos?.additional && ins.photos.additional.map((photo, i) => (
-                <div key={`add-${i}`} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0 relative">
+                <div key={`add-${i}`} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-800 bg-neutral-100 shrink-0 relative">
                   <img src={photo.preview} loading="lazy" className="w-full h-full object-cover" />
-                  <span className="absolute bottom-0 right-0 bg-[#C5A059] text-[6px] font-black text-neutral-900 px-0.5 rounded-tl">+</span>
+                  <span className="absolute bottom-0 right-0 bg-[#D4AF37] text-[6px] font-black text-white px-0.5 rounded-tl">+</span>
                 </div>
               ))}
               {ins.video && (
-                <div className="w-10 h-10 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center text-emerald-600 shrink-0">
                   <Eye size={14} />
                 </div>
               )}
@@ -317,7 +317,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
 
             <button 
               onClick={() => onViewDetail(ins)}
-              className="w-full py-4 bg-neutral-50 text-neutral-900 text-[9px] uppercase tracking-widest font-black rounded-xl hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2"
+              className="w-full py-4 bg-black text-white text-[9px] uppercase tracking-widest font-black rounded-xl hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2"
             >
               <Eye size={14} /> Ver Dossiê Completo
             </button>
@@ -330,7 +330,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
         <div className="flex justify-center mt-10">
           <button
             onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
-            className="px-10 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.2em] font-black rounded-xl hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
+            className="px-10 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.2em] font-black rounded-xl hover:bg-[#D4AF37] transition-all shadow-xl shadow-neutral-900/10"
           >
             Carregar mais ({sortedInspections.length - visibleCount} restantes)
           </button>
@@ -347,13 +347,13 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
       {/* Password Modal */}
       {showPasswordModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="bg-[#0a0a0a] rounded-2xl p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
             <div className="flex flex-col items-center text-center gap-4 mb-8">
-              <div className="w-16 h-16 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center">
+              <div className="w-16 h-16 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center">
                 <ShieldCheck size={32} />
               </div>
               <div>
-                <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Segurança Exigida</h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight">Segurança Exigida</h3>
                 <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira a senha mestre para excluir esta vistoria</p>
               </div>
             </div>
@@ -364,7 +364,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
                 placeholder="Senha Mestre"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
-                className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-black text-center tracking-widest"
+                className="w-full bg-black border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-black text-center tracking-widest text-white"
                 autoFocus
                 onKeyDown={(e) => e.key === 'Enter' && handleConfirmDelete()}
               />
@@ -374,7 +374,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
                     setShowPasswordModal(false);
                     setPasswordInput('');
                   }}
-                  className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-colors"
+                  className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-colors"
                 >
                   Cancelar
                 </button>

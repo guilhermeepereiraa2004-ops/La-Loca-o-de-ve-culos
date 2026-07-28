@@ -110,7 +110,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
       <div className="absolute inset-0 bg-neutral-950/95 backdrop-blur-md" onClick={onClose} />
       
-      <div className="bg-white w-full max-w-5xl h-full max-h-[90vh] rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+      <div className="bg-[#0a0a0a] w-full max-w-5xl h-full max-h-[90vh] rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
         
         {/* Image Preview Overlay */}
         {selectedImage && (
@@ -118,7 +118,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
             <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedImage(null)} />
             <div className="relative z-10 max-w-full max-h-full">
               <img src={selectedImage} className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" alt="Preview" />
-              <button onClick={() => setSelectedImage(null)} className="absolute -top-12 right-0 text-white flex items-center gap-2 font-black uppercase text-[10px] tracking-widest hover:text-[#C5A059] transition-colors">
+              <button onClick={() => setSelectedImage(null)} className="absolute -top-12 right-0 text-white flex items-center gap-2 font-black uppercase text-[10px] tracking-widest hover:text-[#D4AF37] transition-colors">
                 <X size={20} /> Fechar Preview
               </button>
             </div>
@@ -126,32 +126,32 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
         )}
 
         {/* Header */}
-        <div className="p-8 md:p-12 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
+        <div className="p-8 md:p-12 border-b border-neutral-800 flex justify-between items-center bg-[#0a0a0a] shrink-0">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-neutral-900 rounded-[2rem] flex items-center justify-center text-[#C5A059] shadow-2xl shadow-[#C5A059]/20 transform -rotate-3">
+            <div className="w-16 h-16 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#D4AF37] shadow-2xl shadow-[#D4AF37]/20 transform -rotate-3">
               <User size={28} />
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1">
-                <span className="text-[#C5A059] text-[10px] uppercase font-black tracking-widest">Dossiê do Cliente</span>
-                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${!isExpired(client.cnhValidity) ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                <span className="text-[#D4AF37] text-[10px] uppercase font-black tracking-widest">Dossiê do Cliente</span>
+                <span className={`px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border ${!isExpired(client.cnhValidity) ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100' : 'bg-red-500/10 text-red-600 border-red-100'}`}>
                   {isExpired(client.cnhValidity) ? 'Cadastro Irregular' : 'Cadastro Regular'}
                 </span>
               </div>
-              <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">{client.nome || client.name}</h4>
+              <h4 className="text-3xl font-black uppercase tracking-tighter text-white">{client.nome || client.name}</h4>
             </div>
           </div>
           <div className="flex items-center gap-3">
             {isEditing ? (
-              <button onClick={handleSave} className="flex items-center gap-2 px-6 py-3 bg-[#C5A059] text-white font-black uppercase tracking-widest text-[10px] rounded-full hover:bg-neutral-900 transition-all shadow-xl">
+              <button onClick={handleSave} className="flex items-center gap-2 px-6 py-3 bg-[#D4AF37] text-white font-black uppercase tracking-widest text-[10px] rounded-full hover:bg-neutral-900 transition-all shadow-xl">
                 <Save size={16} /> Salvar
               </button>
             ) : (
-              <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-neutral-100 text-neutral-900 font-black uppercase tracking-widest text-[10px] rounded-full hover:bg-neutral-200 transition-all">
+              <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-6 py-3 bg-neutral-900 border border-neutral-800 text-white font-black uppercase tracking-widest text-[10px] rounded-full hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all">
                 <Edit2 size={16} /> Editar
               </button>
             )}
-            <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
+            <button onClick={onClose} className="w-12 h-12 bg-black flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-white">
               <X size={24} />
             </button>
           </div>
@@ -168,32 +168,32 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
               {/* Personal Info */}
               <section className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <ShieldCheck size={18} className="text-[#C5A059]" />
-                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Dados Pessoais</h5>
+                  <ShieldCheck size={18} className="text-[#D4AF37]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-white">Dados Pessoais</h5>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-black p-8 rounded-3xl">
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">WhatsApp</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.telefone || editForm.phone || ''} onChange={e => setEditForm({...editForm, telefone: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
+                      <input type="text" value={editForm.telefone || editForm.phone || ''} onChange={e => setEditForm({...editForm, telefone: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900">{client.telefone || client.phone || '---'}</p>
+                      <p className="text-sm font-black text-white">{client.telefone || client.phone || '---'}</p>
                     )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">E-mail</p>
                     {isEditing ? (
-                      <input type="email" value={editForm.email || ''} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
+                      <input type="email" value={editForm.email || ''} onChange={e => setEditForm({...editForm, email: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900 truncate">{client.email || '---'}</p>
+                      <p className="text-sm font-black text-white truncate">{client.email || '---'}</p>
                     )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Data de Nascimento</p>
                     {isEditing ? (
-                      <input type="date" value={editForm.birthDate || ''} onChange={e => setEditForm({...editForm, birthDate: e.target.value})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" />
+                      <input type="date" value={editForm.birthDate || ''} onChange={e => setEditForm({...editForm, birthDate: e.target.value})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900 leading-tight">
+                      <p className="text-sm font-black text-white leading-tight">
                         {client.birthDate && client.birthDate.includes('-') ? client.birthDate.substring(0, 10).split('-').reverse().join('/') : client.birthDate || '---'}
                       </p>
                     )}
@@ -201,9 +201,9 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">CPF</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.cpf || ''} onChange={e => setEditForm({...editForm, cpf: formatCPF(e.target.value)})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="000.000.000-00" />
+                      <input type="text" value={editForm.cpf || ''} onChange={e => setEditForm({...editForm, cpf: formatCPF(e.target.value)})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" placeholder="000.000.000-00" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900">{client.cpf || '---'}</p>
+                      <p className="text-sm font-black text-white">{client.cpf || '---'}</p>
                     )}
                   </div>
                 </div>
@@ -212,30 +212,30 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
               {/* Extended Personal Info: RG, Nacionalidade, Estado Civil */}
               <section className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <FileText size={18} className="text-[#C5A059]" />
-                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Documentação Complementar</h5>
+                  <FileText size={18} className="text-[#D4AF37]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-white">Documentação Complementar</h5>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-black p-8 rounded-3xl">
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">RG (Órgão Emissor/UF)</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.docs?.rg || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), rg: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="1234567 SSP/SE" />
+                      <input type="text" value={editForm.docs?.rg || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), rg: e.target.value}})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" placeholder="1234567 SSP/SE" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900">{getField(client, 'rg') || '---'}</p>
+                      <p className="text-sm font-black text-white">{getField(client, 'rg') || '---'}</p>
                     )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Nacionalidade</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.docs?.nacionalidade || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), nacionalidade: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="brasileiro(a)" />
+                      <input type="text" value={editForm.docs?.nacionalidade || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), nacionalidade: e.target.value}})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" placeholder="brasileiro(a)" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900 capitalize">{getField(client, 'nacionalidade') || '---'}</p>
+                      <p className="text-sm font-black text-white capitalize">{getField(client, 'nacionalidade') || '---'}</p>
                     )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Estado Civil</p>
                     {isEditing ? (
-                      <select value={editForm.docs?.estadoCivil || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), estadoCivil: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]">
+                      <select value={editForm.docs?.estadoCivil || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), estadoCivil: e.target.value}})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]">
                         <option value="">Selecionar...</option>
                         <option value="solteiro(a)">Solteiro(a)</option>
                         <option value="casado(a)">Casado(a)</option>
@@ -244,7 +244,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                         <option value="união estável">União Estável</option>
                       </select>
                     ) : (
-                      <p className="text-sm font-black text-neutral-900 capitalize">{getField(client, 'estadoCivil') || '---'}</p>
+                      <p className="text-sm font-black text-white capitalize">{getField(client, 'estadoCivil') || '---'}</p>
                     )}
                   </div>
                 </div>
@@ -253,32 +253,32 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
               {/* Address Info */}
               <section className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <Home size={18} className="text-[#C5A059]" />
-                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Endereço</h5>
+                  <Home size={18} className="text-[#D4AF37]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-white">Endereço</h5>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-neutral-50 p-8 rounded-[2.5rem]">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-black p-8 rounded-3xl">
                   <div className="md:col-span-3">
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Rua, Nº, Bairro</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.address || editForm.docs?.address || ''} onChange={e => setEditForm({...editForm, address: e.target.value, docs: {...(editForm.docs || {}), address: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="Rua Exemplo, 123, Centro" />
+                      <input type="text" value={editForm.address || editForm.docs?.address || ''} onChange={e => setEditForm({...editForm, address: e.target.value, docs: {...(editForm.docs || {}), address: e.target.value}})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" placeholder="Rua Exemplo, 123, Centro" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900">{client.address || getField(client, 'address') || '---'}</p>
+                      <p className="text-sm font-black text-white">{client.address || getField(client, 'address') || '---'}</p>
                     )}
                   </div>
                   <div>
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">CEP</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.docs?.cep || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), cep: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="49000-000" />
+                      <input type="text" value={editForm.docs?.cep || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), cep: e.target.value}})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" placeholder="49000-000" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900">{getField(client, 'cep') || '---'}</p>
+                      <p className="text-sm font-black text-white">{getField(client, 'cep') || '---'}</p>
                     )}
                   </div>
                   <div className="md:col-span-2">
                     <p className="text-[9px] uppercase font-bold text-neutral-400 mb-1">Cidade / UF</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.docs?.cidadeUf || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), cidadeUf: e.target.value}})} className="w-full bg-white border border-neutral-200 p-2 rounded-xl text-sm font-black text-neutral-900 outline-none focus:border-[#C5A059]" placeholder="Aracaju/SE" />
+                      <input type="text" value={editForm.docs?.cidadeUf || ''} onChange={e => setEditForm({...editForm, docs: {...(editForm.docs || {}), cidadeUf: e.target.value}})} className="w-full bg-[#0a0a0a] border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" placeholder="Aracaju/SE" />
                     ) : (
-                      <p className="text-sm font-black text-neutral-900">{getField(client, 'cidadeUf') || '---'}</p>
+                      <p className="text-sm font-black text-white">{getField(client, 'cidadeUf') || '---'}</p>
                     )}
                   </div>
                 </div>
@@ -287,30 +287,30 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
               {/* Document Info */}
               <section className="space-y-6">
                 <div className="flex items-center gap-3 mb-2">
-                  <CreditCard size={18} className="text-[#C5A059]" />
-                  <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Habilitação (CNH)</h5>
+                  <CreditCard size={18} className="text-[#D4AF37]" />
+                  <h5 className="text-sm font-black uppercase tracking-widest text-white">Habilitação (CNH)</h5>
                 </div>
-                <div className="grid grid-cols-4 gap-6 bg-neutral-900 text-white p-8 rounded-[2.5rem] shadow-xl">
+                <div className="grid grid-cols-4 gap-6 bg-neutral-900 text-white p-8 rounded-3xl shadow-xl">
                   <div>
-                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº CNH</p>
+                    <p className="text-[8px] uppercase font-bold text-[#D4AF37] mb-1">Nº CNH</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.cnhNumber || editForm.cnh || ''} onChange={e => setEditForm({...editForm, cnhNumber: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                      <input type="text" value={editForm.cnhNumber || editForm.cnh || ''} onChange={e => setEditForm({...editForm, cnhNumber: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" />
                     ) : (
                       <p className="text-sm font-black">{client.cnhNumber || client.cnh || '---'}</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Nº Registro</p>
+                    <p className="text-[8px] uppercase font-bold text-[#D4AF37] mb-1">Nº Registro</p>
                     {isEditing ? (
-                      <input type="text" value={editForm.cnhRegisterNumber || ''} onChange={e => setEditForm({...editForm, cnhRegisterNumber: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                      <input type="text" value={editForm.cnhRegisterNumber || ''} onChange={e => setEditForm({...editForm, cnhRegisterNumber: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" />
                     ) : (
                       <p className="text-sm font-black">{client.cnhRegisterNumber || '---'}</p>
                     )}
                   </div>
                   <div>
-                    <p className="text-[8px] uppercase font-bold text-[#C5A059] mb-1">Validade</p>
+                    <p className="text-[8px] uppercase font-bold text-[#D4AF37] mb-1">Validade</p>
                     {isEditing ? (
-                      <input type="date" value={editForm.cnhExpiration || editForm.cnhValidity || ''} onChange={e => setEditForm({...editForm, cnhExpiration: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#C5A059]" />
+                      <input type="date" value={editForm.cnhExpiration || editForm.cnhValidity || ''} onChange={e => setEditForm({...editForm, cnhExpiration: e.target.value})} className="w-full bg-neutral-800 border border-neutral-700 p-2 rounded-xl text-sm font-black text-white outline-none focus:border-[#D4AF37]" />
                     ) : (
                       <p className={`text-sm font-black ${isExpired(client.cnhExpiration || client.cnhValidity) ? 'text-red-400' : 'text-white'}`}>
                         {(client.cnhExpiration || client.cnhValidity) ? new Date(client.cnhExpiration || client.cnhValidity).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : '---'}
@@ -324,19 +324,19 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
             {/* Right Col: Documents */}
             <div className="md:col-span-5 space-y-8">
               <div className="flex items-center gap-3 mb-2">
-                <Camera size={18} className="text-[#C5A059]" />
-                <h5 className="text-sm font-black uppercase tracking-widest text-neutral-900">Anexos Digitais</h5>
+                <Camera size={18} className="text-[#D4AF37]" />
+                <h5 className="text-sm font-black uppercase tracking-widest text-white">Anexos Digitais</h5>
               </div>
               <div className="grid grid-cols-2 gap-6">
                 
                 {/* CNH Photo */}
                 <div className="space-y-2">
                   <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">CNH</p>
-                  <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
+                  <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-700">
                     {client.docs?.cnh ? (
                       <>
                         {isPdfFile(client.docs.cnh) ? (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-600 gap-2">
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/10 text-red-600 gap-2">
                             <FileText size={36} />
                             <span className="text-[9px] font-black uppercase tracking-wider">Documento PDF</span>
                           </div>
@@ -345,9 +345,9 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                         )}
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                           {isPdfFile(client.docs.cnh) ? (
-                            <button onClick={() => window.open(getFileUrl(client.docs.cnh), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                            <button onClick={() => window.open(getFileUrl(client.docs.cnh), '_blank')} className="px-4 py-2 bg-[#0a0a0a] rounded-xl flex items-center gap-2 text-white shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
                           ) : (
-                            <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                            <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-12 h-12 bg-[#0a0a0a] rounded-xl flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                           )}
                         </div>
                       </>
@@ -363,11 +363,11 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                 {/* Residence Proof */}
                 <div className="space-y-2">
                   <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">Residência</p>
-                  <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
+                  <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-700">
                     {client.docs?.residence ? (
                       <>
                         {isPdfFile(client.docs.residence) ? (
-                          <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-600 gap-2">
+                          <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/10 text-red-600 gap-2">
                             <FileText size={36} />
                             <span className="text-[9px] font-black uppercase tracking-wider">Documento PDF</span>
                           </div>
@@ -376,9 +376,9 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                         )}
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                           {isPdfFile(client.docs.residence) ? (
-                            <button onClick={() => window.open(getFileUrl(client.docs.residence), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                            <button onClick={() => window.open(getFileUrl(client.docs.residence), '_blank')} className="px-4 py-2 bg-[#0a0a0a] rounded-xl flex items-center gap-2 text-white shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
                           ) : (
-                            <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                            <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-12 h-12 bg-[#0a0a0a] rounded-xl flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                           )}
                         </div>
                       </>
@@ -395,9 +395,9 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                 {(client.docs?.appPrints || []).map((print, idx) => (
                   <div key={idx} className="space-y-2">
                     <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">App {idx + 1}</p>
-                    <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-200">
+                    <div className="aspect-[4/3] bg-neutral-100 rounded-3xl overflow-hidden group relative border border-neutral-700">
                       {isPdfFile(print) ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-50 text-red-600 gap-2">
+                        <div className="w-full h-full flex flex-col items-center justify-center bg-red-500/10 text-red-600 gap-2">
                           <FileText size={36} />
                           <span className="text-[9px] font-black uppercase tracking-wider">Documento PDF</span>
                         </div>
@@ -406,9 +406,9 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                       )}
                       <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                         {isPdfFile(print) ? (
-                          <button onClick={() => window.open(getFileUrl(print), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                          <button onClick={() => window.open(getFileUrl(print), '_blank')} className="px-4 py-2 bg-[#0a0a0a] rounded-xl flex items-center gap-2 text-white shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
                         ) : (
-                          <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
+                          <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-12 h-12 bg-[#0a0a0a] rounded-xl flex items-center justify-center text-white shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                         )}
                       </div>
                     </div>
@@ -416,7 +416,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                 ))}
 
                 {(!client.docs?.appPrints || client.docs.appPrints.length === 0) && (
-                  <div className="col-span-2 p-6 bg-neutral-50 border-2 border-dashed border-neutral-100 rounded-3xl flex items-center justify-center">
+                  <div className="col-span-2 p-6 bg-black border-2 border-dashed border-neutral-800 rounded-3xl flex items-center justify-center">
                     <p className="text-[9px] font-black text-neutral-300 uppercase tracking-widest">Sem Prints de Aplicativo</p>
                   </div>
                 )}
@@ -429,23 +429,23 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
       {errorModal && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center px-6 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-neutral-950/85 backdrop-blur-sm" onClick={() => setErrorModal(null)} />
-          <div className="relative bg-white w-full max-w-sm rounded-[3rem] p-10 text-center shadow-2xl animate-in zoom-in-95 duration-300">
+          <div className="relative bg-[#0a0a0a] w-full max-w-sm rounded-3xl p-10 text-center shadow-2xl animate-in zoom-in-95 duration-300">
             <button 
               onClick={() => setErrorModal(null)}
-              className="absolute top-8 right-8 text-neutral-400 hover:text-neutral-900 transition-colors"
+              className="absolute top-8 right-8 text-neutral-400 hover:text-white transition-colors"
             >
               <X size={20} />
             </button>
-            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
+            <div className="w-20 h-20 bg-red-500/10 text-red-500 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner">
               <AlertTriangle size={40} />
             </div>
-            <h3 className="text-2xl font-black uppercase tracking-tighter text-neutral-900 mb-4">{errorModal.title}</h3>
+            <h3 className="text-2xl font-black uppercase tracking-tighter text-white mb-4">{errorModal.title}</h3>
             <p className="text-neutral-500 font-light mb-10 leading-relaxed text-sm">
               {errorModal.message}
             </p>
             <button 
               onClick={() => setErrorModal(null)}
-              className="w-full py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all active:scale-95 duration-200 shadow-lg"
+              className="w-full py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#D4AF37] transition-all active:scale-95 duration-200 shadow-lg"
             >
               Entendido
             </button>

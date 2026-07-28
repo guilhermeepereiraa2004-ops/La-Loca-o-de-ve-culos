@@ -129,10 +129,10 @@ const AdminOficina = ({
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
-          <h3 className="text-4xl font-black uppercase tracking-tighter">Oficina</h3>
+          <h3 className="text-4xl font-black uppercase tracking-tighter text-white">Oficina</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Ordens de Serviço integradas à frota e ao portal do investidor.</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="flex items-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#C5A059] transition-all shadow-xl">
+        <button onClick={() => setShowForm(true)} className="flex items-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#D4AF37] transition-all shadow-xl">
           <Plus size={16} /> Abrir O.S.
         </button>
       </div>
@@ -144,37 +144,37 @@ const AdminOficina = ({
           { label: 'Concluídas', value: serviceOrders.filter(o => o.status === 'Concluída').length, color: 'emerald' },
           { label: 'Custo Total', value: serviceOrders.reduce((a, o) => a + (o.total || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: 'gold' },
         ].map((card, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm">
+          <div key={i} className="bg-[#0a0a0a] p-6 rounded-2xl border border-neutral-800 shadow-xl shadow-black/50 hover:border-neutral-700 transition-colors">
             <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">{card.label}</p>
-            <p className={`text-2xl font-black ${card.color === 'amber' ? 'text-amber-600' : card.color === 'emerald' ? 'text-emerald-600' : card.color === 'gold' ? 'text-[#C5A059]' : 'text-neutral-900'}`}>{card.value}</p>
+            <p className={`text-2xl font-black ${card.color === 'amber' ? 'text-amber-600' : card.color === 'emerald' ? 'text-emerald-600' : card.color === 'gold' ? 'text-[#D4AF37]' : 'text-white'}`}>{card.value}</p>
           </div>
         ))}
       </div>
 
       <div className="relative max-w-xl">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
-        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por placa, modelo ou serviço..." className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-light shadow-sm" />
+        <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por placa, modelo ou serviço..." className="w-full bg-[#0a0a0a] text-white border border-neutral-800 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-light shadow-sm" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {filtered.length === 0 && (
-          <div className="col-span-3 text-center py-20 bg-neutral-50 rounded-[3rem] border border-neutral-100">
+          <div className="col-span-3 text-center py-20 bg-black rounded-3xl border border-neutral-800">
             <Wrench size={48} className="mx-auto text-neutral-200 mb-4" />
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-300">Nenhuma O.S. encontrada</p>
           </div>
         )}
         {filtered.map(os => (
-          <div key={os.id} className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm hover:shadow-xl transition-all group">
+          <div key={os.id} className="bg-[#0a0a0a] rounded-3xl border border-neutral-800 p-8 shadow-sm hover:shadow-xl transition-all group">
             <div className="flex justify-between items-start mb-6">
-              <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${os.status === 'Concluída' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+              <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${os.status === 'Concluída' ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100' : 'bg-amber-500/10 text-amber-600 border-amber-100'}`}>
                 {os.status}
               </span>
               <span className="text-[9px] font-bold text-neutral-300 uppercase">{formatDate(os.date)}</span>
             </div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Car size={22} /></div>
+              <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#D4AF37]"><Car size={22} /></div>
               <div>
-                <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{os.plate}</h4>
+                <h4 className="text-xl font-black text-white uppercase tracking-tighter">{os.plate}</h4>
                 <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{os.model}</p>
               </div>
             </div>
@@ -182,15 +182,15 @@ const AdminOficina = ({
             <div className="flex justify-between items-center pt-4 border-t border-neutral-50">
               <div>
                 <p className="text-[8px] uppercase text-neutral-400 font-black">Responsável</p>
-                <p className="text-[10px] font-black text-neutral-700">{os.responsible}</p>
+                <p className="text-[10px] font-black text-neutral-300">{os.responsible}</p>
               </div>
               <div className="text-right">
                 <p className="text-[8px] uppercase text-neutral-400 font-black">Total</p>
-                <p className="text-sm font-black text-neutral-900">{(os.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                <p className="text-sm font-black text-white">{(os.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
               </div>
             </div>
             <div className="mt-4 flex gap-3">
-              <button onClick={() => setViewingOS(os)} className="flex-1 py-3 bg-neutral-50 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2">
+              <button onClick={() => setViewingOS(os)} className="flex-1 py-3 bg-black rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2">
                 <Eye size={14} /> Ver Detalhes
               </button>
               {os.status === 'Aberta' && (
@@ -199,7 +199,7 @@ const AdminOficina = ({
                     e.stopPropagation();
                     handleEditOS(os);
                   }}
-                  className="px-4 py-3 bg-[#C5A059]/10 text-[#C5A059] hover:bg-[#C5A059] hover:text-neutral-950 rounded-xl transition-all flex items-center justify-center active:scale-95 animate-in fade-in"
+                  className="px-4 py-3 bg-[#D4AF37]/10 text-[#D4AF37] hover:bg-[#D4AF37] hover:text-neutral-950 rounded-xl transition-all flex items-center justify-center active:scale-95 animate-in fade-in"
                   title="Editar O.S."
                 >
                   <Pencil size={14} />
@@ -212,7 +212,7 @@ const AdminOficina = ({
                     onDeleteServiceOrder(os.id);
                   }
                 }} 
-                className="px-4 py-3 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center active:scale-95"
+                className="px-4 py-3 bg-red-500/10 text-red-600 hover:bg-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center active:scale-95"
                 title="Excluir O.S."
               >
                 <Trash2 size={14} />
@@ -225,16 +225,16 @@ const AdminOficina = ({
       {showForm && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} />
-          <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
-            <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
+          <div className="bg-[#0a0a0a] w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+            <div className="p-6 md:p-8 border-b border-neutral-800 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Wrench size={22} /></div>
+                <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#D4AF37]"><Wrench size={22} /></div>
                 <div>
                   <h4 className="text-xl font-black uppercase tracking-tighter">{editingOS ? 'Editar Ordem de Serviço' : 'Abrir Ordem de Serviço'}</h4>
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">Oficina integrada à frota</p>
                 </div>
               </div>
-              <button onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} className="text-neutral-300 hover:text-neutral-900 transition-colors"><X size={24} /></button>
+              <button onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} className="text-neutral-300 hover:text-white transition-colors"><X size={24} /></button>
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 md:p-8">
@@ -260,18 +260,18 @@ const AdminOficina = ({
                         }}
                         onBlur={() => setTimeout(() => setShowPlateDropdown(false), 200)}
                         placeholder="Digite a placa ou modelo..."
-                        className="w-full bg-neutral-50 p-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm disabled:opacity-50 relative z-0"
+                        className="w-full bg-black p-4 pr-10 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-bold text-sm disabled:opacity-50 relative z-0 text-white"
                       />
                       <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none z-10" />
                       
                       {showPlateDropdown && !editingOS && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                        <div className="absolute top-full left-0 right-0 mt-2 bg-[#0a0a0a] border border-neutral-800 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
                           {vehicles
                             .filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase()))
                             .map(v => (
                               <div
                                 key={v.id}
-                                className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
+                                className="p-4 hover:bg-black cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
                                 onClick={() => {
                                   setForm({ ...form, plate: v.plate });
                                   setPlateSearch('');
@@ -290,22 +290,22 @@ const AdminOficina = ({
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Modelo (Auto)</label>
-                    <input type="text" readOnly value={form.model} className="w-full bg-neutral-100 p-4 rounded-xl font-bold text-sm text-neutral-500" placeholder="Selecionado automaticamente" />
+                    <input type="text" readOnly value={form.model} className="w-full bg-neutral-100 p-4 rounded-xl font-bold text-sm text-neutral-500 text-white" placeholder="Selecionado automaticamente" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">KM na Abertura</label>
-                    <input type="number" value={form.km} onChange={e => setForm({ ...form, km: e.target.value })} placeholder="Ex: 35000" className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
+                    <input type="number" value={form.km} onChange={e => setForm({ ...form, km: e.target.value })} placeholder="Ex: 35000" className="w-full bg-black p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-bold text-sm text-white" />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data</label>
-                    <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
+                    <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full bg-black p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-bold text-sm text-white" />
                   </div>
                 </div>
 
                 {form.vehicleDescription && (
                   <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black ml-1">Observações do Veículo</label>
-                    <div className="w-full bg-[#C5A059]/10 text-neutral-700 border border-[#C5A059]/20 p-4 rounded-xl font-medium text-xs whitespace-pre-line leading-relaxed">
+                    <label className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black ml-1">Observações do Veículo</label>
+                    <div className="w-full bg-[#D4AF37]/10 text-neutral-300 border border-[#D4AF37]/20 p-4 rounded-xl font-medium text-xs whitespace-pre-line leading-relaxed">
                       {form.vehicleDescription}
                     </div>
                   </div>
@@ -313,19 +313,19 @@ const AdminOficina = ({
 
                 <div className="space-y-2">
                   <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Descrição do Serviço</label>
-                  <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Descreva o serviço a ser realizado..." rows={3} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-medium text-sm" />
+                  <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Descreva o serviço a ser realizado..." rows={3} className="w-full bg-black p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-medium text-sm text-white" />
                 </div>
 
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Peças Utilizadas</label>
-                    <button type="button" onClick={addPart} className="text-[8px] font-black uppercase text-[#C5A059] hover:underline flex items-center gap-1"><Plus size={10} /> Adicionar Peça</button>
+                    <button type="button" onClick={addPart} className="text-[8px] font-black uppercase text-[#D4AF37] hover:underline flex items-center gap-1"><Plus size={10} /> Adicionar Peça</button>
                   </div>
                   <div className="space-y-3">
                     {form.parts.map((part, i) => (
-                      <div key={i} className="grid grid-cols-12 gap-3 items-center bg-neutral-50 p-4 rounded-xl">
-                        <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-12 sm:col-span-6 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
-                        <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-4 sm:col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100 text-center" />
+                      <div key={i} className="grid grid-cols-12 gap-3 items-center bg-black p-4 rounded-xl">
+                        <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-12 sm:col-span-6 bg-[#0a0a0a] p-3 rounded-lg outline-none text-xs font-bold border border-neutral-800 text-white" />
+                        <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-4 sm:col-span-2 bg-[#0a0a0a] p-3 rounded-lg outline-none text-xs font-bold border border-neutral-800 text-center text-white" />
                         <input 
                           type="text" 
                           value={part.unitValue} 
@@ -335,7 +335,7 @@ const AdminOficina = ({
                             updatePart(i, 'unitValue', v);
                           }} 
                           placeholder="Valor unit." 
-                          className="col-span-6 sm:col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
+                          className="col-span-6 sm:col-span-3 bg-[#0a0a0a] p-3 rounded-lg outline-none text-xs font-bold border border-neutral-800 text-white" 
                         />
                         <button type="button" onClick={() => removePart(i)} className="col-span-2 sm:col-span-1 text-neutral-300 hover:text-red-500 transition-colors flex justify-center items-center h-10 sm:h-auto"><X size={14} /></button>
                       </div>
@@ -355,12 +355,12 @@ const AdminOficina = ({
                         setForm({ ...form, laborValue: v });
                       }} 
                       placeholder="0,00" 
-                      className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" 
+                      className="w-full bg-black p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-bold text-sm text-white" 
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Prestador / Oficina</label>
-                    <input type="text" value={form.provider} onChange={e => setForm({ ...form, provider: e.target.value })} placeholder="Nome da oficina ou mecânico" className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" />
+                    <input type="text" value={form.provider} onChange={e => setForm({ ...form, provider: e.target.value })} placeholder="Nome da oficina ou mecânico" className="w-full bg-black p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 font-bold text-sm text-white" />
                   </div>
                 </div>
 
@@ -372,7 +372,7 @@ const AdminOficina = ({
                   <div className="flex gap-3 flex-wrap">
                     {responsibleOptions.map(name => (
                       <button key={name} type="button" onClick={() => setForm({ ...form, responsible: name })}
-                        className={`flex-1 min-w-[140px] py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${form.responsible === name ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-neutral-50 text-neutral-400 border-neutral-100 hover:border-neutral-200'}`}>
+                        className={`flex-1 min-w-[140px] py-3 rounded-xl text-[9px] font-black uppercase tracking-widest border transition-all ${form.responsible === name ? 'bg-neutral-900 text-white border-neutral-900' : 'bg-black text-neutral-400 border-neutral-800 hover:border-neutral-700'}`}>
                         {name}
                       </button>
                     ))}
@@ -384,7 +384,7 @@ const AdminOficina = ({
                 </div>
 
                 {isRented && (
-                  <div className="p-6 bg-blue-50 border border-blue-100 rounded-[2rem] space-y-4">
+                  <div className="p-6 bg-blue-500/10 border border-blue-100 rounded-2xl space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg"><Car size={20} /></div>
                       <div>
@@ -398,7 +398,7 @@ const AdminOficina = ({
                       <select 
                         value={replacementCarPlate} 
                         onChange={e => setReplacementCarPlate(e.target.value)} 
-                        className="w-full bg-white border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm"
+                        className="w-full bg-[#0a0a0a] border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm text-white"
                       >
                         <option value="">Nenhum carro reserva</option>
                         {vehicles.filter(v => v.status === 'Disponível').map(v => (
@@ -414,14 +414,14 @@ const AdminOficina = ({
 
                 <div className="p-6 bg-neutral-900 rounded-2xl flex justify-between items-center">
                   <p className="text-[9px] font-black text-neutral-400 uppercase">Total estimado da O.S.</p>
-                  <p className="text-2xl font-black text-[#C5A059]">{totalOS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-2xl font-black text-[#D4AF37]">{totalOS.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                 </div>
               </form>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end gap-4 shrink-0">
-              <button type="button" onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all">Cancelar</button>
-              <button form="os-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl">
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-black/30 flex justify-end gap-4 shrink-0">
+              <button type="button" onClick={() => { setShowForm(false); setEditingOS(null); setForm(EMPTY_FORM); }} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-white transition-all">Cancelar</button>
+              <button form="os-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#D4AF37] transition-all shadow-xl">
                 {editingOS ? 'Salvar Alterações' : 'Abrir O.S.'}
               </button>
             </div>
@@ -432,8 +432,8 @@ const AdminOficina = ({
       {viewingOS && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setViewingOS(null)} />
-          <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
-            <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
+          <div className="bg-[#0a0a0a] w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-3xl shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500">
+            <div className="p-6 md:p-8 border-b border-neutral-800 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${viewingOS.status === 'Concluída' ? 'bg-emerald-100 text-emerald-600' : 'bg-amber-100 text-amber-600'}`}>
                   {viewingOS.status === 'Concluída' ? <CheckCircle2 size={22} /> : <Clock size={22} />}
@@ -443,28 +443,28 @@ const AdminOficina = ({
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{viewingOS.plate} — {viewingOS.model}</p>
                 </div>
               </div>
-              <button onClick={() => setViewingOS(null)} className="text-neutral-300 hover:text-neutral-900"><X size={24} /></button>
+              <button onClick={() => setViewingOS(null)} className="text-neutral-300 hover:text-white"><X size={24} /></button>
             </div>
 
             <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[['Data', formatDate(viewingOS.date)], ['KM', `${viewingOS.km} km`], ['Responsável', viewingOS.responsible], ['Prestador', viewingOS.provider || '---']].map(([label, val]) => (
-                  <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
+                  <div key={label} className="bg-black p-4 rounded-2xl">
                     <p className="text-[8px] uppercase text-neutral-400 font-black">{label}</p>
-                    <p className="text-sm font-black text-neutral-900 mt-1">{val}</p>
+                    <p className="text-sm font-black text-white mt-1">{val}</p>
                   </div>
                 ))}
               </div>
-              <div className="bg-neutral-50 p-6 rounded-2xl">
+              <div className="bg-black p-6 rounded-2xl">
                 <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">Descrição do Serviço</p>
-                <p className="text-sm text-neutral-700 leading-relaxed">{viewingOS.description}</p>
+                <p className="text-sm text-neutral-300 leading-relaxed">{viewingOS.description}</p>
               </div>
               {viewingOS.parts?.length > 0 && (
                 <div>
                   <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-3">Peças Utilizadas</p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs min-w-[500px]">
-                      <thead><tr className="border-b border-neutral-100"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
+                      <thead><tr className="border-b border-neutral-800"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
                       <tbody className="divide-y divide-neutral-50">
                         {viewingOS.parts.map((p, i) => (
                           <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseBrValue(p.unitValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td className="py-3 text-right font-black">R$ {(p.qty * parseBrValue(p.unitValue || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
@@ -474,25 +474,25 @@ const AdminOficina = ({
                   </div>
                 </div>
               )}
-              <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
+              <div className="bg-neutral-900 p-8 rounded-2xl flex justify-between items-end">
                 <div className="space-y-1">
                   <p className="text-[9px] text-neutral-500 uppercase font-black">Mão de Obra: <span className="text-white">R$ {parseBrValue(viewingOS.laborValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                   <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {(viewingOS.parts || []).reduce((a, p) => a + ((p.qty || 0) * parseBrValue(p.unitValue)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-neutral-400 uppercase font-black">Total da O.S.</p>
-                  <p className="text-3xl font-black text-[#C5A059]">{(viewingOS.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-3xl font-black text-[#D4AF37]">{(viewingOS.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0">
-              <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-200 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all flex items-center gap-2">
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-black/30 flex justify-between items-center shrink-0">
+              <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-700 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-black transition-all flex items-center gap-2">
                 <Printer size={14} /> Imprimir / PDF
               </button>
               {viewingOS.status === 'Aberta' && (
                 <div className="flex gap-3">
-                  <button onClick={() => handleEditOS(viewingOS)} className="px-8 py-4 bg-[#C5A059] text-neutral-950 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059]/80 transition-all flex items-center gap-2 shadow-xl active:scale-95">
+                  <button onClick={() => handleEditOS(viewingOS)} className="px-8 py-4 bg-[#D4AF37] text-neutral-950 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#D4AF37]/80 transition-all flex items-center gap-2 shadow-xl active:scale-95">
                     <Pencil size={14} /> Editar O.S.
                   </button>
                   <button onClick={() => handleCloseOS(viewingOS)} className="px-8 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">

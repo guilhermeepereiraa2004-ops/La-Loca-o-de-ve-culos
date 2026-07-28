@@ -148,24 +148,24 @@ const RentalDetailModal = ({
       <div className="bg-[#f8f9fa] w-full max-w-[1400px] h-full md:h-auto md:max-h-[95vh] md:rounded-[3.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500 border border-white/20">
         
         {/* Modern Glass Header */}
-        <header className="px-8 md:px-12 py-8 bg-white/80 backdrop-blur-md border-b border-neutral-100 flex flex-col md:flex-row justify-between items-center gap-6 sticky top-0 z-30">
+        <header className="px-8 md:px-12 py-8 bg-white/80 backdrop-blur-md border-b border-neutral-800 flex flex-col md:flex-row justify-between items-center gap-6 sticky top-0 z-30">
           <div className="flex items-center gap-6">
-            <div className="w-16 h-16 bg-neutral-900 rounded-3xl flex items-center justify-center text-[#C5A059] shadow-2xl shadow-[#C5A059]/20 transform -rotate-3 hover:rotate-0 transition-all duration-500">
+            <div className="w-16 h-16 bg-neutral-900 rounded-3xl flex items-center justify-center text-[#D4AF37] shadow-2xl shadow-[#D4AF37]/20 transform -rotate-3 hover:rotate-0 transition-all duration-500">
               <ClipboardList size={28} />
             </div>
             <div>
               <div className="flex items-center gap-3 mb-1.5">
-                <EditorialLabel className="text-[#C5A059] tracking-[0.2em] text-[10px]">Dossiê de Locação</EditorialLabel>
+                <EditorialLabel className="text-[#D4AF37] tracking-[0.2em] text-[10px]">Dossiê de Locação</EditorialLabel>
                 <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border transition-colors ${
                   rental.status === 'Ativo' 
-                    ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                    ? 'bg-emerald-500/10 text-emerald-600 border-emerald-100' 
                     : 'bg-neutral-900 text-white border-neutral-800'
                 }`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${rental.status === 'Ativo' ? 'bg-emerald-500 animate-pulse' : 'bg-white'}`} />
+                  <div className={`w-1.5 h-1.5 rounded-full ${rental.status === 'Ativo' ? 'bg-emerald-500 animate-pulse' : 'bg-[#0a0a0a]'}`} />
                   {rental.status || 'Pendente'}
                 </div>
               </div>
-              <h1 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">
+              <h1 className="text-3xl font-black uppercase tracking-tighter text-white">
                 {safeSplit(rental.user || rental.userName)} <span className="text-neutral-400">/ {safeSplit(rental.vehicle || rental.vehicleModel)}</span>
               </h1>
             </div>
@@ -182,11 +182,11 @@ const RentalDetailModal = ({
             )}
             <button 
               onClick={() => generateRentalContract(rental)}
-              className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-4 bg-neutral-900 text-[#C5A059] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl group"
+              className="flex-1 md:flex-none flex items-center justify-center gap-3 px-6 py-4 bg-neutral-900 text-[#D4AF37] text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#D4AF37] hover:text-white transition-all shadow-xl group"
             >
               <FileDown size={18} className="group-hover:-translate-y-0.5 transition-transform" /> {rental.docs?.signedContract ? 'Modelo .DOCX' : 'Contrato .DOCX'}
             </button>
-            <button onClick={onClose} className="w-14 h-14 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100">
+            <button onClick={onClose} className="w-14 h-14 bg-black flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-white border border-neutral-800">
               <X size={24} />
             </button>
           </div>
@@ -195,42 +195,42 @@ const RentalDetailModal = ({
         <div className="flex-1 overflow-y-auto p-6 md:p-12 space-y-12">
           
           {/* Quick Stats Bar - PROGRESS TRACKER */}
-          <section className="bg-white p-8 md:p-10 rounded-[3rem] border border-neutral-100 shadow-sm relative overflow-hidden">
+          <section className="bg-[#0a0a0a] p-8 md:p-10 rounded-3xl border border-neutral-800 shadow-sm relative overflow-hidden">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
-              <div className="space-y-1 border-l-2 border-[#C5A059] pl-6">
+              <div className="space-y-1 border-l-2 border-[#D4AF37] pl-6">
                 <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">Início</p>
-                <p className="text-lg font-black text-neutral-900 tracking-tight">{dates.start}</p>
+                <p className="text-lg font-black text-white tracking-tight">{dates.start}</p>
                 <p className="text-[9px] font-bold text-neutral-400 uppercase">{dates.weekday}</p>
               </div>
-              <div className="space-y-1 border-l-2 border-neutral-100 pl-6">
+              <div className="space-y-1 border-l-2 border-neutral-800 pl-6">
                 <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">
                   {dates.isClosed ? 'Término' : 'Término Previsto'}
                 </p>
-                <p className="text-lg font-black text-neutral-900 tracking-tight">{dates.end}</p>
+                <p className="text-lg font-black text-white tracking-tight">{dates.end}</p>
                 <p className={`text-[9px] font-bold uppercase ${dates.isClosed ? 'text-neutral-500' : 'text-emerald-500'}`}>
                   {dates.isClosed ? 'Contrato Encerrado' : `Faltam ${dates.remaining} dias`}
                 </p>
               </div>
-              <div className="space-y-1 border-l-2 border-neutral-100 pl-6">
+              <div className="space-y-1 border-l-2 border-neutral-800 pl-6">
                 <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">Duração</p>
-                <p className="text-lg font-black text-neutral-900 tracking-tight">{rental.durationWeeks || rental.period || 0} Semanas</p>
+                <p className="text-lg font-black text-white tracking-tight">{rental.durationWeeks || rental.period || 0} Semanas</p>
                 <p className="text-[9px] font-bold text-neutral-400 uppercase">{dates.totalDays} dias totais</p>
               </div>
-              <div className="space-y-1 border-l-2 border-neutral-100 pl-6">
+              <div className="space-y-1 border-l-2 border-neutral-800 pl-6">
                 <p className="text-[9px] uppercase font-black text-neutral-400 tracking-[0.2em]">Pagamento</p>
-                <p className="text-lg font-black text-[#C5A059] tracking-tight">{formatCurrency(rental.value)}</p>
+                <p className="text-lg font-black text-[#D4AF37] tracking-tight">{formatCurrency(rental.value)}</p>
                 <p className="text-[9px] font-bold text-neutral-400 uppercase">Ciclo Semanal</p>
               </div>
             </div>
 
             {/* Progress Visualizer */}
             <div className="mt-10">
-              <div className="h-3 w-full bg-neutral-50 rounded-full overflow-hidden flex p-1 border border-neutral-100">
+              <div className="h-3 w-full bg-black rounded-full overflow-hidden flex p-1 border border-neutral-800">
                 <div 
                   className={`h-full rounded-full shadow-lg transition-all duration-1000 ${
                     dates.isClosed 
                       ? 'bg-neutral-900' 
-                      : 'bg-gradient-to-r from-neutral-900 to-[#C5A059]'
+                      : 'bg-gradient-to-r from-neutral-900 to-[#D4AF37]'
                   }`}
                   style={{ width: `${dates.progress}%` }}
                 />
@@ -250,91 +250,91 @@ const RentalDetailModal = ({
               {/* TWO COLUMN BENTO: CONDUCTOR & VEHICLE */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Conductor Bento */}
-                <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm space-y-8 flex flex-col justify-between">
+                <div className="bg-[#0a0a0a] p-8 rounded-3xl border border-neutral-800 shadow-sm space-y-8 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-8">
                       <div className="w-10 h-10 bg-neutral-900 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-neutral-900/10">
                         <User size={20} />
                       </div>
-                      <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900">Perfil do Condutor</h5>
+                      <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Perfil do Condutor</h5>
                     </div>
                     <div className="space-y-6">
                       <div>
                         <p className="text-[8px] uppercase font-black text-neutral-400 mb-1">Nome Completo</p>
-                        <h4 className="text-xl font-black text-neutral-900 tracking-tighter leading-tight">{rental.user || rental.userName || '---'}</h4>
+                        <h4 className="text-xl font-black text-white tracking-tighter leading-tight">{rental.user || rental.userName || '---'}</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-neutral-50 p-4 rounded-2xl">
+                        <div className="bg-black p-4 rounded-2xl">
                           <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">WhatsApp</p>
-                          <div className="flex items-center gap-2 text-neutral-900 font-bold text-[11px]">
-                            <Phone size={12} className="text-[#C5A059]" /> {rental.clientPhone || rental.phone || '---'}
+                          <div className="flex items-center gap-2 text-white font-bold text-[11px]">
+                            <Phone size={12} className="text-[#D4AF37]" /> {rental.clientPhone || rental.phone || '---'}
                           </div>
                         </div>
-                        <div className="bg-neutral-50 p-4 rounded-2xl">
+                        <div className="bg-black p-4 rounded-2xl">
                           <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">E-mail</p>
-                          <div className="flex items-center gap-2 text-neutral-900 font-bold text-[11px] truncate">
-                            <Mail size={12} className="text-[#C5A059]" /> {rental.email || '---'}
+                          <div className="flex items-center gap-2 text-white font-bold text-[11px] truncate">
+                            <Mail size={12} className="text-[#D4AF37]" /> {rental.email || '---'}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="pt-6 border-t border-neutral-100 grid grid-cols-2 gap-y-6 gap-x-4">
+                  <div className="pt-6 border-t border-neutral-800 grid grid-cols-2 gap-y-6 gap-x-4">
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">CPF</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.cpf || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.cpf || '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">RG</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.rg || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.rg || '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Estado Civil</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.estadoCivil || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.estadoCivil || '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Nacionalidade</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.nacionalidade || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.nacionalidade || '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Número CNH</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.cnhNumber || rental.cnh || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.cnhNumber || rental.cnh || '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Registro CNH</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.cnhRegisterNumber || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.cnhRegisterNumber || '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Validade CNH</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.cnhValidity ? new Date(rental.cnhValidity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.cnhValidity ? new Date(rental.cnhValidity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
                     </div>
                     <div>
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">CEP</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.cep || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.cep || '---'}</p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Cidade / UF</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.cidadeUf || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.cidadeUf || '---'}</p>
                     </div>
                     <div className="col-span-2">
                       <p className="text-[7px] uppercase font-black text-neutral-400 mb-1">Endereço Residencial</p>
-                      <p className="text-sm font-black text-neutral-900">{rental.address || '---'}</p>
+                      <p className="text-sm font-black text-white">{rental.address || '---'}</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Vehicle Bento */}
-                <div className="bg-neutral-900 p-8 rounded-[3rem] shadow-2xl relative overflow-hidden group">
+                <div className="bg-neutral-900 p-8 rounded-3xl shadow-2xl relative overflow-hidden group">
                   <div className="absolute inset-0 bg-gradient-to-br from-neutral-800 to-neutral-950" />
                   <div className="relative z-10 flex flex-col justify-between h-full">
                     <div>
                       <div className="flex items-center gap-3 mb-8">
-                        <div className="w-10 h-10 bg-[#C5A059] text-neutral-900 rounded-2xl flex items-center justify-center shadow-lg shadow-[#C5A059]/20">
+                        <div className="w-10 h-10 bg-[#D4AF37] text-white rounded-2xl flex items-center justify-center shadow-lg shadow-[#D4AF37]/20">
                           <Car size={20} />
                         </div>
-                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C5A059]">Veículo Vinculado</h5>
+                        <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#D4AF37]">Veículo Vinculado</h5>
                       </div>
-                      <div className="aspect-video rounded-[2rem] overflow-hidden mb-6 border border-white/5 bg-neutral-800">
+                      <div className="aspect-video rounded-2xl overflow-hidden mb-6 border border-white/5 bg-neutral-800">
                         <img 
                           src={getPublicUrl(rental.image) || '/logo-new.png'} 
                           className="w-full h-full object-cover group-hover:scale-110 transition-all duration-700" 
@@ -347,7 +347,7 @@ const RentalDetailModal = ({
                     </div>
                     <div className="flex justify-between items-center bg-white/5 p-4 rounded-2xl border border-white/5">
                       <div className="flex items-center gap-2">
-                        <Hash size={12} className="text-[#C5A059]" />
+                        <Hash size={12} className="text-[#D4AF37]" />
                         <span className="text-[11px] font-black text-white tracking-widest uppercase">{rental.plate || rental.vehiclePlate || '---'}</span>
                       </div>
                       <span className="text-[8px] font-black uppercase tracking-[0.2em] text-emerald-500 flex items-center gap-1.5">
@@ -359,37 +359,37 @@ const RentalDetailModal = ({
               </div>
 
               {/* Financial Statement Section */}
-              <section className="bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm space-y-10">
+              <section className="bg-[#0a0a0a] p-10 rounded-3xl border border-neutral-800 shadow-sm space-y-10">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-amber-50 text-[#C5A059] rounded-2xl flex items-center justify-center">
+                    <div className="w-10 h-10 bg-amber-500/10 text-[#D4AF37] rounded-2xl flex items-center justify-center">
                       <Receipt size={20} />
                     </div>
-                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900">Extrato Financeiro do Contrato</h5>
+                    <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Extrato Financeiro do Contrato</h5>
                   </div>
                   {onPayCaucao && (
-                    <button onClick={onPayCaucao} className="text-[10px] font-black uppercase tracking-widest text-[#C5A059] hover:text-neutral-900 transition-colors flex items-center gap-2 group">
+                    <button onClick={onPayCaucao} className="text-[10px] font-black uppercase tracking-widest text-[#D4AF37] hover:text-white transition-colors flex items-center gap-2 group">
                       Gerar Cobrança <ArrowUpRight size={14} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
                     </button>
                   )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                  <div className="p-6 bg-[#f8f9fa] rounded-3xl border border-neutral-100">
+                  <div className="p-6 bg-[#f8f9fa] rounded-3xl border border-neutral-800">
                     <p className="text-[8px] uppercase font-black text-neutral-400 mb-2">Aluguel Semanal</p>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-black text-neutral-900">{formatCurrency(rental.value)}</span>
+                      <span className="text-lg font-black text-white">{formatCurrency(rental.value)}</span>
                       <span className="text-[8px] font-black text-neutral-400 uppercase">/ sem</span>
                     </div>
                   </div>
-                  <div className="p-6 bg-[#f8f9fa] rounded-3xl border border-neutral-100">
+                  <div className="p-6 bg-[#f8f9fa] rounded-3xl border border-neutral-800">
                     <p className="text-[8px] uppercase font-black text-neutral-400 mb-2">Taxa de Pneus</p>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-lg font-black text-neutral-900">{formatCurrency(rental.tireTax || 25)}</span>
+                      <span className="text-lg font-black text-white">{formatCurrency(rental.tireTax || 25)}</span>
                       <span className="text-[8px] font-black text-neutral-400 uppercase">/ sem</span>
                     </div>
                   </div>
-                  <div className="p-6 bg-emerald-50 rounded-3xl border border-emerald-100">
+                  <div className="p-6 bg-emerald-500/10 rounded-3xl border border-emerald-100">
                     <p className="text-[8px] uppercase font-black text-emerald-600 mb-2">Caução Integral</p>
                     <div className="flex items-baseline gap-1 text-emerald-900">
                       <span className="text-lg font-black">{formatCurrency(rental.depositTotal)}</span>
@@ -402,7 +402,7 @@ const RentalDetailModal = ({
                 <div className="space-y-4 pt-6 border-t border-neutral-50">
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="text-neutral-400 font-bold uppercase tracking-widest">Valor Pago no Ato</span>
-                    <span className="font-black text-neutral-900">{formatCurrency(rental.depositPaid)}</span>
+                    <span className="font-black text-white">{formatCurrency(rental.depositPaid)}</span>
                   </div>
                   <div className="flex justify-between items-center text-[10px]">
                     <span className="text-neutral-400 font-bold uppercase tracking-widest">Saldo de Caução Pendente</span>
@@ -414,8 +414,8 @@ const RentalDetailModal = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-[11px] pt-4 border-t border-neutral-50">
-                    <span className="text-neutral-900 font-black uppercase tracking-[0.2em]">Total Bruto do Contrato</span>
-                    <span className="text-2xl font-black text-[#C5A059]">
+                    <span className="text-white font-black uppercase tracking-[0.2em]">Total Bruto do Contrato</span>
+                    <span className="text-2xl font-black text-[#D4AF37]">
                       {formatCurrency(
                         (typeof rental.value === 'number' ? rental.value : parseCurrency(rental.value || 0)) * 
                         parseInt(rental.durationWeeks || rental.period || 1)
@@ -428,34 +428,34 @@ const RentalDetailModal = ({
               {/* Inspections History Section */}
               <section className="space-y-8">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
+                  <div className="w-10 h-10 bg-blue-500/10 text-blue-600 rounded-2xl flex items-center justify-center">
                     <ShieldCheck size={20} />
                   </div>
-                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-900">Certificados de Vistoria</h5>
+                  <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Certificados de Vistoria</h5>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {rentalInspections.length > 0 ? (
                     rentalInspections.map((ins) => (
-                      <div key={ins.id} className="bg-white p-8 rounded-[2.5rem] border border-neutral-100 shadow-sm space-y-6 hover:border-[#C5A059]/30 transition-all group">
+                      <div key={ins.id} className="bg-[#0a0a0a] p-8 rounded-3xl border border-neutral-800 shadow-sm space-y-6 hover:border-[#D4AF37]/30 transition-all group">
                         <div className="flex justify-between items-start">
                           <div className="flex items-center gap-3">
                             <div className={`px-4 py-2 rounded-xl text-[8px] font-black uppercase tracking-widest ${
                               ins.type === 'Entrega' ? 'bg-blue-900 text-white' : 
-                              ins.type === 'Devolução' ? 'bg-[#C5A059] text-white' : 
+                              ins.type === 'Devolução' ? 'bg-[#D4AF37] text-white' : 
                               'bg-neutral-100 text-neutral-500'
                             }`}>
                               {ins.type}
                             </div>
                             <div>
-                              <p className="text-xs font-black text-neutral-900">{new Date(ins.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
+                              <p className="text-xs font-black text-white">{new Date(ins.date + 'T12:00:00').toLocaleDateString('pt-BR')}</p>
                               <p className="text-[8px] font-bold text-neutral-400 uppercase tracking-widest">{(ins.km || 0).toLocaleString()} KM rodados</p>
                             </div>
                           </div>
                           <button onClick={() => {
                             const firstPhoto = Object.values(ins.photos || {})[0];
                             if (firstPhoto) setSelectedImage(getFileUrl(firstPhoto));
-                          }} className="w-10 h-10 bg-neutral-50 rounded-xl flex items-center justify-center text-neutral-400 hover:bg-neutral-900 hover:text-white transition-all">
+                          }} className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-neutral-400 hover:bg-neutral-900 hover:text-white transition-all">
                             <ImageIcon size={18} />
                           </button>
                         </div>
@@ -464,29 +464,29 @@ const RentalDetailModal = ({
                           {Object.entries(ins.photos || {})
                             .filter(([key]) => key !== 'additional')
                             .map(([key, photo], i) => (
-                              <div key={i} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-neutral-100 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedImage(getFileUrl(photo))}>
+                              <div key={i} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-neutral-800 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setSelectedImage(getFileUrl(photo))}>
                                 <img src={getFileUrl(photo)} className="w-full h-full object-cover" alt="Vistoria" />
                               </div>
                             ))}
                           {ins.photos?.additional && ins.photos.additional.map((photo, i) => (
-                            <div key={`add-${i}`} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-dashed border-[#C5A059]/40 cursor-pointer hover:opacity-80 transition-opacity relative" onClick={() => setSelectedImage(getFileUrl(photo))}>
+                            <div key={`add-${i}`} className="w-20 h-20 rounded-2xl overflow-hidden shrink-0 border-2 border-dashed border-[#D4AF37]/40 cursor-pointer hover:opacity-80 transition-opacity relative" onClick={() => setSelectedImage(getFileUrl(photo))}>
                               <img src={getFileUrl(photo)} className="w-full h-full object-cover" alt="Vistoria Adicional" />
-                              <span className="absolute bottom-1 right-1 bg-[#C5A059] text-[8px] font-black text-neutral-900 px-1 rounded shadow">+</span>
+                              <span className="absolute bottom-1 right-1 bg-[#D4AF37] text-[8px] font-black text-white px-1 rounded shadow">+</span>
                             </div>
                           ))}
                         </div>
-                        <div className="bg-neutral-50 p-4 rounded-2xl">
+                        <div className="bg-black p-4 rounded-2xl">
                           <p className="text-[9px] text-neutral-500 leading-relaxed font-medium italic">"{ins.observations || 'Nenhuma observação técnica registrada.'}"</p>
                         </div>
                       </div>
                     ))
                   ) : (
-                    <div className="col-span-2 p-16 bg-white border-2 border-dashed border-neutral-100 rounded-[3rem] text-center space-y-4">
-                      <div className="w-16 h-16 bg-neutral-50 rounded-full flex items-center justify-center mx-auto text-neutral-200">
+                    <div className="col-span-2 p-16 bg-[#0a0a0a] border-2 border-dashed border-neutral-800 rounded-3xl text-center space-y-4">
+                      <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto text-neutral-200">
                         <ClipboardList size={32} />
                       </div>
                       <div>
-                        <p className="text-[10px] font-black text-neutral-900 uppercase tracking-widest">Sem vistorias vinculadas</p>
+                        <p className="text-[10px] font-black text-white uppercase tracking-widest">Sem vistorias vinculadas</p>
                         <p className="text-[9px] text-neutral-400 font-bold uppercase mt-1">Realize a primeira vistoria de entrega</p>
                       </div>
                     </div>
@@ -499,22 +499,22 @@ const RentalDetailModal = ({
             <div className="lg:col-span-4 space-y-8">
               
               {/* STATUS & ACTIONS CARD */}
-              <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm space-y-8">
+              <div className="bg-[#0a0a0a] p-8 rounded-3xl border border-neutral-800 shadow-sm space-y-8">
                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Ações do Administrador</h5>
                 
                 <div className="space-y-4">
                   {/* Upload Label */}
-                  <label className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all cursor-pointer group border-2 border-dashed ${
+                  <label className={`w-full flex items-center gap-4 p-5 rounded-2xl transition-all cursor-pointer group border-2 border-dashed ${
                     isUploading
-                      ? 'bg-amber-50/50 border-amber-300 text-amber-700 animate-pulse pointer-events-none'
+                      ? 'bg-amber-500/10/50 border-amber-300 text-amber-700 animate-pulse pointer-events-none'
                       : rental.docs?.signedContract 
-                        ? 'bg-emerald-50/50 border-emerald-300 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-400' 
-                        : 'bg-neutral-50 border-neutral-200 text-neutral-400 hover:border-[#C5A059] hover:bg-white'
+                        ? 'bg-emerald-500/10/50 border-emerald-300 text-emerald-700 hover:bg-emerald-500/10 hover:border-emerald-400' 
+                        : 'bg-black border-neutral-700 text-neutral-400 hover:border-[#D4AF37] hover:bg-[#0a0a0a]'
                   }`}>
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg ${
                       isUploading
                         ? 'bg-amber-500 text-white'
-                        : rental.docs?.signedContract ? 'bg-emerald-500 text-white' : 'bg-white text-neutral-400'
+                        : rental.docs?.signedContract ? 'bg-emerald-500 text-white' : 'bg-[#0a0a0a] text-neutral-400'
                     }`}>
                       {isUploading ? (
                         <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -540,7 +540,7 @@ const RentalDetailModal = ({
                     </div>
                     <input 
                       type="file" 
-                      className="hidden" 
+                      className="hidden text-white" 
                       accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
                       disabled={isUploading}
                       onChange={async (e) => {
@@ -567,7 +567,7 @@ const RentalDetailModal = ({
                   {onGoToVistorias && !inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Entrega') && (
                     <button 
                       onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })}
-                      className="w-full flex items-center gap-4 p-5 bg-[#C5A059] text-white rounded-[2rem] hover:bg-neutral-950 transition-all shadow-xl shadow-[#C5A059]/20"
+                      className="w-full flex items-center gap-4 p-5 bg-[#D4AF37] text-white rounded-2xl hover:bg-neutral-950 transition-all shadow-xl shadow-[#D4AF37]/20"
                     >
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
                         <ShieldCheck size={20} />
@@ -582,10 +582,10 @@ const RentalDetailModal = ({
                   {rental.status === 'Ativo' && onRenewContract && (
                     <button 
                       onClick={() => onRenewContract(rental)}
-                      className="w-full flex items-center gap-4 p-5 bg-neutral-900 text-[#C5A059] rounded-[2rem] hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-neutral-900/10"
+                      className="w-full flex items-center gap-4 p-5 bg-neutral-900 text-[#D4AF37] rounded-2xl hover:bg-[#D4AF37] hover:text-white transition-all shadow-xl shadow-neutral-900/10"
                     >
                       <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
-                        <RefreshCw size={20} className="text-[#C5A059]" />
+                        <RefreshCw size={20} className="text-[#D4AF37]" />
                       </div>
                       <div className="text-left">
                         <span className="text-[10px] font-black uppercase tracking-widest block">Renovar Contrato</span>
@@ -598,14 +598,14 @@ const RentalDetailModal = ({
 
               {/* Distrato e Encerramento Section (Conditional) */}
               {(rental.status === 'Encerrado' || rental.docs?.terminationTerm) && (
-                <div className="bg-neutral-900 p-10 rounded-[3rem] shadow-2xl relative overflow-hidden group border border-[#C5A059]/20">
-                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#C5A059]/10 rounded-full blur-3xl" />
+                <div className="bg-neutral-900 p-10 rounded-3xl shadow-2xl relative overflow-hidden group border border-[#D4AF37]/20">
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-[#D4AF37]/10 rounded-full blur-3xl" />
                   <div className="relative z-10 space-y-8">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-900 shadow-xl shadow-[#C5A059]/20">
+                      <div className="w-10 h-10 bg-[#D4AF37] rounded-2xl flex items-center justify-center text-white shadow-xl shadow-[#D4AF37]/20">
                         <Gavel size={20} />
                       </div>
-                      <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C5A059]">Contrato Encerrado</h5>
+                      <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-[#D4AF37]">Contrato Encerrado</h5>
                     </div>
 
                     {rental.docs?.closureSummary && (
@@ -631,7 +631,7 @@ const RentalDetailModal = ({
 
                         <div className="flex gap-2">
                           <button onClick={() => rental.docs?.terminationTerm && handlePreview(getFileUrl(rental.docs.terminationTerm))} className="flex-1 py-4 bg-white/10 text-white text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-white/20 transition-all border border-white/10">Visualizar Termo</button>
-                          <a href={rental.docs?.terminationTerm ? getFileUrl(rental.docs.terminationTerm) : '#'} target="_blank" rel="noopener noreferrer" download className="flex-1 py-4 bg-[#C5A059] text-white text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-white hover:text-neutral-900 transition-all text-center shadow-xl">Baixar PDF</a>
+                          <a href={rental.docs?.terminationTerm ? getFileUrl(rental.docs.terminationTerm) : '#'} target="_blank" rel="noopener noreferrer" download className="flex-1 py-4 bg-[#D4AF37] text-white text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#0a0a0a] hover:text-white transition-all text-center shadow-xl">Baixar PDF</a>
                         </div>
                       </div>
                     )}
@@ -640,7 +640,7 @@ const RentalDetailModal = ({
               )}
 
               {/* Documents Card */}
-              <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm space-y-8">
+              <div className="bg-[#0a0a0a] p-8 rounded-3xl border border-neutral-800 shadow-sm space-y-8">
                 <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Anexos e Fotos</h5>
                 <div className="grid grid-cols-3 gap-3">
                   {[
@@ -648,11 +648,11 @@ const RentalDetailModal = ({
                     { label: 'Residência', file: rental.docs?.residence, icon: <MapPin size={14} /> },
                     { label: 'Contrato', file: rental.docs?.signedContract, icon: <FileText size={14} /> }
                   ].map((doc, i) => (
-                    <div key={i} className={`p-4 rounded-2xl border-2 border-neutral-50 flex flex-col items-center gap-3 transition-all ${doc.file ? 'bg-neutral-50 hover:border-[#C5A059]/30 cursor-pointer' : 'opacity-40 pointer-events-none'}`} onClick={() => doc.file && handlePreview(getFileUrl(doc.file))}>
-                      <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center text-[#C5A059] shadow-sm">
+                    <div key={i} className={`p-4 rounded-2xl border-2 border-neutral-50 flex flex-col items-center gap-3 transition-all ${doc.file ? 'bg-black hover:border-[#D4AF37]/30 cursor-pointer' : 'opacity-40 pointer-events-none'}`} onClick={() => doc.file && handlePreview(getFileUrl(doc.file))}>
+                      <div className="w-8 h-8 rounded-lg bg-[#0a0a0a] flex items-center justify-center text-[#D4AF37] shadow-sm">
                         {doc.icon}
                       </div>
-                      <span className="text-[8px] font-black uppercase text-neutral-900 tracking-widest">{doc.label}</span>
+                      <span className="text-[8px] font-black uppercase text-white tracking-widest">{doc.label}</span>
                     </div>
                   ))}
                 </div>
@@ -663,9 +663,9 @@ const RentalDetailModal = ({
                     <p className="text-[8px] font-black uppercase tracking-widest text-neutral-400">Prints do Aplicativo</p>
                     <div className="flex gap-2 overflow-x-auto pb-2">
                       {(rental.docs.appPrints || rental.docs.app_prints).map((print, i) => (
-                        <div key={i} className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-neutral-100 cursor-pointer hover:opacity-80 flex items-center justify-center bg-neutral-50" onClick={() => handlePreview(getFileUrl(print))}>
+                        <div key={i} className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-neutral-800 cursor-pointer hover:opacity-80 flex items-center justify-center bg-black" onClick={() => handlePreview(getFileUrl(print))}>
                           {isPdfFile(print) ? (
-                            <div className="w-full h-full flex items-center justify-center bg-red-50 text-red-600">
+                            <div className="w-full h-full flex items-center justify-center bg-red-500/10 text-red-600">
                               <FileText size={20} />
                             </div>
                           ) : (
