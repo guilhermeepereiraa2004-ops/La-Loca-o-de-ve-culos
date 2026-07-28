@@ -36,7 +36,7 @@ const Navbar = ({ onSetView }) => {
         {/* Logo */}
         <div className="cursor-pointer flex items-center gap-2" onClick={() => { onSetView('home'); window.scrollTo(0, 0); }}>
           <span className={`text-xl md:text-2xl font-black uppercase tracking-[-0.05em] transition-colors duration-700 ${scrolled ? 'text-neutral-900' : 'text-white'}`}>L.A</span>
-          <span className={`text-xl md:text-2xl font-black uppercase tracking-[-0.05em] transition-colors duration-700 text-[#C5A059]`}>Locação</span>
+          <span className={`text-xl md:text-2xl font-black uppercase tracking-[-0.05em] transition-colors duration-700 text-[#D4AF37]`}>Locação</span>
         </div>
 
         {/* Desktop Menu */}
@@ -50,7 +50,7 @@ const Navbar = ({ onSetView }) => {
               }`}
             >
               {item}
-              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#C5A059] group-hover:w-full transition-all duration-500" />
+              <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-[#D4AF37] group-hover:w-full transition-all duration-500" />
             </button>
           ))}
         </div>
@@ -69,7 +69,7 @@ const Navbar = ({ onSetView }) => {
             onClick={() => onSetView('investor-login')}
             className={`px-6 py-2.5 text-[10px] uppercase tracking-[0.25em] font-bold rounded-full transition-all duration-500 ${
               scrolled
-                ? 'bg-neutral-900 text-white hover:bg-[#C5A059]'
+                ? 'bg-neutral-900 text-white hover:bg-[#D4AF37]'
                 : 'bg-white/10 text-white border border-white/20 hover:bg-white/20 backdrop-blur-md'
             }`}
           >
@@ -83,8 +83,8 @@ const Navbar = ({ onSetView }) => {
             onClick={() => onSetView('investor-login')}
             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95 border ${
               scrolled
-                ? 'bg-neutral-50 border-neutral-200/60 text-[#C5A059] shadow-sm'
-                : 'bg-white/10 border-white/15 text-[#C5A059] backdrop-blur-md'
+                ? 'bg-neutral-50 border-neutral-200/60 text-[#D4AF37] shadow-sm'
+                : 'bg-white/10 border-white/15 text-[#D4AF37] backdrop-blur-md'
             }`}
             title="Portal Investidor"
           >
@@ -120,7 +120,7 @@ const Navbar = ({ onSetView }) => {
             <button
               key={item}
               onClick={() => handleNavClick(item)}
-              className="text-left text-sm uppercase tracking-[0.2em] font-bold text-neutral-800 py-2 hover:text-[#C5A059] transition-colors"
+              className="text-left text-sm uppercase tracking-[0.2em] font-bold text-neutral-800 py-2 hover:text-[#D4AF37] transition-colors"
             >
               {item}
             </button>

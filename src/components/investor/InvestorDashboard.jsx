@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Menu, TrendingUp, Car, Wrench, Wallet, Calendar, 
-  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye 
+  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart
 } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
 import { parseCurrency } from '../../utils/currencyUtils';
@@ -169,7 +170,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       plate: t.vehiclePlate,
       type: t.desc,
       date: t.date,
-      cost: `R$ ${t.val.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      cost: `R$ -${Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
       status: t.status === 'pago' || t.status === 'Concluído' ? 'Concluído' : 'Em Aberto',
       icon: <Wrench size={16} />
     }));
@@ -357,15 +358,15 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     switch (status?.toLowerCase()) {
       case 'alugado': 
       case 'alugado (reserva)':
-        return <span className="px-3 py-1 bg-amber-50 text-amber-600 text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span>;
+        return <span className="px-3 py-1 bg-amber-950/50 border border-amber-900 text-amber-400 text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span>;
       case 'manutenção': 
-        return <span className="px-3 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-full">Manutenção</span>;
+        return <span className="px-3 py-1 bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400 text-[9px] font-black uppercase tracking-widest rounded-full">Manutenção</span>;
       case 'indisponível': 
-        return <span className="px-3 py-1 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest rounded-full">Indisponível</span>;
+        return <span className="px-3 py-1 bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400 text-[9px] font-black uppercase tracking-widest rounded-full">Indisponível</span>;
       case 'disponível': 
-        return <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">Disponível</span>;
+        return <span className="px-3 py-1 bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm text-[9px] font-black uppercase tracking-widest rounded-full">Disponível</span>;
       default: 
-        return status ? <span className="px-3 py-1 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span> : null;
+        return status ? <span className="px-3 py-1 bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span> : null;
     }
   };
 
@@ -386,22 +387,22 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   }, []);
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex font-sans relative">
+    <div className="min-h-screen bg-[#0a0a0a] flex font-sans relative">
       {/* Mobile Toggle */}
       <button
         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-        className="fixed bottom-6 right-6 z-[60] xl:hidden bg-neutral-950 text-[#C5A059] p-4 rounded-full shadow-2xl border border-neutral-800"
+        className="fixed bottom-6 right-6 z-[60] xl:hidden bg-neutral-950 text-[#D4AF37] p-4 rounded-full shadow-2xl border border-neutral-800"
       >
         {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
       </button>
 
       {/* Sidebar */}
-      <aside className={`bg-neutral-950 text-white flex flex-col p-8 fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
+      <aside className={`bg-black border-r border-neutral-900 text-white flex flex-col p-8 fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
         <div className={`mb-16 transition-all duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
           <div className="flex items-center gap-2">
             <img src="/logo.png" className="h-6 w-auto object-contain" alt="L.A Locação de Veículos" />
             <div className="flex flex-col">
-              <span className="text-xs font-black uppercase tracking-[0.2em] text-[#C5A059] leading-tight">L.A VEÍCULOS</span>
+              <span className="text-xs font-black uppercase tracking-[0.2em] text-[#D4AF37] leading-tight">L.A VEÍCULOS</span>
               <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-400">Portal Investidor</span>
             </div>
           </div>
@@ -409,7 +410,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
         <nav className="flex-1 space-y-4">
           {[
-            { id: 'dashboard', label: 'Dashboard', icon: TrendingUp },
+            { id: 'dashboard', label: 'Dashboard', icon: PieChart },
+            { id: 'rendimentos', label: 'Rendimentos', icon: TrendingUp },
             { id: 'minha-frota', label: 'Meus Veículos', icon: Car },
             { id: 'manutencao', label: 'Manutenções', icon: Wrench },
             { id: 'pagamentos', label: 'Dividendos', icon: Wallet },
@@ -420,10 +422,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 setActiveTab(item.id);
                 if (window.innerWidth < 1280) setIsSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 group ${activeTab === item.id ? 'bg-[#C5A059] text-neutral-950 font-black' : 'text-neutral-500 hover:text-white hover:bg-neutral-900'
+              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 group ${activeTab === item.id ? 'bg-[#D4AF37] text-neutral-950 font-black' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'
                 }`}
             >
-              <item.icon size={20} className={activeTab === item.id ? 'text-neutral-950' : 'group-hover:text-[#C5A059]'} />
+              <item.icon size={20} className={activeTab === item.id ? 'text-neutral-950' : 'group-hover:text-[#D4AF37]'} />
               <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>{item.label}</span>
             </button>
           ))}
@@ -432,7 +434,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         <div className="border-t border-neutral-900 pt-4 mt-auto space-y-2">
           <button
             onClick={onGoHome}
-            className="flex items-center gap-4 p-4 text-neutral-500 hover:text-[#C5A059] transition-colors w-full"
+            className="flex items-center gap-4 p-4 text-neutral-500 hover:text-[#D4AF37] transition-colors w-full"
           >
             <Eye size={20} />
             <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Página Inicial</span>
@@ -458,213 +460,284 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       {/* Main Content */}
       <main className={`flex-1 transition-all duration-500 ${isSidebarOpen ? 'xl:ml-72' : 'xl:ml-20'} p-6 md:p-12 overflow-x-hidden`}>
         <div className="max-w-[1600px] mx-auto">
-          <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
-            <div>
-              <EditorialLabel className="text-[#C5A059] mb-2">Bem-vindo de volta,</EditorialLabel>
-              <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-neutral-900">{investor?.name || 'Investidor'}</h2>
-            </div>
-            <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
-              <div className="text-right">
-                <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Total de Ativos</p>
-                <p className="text-xl md:text-2xl font-black text-neutral-900">{myVehicles.length} Veículos</p>
-              </div>
-              <div className="w-12 h-12 md:w-16 md:h-16 bg-white border border-neutral-100 rounded-2xl md:rounded-3xl flex items-center justify-center shadow-sm">
-                <Car size={24} className="text-[#C5A059]" />
-              </div>
-            </div>
-          </header>
-
           {activeTab === 'dashboard' && (
             <div className="space-y-12">
-              {/* Payment Schedule Banner */}
-              <div className="bg-neutral-900 rounded-[2.5rem] p-10 mb-10 relative overflow-hidden group shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#C5A059]/10 to-transparent" />
-                <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform duration-700" />
-
-                <div className="flex flex-col md:flex-row items-center justify-between gap-8 relative z-10">
-                  <div className="flex items-center gap-8">
-                    <div className="w-20 h-20 bg-[#C5A059] rounded-3xl flex items-center justify-center text-neutral-950 shadow-2xl shadow-[#C5A059]/30 transform -rotate-3 group-hover:rotate-0 transition-transform">
-                      <Calendar size={40} />
-                    </div>
-                    <div>
-                      <EditorialLabel className="text-[#C5A059] mb-2">Cronograma de Repasse</EditorialLabel>
-                      <h2 className="text-3xl font-black text-white uppercase tracking-tighter leading-none">
-                        Próximo Pagamento: <span className="text-[#C5A059]">{nextPaymentDate.toLocaleDateString('pt-BR')}</span>
-                      </h2>
-                      <p className="text-neutral-400 text-xs mt-3 font-medium uppercase tracking-[0.2em]">
-                        Regra: 5º Dia Útil de cada mês — Processamento Automático
-                      </p>
-                    </div>
+              <header className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-8">
+                <div>
+                  <EditorialLabel className="text-[#D4AF37] mb-2">Bem-vindo de volta,</EditorialLabel>
+                  <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white">{investor?.name || 'Investidor'}</h2>
+                </div>
+                <div className="flex items-center gap-6 w-full md:w-auto justify-between md:justify-end">
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Total de Ativos</p>
+                    <p className="text-xl md:text-2xl font-black text-white">{myVehicles.length} Veículos</p>
                   </div>
-                  <div className="hidden lg:block h-16 w-[1px] bg-white/10" />
-                  <div className="text-center md:text-right">
-                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Status do Ciclo</p>
-                    <div className="flex items-center gap-2 justify-center md:justify-end">
-                      <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                      <span className="text-sm font-black text-white uppercase tracking-widest">Aguardando Fechamento</span>
-                    </div>
+                  <div className="w-12 h-12 md:w-16 md:h-16 bg-neutral-900 border border-neutral-800 rounded-2xl md:rounded-3xl flex items-center justify-center shadow-sm">
+                    <Car size={24} className="text-[#D4AF37]" />
+                  </div>
+                </div>
+              </header>
+              {/* Payment Schedule Banner */}
+              <div className="bg-neutral-900 rounded-3xl p-8 mb-10 border border-[#D4AF37]/30 shadow-[0_0_25px_rgba(212,175,55,0.15)] hover:shadow-[0_0_35px_rgba(212,175,55,0.25)] transition-shadow relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
+                <div className="flex items-center gap-6 z-10 pl-2">
+                  <div className="w-12 h-12 rounded-xl bg-[#0a0a0a] flex items-center justify-center text-neutral-500 border border-neutral-800">
+                    <Calendar size={20} />
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Cronograma de Repasse</p>
+                    <h2 className="text-2xl font-bold text-white uppercase tracking-tight">
+                      Próximo Pagamento: <span className="text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.4)]">{nextPaymentDate.toLocaleDateString('pt-BR')}</span>
+                    </h2>
+                    <p className="text-neutral-400 text-[10px] mt-2 font-bold uppercase tracking-widest">
+                      Regra: 5º Dia Útil de cada mês — Processamento Automático
+                    </p>
+                  </div>
+                </div>
+                <div className="hidden lg:block h-12 w-[1px] bg-neutral-800" />
+                <div className="text-center md:text-right z-10 pr-4">
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-2">Status do Ciclo</p>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] border border-emerald-100">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)]0 animate-pulse" />
+                    <span className="text-[10px] font-bold text-[#00E676] drop-shadow-sm uppercase tracking-widest">Aguardando Fechamento</span>
                   </div>
                 </div>
               </div>
               {/* Top Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-sm group hover:shadow-xl transition-all">
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-4">Valor Total Investido</p>
-                  <p className="text-2xl font-black text-neutral-900">R$ {totalInvested.toLocaleString('pt-BR')}</p>
+                <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] transition-shadow group">
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Valor Total Investido</p>
+                  <p className="text-2xl font-bold font-mono text-white drop-shadow-md">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                   <div className="mt-4 h-1 bg-neutral-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#C5A059] w-3/4" />
+                    <div className="h-full bg-[#D4AF37] w-3/4 shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
                   </div>
                 </div>
-                <div className="bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-sm group hover:shadow-xl transition-all">
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-4">Dividendos (Mês Atual)</p>
-                  <p className="text-2xl font-black text-emerald-600">R$ {currentMonthDividends.toLocaleString('pt-BR')}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-emerald-500 font-bold mt-2 flex items-center gap-1">
-                    <TrendingUp size={10} /> +12% vs mês ant.
+                <div className={`bg-neutral-900 p-8 rounded-3xl border transition-shadow group ${currentMonthDividends > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : currentMonthDividends < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Dividendos (Mês Atual)</p>
+                  <p className={`text-2xl font-bold font-mono ${currentMonthDividends > 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : currentMonthDividends < 0 ? 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'text-white drop-shadow-md'}`}>
+                    R$ {currentMonthDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-2 flex items-center gap-1">
+                    <TrendingUp size={10} className={currentMonthDividends >= 0 ? "text-[#00E676]" : "text-red-500"} /> 
+                    <span className={currentMonthDividends >= 0 ? "text-[#00E676]" : "text-red-500"}>
+                      Ciclo Atual
+                    </span>
                   </p>
                 </div>
-                <div className="bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-sm group hover:shadow-xl transition-all">
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-4">Acumulado no Ano</p>
-                  <p className="text-2xl font-black text-neutral-900">R$ {yearDividends.toLocaleString('pt-BR')}</p>
+                <div className={`bg-neutral-900 p-8 rounded-3xl border transition-shadow group ${yearDividends > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : yearDividends < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Acumulado no Ano</p>
+                  <p className={`text-2xl font-bold font-mono ${yearDividends > 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : yearDividends < 0 ? 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'text-white drop-shadow-md'}`}>
+                    R$ {yearDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </p>
                   <div className="mt-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#C5A059]" />
+                    <span className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
                     <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-400">Ano Fiscal 2026</span>
                   </div>
                 </div>
-                <div className="bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-sm group hover:shadow-xl transition-all">
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-4">Rendimento Médio</p>
-                  <p className="text-2xl font-black text-[#C5A059]">{avgYield}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mt-2">Mensal (Real)</p>
+                <div className="bg-neutral-900 p-8 rounded-3xl border border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.3)] hover:shadow-[0_0_35px_rgba(212,175,55,0.5)] transition-shadow group">
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Rendimento Médio</p>
+                  <p className="text-2xl font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.4)]">{avgYield}</p>
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-2">Mensal (Real)</p>
                 </div>
               </div>
 
               {/* Graphs Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-                <div className="md:col-span-2 bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm">
-                  <div className="flex justify-between items-center mb-10">
-                    <h3 className="text-xl font-black uppercase tracking-tighter">Dividendos Mês a Mês</h3>
-                    <EditorialLabel className="text-neutral-300">Rendimentos em R$</EditorialLabel>
+                <div className="md:col-span-3 bg-neutral-900 p-10 rounded-3xl border border-neutral-800 shadow-sm">
+                  <div className="flex justify-between items-center mb-8">
+                    <h3 className="text-xl font-bold uppercase tracking-tight text-white">Dividendos Mês a Mês</h3>
+                    <EditorialLabel className="text-neutral-400">Rendimentos em R$</EditorialLabel>
                   </div>
-                  <div className="h-64 flex items-end justify-between gap-4 px-4">
-                    {graphBarsWithPercentage.map((bar, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center gap-4 group">
-                        <div className="w-full relative flex items-end justify-center">
-                          <div
-                            style={{ height: `${bar.percent}%` }}
-                            className={`w-full max-w-[40px] rounded-t-xl transition-all duration-1000 ${bar.v > 0 ? 'bg-neutral-900 group-hover:bg-[#C5A059]' : 'bg-neutral-50 h-2'}`}
+                  <div className="h-96 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={graphBars} margin={{ top: 50, right: 30, left: 30, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#F5F5F5" />
+                        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#a3a3a3', fontWeight: 700 }} dy={15} />
+                        <YAxis hide={true} domain={['dataMin - (dataMin * 0.1)', 'dataMax + (dataMax * 0.1)']} />
+                        <Tooltip 
+                          cursor={{ stroke: '#404040', strokeWidth: 1, strokeDasharray: '3 3' }} 
+                          contentStyle={{ backgroundColor: '#171717',  borderRadius: '12px', border: '1px solid #404040', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.5)', fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}
+                          formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Dividendo Líquido']}
+                          labelStyle={{ color: '#737373', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}
+                        />
+                        <Line type="monotone" dataKey="v" stroke="#D4AF37" strokeWidth={4} activeDot={{ r: 8, fill: '#ffffff', stroke: '#D4AF37', strokeWidth: 3 }} dot={{ r: 5, fill: '#D4AF37', strokeWidth: 0 }} animationDuration={1500}>
+                          <LabelList 
+                            dataKey="v" 
+                            position="top" 
+                            offset={15}
+                            formatter={(val) => `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                            style={{ fontSize: '11px', fill: '#ffffff', fontWeight: 'bold', fontFamily: 'monospace' }} 
                           />
-                          {bar.v > 0 && (
-                            <div className="absolute -top-8 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black whitespace-nowrap">
-                              R$ {Math.round(bar.v).toLocaleString('pt-BR')}
-                            </div>
-                          )}
-                        </div>
-                        <span className="text-[10px] uppercase tracking-widest font-black text-neutral-400">{bar.m}</span>
-                      </div>
-                    ))}
+                        </Line>
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
-                </div>
-
-                {/* Yield per Vehicle Summary */}
-                <div className="bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm">
-                  <h3 className="text-xl font-black uppercase tracking-tighter mb-10">Rendimento por Veículo</h3>
-                  <div className="space-y-8">
-                    {myVehicles.filter(v => v.currentYield > 0).map((v) => (
-                      <div key={v.id} className="flex items-center gap-4 group">
-                        <div className="w-12 h-12 rounded-xl overflow-hidden bg-neutral-100 shrink-0">
-                          <img
-                            src={v.image || '/logo-new.png'}
-                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all"
-                            alt={v.model}
-                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
-                            style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: '#000000' } : {}}
-                          />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-[10px] font-black uppercase tracking-tight text-neutral-900">{v.model}</p>
-                          <div className="flex justify-between items-end">
-                            <p className="text-sm font-bold text-[#C5A059]">R$ {v.currentYield.toLocaleString('pt-BR')}</p>
-                            <p className="text-[9px] uppercase tracking-widest text-emerald-500 font-bold">{v.yieldPerc}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="w-full mt-10 py-4 border border-neutral-100 rounded-xl text-[9px] uppercase tracking-widest font-black text-neutral-400 hover:bg-neutral-950 hover:text-white hover:border-neutral-950 transition-all">
-                    Ver Relatório Completo
-                  </button>
                 </div>
               </div>
             </div>
           )}
 
-          {activeTab === 'minha-frota' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {myVehicles.map((v, idx) => (
-                <div key={idx} className="bg-white p-10 rounded-[3rem] border border-neutral-100 shadow-sm group hover:shadow-2xl transition-all duration-500 relative overflow-hidden">
-                  <div className="flex flex-col md:flex-row gap-10">
-                    <div className="w-full md:w-48 h-48 rounded-3xl overflow-hidden grayscale group-hover:grayscale-0 transition-all duration-700 shadow-lg">
-                      <img
-                        src={v.image || '/logo-new.png'}
-                        className="w-full h-full object-cover"
-                        alt={v.model}
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '1.5rem'; e.currentTarget.style.background = '#000000'; }}
-                        style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '1.5rem', background: '#000000' } : {}}
-                      />
-                    </div>
-                    <div className="flex-1 space-y-6">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">{v.model}</h4>
-                          <div className="flex items-center gap-3 mt-1">
-                            <span className="px-2 py-0.5 bg-neutral-900 text-white text-[9px] font-black rounded uppercase">{v.plate}</span>
-                            <span className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{v.year}</span>
+          {activeTab === 'rendimentos' && (
+            <div className="space-y-12">
+              <div className="mb-10">
+                <EditorialLabel className="text-[#D4AF37] mb-2">Relatório Consolidado</EditorialLabel>
+                <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Rendimentos por Veículo</h2>
+              </div>
+              <div className="overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-neutral-800 bg-[#0a0a0a]/80 text-[10px] uppercase tracking-widest text-neutral-500">
+                      <th className="p-6 font-bold">Ativo (Veículo)</th>
+                      <th className="p-6 font-bold text-center">Rentabilidade (%)</th>
+                      <th className="p-6 font-bold text-right">Valor Investido</th>
+                      <th className="p-6 font-bold text-right">Rendimento Líquido</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-800">
+                    {myVehicles.map((v) => (
+                      <tr key={v.id} className="hover:bg-[#0a0a0a] transition-colors group">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
+                              <img
+                                src={v.image || '/logo-new.png'}
+                                className="w-full h-full object-cover opacity-100 transition-all"
+                                alt={v.model}
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
+                                style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: 'transparent' } : {}}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wide text-white">{v.model}</p>
+                              <p className="text-[10px] font-mono font-medium text-neutral-500 mt-0.5">{v.plate}</p>
+                            </div>
                           </div>
-                        </div>
-                        {getStatusBadge(v.status)}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-y-6 gap-x-8 pt-4">
-                        <div>
-                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Valor Investido</p>
-                          <p className="text-sm font-black text-neutral-900">R$ {v.investValue.toLocaleString('pt-BR')}</p>
-                        </div>
-                        <div>
-                          <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Taxa de Investidor</p>
-                          <p className="text-sm font-black text-[#C5A059]">
-                            {v.investorTax || (100 - (parseFloat(v.adminTax) || 20))}%
+                        </td>
+                        <td className="p-6 text-center">
+                          {v.currentYield > 0 ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm">
+                              {v.yieldPerc}
+                            </span>
+                          ) : v.currentYield < 0 ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400">
+                              {v.yieldPerc}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-neutral-100 text-neutral-500">
+                              0.00%
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-6 text-right">
+                          <p className="text-sm font-semibold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                            R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </p>
-                        </div>
-                        <div className="col-span-2 p-4 bg-neutral-50 rounded-2xl flex justify-between items-center border border-neutral-100">
-                          <div>
-                            <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Rendimento Mensal</p>
-                            <p className="text-lg font-black text-[#C5A059]">R$ {v.currentYield.toLocaleString('pt-BR')}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold">Performance</p>
-                            <p className="text-sm font-black text-emerald-500">{v.yieldPerc}</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                        </td>
+                        <td className="p-6 text-right">
+                          {v.currentYield > 0 ? (
+                            <p className="text-sm font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                              R$ {v.currentYield.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          ) : v.currentYield < 0 ? (
+                            <p className="text-sm font-bold font-mono text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">
+                              - R$ {Math.abs(v.currentYield).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          ) : (
+                            <p className="text-sm font-medium font-mono text-neutral-500 drop-shadow-sm">R$ 0,00</p>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {myVehicles.length === 0 && (
+                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold">
+                    Nenhum veículo encontrado.
                   </div>
+                )}
+              </div>
+            </div>
+          )}
 
-                  {/* Action buttons removed */}
-                </div>
-              ))}
+          {activeTab === 'minha-frota' && (
+            <div className="space-y-12">
+              <div className="mb-10">
+                <EditorialLabel className="text-[#D4AF37] mb-2">Gestão de Patrimônio</EditorialLabel>
+                <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Minha Frota</h2>
+              </div>
+              <div className="overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
+                <table className="w-full text-left border-collapse whitespace-nowrap">
+                  <thead>
+                    <tr className="border-b border-neutral-800 bg-[#0a0a0a]/80 text-[10px] uppercase tracking-widest text-neutral-500">
+                      <th className="p-6 font-bold">Ativo (Veículo)</th>
+                      <th className="p-6 font-bold text-center">Status Operacional</th>
+                      <th className="p-6 font-bold text-center">Ano</th>
+                      <th className="p-6 font-bold text-right">Taxa Investidor</th>
+                      <th className="p-6 font-bold text-right">Valor Aportado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-800">
+                    {myVehicles.map((v, idx) => (
+                      <tr key={idx} className="hover:bg-[#0a0a0a] transition-colors group">
+                        <td className="p-6">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
+                              <img
+                                src={v.image || '/logo-new.png'}
+                                className="w-full h-full object-cover opacity-100 transition-all"
+                                alt={v.model}
+                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
+                                style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: 'transparent' } : {}}
+                              />
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold uppercase tracking-wide text-white">{v.model}</p>
+                              <p className="text-[10px] font-mono font-medium text-neutral-500 mt-0.5">{v.plate}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-6">
+                          <div className="flex justify-center">
+                            {getStatusBadge(v.status)}
+                          </div>
+                        </td>
+                        <td className="p-6 text-center text-sm font-semibold font-mono text-neutral-400">
+                          {v.year}
+                        </td>
+                        <td className="p-6 text-right">
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#FF6A00]/10 border border-[#FF6A00]/40 text-[#FF6A00] shadow-[0_0_15px_rgba(255,106,0,0.25)] drop-shadow-[0_0_5px_rgba(255,106,0,0.5)]">
+                            {v.investorTax || (100 - (parseFloat(v.adminTax) || 20))}%
+                          </span>
+                        </td>
+                        <td className="p-6 text-right">
+                          <p className="text-sm font-semibold font-mono text-[#00D0FF] drop-shadow-[0_0_10px_rgba(0,208,255,0.5)]">
+                            R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {myVehicles.length === 0 && (
+                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold">
+                    Nenhum veículo encontrado na frota.
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
           {activeTab === 'manutencao' && (
             <div className="space-y-12 animate-in slide-in-from-bottom-4 duration-700">
               {/* Filters */}
-              <div className="flex flex-col md:flex-row gap-8 items-end justify-between bg-white p-8 rounded-[2rem] border border-neutral-100 shadow-sm">
+              <div className="flex flex-col md:flex-row gap-8 items-end justify-between bg-black border border-neutral-800 p-8 rounded-[2rem] border border-neutral-800 shadow-sm">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Filtrar por Veículo</label>
                     <select
                       value={maintenanceFilter}
                       onChange={(e) => setMaintenanceFilter(e.target.value)}
-                      className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 earance-none cursor-pointer"
+                      className="w-full bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white earance-none cursor-pointer"
                     >
                       <option value="todos">Todos os Veículos</option>
                       {myVehicles.map(v => (
@@ -675,22 +748,22 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Período</label>
                     <div className="grid grid-cols-2 gap-4">
-                      <input type="date" className="bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 text-xs" />
-                      <input type="date" className="bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-neutral-900 text-xs" />
+                      <input type="date" className="bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white text-xs" />
+                      <input type="date" className="bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white text-xs" />
                     </div>
                   </div>
                 </div>
-                <button className="px-10 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-widest font-black rounded-2xl hover:bg-[#C5A059] transition-all flex items-center gap-3">
+                <button className="px-10 py-5 bg-neutral-800 text-white border border-neutral-700 text-[10px] uppercase tracking-widest font-black rounded-2xl hover:bg-[#D4AF37] transition-all flex items-center gap-3">
                   <Search size={14} /> Aplicar Filtros
                 </button>
               </div>
 
               {/* List */}
-              <div className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden">
+              <div className="bg-neutral-900 rounded-[3rem] border border-neutral-800 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="bg-neutral-50 border-b border-neutral-100">
+                      <tr className="bg-[#0a0a0a] border-b border-neutral-800">
                         <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Serviço / Data</th>
                         <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Veículo</th>
                         <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400 text-right">Custo</th>
@@ -698,34 +771,34 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         <th className="px-10 py-8 text-[10px] uppercase tracking-[0.2em] font-black text-neutral-400">Ações</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-50">
+                    <tbody className="divide-y divide-neutral-800">
                       {filteredMaintenances.map((m) => (
-                        <tr key={m.id} className="group hover:bg-neutral-50/50 transition-colors">
+                        <tr key={m.id} className="group hover:bg-[#0a0a0a]/50 transition-colors">
                           <td className="px-10 py-8">
                             <div className="flex items-center gap-4">
-                              <div className="w-10 h-10 bg-neutral-950 text-[#C5A059] rounded-xl flex items-center justify-center shadow-lg">
+                              <div className="w-10 h-10 bg-neutral-950 text-[#D4AF37] rounded-xl flex items-center justify-center shadow-lg">
                                 {m.icon}
                               </div>
                               <div>
-                                <p className="text-sm font-black text-neutral-900">{m.type}</p>
+                                <p className="text-sm font-black text-white">{m.type}</p>
                                 <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">{formatDate(m.date)}</p>
                               </div>
                             </div>
                           </td>
                           <td className="px-10 py-8">
-                            <p className="text-xs font-bold text-neutral-900">{m.vehicle}</p>
-                            <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">{m.plate}</p>
+                            <p className="text-xs font-bold text-white">{m.vehicle}</p>
+                            <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black">{m.plate}</p>
                           </td>
                           <td className="px-10 py-8 text-right">
-                            <p className="text-sm font-black text-neutral-900">{m.cost}</p>
+                            <p className="text-sm font-black text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">{m.cost.includes('-') ? m.cost : '- ' + m.cost}</p>
                           </td>
                           <td className="px-10 py-8">
-                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${m.status === 'Concluído' ? 'bg-emerald-50 text-emerald-600' : 'bg-orange-50 text-orange-600'}`}>
+                            <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${m.status === 'Concluído' ? 'bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm' : 'bg-orange-950/50 border border-orange-900 text-orange-400'}`}>
                               {m.status}
                             </span>
                           </td>
                           <td className="px-10 py-8">
-                            <button className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-neutral-900 transition-colors underline">Ver Comprovante</button>
+                            <button className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-white transition-colors underline">Ver Comprovante</button>
                           </td>
                         </tr>
                       ))}
@@ -800,42 +873,51 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   }
 
                   return (
-                    <div key={d.id} className="bg-white rounded-[3rem] border border-neutral-100 shadow-sm overflow-hidden flex flex-col md:flex-row">
-                      <div className="p-10 md:w-1/3 bg-neutral-50 border-r border-neutral-100 flex flex-col justify-between">
+                    <div key={d.id} className="bg-neutral-900 rounded-2xl border border-neutral-800 shadow-sm overflow-hidden flex flex-col md:flex-row hover:shadow-md transition-shadow">
+                      <div className="p-8 md:w-1/3 bg-[#0a0a0a]/50 border-r border-neutral-800 flex flex-col justify-between">
                         <div>
                           <EditorialLabel className="text-neutral-400 mb-2">Período de Referência</EditorialLabel>
-                          <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">{d.period}</h3>
-                          <div className="mt-4">
-                            <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${d.status === 'pago' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                          <h3 className="text-2xl font-bold uppercase tracking-tight text-white">{d.period}</h3>
+                          <div className="mt-3">
+                            <span className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider border ${d.status === 'pago' ? 'bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm border-emerald-100' : 'bg-amber-950/50 border border-amber-900 text-amber-400 border-amber-100'}`}>
                               {d.status}
                             </span>
                           </div>
                         </div>
 
-                        <div className="mt-12 space-y-4">
+                        <div className="mt-10 space-y-4">
                           <div className="flex justify-between items-end">
-                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">
-                              {d.realPayout ? 'Data do Repasse Realizado' : 'Data Prevista'}
+                            <p className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold">
+                              {d.realPayout ? 'Data do Repasse' : 'Data Prevista'}
                             </p>
-                            <p className="text-sm font-black text-neutral-900">{d.date}</p>
+                            <p className="text-sm font-semibold text-neutral-200">{d.date}</p>
                           </div>
-                          <div className="h-[1px] bg-neutral-200" />
+                          <div className="h-[1px] bg-neutral-200/60" />
                           <div className="flex justify-between items-end">
-                            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Valor Líquido</p>
-                            <p className="text-3xl font-black text-[#C5A059]">
-                              R$ {(d.realPayout ? parseFloat(d.realPayout.amount) : d.netValue).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                            </p>
+                            <p className="text-[10px] uppercase tracking-wider text-neutral-500 font-bold">Valor Líquido</p>
+                            {(() => {
+                              const val = d.realPayout ? parseFloat(d.realPayout.amount) : d.netValue;
+                              let colorClass = "text-white drop-shadow-md";
+                              if (val > 0) colorClass = "text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]";
+                              if (val < 0) colorClass = "text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]";
+                              return (
+                                <p className={`text-2xl font-bold font-mono ${colorClass}`}>
+                                  {val < 0 ? 'R$ ' : 'R$ '}
+                                  {val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </p>
+                              );
+                            })()}
                           </div>
                           {d.realPayout && (
-                            <div className="p-3 mt-4 bg-emerald-50 rounded-xl border border-emerald-100 flex items-start gap-3">
-                              <CheckCircle2 size={16} className="text-emerald-500 shrink-0 mt-0.5" />
+                            <div className="p-3 mt-4 bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] rounded-lg border border-emerald-100 flex items-start gap-2.5">
+                              <CheckCircle2 size={16} className="text-[#00E676] drop-shadow-sm shrink-0 mt-0.5" />
                               <div>
-                                <p className="text-[9px] uppercase tracking-widest text-emerald-700 font-black">Repasse Confirmado</p>
-                                <p className="text-xs text-emerald-600 font-medium mt-0.5">
-                                  Enviado via PIX: <strong>{d.realPayout.pix_key || 'Não informado'}</strong>
+                                <p className="text-[9px] uppercase tracking-wider text-emerald-800 font-bold">Repasse Confirmado</p>
+                                <p className="text-[11px] text-[#00E676] drop-shadow-sm font-medium mt-0.5">
+                                  PIX: <strong>{d.realPayout.pix_key || 'Não informado'}</strong>
                                 </p>
                                 {d.realPayout.notes && (
-                                  <p className="text-[10px] text-emerald-600/70 italic mt-1">"{d.realPayout.notes}"</p>
+                                  <p className="text-[10px] text-[#00E676] drop-shadow-sm/80 italic mt-1">"{d.realPayout.notes}"</p>
                                 )}
                               </div>
                             </div>
@@ -843,45 +925,45 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         </div>
                       </div>
 
-                      <div className="flex-1 p-10 space-y-10">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                          <div className="space-y-6">
-                            <h4 className="text-[10px] uppercase tracking-[0.3em] font-black text-neutral-300 border-b pb-2">Composição de Receita</h4>
+                      <div className="flex-1 p-8 space-y-8">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                          <div className="space-y-4">
+                            <h4 className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 border-b border-neutral-800 pb-2">Composição de Receita</h4>
                             <div className="flex justify-between items-center text-sm">
-                              <span className="text-neutral-500 font-medium">Valor Bruto (Aluguéis)</span>
-                              <span className="font-black text-neutral-900">R$ {d.gross.toLocaleString('pt-BR')}</span>
+                              <span className="text-neutral-400 font-medium">Valor Bruto (Aluguéis)</span>
+                              <span className="font-semibold font-mono text-white drop-shadow-md">R$ {d.gross.toLocaleString('pt-BR')}</span>
                             </div>
-                            <div className="flex justify-between items-center text-sm text-red-500">
-                              <span className="font-medium">Taxa Adm. (Gestão)</span>
-                              <span className="font-black">- R$ {d.adminTax.toLocaleString('pt-BR')}</span>
+                            <div className="flex justify-between items-center text-sm text-neutral-200">
+                              <span className="font-medium text-neutral-400">Taxa Adm. (Gestão)</span>
+                              <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.adminTax.toLocaleString('pt-BR')}</span>
                             </div>
                           </div>
 
-                          <div className="space-y-6">
-                            <h4 className="text-[10px] uppercase tracking-[0.3em] font-black text-neutral-300 border-b pb-2">Retenções e Descontos</h4>
-                            <div className="space-y-4">
+                          <div className="space-y-4">
+                            <h4 className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 border-b border-neutral-800 pb-2">Retenções e Descontos</h4>
+                            <div className="space-y-3">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-neutral-500">Manutenção Corretiva</span>
-                                <span className="font-bold text-red-400">- R$ {d.discounts.maintenance.toLocaleString('pt-BR')}</span>
+                                <span className="text-neutral-400">Manutenção Corretiva</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.maintenance.toLocaleString('pt-BR')}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-neutral-500">Seguro Franquia (Fixo)</span>
-                                <span className="font-bold text-red-400">- R$ {d.discounts.insurance.toLocaleString('pt-BR')}</span>
+                                <span className="text-neutral-400">Seguro Franquia (Fixo)</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.insurance.toLocaleString('pt-BR')}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-neutral-500">Proteção Veicular</span>
-                                <span className="font-bold text-red-400">- R$ {d.discounts.protection.toLocaleString('pt-BR')}</span>
+                                <span className="text-neutral-400">Proteção Veicular</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.protection.toLocaleString('pt-BR')}</span>
                               </div>
                               {(d.discounts.other || 0) > 0 && (
                                 <div className="flex justify-between items-center text-xs">
-                                  <span className="text-neutral-500 font-bold">Outros Abatimentos</span>
-                                  <span className="font-bold text-red-400">- R$ {d.discounts.other.toLocaleString('pt-BR')}</span>
+                                  <span className="text-neutral-400 font-medium">Outros Abatimentos</span>
+                                  <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.other.toLocaleString('pt-BR')}</span>
                                 </div>
                               )}
                               {(d.discounts.carriedDebt || 0) < 0 && (
-                                <div className="flex justify-between items-center text-xs p-2 bg-amber-50 rounded-lg border border-amber-100">
-                                  <span className="text-amber-700 font-bold flex items-center gap-1">Dívida Meses Anteriores</span>
-                                  <span className="font-black text-amber-600">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR')}</span>
+                                <div className="flex justify-between items-center text-xs p-2 bg-rose-950/30 rounded-md border border-rose-900/50">
+                                  <span className="text-rose-400 font-semibold flex items-center gap-1">Dívida Anterior</span>
+                                  <span className="font-bold font-mono text-rose-400">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR')}</span>
                                 </div>
                               )}
                             </div>
@@ -889,22 +971,22 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         </div>
 
                         {docsList.length > 0 && (
-                          <div className="bg-neutral-950 p-8 rounded-[2rem] text-white">
-                            <h4 className="text-[10px] uppercase tracking-[0.3em] font-black text-[#C5A059] mb-6 flex items-center gap-2">
-                              <FileText size={14} /> 📎 Documentos e Anexos Vinculados
+                          <div className="bg-[#0a0a0a] border border-neutral-800 p-6 rounded-xl mt-6">
+                            <h4 className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 mb-4 flex items-center gap-2">
+                              <FileText size={14} className="text-[#D4AF37]" /> Documentos e Anexos Vinculados
                             </h4>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                               {docsList.map(doc => {
                                 if (doc.type === 'service_order') {
                                   return (
                                     <button 
                                       key={doc.label} 
                                       onClick={() => setSoListModal({ monthLabel: d.period, orders: doc.orders })}
-                                      className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-[#C5A059] transition-all text-left group cursor-pointer"
+                                      className="p-3 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-[#D4AF37] hover:shadow-sm transition-all text-left group cursor-pointer"
                                     >
-                                      <p className="text-[9px] uppercase tracking-widest text-neutral-500 group-hover:text-[#C5A059] transition-colors">{doc.label}</p>
-                                      <p className="text-[10px] font-bold mt-1 text-white flex items-center gap-1.5">
-                                        <Eye size={12} className="text-[#C5A059]" /> Visualizar ({doc.orders.length})
+                                      <p className="text-[9px] uppercase tracking-wider text-neutral-500 group-hover:text-[#D4AF37] transition-colors">{doc.label}</p>
+                                      <p className="text-[10px] font-semibold mt-1 text-neutral-200 flex items-center gap-1">
+                                        <Eye size={12} className="text-[#D4AF37]" /> Visualizar ({doc.orders.length})
                                       </p>
                                     </button>
                                   );
@@ -915,10 +997,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                                       href={doc.url} 
                                       target="_blank" 
                                       rel="noopener noreferrer"
-                                      className="p-4 bg-neutral-900 border border-neutral-800 rounded-xl hover:border-[#C5A059] transition-all text-left group block cursor-pointer"
+                                      className="p-3 bg-neutral-900 border border-neutral-800 rounded-lg hover:border-[#D4AF37] hover:shadow-sm transition-all text-left group block cursor-pointer"
                                     >
-                                      <p className="text-[9px] uppercase tracking-widest text-neutral-500 group-hover:text-[#C5A059] transition-colors">{doc.label}</p>
-                                      <p className="text-[10px] font-bold mt-1 text-white">Download PDF</p>
+                                      <p className="text-[9px] uppercase tracking-wider text-neutral-500 group-hover:text-[#D4AF37] transition-colors">{doc.label}</p>
+                                      <p className="text-[10px] font-semibold mt-1 text-neutral-200">Download PDF</p>
                                     </a>
                                   );
                                 }
@@ -940,28 +1022,28 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       {soListModal && (
         <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm" onClick={() => setSoListModal(null)} />
-          <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
-            <div className="p-6 border-b border-neutral-100 flex justify-between items-center shrink-0">
+          <div className="bg-neutral-900 w-full max-w-lg rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="p-6 border-b border-neutral-800 flex justify-between items-center shrink-0">
               <div>
-                <h4 className="text-lg font-black uppercase tracking-tighter text-neutral-900">Ordens de Serviço</h4>
+                <h4 className="text-lg font-black uppercase tracking-tighter text-white">Ordens de Serviço</h4>
                 <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{soListModal.monthLabel}</p>
               </div>
-              <button onClick={() => setSoListModal(null)} className="text-neutral-300 hover:text-neutral-900"><X size={20} /></button>
+              <button onClick={() => setSoListModal(null)} className="text-neutral-300 hover:text-white"><X size={20} /></button>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
               {soListModal.orders.map(os => (
-                <div key={os.id} className="p-5 border border-neutral-100 rounded-2xl hover:border-[#C5A059] transition-all flex justify-between items-center bg-neutral-50/50">
+                <div key={os.id} className="p-5 border border-neutral-800 rounded-2xl hover:border-[#D4AF37] transition-all flex justify-between items-center bg-[#0a0a0a]/50">
                   <div>
                     <h5 className="text-sm font-black text-neutral-950">{os.plate} — {os.model}</h5>
                     <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{formatDate(os.date)}</p>
-                    <p className="text-xs text-neutral-600 mt-2 line-clamp-1">{os.description}</p>
+                    <p className="text-xs text-neutral-400 mt-2 line-clamp-1">{os.description}</p>
                   </div>
                   <button 
                     onClick={() => {
                       setViewingSO(os);
                     }}
-                    className="p-3 bg-neutral-900 text-[#C5A059] rounded-xl hover:bg-[#C5A059] hover:text-neutral-950 transition-all flex items-center justify-center shrink-0 active:scale-95 cursor-pointer"
+                    className="p-3 bg-neutral-900 text-[#D4AF37] rounded-xl hover:bg-[#D4AF37] hover:text-neutral-950 transition-all flex items-center justify-center shrink-0 active:scale-95 cursor-pointer"
                     title="Visualizar OS"
                   >
                     <Eye size={16} />
@@ -970,8 +1052,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
               ))}
             </div>
             
-            <div className="p-6 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
-              <button onClick={() => setSoListModal(null)} className="px-8 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#C5A059] hover:text-neutral-950 transition-all shadow-xl cursor-pointer">
+            <div className="p-6 border-t border-neutral-50 bg-[#0a0a0a]/30 flex justify-end shrink-0">
+              <button onClick={() => setSoListModal(null)} className="px-8 py-3 bg-neutral-800 text-white border border-neutral-700 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#D4AF37] hover:text-neutral-950 transition-all shadow-xl cursor-pointer">
                 Fechar
               </button>
             </div>
@@ -983,10 +1065,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       {viewingSO && (
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setViewingSO(null)} />
-          <div className="bg-white w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
-            <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
+          <div className="bg-neutral-900 w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
+            <div className="p-6 md:p-8 border-b border-neutral-800 flex justify-between items-center shrink-0">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]">
+                <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#D4AF37]">
                   <Wrench size={22} />
                 </div>
                 <div>
@@ -994,22 +1076,22 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{viewingSO.plate} — {viewingSO.model}</p>
                 </div>
               </div>
-              <button onClick={() => setViewingSO(null)} className="text-neutral-300 hover:text-neutral-900"><X size={24} /></button>
+              <button onClick={() => setViewingSO(null)} className="text-neutral-300 hover:text-white"><X size={24} /></button>
             </div>
 
             <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[['Data', formatDate(viewingSO.date)], ['KM', `${viewingSO.km || '---'} km`], ['Responsável', viewingSO.responsible], ['Prestador', viewingSO.provider || '---']].map(([label, val]) => (
-                  <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
+                  <div key={label} className="bg-[#0a0a0a] p-4 rounded-2xl">
                     <p className="text-[8px] uppercase text-neutral-400 font-black">{label}</p>
-                    <p className="text-sm font-black text-neutral-900 mt-1">{val}</p>
+                    <p className="text-sm font-black text-white mt-1">{val}</p>
                   </div>
                 ))}
               </div>
               
-              <div className="bg-neutral-50 p-6 rounded-2xl">
+              <div className="bg-[#0a0a0a] p-6 rounded-2xl">
                 <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">Descrição do Serviço</p>
-                <p className="text-sm text-neutral-700 leading-relaxed">{viewingSO.description}</p>
+                <p className="text-sm text-neutral-300 leading-relaxed">{viewingSO.description}</p>
               </div>
 
               {viewingSO.parts?.length > 0 && (
@@ -1018,14 +1100,14 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs min-w-[500px]">
                       <thead>
-                        <tr className="border-b border-neutral-100">
+                        <tr className="border-b border-neutral-800">
                           <th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th>
                           <th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th>
                           <th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th>
                           <th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th>
                         </tr>
                       </thead>
-                      <tbody className="divide-y divide-neutral-50">
+                      <tbody className="divide-y divide-neutral-800">
                         {viewingSO.parts.map((p, i) => {
                           const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseCurrency(p.unitValue || 0) || 0;
                           return (
@@ -1043,7 +1125,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 </div>
               )}
 
-              <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
+              <div className="bg-black border border-neutral-800 p-8 rounded-[2rem] flex justify-between items-end">
                 <div className="space-y-1">
                   {(() => {
                     const laborVal = typeof viewingSO.laborValue === 'number' ? viewingSO.laborValue : parseCurrency(viewingSO.laborValue || 0) || 0;
@@ -1061,16 +1143,16 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-neutral-400 uppercase font-black">Total da O.S.</p>
-                  <p className="text-3xl font-black text-[#C5A059]">{(viewingSO.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
+                  <p className="text-3xl font-black text-[#D4AF37] drop-shadow-[0_0_15px_rgba(212,175,55,0.5)]">{(viewingSO.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0">
-              <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-200 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all flex items-center gap-2 cursor-pointer">
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-[#0a0a0a]/30 flex justify-between items-center shrink-0">
+              <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-800 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#0a0a0a] transition-all flex items-center gap-2 cursor-pointer">
                 <Printer size={14} /> Imprimir / PDF
               </button>
-              <button onClick={() => setViewingSO(null)} className="px-8 py-3 bg-neutral-950 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#C5A059] hover:text-neutral-950 transition-all shadow-xl cursor-pointer">
+              <button onClick={() => setViewingSO(null)} className="px-8 py-3 bg-neutral-800 text-white border border-neutral-700 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-[#D4AF37] hover:text-neutral-950 transition-all shadow-xl cursor-pointer">
                 Fechar
               </button>
             </div>

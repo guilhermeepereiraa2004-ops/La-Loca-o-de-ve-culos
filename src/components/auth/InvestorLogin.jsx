@@ -110,15 +110,15 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col md:flex-row font-sans">
-      <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-24 bg-neutral-50 order-2 md:order-1">
+    <div className="min-h-screen bg-black flex flex-col md:flex-row font-sans">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 md:p-24 bg-[#0a0a0a] order-2 md:order-1">
         <div className="w-full max-w-md space-y-12">
-          <button onClick={onBack} className="text-[10px] uppercase tracking-widest font-black flex items-center gap-2 text-neutral-400 hover:text-neutral-900 transition-colors">
+          <button onClick={onBack} className="text-[10px] uppercase tracking-widest font-black flex items-center gap-2 text-neutral-500 hover:text-white transition-colors">
             <X size={14} /> Voltar ao Início
           </button>
 
           <div className="space-y-4">
-            <h1 className="text-5xl font-black uppercase tracking-tighter text-neutral-900">Acesso.</h1>
+            <h1 className="text-5xl font-black uppercase tracking-tighter text-white">Acesso.</h1>
             <p className="text-neutral-500 font-light text-lg">Gerencie seus ativos e acompanhe seus rendimentos em tempo real.</p>
           </div>
 
@@ -152,25 +152,25 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
             )}
 
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 ml-1">E-mail de Acesso</label>
+              <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 ml-1">E-mail de Acesso</label>
               <input
                 type="email"
                 placeholder="investidor@exemplo.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-white border border-neutral-200 p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-neutral-900 border border-neutral-800 text-white p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 required
                 disabled={isBlocked}
               />
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 ml-1">Sua Senha</label>
+              <label className="text-[10px] uppercase tracking-widest font-bold text-neutral-500 ml-1">Sua Senha</label>
               <input
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-white border border-neutral-200 p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-neutral-900 border border-neutral-800 text-white p-6 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-light text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 required
                 disabled={isBlocked}
               />
@@ -178,14 +178,14 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
             <button
               type="submit"
               disabled={isBlocked}
-              className="w-full bg-neutral-950 text-white py-6 rounded-2xl text-xs uppercase tracking-[0.4em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-950"
+              className="w-full bg-neutral-800 text-white py-6 border border-neutral-700 rounded-2xl text-xs uppercase tracking-[0.4em] font-black hover:bg-[#D4AF37] transition-all shadow-xl shadow-neutral-900/10 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-950"
             >
               {isBlocked ? `Bloqueado — ${formatTime(retryAfterSeconds)}` : 'Entrar no Portal'}
             </button>
           </form>
 
-          <p className="text-center text-[10px] uppercase tracking-widest text-neutral-400 font-bold">
-            Esqueceu sua senha? <span className="text-[#C5A059] cursor-pointer hover:underline">Recuperar</span>
+          <p className="text-center text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
+            Esqueceu sua senha? <span className="text-[#D4AF37] cursor-pointer hover:underline">Recuperar</span>
           </p>
         </div>
       </div>
@@ -198,10 +198,10 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
         />
         <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 to-transparent" />
         <div className="absolute bottom-12 left-12">
-          <EditorialLabel className="text-[#C5A059] mb-4">P a r t n e r</EditorialLabel>
+          <EditorialLabel className="text-[#D4AF37] mb-4">P a r t n e r</EditorialLabel>
           <h2 className="text-4xl font-black text-white uppercase tracking-tighter leading-none">
             Portal do <br />
-            <span className="text-[#C5A059]">Investidor.</span>
+            <span className="text-[#D4AF37]">Investidor.</span>
           </h2>
         </div>
       </div>

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
 /* 
   Estilos de responsividade customizados para telas pequenas (Ex: Notebooks de 1366x768 ou 1024x768)
   e telas com pouca altura vertical (max-height: 850px).

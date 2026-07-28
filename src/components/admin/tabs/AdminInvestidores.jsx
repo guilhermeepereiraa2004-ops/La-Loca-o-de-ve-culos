@@ -424,126 +424,116 @@ const AdminInvestidores = ({
         };
 
         return (
-          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-neutral-950/80 backdrop-blur-md p-0 sm:p-4 font-sans animate-in fade-in duration-300">
-            <div className="bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-6xl overflow-hidden shadow-2xl relative flex flex-col sm:rounded-[2.5rem] rounded-none">
+          <div className="fixed inset-0 z-[160] flex items-center justify-center bg-neutral-900/80 backdrop-blur-sm p-0 sm:p-4 font-sans animate-in fade-in duration-300">
+            <div className="bg-white w-full h-full sm:h-auto sm:max-h-[90vh] sm:max-w-6xl overflow-hidden shadow-2xl relative flex flex-col sm:rounded-2xl rounded-none border border-neutral-200">
               
               {/* Modal Header */}
-              <div className="p-4 sm:p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50 shrink-0">
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-neutral-950 text-[#C5A059] rounded-xl sm:rounded-2xl flex items-center justify-center font-black select-none shadow-md shrink-0">
+              <div className="p-4 sm:p-6 border-b border-neutral-100 flex justify-between items-center bg-white shrink-0">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-10 h-10 sm:w-11 sm:h-11 bg-neutral-900 text-white rounded-lg flex items-center justify-center font-bold text-lg select-none shrink-0">
                     {selectedInvForCalc.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[8px] uppercase tracking-[0.2em] font-black text-[#C5A059]">Relatório Financeiro</span>
-                    <h4 className="text-sm sm:text-base md:text-xl font-black uppercase tracking-tight text-neutral-900 leading-tight flex flex-wrap items-center gap-1.5 min-w-0">
+                    <span className="text-[9px] uppercase tracking-widest font-semibold text-neutral-400">Extrato Consolidado</span>
+                    <h4 className="text-base md:text-lg font-bold text-neutral-900 leading-tight flex flex-wrap items-center gap-2 min-w-0">
                       <span className="truncate max-w-[120px] xs:max-w-[180px] sm:max-w-none">{selectedInvForCalc.name}</span>
-                      <span className="bg-emerald-50 text-emerald-700 text-[8px] md:text-[9px] font-black tracking-widest uppercase px-2 py-0.5 rounded-full border border-emerald-100 whitespace-nowrap">
-                        Memória de Cálculo
+                      <span className="bg-neutral-100 text-neutral-600 text-[9px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded border border-neutral-200 whitespace-nowrap">
+                        Painel do Investidor
                       </span>
                     </h4>
                   </div>
                 </div>
-                <button onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }} className="w-8 h-8 sm:w-10 sm:h-10 bg-white flex items-center justify-center rounded-full hover:bg-neutral-150 transition-all shadow-sm border border-neutral-100 active:scale-95 duration-200 shrink-0">
-                  <X size={16} />
+                <button onClick={() => { setSelectedInvForCalc(null); setSelectedMonthForCalc(null); }} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-neutral-100 transition-colors text-neutral-500 hover:text-neutral-900 shrink-0">
+                  <X size={18} />
                 </button>
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-start">
+              <div className="flex-1 overflow-y-auto bg-neutral-50 p-4 sm:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
-                  {/* Coluna Esquerda: Resumo Consolidado (1/3) */}
-                  <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-0">
+                  {/* Coluna Esquerda: Resumo Consolidado */}
+                  <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-0">
                     
                     <div>
-                      <h5 className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-3 flex items-center gap-1.5">
-                        <Landmark size={12} className="text-[#C5A059]" /> Resumo de Saldo
+                      <h5 className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold mb-3 flex items-center gap-1.5">
+                        <Landmark size={14} className="text-neutral-400" /> Resumo de Saldo
                       </h5>
-                      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-1 gap-4">
+                      <div className="grid grid-cols-1 gap-3">
                         {/* Competência Vigente Card */}
-                        <div className="bg-neutral-50 p-4 sm:p-5 rounded-xl sm:rounded-2xl border border-neutral-200 flex items-center justify-between shadow-sm relative overflow-hidden group">
-                          <div className="absolute top-0 right-0 w-16 h-16 bg-[#C5A059]/5 blur-xl -mr-8 -mt-8 rounded-full pointer-events-none" />
-                          <div className="space-y-1.5">
-                            <p className="text-[8px] uppercase text-neutral-400 font-black tracking-wider">Competência: {competenciaLabel}</p>
-                            <p className="text-lg sm:text-xl font-mono font-black text-neutral-800">{formatCurrency(currentMonthNet)}</p>
+                        <div className="bg-white p-4 rounded-xl border border-neutral-200 flex flex-col justify-between relative overflow-hidden">
+                          <div className="space-y-1 z-10">
+                            <p className="text-[10px] uppercase text-neutral-500 font-medium tracking-wide">Receita Bruta Vigente</p>
+                            <p className="text-xl font-medium text-neutral-900 font-mono tracking-tight">{formatCurrency(currentMonthNet)}</p>
+                          </div>
+                          <div className="mt-3 z-10 flex">
                             {!prevMonthPaid ? (
-                              <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wider bg-amber-50 text-amber-600 border border-amber-100 px-2 py-0.5 rounded-full">
-                                <span className="w-1.5 h-1.5 bg-amber-400 rounded-full"></span> Aguardando pagamento
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                Aguardando pagamento
                               </span>
                             ) : payout <= 0 ? (
-                              <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wider bg-sky-50 text-sky-600 border border-sky-100 px-2 py-0.5 rounded-full">
-                                <span className="w-1.5 h-1.5 bg-sky-400 rounded-full"></span> Nada a pagar — Em andamento
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
+                                Nada a pagar
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[8px] font-black uppercase tracking-wider bg-emerald-50 text-emerald-600 border border-emerald-100 px-2 py-0.5 rounded-full">
-                                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Em andamento
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                                Em andamento
                               </span>
                             )}
-                          </div>
-                          <div className="w-9 h-9 sm:w-10 sm:h-10 bg-neutral-200/50 rounded-lg sm:rounded-xl flex items-center justify-center text-neutral-700 shrink-0">
-                            <Coins size={16} />
                           </div>
                         </div>
 
                         {/* Dívidas Anteriores Card */}
-                        <div className={`p-4 sm:p-5 rounded-xl sm:rounded-2xl border flex items-center justify-between shadow-sm relative overflow-hidden ${
+                        <div className={`p-4 rounded-xl border flex flex-col justify-between relative overflow-hidden ${
                           carriedDebt < 0 
-                            ? 'bg-red-50/50 border-red-200 text-red-700' 
-                            : 'bg-neutral-50 border-neutral-200 text-neutral-700'
+                            ? 'bg-rose-50/30 border-rose-200 text-rose-800' 
+                            : 'bg-white border-neutral-200 text-neutral-800'
                         }`}>
                           <div className="space-y-1">
-                            <p className="text-[8px] uppercase text-neutral-400 font-black tracking-wider">Dívidas Acumuladas</p>
-                            <p className="text-lg sm:text-xl font-mono font-black">{formatCurrency(carriedDebt)}</p>
-                          </div>
-                          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${
-                            carriedDebt < 0 ? 'bg-red-100/50 text-red-600' : 'bg-neutral-200/50 text-neutral-500'
-                          }`}>
-                            <AlertCircle size={16} />
+                            <p className={`text-[10px] uppercase font-medium tracking-wide ${carriedDebt < 0 ? 'text-rose-600' : 'text-neutral-500'}`}>Despesas / Saldo Negativo</p>
+                            <p className="text-xl font-medium font-mono tracking-tight">{formatCurrency(carriedDebt)}</p>
                           </div>
                         </div>
 
                         {/* Líquido a Repassar Card */}
-                        <div className={`p-5 sm:p-6 rounded-xl sm:rounded-2xl border flex items-center justify-between text-white shadow-md relative overflow-hidden ${
-                          payout >= 0 
-                            ? 'bg-neutral-900 border-neutral-800' 
-                            : 'bg-red-600 border-red-500'
-                        }`}>
-                          <div className="space-y-1">
-                            <p className="text-[9px] uppercase text-[#C5A059] font-black tracking-widest">Saldo a Liquidar</p>
-                            <p className="text-xl sm:text-2xl font-mono font-black">{formatCurrency(payout)}</p>
-                          </div>
-                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white/10 rounded-lg sm:rounded-xl flex items-center justify-center text-[#C5A059] shadow-inner shrink-0">
-                            <Wallet size={18} />
+                        <div className="p-4 rounded-xl border border-neutral-900 bg-neutral-900 flex flex-col justify-between text-white relative overflow-hidden shadow-sm">
+                          <div className="space-y-1 z-10">
+                            <p className="text-[10px] uppercase text-neutral-400 font-medium tracking-wide">Liquidação Final</p>
+                            <p className={`text-2xl font-semibold font-mono tracking-tight ${payout >= 0 ? 'text-white' : 'text-rose-400'}`}>
+                              {formatCurrency(payout)}
+                            </p>
                           </div>
                         </div>
                       </div>
                     </div>
 
-                    {/* Associated Vehicles List */}
                     <div>
-                      <h5 className="text-[10px] uppercase tracking-widest text-neutral-400 font-black mb-3 flex items-center gap-1.5">
-                        <Car size={12} className="text-[#C5A059]" /> Ativos Vinculados ({invVehs.length})
+                      <h5 className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold mb-3 flex items-center gap-1.5">
+                        <Car size={14} className="text-neutral-400" /> Ativos Vinculados ({invVehs.length})
                       </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                        {invVehs.map(v => (
-                          <div key={v.id} className="p-3 bg-neutral-50 border border-neutral-100 rounded-xl flex justify-between items-center hover:bg-neutral-100/70 transition-colors shadow-sm">
-                            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
-                              <div className="w-8 h-8 bg-white border border-neutral-200/50 rounded-lg flex items-center justify-center text-neutral-500 shrink-0">
-                                <Car size={14} className="text-[#C5A059]" />
+                      <div className="bg-white border border-neutral-200 rounded-xl overflow-hidden">
+                        {invVehs.length > 0 ? (
+                          <div className="divide-y divide-neutral-100">
+                            {invVehs.map(v => (
+                              <div key={v.id} className="p-3 flex justify-between items-center hover:bg-neutral-50/50 transition-colors">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="w-7 h-7 bg-neutral-100 rounded flex items-center justify-center text-neutral-400 shrink-0">
+                                    <Car size={12} />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="text-xs font-semibold text-neutral-800 truncate">{v.model}</p>
+                                    <p className="text-[10px] font-mono text-neutral-500">{v.plate}</p>
+                                  </div>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <span className="text-[9px] font-semibold uppercase text-neutral-400 tracking-wider block">Taxa Adm</span>
+                                  <span className="text-xs font-semibold text-neutral-800">{v.adminTax || 20}%</span>
+                                </div>
                               </div>
-                              <div className="min-w-0">
-                                <p className="text-xs font-bold text-neutral-800 truncate leading-snug">{v.model}</p>
-                                <p className="text-[9px] font-mono text-neutral-400">{v.plate}</p>
-                              </div>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <span className="text-[9px] font-black uppercase text-neutral-400 tracking-wider block">Taxa Adm</span>
-                              <span className="text-xs font-black text-neutral-800">{v.adminTax || 20}%</span>
-                            </div>
+                            ))}
                           </div>
-                        ))}
-                        {invVehs.length === 0 && (
-                          <div className="col-span-full p-8 text-center bg-neutral-50 rounded-2xl border border-dashed border-neutral-200 text-neutral-400 text-xs italic">
+                        ) : (
+                          <div className="p-6 text-center text-neutral-400 text-xs italic">
                             Nenhum veículo vinculado
                           </div>
                         )}
@@ -559,12 +549,12 @@ const AdminInvestidores = ({
                     <div>
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-2 border-b border-neutral-200">
                         <div>
-                          <h5 className="text-sm font-black text-neutral-900 uppercase tracking-tight flex items-center gap-2">
+                          <h5 className="text-sm font-bold text-neutral-800 uppercase tracking-tight flex items-center gap-2">
                             Transações
                             <select
                               value={activeMonth}
                               onChange={(e) => setSelectedMonthForCalc(e.target.value)}
-                              className="ml-2 bg-neutral-100 border border-neutral-200 text-neutral-800 text-xs rounded-lg px-2 py-1 outline-none font-black cursor-pointer hover:bg-neutral-200 transition-colors"
+                              className="ml-2 bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs rounded-md px-2 py-1 outline-none font-semibold cursor-pointer hover:bg-neutral-200 transition-colors"
                             >
                               {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
                                 const [yr, mo] = m.split('-');
@@ -573,15 +563,15 @@ const AdminInvestidores = ({
                               })}
                             </select>
                           </h5>
-                          <p className="text-[10px] text-neutral-400 font-medium mt-1">
+                          <p className="text-[10px] text-neutral-500 font-medium mt-1">
                             {activeMonth === competenciaKey ? (
                               !prevMonthPaid
-                                ? <>Competência fechada: <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Receitas do mês corrente estarão disponíveis após o pagamento ser registrado.</>
+                                ? <>Competência fechada: <span className="font-semibold text-neutral-700">{competenciaLabel}</span>. Receitas do mês corrente estarão disponíveis após o pagamento ser registrado.</>
                                 : payout <= 0
-                                ? <>Nada a pagar em <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Competência avançada automaticamente após o 5º dia útil.</>
-                                : <>Competência em andamento: <span className="font-bold text-neutral-600">{competenciaLabel}</span>. Será pago no 5º dia útil do próximo mês.</>
+                                ? <>Nada a pagar em <span className="font-semibold text-neutral-700">{competenciaLabel}</span>. Competência avançada automaticamente após o 5º dia útil.</>
+                                : <>Competência em andamento: <span className="font-semibold text-neutral-700">{competenciaLabel}</span>. Será pago no 5º dia útil do próximo mês.</>
                             ) : (
-                               <>Cálculos do mês de <span className="font-bold text-neutral-600">{
+                               <>Cálculos do mês de <span className="font-semibold text-neutral-700">{
                                  (() => { const [yr, mo] = activeMonth.split('-'); return `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`; })()
                                }</span>.</>
                             )}
@@ -590,13 +580,13 @@ const AdminInvestidores = ({
                         
                         {invVehs.length > 0 && (
                           <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-                            <div className="flex items-center gap-2 bg-neutral-50 border border-neutral-200 px-3 py-1.5 rounded-xl shadow-inner w-full sm:w-auto justify-between sm:justify-start">
+                            <div className="flex items-center gap-2 bg-white border border-neutral-200 px-3 py-1.5 rounded-lg w-full sm:w-auto justify-between sm:justify-start hover:border-neutral-300 transition-colors">
                               <div className="flex items-center gap-2 w-full">
                                 <Filter size={12} className="text-neutral-400 shrink-0" />
                                 <select
                                   value={selectedPlateFilter}
                                   onChange={(e) => setSelectedPlateFilter(e.target.value)}
-                                  className="bg-transparent text-xs font-bold text-neutral-700 outline-none border-none cursor-pointer pr-4 focus:ring-0 w-full"
+                                  className="bg-transparent text-xs font-semibold text-neutral-600 outline-none border-none cursor-pointer pr-4 focus:ring-0 w-full"
                                 >
                                   <option value="all">Todos os Ativos</option>
                                   <option value="none">Geral (Sem veículo)</option>
@@ -607,12 +597,11 @@ const AdminInvestidores = ({
                               </div>
                             </div>
                             {selectedPlateFilter !== 'all' && (
-                              <div className={`text-[10px] font-black px-3.5 py-2 rounded-xl border flex items-center justify-center sm:justify-start gap-1.5 shadow-sm w-full sm:w-auto shrink-0 ${
+                              <div className={`text-[10px] font-semibold px-3 py-1.5 rounded-lg border flex items-center justify-center sm:justify-start gap-1.5 w-full sm:w-auto shrink-0 ${
                                 filteredTotalNet >= 0 
                                   ? 'bg-emerald-50 border-emerald-100 text-emerald-800' 
-                                  : 'bg-red-50 border-red-100 text-red-800'
+                                  : 'bg-rose-50 border-rose-100 text-rose-800'
                               }`}>
-                                <span className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
                                 Líquido no Filtro: {formatCurrency(filteredTotalNet)}
                               </div>
                             )}
@@ -621,22 +610,22 @@ const AdminInvestidores = ({
                       </div>
 
                       {/* Tabela de Transações (Desktop) */}
-                      <div className="hidden md:block border border-neutral-200 rounded-[1.5rem] overflow-hidden bg-white shadow-sm">
+                      <div className="hidden md:block border border-neutral-200 rounded-xl overflow-hidden bg-white shadow-sm">
                         <div className="overflow-x-auto">
                           <table className="w-full text-left border-collapse text-xs">
                             <thead>
-                              <tr className="bg-neutral-50/80 border-b border-neutral-200">
-                                <th className="px-4 py-3.5 font-black text-neutral-400 uppercase text-[9px] tracking-wider">Data / Descrição</th>
-                                <th className="px-4 py-3.5 font-black text-neutral-400 uppercase text-[9px] tracking-wider">Veículo</th>
-                                <th className="px-4 py-3.5 font-black text-neutral-400 uppercase text-[9px] tracking-wider text-right">Valor Bruto</th>
-                                <th className="px-4 py-3.5 font-black text-neutral-400 uppercase text-[9px] tracking-wider">Memória de Cálculo (Fórmula)</th>
-                                <th className="px-4 py-3.5 font-black text-neutral-400 uppercase text-[9px] tracking-wider text-right">Efeito Líquido</th>
+                              <tr className="bg-neutral-50 border-b border-neutral-200">
+                                <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider">Data / Descrição</th>
+                                <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider">Veículo</th>
+                                <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider text-right">Valor Bruto</th>
+                                <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider">Memória de Cálculo (Fórmula)</th>
+                                <th className="px-4 py-3 font-semibold text-neutral-500 uppercase text-[9px] tracking-wider text-right">Efeito Líquido</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-neutral-200 font-medium text-neutral-700">
+                            <tbody className="divide-y divide-neutral-100 font-medium text-neutral-600">
                               {filteredTransactions.length === 0 ? (
                                 <tr>
-                                  <td colSpan="5" className="px-4 py-10 text-center text-neutral-400 italic">
+                                  <td colSpan="5" className="px-4 py-8 text-center text-neutral-400 italic text-xs">
                                     Nenhuma transação financeira registrada neste período.
                                   </td>
                                 </tr>
@@ -644,44 +633,44 @@ const AdminInvestidores = ({
                                 filteredTransactions.map(td => {
                                   const vehicle = invVehs.find(v => v.plate === td.vehiclePlate);
                                   return (
-                                    <tr key={td.id} className="hover:bg-neutral-50/40 transition-colors">
-                                      <td className="px-4 py-3.5">
+                                    <tr key={td.id} className="hover:bg-neutral-50/70 transition-colors group">
+                                      <td className="px-4 py-3">
                                         <div className="space-y-1">
-                                          <p className="font-bold text-neutral-900">{td.desc}</p>
+                                          <p className="font-semibold text-neutral-800">{td.desc}</p>
                                           <div className="flex items-center gap-2">
-                                            <span className="text-[9px] text-neutral-400 font-bold">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
+                                            <span className="text-[9px] text-neutral-400 font-medium">{new Date(td.date + 'T12:00:00').toLocaleDateString('pt-BR')}</span>
                                             {getCategoryBadge(td.cat)}
                                           </div>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-3.5">
+                                      <td className="px-4 py-3">
                                         {vehicle ? (
-                                          <div className="inline-flex flex-col bg-neutral-50 border border-neutral-200/50 px-2.5 py-1.5 rounded-lg">
-                                            <span className="font-bold text-neutral-800 leading-tight">{vehicle.model}</span>
-                                            <span className="font-mono text-[9px] text-[#C5A059] font-black mt-0.5">{vehicle.plate}</span>
+                                          <div className="flex flex-col">
+                                            <span className="font-semibold text-neutral-700 text-[10px] leading-tight">{vehicle.model}</span>
+                                            <span className="font-mono text-[9px] text-neutral-400 mt-0.5">{vehicle.plate}</span>
                                           </div>
                                         ) : (
-                                          <span className="text-neutral-400 font-bold italic text-[10px]">Geral</span>
+                                          <span className="text-neutral-400 font-medium italic text-[10px]">Geral</span>
                                         )}
                                       </td>
-                                      <td className="px-4 py-3.5 text-right font-mono font-bold text-neutral-800">
+                                      <td className="px-4 py-3 text-right font-mono font-medium text-neutral-700">
                                         <div className="flex flex-col items-end">
-                                          <span className={td.type === 'in' ? 'text-neutral-800' : 'text-red-500'}>
+                                          <span className={td.type === 'in' ? 'text-neutral-700' : 'text-rose-600'}>
                                             {td.type === 'in' ? '+' : '-'} {formatCurrency(td.val)}
                                           </span>
                                         </div>
                                       </td>
-                                      <td className="px-4 py-3.5 text-[9.5px] text-neutral-500 leading-relaxed max-w-xs">
+                                      <td className="px-4 py-3 text-[9.5px] text-neutral-500 leading-relaxed max-w-xs">
                                         {td.explanation}
                                       </td>
-                                      <td className="px-4 py-3.5 text-right">
+                                      <td className="px-4 py-3 text-right">
                                         <div className="flex items-center justify-end gap-3">
-                                          <span className={`inline-block px-2.5 py-1 text-[11px] font-mono font-black rounded-lg border ${
+                                          <span className={`font-mono font-semibold text-[11px] ${
                                             td.share > 0 
-                                              ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                                              ? 'text-emerald-700' 
                                               : td.share < 0 
-                                                ? 'bg-red-50 border-red-100 text-red-700' 
-                                                : 'bg-neutral-50 border-neutral-200 text-neutral-400'
+                                                ? 'text-rose-600' 
+                                                : 'text-neutral-400'
                                           }`}>
                                             {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
                                           </span>
@@ -787,32 +776,31 @@ const AdminInvestidores = ({
 
                     {/* Evolução de Dívidas (Saldo de Meses Passados) */}
                     {monthlySummaries.length > 0 && (
-                      <div className="bg-amber-50/30 border border-amber-200 p-4 sm:p-6 rounded-2xl sm:rounded-[2rem]">
-                        <h5 className="text-sm font-black text-amber-800 uppercase tracking-tight mb-4 flex items-center gap-1.5">
-                          <History size={16} /> Evolução de Competências Anteriores
+                      <div className="bg-white border border-neutral-200 p-4 sm:p-6 rounded-xl">
+                        <h5 className="text-sm font-bold text-neutral-800 uppercase tracking-tight mb-4 flex items-center gap-2 border-b border-neutral-100 pb-3">
+                          <History size={16} className="text-neutral-500" /> Histórico de Repasses
                         </h5>
-                        <div className="relative border-l border-amber-200/80 ml-3.5 pl-6 space-y-5">
+                        <div className="relative border-l-2 border-neutral-100 ml-2 pl-5 space-y-4 pt-2">
                           {monthlySummaries.map((s, idx) => (
                             <div key={idx} className="relative">
                               {/* Timeline indicator node */}
-                              <div className="absolute -left-[31px] top-1.5 w-[18px] h-[18px] rounded-full border border-amber-300 bg-white flex items-center justify-center text-[7px] text-amber-600 font-bold">
-                                {idx + 1}
+                              <div className="absolute -left-[27px] top-1.5 w-3 h-3 rounded-full border-2 border-white bg-neutral-300">
                               </div>
-                              <div className="bg-white/80 p-4 border border-amber-200/50 rounded-xl sm:rounded-2xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 shadow-sm hover:border-amber-400 transition-colors">
+                              <div className="bg-neutral-50/50 p-3 sm:p-4 border border-neutral-200/60 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 hover:border-neutral-300 transition-colors">
                                 <div>
-                                  <span className="text-[8px] uppercase tracking-wider text-amber-500 font-black block">Mês Referência</span>
-                                  <span className="text-sm font-black text-neutral-800">{s.month}</span>
+                                  <span className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold block">Mês Referência</span>
+                                  <span className="text-sm font-semibold text-neutral-800">{s.month}</span>
                                 </div>
-                                <div className="space-y-1 font-mono text-[11px] leading-tight w-full sm:w-auto">
-                                  <div className="flex justify-between sm:justify-end gap-x-4">
-                                    <span className="text-neutral-500 font-semibold">Saldo do Mês:</span>
-                                    <span className={`font-bold ${s.net < 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                <div className="space-y-1.5 font-mono text-xs w-full sm:w-auto">
+                                  <div className="flex justify-between sm:justify-end gap-x-6">
+                                    <span className="text-neutral-500 font-medium">Saldo do Mês:</span>
+                                    <span className={`font-semibold ${s.net < 0 ? 'text-rose-600' : 'text-emerald-700'}`}>
                                       {formatCurrency(s.net)}
                                     </span>
                                   </div>
-                                  <div className="flex justify-between sm:justify-end gap-x-4">
-                                    <span className="text-neutral-500 font-semibold">Saldo Acumulado:</span>
-                                    <span className={`font-black ${s.totalAfter < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                  <div className="flex justify-between sm:justify-end gap-x-6 pt-1 border-t border-neutral-200/50">
+                                    <span className="text-neutral-500 font-medium">Saldo Acumulado:</span>
+                                    <span className={`font-bold ${s.totalAfter < 0 ? 'text-rose-700' : 'text-emerald-800'}`}>
                                       {formatCurrency(s.totalAfter)}
                                     </span>
                                   </div>

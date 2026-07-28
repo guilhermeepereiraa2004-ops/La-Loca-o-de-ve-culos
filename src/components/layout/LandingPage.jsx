@@ -26,7 +26,7 @@ const Reveal = ({ children, className = '', delay = '' }) => {
 /* ── Section Label ──────────────────────────────────────────── */
 const Label = ({ children, light }) => (
   <div className={`flex items-center gap-3 mb-6 ${light ? 'text-white/40' : 'text-neutral-300'}`}>
-    <div className={`w-8 h-px ${light ? 'bg-white/20' : 'bg-[#C5A059]'}`} />
+    <div className={`w-8 h-px ${light ? 'bg-white/20' : 'bg-[#D4AF37]'}`} />
     <span className="text-[10px] uppercase tracking-[0.35em] font-semibold">{children}</span>
   </div>
 );
@@ -65,7 +65,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
                   onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
-                  className="group px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500 flex items-center justify-center gap-3"
+                  className="group px-10 py-4 bg-[#D4AF37] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(212,175,55,0.3)] transition-all duration-500 flex items-center justify-center gap-3"
                 >
                   Ver Frota
                   <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
@@ -96,18 +96,18 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <img src="/la-inauguracao-14.jpg" alt="Inauguração L.A Locação" className="w-full h-full object-cover transition-transform duration-[2500ms] hover:scale-105" />
                 <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/30 to-transparent" />
               </div>
-              <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-[#C5A059]/8 rounded-3xl hidden lg:block" />
+              <div className="absolute -bottom-6 -right-6 w-48 h-48 bg-[#D4AF37]/8 rounded-3xl hidden lg:block" />
             </Reveal>
 
             <div className="flex-1 space-y-8">
               <Reveal>
                 <Label>A Empresa</Label>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-neutral-900 leading-[0.95]">
-                  Excelência na <span className="text-[#C5A059]">Gestão de Frotas</span>
+                  Excelência na <span className="text-[#D4AF37]">Gestão de Frotas</span>
                 </h2>
               </Reveal>
               <Reveal delay="reveal-delay-1">
-                <div className="w-16 h-px bg-[#C5A059]" />
+                <div className="w-16 h-px bg-[#D4AF37]" />
               </Reveal>
               <Reveal delay="reveal-delay-2">
                 <p className="text-neutral-400 font-light text-base leading-[1.8]">
@@ -121,7 +121,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                     { icon: <Wrench size={18} />, title: 'Manutenção', desc: 'Cuidado preventivo contínuo da frota.' }
                   ].map((item, i) => (
                     <div key={i} className="space-y-3">
-                      <div className="w-10 h-10 bg-neutral-950 rounded-xl flex items-center justify-center text-[#C5A059]">{item.icon}</div>
+                      <div className="w-10 h-10 bg-neutral-950 rounded-xl flex items-center justify-center text-[#D4AF37]">{item.icon}</div>
                       <h4 className="text-[11px] font-black uppercase tracking-[0.15em] text-neutral-900">{item.title}</h4>
                       <p className="text-xs text-neutral-400 leading-relaxed">{item.desc}</p>
                     </div>
@@ -135,14 +135,14 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
 
       {/* ═══ MOTORISTAS ═════════════════════════════════════════ */}
       <section id="oportunidade-motoristas" className="py-24 md:py-36 bg-neutral-950 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(197,160,89,0.06),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(212,175,55,0.06),transparent_60%)]" />
         <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
           <div className="flex flex-col lg:flex-row items-center gap-16 lg:gap-24">
             <div className="flex-1 order-2 lg:order-1">
               <Reveal>
                 <Label light>Uber & 99</Label>
                 <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-white leading-[0.95] mb-6">
-                  Oportunidade para <span className="text-[#C5A059]">Motoristas</span>
+                  Oportunidade para <span className="text-[#D4AF37]">Motoristas</span>
                 </h2>
               </Reveal>
               <Reveal delay="reveal-delay-1">
@@ -158,7 +158,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 ].map((item, i) => (
                   <Reveal key={i} delay={`reveal-delay-${i + 2}`}>
                     <div className="flex gap-5 items-start group">
-                      <div className="shrink-0 w-11 h-11 bg-[#C5A059]/10 rounded-xl flex items-center justify-center text-[#C5A059] group-hover:bg-[#C5A059]/20 transition-colors">{item.icon}</div>
+                      <div className="shrink-0 w-11 h-11 bg-[#D4AF37]/10 rounded-xl flex items-center justify-center text-[#D4AF37] group-hover:bg-[#D4AF37]/20 transition-colors">{item.icon}</div>
                       <div>
                         <h4 className="text-sm font-bold text-white mb-0.5">{item.title}</h4>
                         <p className="text-xs text-white/35 leading-relaxed">{item.desc}</p>
@@ -170,7 +170,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               <Reveal delay="reveal-delay-5">
                 <button
                   onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
-                  className="inline-flex items-center gap-3 px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500"
+                  className="inline-flex items-center gap-3 px-10 py-4 bg-[#D4AF37] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(212,175,55,0.3)] transition-all duration-500"
                 >
                   Alugue agora <ArrowRight size={14} />
                 </button>
@@ -209,7 +209,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               const isRented = car.status === 'Alugado' || car.status === 'Alugado (Reserva)';
               return (
                 <Reveal key={car.id} delay={`reveal-delay-${Math.min(i + 1, 3)}`}>
-                  <div className="group bg-white rounded-[2.5rem] overflow-hidden border border-neutral-100 hover:border-[#C5A059]/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] transition-all duration-500 flex flex-col">
+                  <div className="group bg-white rounded-[2.5rem] overflow-hidden border border-neutral-100 hover:border-[#D4AF37]/20 hover:shadow-[0_20px_50px_rgba(0,0,0,0.04)] transition-all duration-500 flex flex-col">
                     <div className="aspect-[4/3] bg-neutral-50 relative overflow-hidden flex items-center justify-center">
                       <img
                         src={car.image || '/logo.png'}
@@ -229,8 +229,8 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                     </div>
                     <div className="p-8 flex-1 flex flex-col justify-between">
                       <div>
-                        <p className="text-[9px] uppercase tracking-[0.25em] text-[#C5A059] font-black mb-1.5">{car.year}</p>
-                        <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 group-hover:text-[#C5A059] transition-colors duration-300">{car.model}</h3>
+                        <p className="text-[9px] uppercase tracking-[0.25em] text-[#D4AF37] font-black mb-1.5">{car.year}</p>
+                        <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 group-hover:text-[#D4AF37] transition-colors duration-300">{car.model}</h3>
                       </div>
                       <div className="pt-6 border-t border-neutral-100 mt-6 flex items-center justify-between">
                         <div>
@@ -243,7 +243,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                           className={`px-6 py-3.5 text-[9px] uppercase tracking-[0.2em] font-black rounded-xl transition-all duration-300 active:scale-95 shadow-sm ${
                             isRented
                               ? 'bg-neutral-100 text-neutral-300 cursor-not-allowed'
-                              : 'bg-neutral-950 text-white hover:bg-[#C5A059] hover:text-neutral-950 hover:shadow-md'
+                              : 'bg-neutral-950 text-white hover:bg-[#D4AF37] hover:text-neutral-950 hover:shadow-md'
                           }`}
                         >
                           {isRented ? 'Indisponível' : 'Interesse'}
@@ -259,7 +259,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
           <Reveal className="mt-16 flex justify-center">
             <button
               onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
-              className="group px-10 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-full hover:bg-[#C5A059] hover:text-neutral-950 transition-all duration-500 flex items-center gap-3"
+              className="group px-10 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-bold rounded-full hover:bg-[#D4AF37] hover:text-neutral-950 transition-all duration-500 flex items-center gap-3"
             >
               Ver toda a frota <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
             </button>
@@ -269,13 +269,13 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
 
       {/* ═══ INVESTIDORES ═══════════════════════════════════════ */}
       <section id="investidores" className="py-24 md:py-36 bg-neutral-950 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(197,160,89,0.05),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(212,175,55,0.05),transparent_60%)]" />
         <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-12 flex flex-col lg:flex-row items-center gap-20">
           <div className="flex-1">
             <Reveal>
               <Label light>Seja um Parceiro</Label>
               <h2 className="text-3xl md:text-4xl lg:text-5xl font-black uppercase tracking-[-0.03em] text-white mb-8 leading-[0.95]">
-                Programa de <span className="text-[#C5A059]">Investidores</span>
+                Programa de <span className="text-[#D4AF37]">Investidores</span>
               </h2>
             </Reveal>
             <Reveal delay="reveal-delay-1">
@@ -287,14 +287,14 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               {['Gestão 100% profissional e transparente', 'Rendimentos pagos toda semana', 'Seguro total e rastreamento', 'Portal exclusivo de acompanhamento'].map((item, i) => (
                 <Reveal key={i} delay={`reveal-delay-${i + 2}`}>
                   <div className="flex items-center gap-4">
-                    <div className="w-7 h-7 rounded-full bg-[#C5A059]/10 flex items-center justify-center text-[#C5A059]"><Check size={14} /></div>
+                    <div className="w-7 h-7 rounded-full bg-[#D4AF37]/10 flex items-center justify-center text-[#D4AF37]"><Check size={14} /></div>
                     <span className="text-sm text-white/70 font-medium">{item}</span>
                   </div>
                 </Reveal>
               ))}
             </div>
             <Reveal delay="reveal-delay-5">
-              <button onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })} className="px-10 py-4 bg-[#C5A059] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(197,160,89,0.3)] transition-all duration-500">
+              <button onClick={() => document.getElementById('contato')?.scrollIntoView({ behavior: 'smooth' })} className="px-10 py-4 bg-[#D4AF37] text-neutral-950 text-[10px] uppercase tracking-[0.3em] font-black rounded-full hover:shadow-[0_0_40px_rgba(212,175,55,0.3)] transition-all duration-500">
                 Quero Investir
               </button>
             </Reveal>
@@ -304,7 +304,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               <img src="/investidor.jpg" alt="Investimentos" className="w-full h-full object-cover opacity-80" />
               <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-neutral-950/10 to-transparent" />
               <div className="absolute bottom-8 left-8 right-8 p-6 bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10">
-                <p className="text-[#C5A059] text-[9px] uppercase tracking-[0.3em] font-bold mb-2">Transparência Total</p>
+                <p className="text-[#D4AF37] text-[9px] uppercase tracking-[0.3em] font-bold mb-2">Transparência Total</p>
                 <p className="text-white/80 font-medium text-sm leading-snug">Acompanhe rendimentos em tempo real pelo Portal do Investidor.</p>
               </div>
             </div>
@@ -326,8 +326,8 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               { icon: <Wrench size={28} />, title: 'Manutenção', desc: 'Oficinas especializadas cuidando de cada detalhe da frota.' }
             ].map((srv, i) => (
               <Reveal key={i} delay={`reveal-delay-${i + 1}`}>
-                <div className="bg-white p-10 rounded-2xl border border-neutral-100 hover:border-[#C5A059]/20 hover:shadow-lg transition-all duration-500 group">
-                  <div className="w-14 h-14 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#C5A059] mb-7 group-hover:scale-105 transition-transform">{srv.icon}</div>
+                <div className="bg-white p-10 rounded-2xl border border-neutral-100 hover:border-[#D4AF37]/20 hover:shadow-lg transition-all duration-500 group">
+                  <div className="w-14 h-14 bg-neutral-950 rounded-2xl flex items-center justify-center text-[#D4AF37] mb-7 group-hover:scale-105 transition-transform">{srv.icon}</div>
                   <h3 className="text-lg font-black uppercase tracking-tight text-neutral-900 mb-3">{srv.title}</h3>
                   <p className="text-neutral-400 font-light text-sm leading-relaxed">{srv.desc}</p>
                 </div>
@@ -346,7 +346,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
             <div className="space-y-4 col-span-2 md:col-span-2 flex flex-col items-start text-left">
               <div className="flex items-center gap-2">
                 <span className="text-xl font-black uppercase tracking-[-0.03em] text-white">L.A</span>
-                <span className="text-xl font-black uppercase tracking-[-0.03em] text-[#C5A059]">Locação</span>
+                <span className="text-xl font-black uppercase tracking-[-0.03em] text-[#D4AF37]">Locação</span>
               </div>
               <p className="text-xs text-white/40 font-light leading-relaxed max-w-sm">
                 Referência em locação de veículos premium e gestão profissional de frotas em Aracaju/SE. Transparência para motoristas e alta rentabilidade para investidores.
@@ -360,7 +360,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <li>
                   <button 
                     onClick={() => { onSetView('fleet'); window.scrollTo(0, 0); }}
-                    className="hover:text-[#C5A059] transition-colors text-left"
+                    className="hover:text-[#D4AF37] transition-colors text-left"
                   >
                     Nossa Frota
                   </button>
@@ -368,7 +368,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <li>
                   <button 
                     onClick={() => document.getElementById('servicos')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="hover:text-[#C5A059] transition-colors text-left"
+                    className="hover:text-[#D4AF37] transition-colors text-left"
                   >
                     Nossos Serviços
                   </button>
@@ -376,7 +376,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 <li>
                   <button 
                     onClick={() => document.getElementById('investidores')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="hover:text-[#C5A059] transition-colors text-left"
+                    className="hover:text-[#D4AF37] transition-colors text-left"
                   >
                     Seja Investidor
                   </button>
@@ -389,17 +389,17 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
               <h4 className="text-[10px] uppercase tracking-[0.25em] font-black text-white">Contato</h4>
               <ul className="space-y-3 text-xs text-white/40 font-light flex flex-col items-start">
                 <li className="flex items-start gap-2.5 justify-start">
-                  <MapPin size={14} className="text-[#C5A059] shrink-0 mt-0.5" />
+                  <MapPin size={14} className="text-[#D4AF37] shrink-0 mt-0.5" />
                   <span className="text-left">Aracaju, Sergipe</span>
                 </li>
                 <li className="flex items-center gap-2.5 justify-start">
-                  <Phone size={14} className="text-[#C5A059] shrink-0" />
+                  <Phone size={14} className="text-[#D4AF37] shrink-0" />
                   <a href="https://wa.me/5579999094631" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-left">
                     (79) 99990-94631
                   </a>
                 </li>
                 <li className="pt-2 flex justify-start">
-                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#C5A059] text-white/40 hover:text-neutral-950 transition-all duration-300 flex items-center justify-center border border-white/5">
+                  <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/5 hover:bg-[#D4AF37] text-white/40 hover:text-neutral-950 transition-all duration-300 flex items-center justify-center border border-white/5">
                     <Instagram size={15} />
                   </a>
                 </li>
@@ -416,7 +416,7 @@ const LandingPage = ({ vehicles, onSetView, onInterest }) => {
                 href="https://www.grpsantana.com.br/" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="text-[#C5A059] hover:underline font-black uppercase tracking-wider"
+                className="text-[#D4AF37] hover:underline font-black uppercase tracking-wider"
               >
                 Grupo Santana
               </a>
