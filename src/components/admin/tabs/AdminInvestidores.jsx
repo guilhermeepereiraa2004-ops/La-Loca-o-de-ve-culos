@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp, X, Coins, Wallet, AlertCircle, Filter, ArrowUpRight, ArrowDownRight, Car } from 'lucide-react';
-import { formatCPF } from '../../../utils/cpfFormatter';
+import { formatCPF, formatCpfCnpj } from '../../../utils/cpfFormatter';
 import InvestorPayoutModal from '../modals/InvestorPayoutModal.jsx';
 import { getPayoutsForInvestor, formatReferenceMonth } from '../../../utils/investorPayouts.js';
 import { EditorialLabel } from '../../ui/EditorialLabel';
@@ -1487,11 +1487,11 @@ const AdminInvestidores = ({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">CPF</label>
+                    <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">CPF / CNPJ</label>
                     <input 
                       type="text" 
                       value={investorForm.cpf || ''} 
-                      onChange={e => setInvestorForm({ ...investorForm, cpf: formatCPF(e.target.value) })} 
+                      onChange={e => setInvestorForm({ ...investorForm, cpf: formatCpfCnpj(e.target.value) })} 
                       className="w-full bg-neutral-50 border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
                       placeholder="000.000.000-00" 
                     />
