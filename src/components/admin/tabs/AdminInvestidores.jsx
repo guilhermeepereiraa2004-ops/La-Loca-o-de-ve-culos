@@ -543,7 +543,7 @@ const AdminInvestidores = ({
                   </div>
 
                   {/* Coluna Direita: Detalhes das Transações e Dívidas (2/3) */}
-                  <div className="lg:col-span-2 space-y-8">
+                  <div className="lg:col-span-9 space-y-8">
                     
                     {/* Seção de Transações */}
                     <div>
