@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Trash2, Eye, Calendar, Car, AlertTriangle, X, ShieldCheck } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Calendar, Car, AlertTriangle, X, ShieldCheck, Camera, Activity } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
 
@@ -37,6 +37,22 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
 
     return 'Condutor N/I';
   };
+
+  const totalPhotos = useMemo(() => {
+    let count = 0;
+    inspections.forEach(ins => {
+      if (ins.photos) {
+        Object.entries(ins.photos).forEach(([key, val]) => {
+          if (key === 'additional' && Array.isArray(val)) {
+            count += val.length;
+          } else if (key !== 'additional' && val) {
+            count += 1;
+          }
+        });
+      }
+    });
+    return count;
+  }, [inspections]);
 
   const filteredInspections = useMemo(() => {
     return inspections.filter(ins => {
@@ -140,9 +156,30 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
   return (
     <>
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 md:mb-12">
-        <div>
+        <div className="flex-1">
           <h3 className="text-2xl sm:text-4xl font-black uppercase tracking-tighter">Vistorias Técnicas</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Checklist de entrada, saída e manutenções preventivas.</p>
+          
+          <div className="mt-8 bg-neutral-50/80 border border-neutral-200/60 rounded-2xl p-6 inline-block shadow-sm">
+            <h4 className="text-[10px] font-black text-[#C5A059] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <Activity size={14} /> Visão Geral da Base
+            </h4>
+            <div className="flex gap-10">
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={10} /> Vistorias Realizadas</p>
+                <p className="text-2xl font-black text-neutral-900 mt-1">
+                  {inspections.length}
+                </p>
+              </div>
+              <div className="w-px bg-neutral-200"></div>
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-1.5"><Camera size={10} /> Total de Fotos Acervo</p>
+                <p className="text-2xl font-black text-blue-600 mt-1">
+                  {totalPhotos}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <button
           onClick={onNewInspection}

@@ -3,6 +3,8 @@ import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as 
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { parseCurrency } from '../../../utils/currencyUtils';
 
+const ITEMS_PER_PAGE = 12;
+
 const AdminCaucao = ({
   rentals = [],
   payCaucaoInstallment
@@ -11,6 +13,7 @@ const AdminCaucao = ({
   const [selectedRental, setSelectedRental] = useState(null);
   const [showPayModal, setShowPayModal] = useState(false);
   const [pendingInstallment, setPendingInstallment] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
@@ -127,7 +130,7 @@ const AdminCaucao = ({
             <input
               type="text"
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => { setSearch(e.target.value); setVisibleCount(ITEMS_PER_PAGE); }}
               placeholder="Pesquisar por condutor ou placa..."
               className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-14 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
             />
@@ -148,8 +151,8 @@ const AdminCaucao = ({
               </tr>
             </thead>
             <tbody className="font-light">
-              {filteredRentals.length > 0 ? (
-                filteredRentals.map((rental) => {
+              {filteredRentals.slice(0, visibleCount).length > 0 ? (
+                filteredRentals.slice(0, visibleCount).map((rental) => {
                   const total = parseCurrency(rental.depositTotal || 0) || 0;
                   const received = parseCurrency(rental.depositReceived || rental.depositPaid || 0) || 0;
                   const remaining = total - received;
@@ -382,6 +385,18 @@ const AdminCaucao = ({
           )}
         </div>
       </div>
+
+      {/* Load More Button */}
+      {visibleCount < filteredRentals.length && (
+        <div className="flex justify-center mt-10 mb-8">
+          <button
+            onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
+            className="px-10 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.2em] font-black rounded-xl hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
+          >
+            Carregar mais ({filteredRentals.length - visibleCount} restantes)
+          </button>
+        </div>
+      )}
 
       {/* Pay Installment Modal */}
       {showPayModal && selectedRental && (

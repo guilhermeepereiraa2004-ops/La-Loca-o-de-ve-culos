@@ -634,9 +634,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       if (!startAStr || !startBStr || !endBStr) return 0;
       
       const dateAStart = new Date(startAStr.split('T')[0] + 'T00:00:00');
+      const todayDate = new Date();
+      todayDate.setHours(23, 59, 59, 999);
+      
       const dateAEnd = endAStr 
         ? new Date(endAStr.split('T')[0] + 'T23:59:59') 
-        : new Date('2099-12-31T23:59:59');
+        : todayDate;
       
       const dateBStart = new Date(startBStr + 'T00:00:00');
       const dateBEnd = new Date(endBStr + 'T23:59:59');
@@ -656,8 +659,19 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     let totalReplacementCharge = 0;
     let rcsDetails = [];
 
+    // O aluguel principal é pré-pago (ex: paga dia 03/08 para usar de 03/08 a 09/08).
+    // O carro reserva é PÓS-PAGO (paga dia 03/08 pelo que usou na semana passada, de 27/07 a 02/08).
+    // Portanto, calculamos o overlap com a semana ANTERIOR ao ciclo atual.
+    const rcCycleStartObj = new Date(cycleStartObj.getTime());
+    rcCycleStartObj.setDate(rcCycleStartObj.getDate() - 7);
+    const rcCycleStartStr = rcCycleStartObj.toISOString().split('T')[0];
+
+    const rcCycleEndObj = new Date(cycleEndObj.getTime());
+    rcCycleEndObj.setDate(rcCycleEndObj.getDate() - 7);
+    const rcCycleEndStr = rcCycleEndObj.toISOString().split('T')[0];
+
     matchedRCs.forEach(rc => {
-      const overlapDays = getDaysOverlap(rc.startDate, rc.endDate, cycleStartStr, cycleEndStr);
+      const overlapDays = getDaysOverlap(rc.startDate, rc.endDate, rcCycleStartStr, rcCycleEndStr);
       if (overlapDays > 0) {
         totalDaysInMaintenance += overlapDays;
         const rate = parseFloat(rc.dailyRate) || 80;
@@ -666,7 +680,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
         rcsDetails.push({
           plate: rc.replacementVehiclePlate,
           days: overlapDays,
-          rate,
+          rate: rate.toFixed(2),
           total: rate * overlapDays,
           status: rc.status
         });

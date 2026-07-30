@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Search, Wrench, Car, X, Check, Printer, Package, User, ChevronDown, Eye, Clock, CheckCircle2, AlertTriangle, Trash2, Pencil } from 'lucide-react';
 import { parseCurrency } from '../../../utils/currencyUtils';
+import AdminSuccessModal from '../modals/AdminSuccessModal';
 
 const parseBrValue = (val) => {
   return parseCurrency(val);
@@ -42,6 +43,7 @@ const AdminOficina = ({
   const [isRented, setIsRented] = useState(false);
   const [plateSearch, setPlateSearch] = useState('');
   const [showPlateDropdown, setShowPlateDropdown] = useState(false);
+  const [successModal, setSuccessModal] = useState({ show: false, title: '', message: '', type: 'success' });
 
   useEffect(() => {
     if (form.plate) {
@@ -89,18 +91,26 @@ const AdminOficina = ({
       ...os,
       parts: os.parts && os.parts.length > 0 ? os.parts : [{ name: '', qty: 1, unitValue: '' }]
     });
+    const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
+    setReplacementCarPlate(activeRC ? activeRC.replacementVehiclePlate : '');
     setViewingOS(null);
     setShowForm(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (editingOS) {
       const os = { ...form, total: totalOS };
-      onUpdateServiceOrder(os);
+      const res = await onUpdateServiceOrder(os, replacementCarPlate);
       setEditingOS(null);
+      setShowForm(false);
+      setForm(EMPTY_FORM);
+      setReplacementCarPlate('');
+      if (res && res.message) {
+        setSuccessModal({ show: true, type: res.success ? 'success' : 'warning', title: res.success ? 'Sucesso' : 'Atenção', message: res.message });
+      }
     } else {
-      const os = { ...form, id: Date.now(), openedAt: new Date().toISOString(), total: totalOS };
+      const os = { ...form, openedAt: new Date().toISOString(), total: totalOS };
       onCloseServiceOrder(os, 'open', replacementCarPlate);
     }
     setShowForm(false);
@@ -401,13 +411,38 @@ const AdminOficina = ({
                         className="w-full bg-white border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm"
                       >
                         <option value="">Nenhum carro reserva</option>
-                        {vehicles.filter(v => v.status === 'Disponível').map(v => (
+                        {vehicles.filter(v => v.status === 'Disponível' || (replacementCarPlate && v.plate === replacementCarPlate)).map(v => (
                           <option key={v.id} value={v.plate}>{v.plate} — {v.model}</option>
                         ))}
                       </select>
-                      <p className="text-[8px] text-blue-400 font-medium uppercase tracking-widest pl-1 italic">
-                        * Ao selecionar, o contrato temporário (R$ 80/dia) será iniciado automaticamente.
-                      </p>
+                      {replacementCarPlate ? (() => {
+                        const repV = vehicles.find(v => v.plate === replacementCarPlate);
+                        const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
+                        let calcDailyRate = 80;
+                        let textCalc = "R$ 80,00 (padrão)";
+                        if (repV && repV.weeklyRental) {
+                          const w = parseFloat(repV.weeklyRental);
+                          if (!isNaN(w) && w > 0) {
+                            calcDailyRate = w / 7;
+                            textCalc = `Valor semanal do veículo (R$ ${w.toFixed(2)}) ÷ 7 = Diária de R$ ${calcDailyRate.toFixed(2)}`;
+                          }
+                        } else if (rental && rental.value) {
+                          const rv = parseFloat(rental.value);
+                          if (!isNaN(rv) && rv > 0) {
+                            calcDailyRate = rv / 7;
+                            textCalc = `Valor semanal original (R$ ${rv.toFixed(2)}) ÷ 7 = Diária de R$ ${calcDailyRate.toFixed(2)}`;
+                          }
+                        }
+                        return (
+                          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest pl-1 italic mt-2">
+                            * {textCalc}
+                          </p>
+                        );
+                      })() : (
+                        <p className="text-[9px] text-blue-400 font-medium uppercase tracking-widest pl-1 italic mt-2">
+                          * Selecione um veículo para ver o cálculo da diária reserva.
+                        </p>
+                      )}
                     </div>
                   </div>
                 )}
@@ -504,6 +539,11 @@ const AdminOficina = ({
           </div>
         </div>
       )}
+
+      <AdminSuccessModal 
+        data={successModal} 
+        onClose={() => setSuccessModal({ ...successModal, show: false })} 
+      />
     </div>
   );
 };

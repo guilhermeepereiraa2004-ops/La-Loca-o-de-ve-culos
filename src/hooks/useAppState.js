@@ -2338,6 +2338,72 @@ export const useAppState = () => {
     }
   };
 
+  const handleUpdateServiceOrder = async (os, replacementCarPlate) => {
+    const cleanOs = { ...os };
+    if (cleanOs.km === '' || cleanOs.km === undefined || cleanOs.km === null) {
+      cleanOs.km = null;
+    } else {
+      cleanOs.km = Number(cleanOs.km);
+    }
+    
+    // Clean up fields that do not exist in the database table
+    delete cleanOs.vehicleDescription;
+    
+    const { error } = await supabase.from('service_orders').update(mapToSnake(cleanOs)).eq('id', os.id);
+    if (!error) {
+      setServiceOrders(prev => prev.map(o => o.id === os.id ? os : o));
+      logActivity('Atualizar', 'Ordem Serviço', os.id, `Atualizou O.S. #${os.id}`);
+
+      // Handle replacement car logic on update
+      if (replacementCarPlate !== undefined) {
+        const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
+        const oldReplacementPlate = activeRC ? activeRC.replacementVehiclePlate : '';
+
+        if (replacementCarPlate !== oldReplacementPlate) {
+          // Close old replacement contract
+          if (activeRC) {
+            await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: new Date().toISOString() }).eq('id', activeRC.id);
+            setReplacementContracts(prev => prev.map(rc => rc.id === activeRC.id ? { ...rc, status: 'Encerrado', endDate: new Date().toISOString().split('T')[0] } : rc));
+            const repV = vehicles.find(v => v.plate === oldReplacementPlate);
+            if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Disponível' });
+          }
+          // Open new replacement contract
+          if (replacementCarPlate) {
+            const rental = rentals.find(r => r.plate === os.plate && r.status === 'Ativo') || rentals.find(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
+            if (rental) {
+              const repV = vehicles.find(v => v.plate === replacementCarPlate);
+              let calcDailyRate = 80;
+              if (repV && repV.weeklyRental) {
+                const w = parseFloat(repV.weeklyRental);
+                if (!isNaN(w) && w > 0) calcDailyRate = w / 7;
+              } else if (rental && rental.value) {
+                const rv = parseFloat(rental.value);
+                if (!isNaN(rv) && rv > 0) calcDailyRate = rv / 7;
+              }
+              const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toISOString().split('T')[0], dailyRate: calcDailyRate, status: 'Ativo' };
+              const { data: rcData, error: rcError } = await supabase.from('replacement_contracts').insert([mapToSnake(rc)]).select();
+              if (!rcError && rcData) {
+                setReplacementContracts(prev => [mapToCamel(rcData)[0], ...prev]);
+                if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Alugado (Reserva)' });
+                return { success: true, message: "Carro reserva vinculado com sucesso!" };
+              } else {
+                console.error("Erro ao inserir contrato reserva:", rcError);
+                return { success: false, message: "Erro ao criar contrato reserva: " + JSON.stringify(rcError) };
+              }
+            } else {
+              return { success: false, message: "Não foi possível vincular o carro reserva: O veículo não possui locação ativa." };
+            }
+          }
+        }
+      }
+      return { success: true, message: "O.S. atualizada com sucesso!" };
+    } else {
+      console.error("Erro ao atualizar O.S.:", error);
+      return { success: false, message: `Erro ao atualizar O.S.: ${error.message || JSON.stringify(error)}` };
+      alert(`Erro ao atualizar O.S.: ${error.message || JSON.stringify(error)}`);
+    }
+  };
+
   const handleCloseServiceOrder = async (os, mode, replacementCarPlate) => {
     if (mode === 'open') {
       const cleanOs = { ...os };
@@ -2346,17 +2412,38 @@ export const useAppState = () => {
       } else {
         cleanOs.km = Number(cleanOs.km);
       }
-      const { data, error } = await supabase.from('service_orders').insert([mapToSnake({ ...cleanOs, status: 'Aberta' })]).select();
-      if (!error && data) {
+      
+      // Clean up fields that do not exist in the database table
+      delete cleanOs.vehicleDescription;
+      
+      const payload = mapToSnake({ ...cleanOs, status: 'Aberta' });
+      const { data, error } = await supabase.from('service_orders').insert([payload]).select();
+      
+      if (error) {
+        console.error("Erro ao criar Ordem de Serviço:", error);
+        alert(`Erro ao criar O.S.: ${error.message || JSON.stringify(error)}`);
+        return;
+      }
+
+      if (data && data.length > 0) {
         const newOs = mapToCamel(data)[0];
         setServiceOrders(prev => [newOs, ...prev]);
         await handleUpdateVehicle({ id: os.vehicleId, status: 'Manutenção' });
         logActivity('Criar', 'Ordem Serviço', newOs.id, `Abriu O.S. #${newOs.id} para veículo ${os.plate} - Resp: ${os.responsible}`);
 
         if (replacementCarPlate) {
-          const rental = rentals.find(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
+          const rental = rentals.find(r => r.plate === os.plate && r.status === 'Ativo') || rentals.find(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
           if (rental) {
-            const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toISOString().split('T')[0], dailyRate: 80, status: 'Ativo' };
+            const repV = vehicles.find(v => v.plate === replacementCarPlate);
+            let calcDailyRate = 80;
+            if (repV && repV.weeklyRental) {
+              const w = parseFloat(repV.weeklyRental);
+              if (!isNaN(w) && w > 0) calcDailyRate = w / 7;
+            } else if (rental && rental.value) {
+              const rv = parseFloat(rental.value);
+              if (!isNaN(rv) && rv > 0) calcDailyRate = rv / 7;
+            }
+            const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toISOString().split('T')[0], dailyRate: calcDailyRate, status: 'Ativo' };
             const { data: rcData, error: rcError } = await supabase.from('replacement_contracts').insert([mapToSnake(rc)]).select();
             if (!rcError && rcData) {
               setReplacementContracts(prev => [mapToCamel(rcData)[0], ...prev]);
@@ -2392,31 +2479,7 @@ export const useAppState = () => {
     }
   };
 
-  const handleUpdateServiceOrder = async (updatedOs) => {
-    try {
-      const cleanOs = { ...updatedOs };
-      if (cleanOs.km === '' || cleanOs.km === undefined || cleanOs.km === null) {
-        cleanOs.km = null;
-      } else {
-        cleanOs.km = Number(cleanOs.km);
-      }
 
-      const payload = mapToSnake(cleanOs);
-      delete payload.id;
-      delete payload.total;
-      
-      const { error } = await supabase.from('service_orders').update(payload).eq('id', cleanOs.id);
-      if (error) throw error;
-
-      setServiceOrders(prev => prev.map(o => o.id === cleanOs.id ? cleanOs : o));
-      logActivity('Atualizar', 'Ordem Serviço', cleanOs.id, `Atualizou O.S. #${cleanOs.id} para veículo ${cleanOs.plate}`);
-      return { success: true };
-    } catch (err) {
-      console.error("Erro ao atualizar ordem de serviço:", err);
-      alert(`Erro ao atualizar ordem de serviço: ${parseDbError(err)}`);
-      return { success: false, error: err };
-    }
-  };
 
   const handleDeleteServiceOrder = async (id) => {
     const os = serviceOrders.find(o => o.id === id);

@@ -27,16 +27,43 @@ const AdminFrota = ({
     const cleanPlate = (car.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (car.model || '').toLowerCase().includes(searchLower) ||
       cleanPlate.includes(cleanSearch);
-    const matchesStatus = vehicleStatusFilter === 'Todos' || car.status === vehicleStatusFilter || (vehicleStatusFilter === 'Alugado' && car.status === 'Alugado (Reserva)');
+    const matchesStatus = vehicleStatusFilter === 'Todos' 
+      ? car.status !== 'Indisponível' 
+      : (car.status === vehicleStatusFilter || (vehicleStatusFilter === 'Alugado' && car.status === 'Alugado (Reserva)'));
     return matchesSearch && matchesStatus;
   });
+
+  const activeVehicles = vehicles.filter(v => v.status !== 'Indisponível');
+  const totalInvestido = activeVehicles.reduce((sum, v) => sum + (parseCurrency(v.investmentValue) || 0), 0);
+  const totalFipe = activeVehicles.reduce((sum, v) => sum + (parseCurrency(v.fipeValue) || 0), 0);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
+        <div className="flex-1">
           <h3 className="text-4xl font-black uppercase tracking-tighter">Frota de Ativos</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Gerencie o cadastro técnico, financeiro e visual da sua frota.</p>
+          
+          <div className="mt-8 bg-neutral-50/80 border border-neutral-200/60 rounded-2xl p-6 inline-block shadow-sm">
+            <h4 className="text-[10px] font-black text-[#C5A059] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <Star size={14} fill="currentColor" /> Patrimônio Administrado
+            </h4>
+            <div className="flex gap-10">
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Soma dos Investimentos</p>
+                <p className="text-2xl font-black text-neutral-900 mt-1">
+                  {totalInvestido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+              </div>
+              <div className="w-px bg-neutral-200"></div>
+              <div>
+                <p className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Soma Tabela FIPE</p>
+                <p className="text-2xl font-black text-blue-600 mt-1">
+                  {totalFipe.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
         <button
           onClick={() => {
@@ -65,17 +92,21 @@ const AdminFrota = ({
         <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0 overflow-x-auto no-scrollbar">
           {['Todos', 'Disponível', 'Alugado', 'Manutenção', 'Em preparação', 'Indisponível'].map((status) => {
             const count = status === 'Todos' 
-              ? vehicles.length 
+              ? vehicles.filter(v => v.status !== 'Indisponível').length 
               : vehicles.filter(v => v.status === status || (status === 'Alugado' && v.status === 'Alugado (Reserva)')).length;
             
+            let buttonStyle = 'text-neutral-400 hover:text-neutral-900';
+            if (vehicleStatusFilter === status) {
+              buttonStyle = status === 'Indisponível' ? 'bg-red-500 text-white shadow-lg' : 'bg-neutral-900 text-white shadow-lg';
+            } else if (status === 'Indisponível') {
+              buttonStyle = 'text-red-400 hover:text-red-500';
+            }
+
             return (
               <button
                 key={status}
                 onClick={() => setVehicleStatusFilter(status)}
-                className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap ${vehicleStatusFilter === status
-                  ? 'bg-neutral-900 text-white shadow-lg'
-                  : 'text-neutral-400 hover:text-neutral-900'
-                }`}
+                className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap ${buttonStyle}`}
               >
                 {status} ({count})
               </button>

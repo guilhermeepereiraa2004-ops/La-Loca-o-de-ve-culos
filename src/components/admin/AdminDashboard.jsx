@@ -193,6 +193,49 @@ const AdminDashboard = ({
       result = await onUpdateTransaction(transactionData);
     } else {
       result = await onAddTransaction(transactionData);
+      
+      // Geração automática de taxas se for Aluguel avulso (apenas na criação)
+      if (result && result.success && financeForm.cat === 'Aluguel' && financeForm.type === 'in') {
+        const normalizePlate = (p) => (p || '').replace(/-/g, '').toUpperCase();
+        const vehicle = vehicles?.find(v => normalizePlate(v.plate) === normalizePlate(financeForm.vehiclePlate));
+        
+        if (vehicle) {
+          const rental = rentals?.find(r => normalizePlate(r.plate || r.vehiclePlate) === normalizePlate(financeForm.vehiclePlate));
+          const tireTax = rental ? parseFloat(rental.tireTax || 25) : 25;
+          const adminTaxPercent = parseFloat(vehicle.adminTax || 20) / 100;
+          
+          const rawValue = Math.abs(transactionData.val);
+          if (rawValue > tireTax) {
+            const adminTaxValue = (rawValue - tireTax) * adminTaxPercent;
+            
+            if (tireTax > 0) {
+              await onAddTransaction({
+                date: transactionData.date,
+                type: 'in',
+                val: tireTax,
+                desc: `Taxa de Pneus - ${transactionData.desc}`,
+                cat: 'taxa de pneus',
+                vehiclePlate: financeForm.vehiclePlate,
+                status: transactionData.status,
+                responsible: 'Administradora'
+              });
+            }
+            
+            if (adminTaxValue > 0) {
+              await onAddTransaction({
+                date: transactionData.date,
+                type: 'in',
+                val: adminTaxValue,
+                desc: `Taxa Adm - ${transactionData.desc}`,
+                cat: 'Taxa Adm',
+                vehiclePlate: financeForm.vehiclePlate,
+                status: transactionData.status,
+                responsible: 'Administradora'
+              });
+            }
+          }
+        }
+      }
     }
 
     if (result && result.success) {
@@ -239,7 +282,8 @@ const AdminDashboard = ({
       return parseFloat(clean) || 0;
     };
 
-    const selectedVehicle = vehicles.find(v => v.plate === rentalForm.plate);
+    const normalizePlate = (p) => (p || '').replace(/-/g, '').toUpperCase();
+    const selectedVehicle = vehicles.find(v => normalizePlate(v.plate) === normalizePlate(rentalForm.plate));
     const rentalData = {
       ...rentalForm,
       value: cleanNumeric(rentalForm.value),
