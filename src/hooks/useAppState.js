@@ -183,8 +183,8 @@ const mapToCamel = (data, tableName) => {
 const mapToSnake = (obj, tableName) => {
   const mappings = TABLE_MAPPINGS[tableName] || {};
   const newObj = {};
-  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax', 'investorName', 'payoutData'];
-  const effectiveSkip = tableName === 'fines' ? skipKeys.filter(k => k !== 'id') : skipKeys;
+  const skipKeys = ['imageFile', 'imagePreview', 'crlvFile', 'crvFile', 'contractUrlFile', 'id', 'investor', 'investors', 'adminTax', 'investorName', 'payoutData', 'paidInstallments', 'finesDetails', 'rcsDetails', 'caucaoInstallment'];
+  const effectiveSkip = tableName === 'fines' ? skipKeys.filter(k => k !== 'id' && k !== 'paidInstallments') : skipKeys;
   for (const key in obj) {
     if (effectiveSkip.includes(key)) continue;
     if (mappings[key]) {
@@ -228,6 +228,7 @@ export const useAppState = () => {
   const [transactions, setTransactions] = useState([]);
   const [maintenances, setMaintenances] = useState([]);
   const [inspections, setInspections] = useState([]);
+  const [globalAlert, setGlobalAlert] = useState({ isOpen: false, title: '', message: '', type: 'success' });
   const [serviceOrders, setServiceOrders] = useState([]);
   const [systemUsers, setSystemUsers] = useState([]);
   const [clients, setClients] = useState([]);
@@ -496,7 +497,8 @@ export const useAppState = () => {
                   estadoCivil: rentalDocs.estadoCivil || clientDocs.estadoCivil || rental.estadoCivil || 'solteiro(a)',
                   cep: rentalDocs.cep || clientDocs.cep || rental.cep || '',
                   cidadeUf: rentalDocs.cidadeUf || clientDocs.cidadeUf || rental.cidadeUf || 'Aracaju/SE',
-                  cnh: client?.cnh || rental.cnh || rental.cnhNumber
+                  cnh: client?.cnh || rental.cnh || rental.cnhNumber,
+                  paidInstallments: rental.paidInstallments || rentalDocs.paidInstallments || []
                 };
               });
               
@@ -1828,12 +1830,13 @@ export const useAppState = () => {
       if (error) {
         console.error("Erro ao atualizar caução:", error);
         // Tenta um fallback se a coluna paid_installments não existir (pode estar dentro de documentos)
-        if (error.code === 'PGRST204' || error.message.includes('column "paid_installments" does not exist')) {
+        if (error.code === 'PGRST204' || error.code === '42703' || (error.message && error.message.includes('paid_installments'))) {
           const updatedDocs = { ...(rental.docs || {}), paidInstallments };
-          await supabase.from('rentals').update({ 
+          const { error: fallbackError } = await supabase.from('rentals').update({ 
             'documentos': updatedDocs,
             'cau\u00e7\u00e3o_paga': newReceived 
           }).eq('id', rentalId);
+          if (fallbackError) throw fallbackError;
         } else {
           throw error;
         }
@@ -1846,10 +1849,20 @@ export const useAppState = () => {
         depositPaid: newReceived 
       } : r));
       
-      alert(`Parcela ${installmentNumber} marcada como paga com sucesso!`);
+      setGlobalAlert({
+        isOpen: true,
+        title: 'Sucesso!',
+        message: `Parcela ${installmentNumber} marcada como paga com sucesso!`,
+        type: 'success'
+      });
     } catch (err) {
-      console.error("Erro fatal no pagamento de caução:", err);
-      alert(`Erro ao processar pagamento: ${parseDbError(err)}`);
+      console.error("Erro ao processar pagamento:", err);
+      setGlobalAlert({
+        isOpen: true,
+        title: 'Erro!',
+        message: `Erro ao processar pagamento: ${parseDbError(err)}`,
+        type: 'error'
+      });
     }
   };
 
@@ -2616,6 +2629,7 @@ export const useAppState = () => {
     fines, isFinesDbConnected,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
+    globalAlert, setGlobalAlert,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
     handleAddSystemUser, handleUpdateSystemUser, handleDeleteSystemUser,

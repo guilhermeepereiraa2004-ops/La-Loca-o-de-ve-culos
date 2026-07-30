@@ -37,7 +37,7 @@ export const useAdminState = (currentUser) => {
   const [leadSearch, setLeadSearch] = useState('');
   const [leadStatusFilter, setLeadStatusFilter] = useState('todos');
   const [vehicleSearch, setVehicleSearch] = useState('');
-  const [vehicleStatusFilter, setVehicleStatusFilter] = useState('Todos');
+  const [vehicleStatusFilter, setVehicleStatusFilter] = useState('Ativos');
   const [rentalFilter, setRentalFilter] = useState('ativas');
   const [financeFilter, setFinanceFilter] = useState('Todos');
 

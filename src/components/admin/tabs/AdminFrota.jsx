@@ -27,7 +27,7 @@ const AdminFrota = ({
     const cleanPlate = (car.plate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (car.model || '').toLowerCase().includes(searchLower) ||
       cleanPlate.includes(cleanSearch);
-    const matchesStatus = vehicleStatusFilter === 'Todos' 
+    const matchesStatus = vehicleStatusFilter === 'Ativos' 
       ? car.status !== 'Indisponível' 
       : (car.status === vehicleStatusFilter || (vehicleStatusFilter === 'Alugado' && car.status === 'Alugado (Reserva)'));
     return matchesSearch && matchesStatus;
@@ -90,14 +90,24 @@ const AdminFrota = ({
           />
         </div>
         <div className="flex bg-white p-1 rounded-2xl border border-neutral-100 shadow-sm shrink-0 overflow-x-auto no-scrollbar">
-          {['Todos', 'Disponível', 'Alugado', 'Manutenção', 'Em preparação', 'Indisponível'].map((status) => {
-            const count = status === 'Todos' 
+          {['Ativos', 'Disponível', 'Alugado', 'Manutenção', 'Em preparação', 'Indisponível'].map((status) => {
+            const count = status === 'Ativos' 
               ? vehicles.filter(v => v.status !== 'Indisponível').length 
               : vehicles.filter(v => v.status === status || (status === 'Alugado' && v.status === 'Alugado (Reserva)')).length;
             
             let buttonStyle = 'text-neutral-400 hover:text-neutral-900';
             if (vehicleStatusFilter === status) {
-              buttonStyle = status === 'Indisponível' ? 'bg-red-500 text-white shadow-lg' : 'bg-neutral-900 text-white shadow-lg';
+              if (status === 'Ativos' || status === 'Disponível') {
+                buttonStyle = 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20';
+              } else if (status === 'Alugado') {
+                buttonStyle = 'bg-amber-500 text-white shadow-lg shadow-amber-500/20';
+              } else if (status === 'Em preparação') {
+                buttonStyle = 'bg-blue-500 text-white shadow-lg shadow-blue-500/20';
+              } else if (status === 'Manutenção' || status === 'Indisponível') {
+                buttonStyle = 'bg-red-500 text-white shadow-lg shadow-red-500/20';
+              } else {
+                buttonStyle = 'bg-neutral-900 text-white shadow-lg';
+              }
             } else if (status === 'Indisponível') {
               buttonStyle = 'text-red-400 hover:text-red-500';
             }

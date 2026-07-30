@@ -468,7 +468,7 @@ const AdminDashboard = ({
               setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
-          {activeTab === 'faturamento' && canAccess('faturamento') && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} transactions={transactions} onConfirmPayment={onConfirmPayment} />}
+          {activeTab === 'faturamento' && canAccess('faturamento') && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} transactions={transactions} onConfirmPayment={onConfirmPayment} onPayCaucao={onPayCaucaoInstallment} />}
           {activeTab === 'investidores' && canAccess('investidores') && (
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}

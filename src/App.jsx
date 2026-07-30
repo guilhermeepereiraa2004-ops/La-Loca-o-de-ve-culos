@@ -10,6 +10,7 @@ import LandingPage from './components/layout/LandingPage';
 import Navbar from './components/layout/Navbar';
 import InterestModal from './components/ui/modals/InterestModal';
 import SuccessModal from './components/ui/modals/SuccessModal';
+import GlobalAlertModal from './components/ui/modals/GlobalAlertModal';
 import ImageViewer from './components/ui/ImageViewer';
 
 
@@ -24,6 +25,7 @@ const App = () => {
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     fines, isFinesDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
+    globalAlert, setGlobalAlert,
     selectedVehicleForInterest, setSelectedVehicleForInterest,
     interestForm, setInterestForm,
     seedData,
@@ -45,7 +47,15 @@ const App = () => {
   // Admin View
   if (view === 'admin') {
     return (
-      <AdminDashboard
+      <>
+        <GlobalAlertModal 
+          isOpen={globalAlert.isOpen}
+          title={globalAlert.title}
+          message={globalAlert.message}
+          type={globalAlert.type}
+          onClose={() => setGlobalAlert({ ...globalAlert, isOpen: false })}
+        />
+        <AdminDashboard
         leads={leads}
         rentals={rentals}
         clients={clients}
@@ -112,13 +122,22 @@ const App = () => {
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
       />
+      </>
     );
   }
 
   // Investor View
   if (view === 'investor') {
     return (
-      <InvestorDashboard
+      <>
+        <GlobalAlertModal 
+          isOpen={globalAlert.isOpen}
+          title={globalAlert.title}
+          message={globalAlert.message}
+          type={globalAlert.type}
+          onClose={() => setGlobalAlert({ ...globalAlert, isOpen: false })}
+        />
+        <InvestorDashboard
         investor={currentUser}
         transactions={transactions}
         vehicles={vehicles}
@@ -133,6 +152,7 @@ const App = () => {
         }}
         onGoHome={() => setView('home')}
       />
+      </>
     );
   }
 
@@ -169,6 +189,13 @@ const App = () => {
 
   return (
     <div className="min-h-screen bg-white font-sans overflow-x-hidden">
+      <GlobalAlertModal 
+        isOpen={globalAlert.isOpen}
+        title={globalAlert.title}
+        message={globalAlert.message}
+        type={globalAlert.type}
+        onClose={() => setGlobalAlert({ ...globalAlert, isOpen: false })}
+      />
       <ImageViewer image={selectedImage} onClose={() => setSelectedImage(null)} />
       
       <Navbar onSetView={setView} />

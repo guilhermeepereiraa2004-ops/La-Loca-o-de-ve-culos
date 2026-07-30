@@ -151,6 +151,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   const [customValue, setCustomValue] = useState('');
   const [pendingConfirm, setPendingConfirm] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [includeCaucao, setIncludeCaucao] = useState(true);
   
   // Novos campos para desconto da empresa e pagamento adicional
   const [companyDiscount, setCompanyDiscount] = useState('');
@@ -411,10 +412,26 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                         </div>
                       )}
 
+                      {cycle.calc.caucaoInstallment && (
+                        <div className="flex items-center gap-3 pt-3 mt-3 border-t border-neutral-200/60">
+                          <input 
+                            type="checkbox" 
+                            id={`caucao-${cycle.weekNumber}`}
+                            checked={includeCaucao}
+                            onChange={(e) => setIncludeCaucao(e.target.checked)}
+                            className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
+                          />
+                          <label htmlFor={`caucao-${cycle.weekNumber}`} className="flex flex-col cursor-pointer select-none">
+                            <span className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Incluir Parcela {cycle.calc.caucaoInstallment.number}/{cycle.calc.caucaoInstallment.total} da Caução</span>
+                            <span className="text-xs font-black text-neutral-600">+ R$ {cycle.calc.caucaoInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </label>
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-300">
                         <span className="text-[10px] font-black text-neutral-800 uppercase tracking-wider">Total a Pagar:</span>
                         <span className="text-sm font-black text-emerald-700">
-                          R$ {((parseFloat(customValue) || 0) - (parseFloat(companyDiscount) || 0) + (parseFloat(additionalPaymentValue) || 0)).toFixed(2).replace('.', ',')}
+                          R$ {((parseFloat(customValue) || 0) - (parseFloat(companyDiscount) || 0) + (parseFloat(additionalPaymentValue) || 0) + (includeCaucao && cycle.calc.caucaoInstallment ? cycle.calc.caucaoInstallment.value : 0)).toFixed(2).replace('.', ',')}
                         </span>
                       </div>
                     </div>
@@ -479,7 +496,9 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           };
                           const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName}`;
                           
-                          setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc });
+                          const caucaoToPay = includeCaucao ? cycle.calc.caucaoInstallment : null;
+                          
+                          setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay });
                         }}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md transition-colors shadow-sm"
                       >
@@ -535,7 +554,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           confirmText="Sim, confirmar"
           cancelText="Não, cancelar"
           onConfirm={() => {
-            onConfirmPayment(pendingConfirm.rentalId, pendingConfirm.modifiedCalc, pendingConfirm.desc);
+            onConfirmPayment(pendingConfirm.rentalId, pendingConfirm.modifiedCalc, pendingConfirm.desc, pendingConfirm.caucaoToPay);
             setPendingConfirm(null);
             setEditingCycle(null);
             setShowSuccess(true);
@@ -555,7 +574,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   );
 };
 
-const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = [], clients = [], fines = [], transactions = [], onConfirmPayment }) => {
+const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = [], clients = [], fines = [], transactions = [], onConfirmPayment, onPayCaucao }) => {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState('recentes');
   const [lateFees, setLateFees] = useState({});
@@ -705,6 +724,25 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       return isSameDriver && (f.status === 'Pendente' || f.status === 'Em Cobrança') && f.billingSuspended !== true;
     });
 
+    // Caução Calculation
+    let caucaoInstallment = null;
+    const caucaoTotal = parseCurrency(rental.depositTotal || 0) || 0;
+    const caucaoReceived = parseCurrency(rental.depositReceived || rental.depositPaid || 0) || 0;
+    const caucaoRemaining = caucaoTotal - caucaoReceived;
+    
+    if (caucaoRemaining > 0) {
+      const paidCount = (rental.paidInstallments || []).length;
+      const totalInstallments = parseInt(rental.depositInstallments) || 1;
+      const remainingInstallments = Math.max(1, totalInstallments - paidCount);
+      const valuePerInstallment = caucaoRemaining / remainingInstallments;
+      
+      caucaoInstallment = {
+        number: paidCount + 1,
+        total: totalInstallments,
+        value: valuePerInstallment
+      };
+    }
+
     let finesTotal = 0;
     const finesDetails = [];
 
@@ -742,7 +780,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
       dueDate: dueDateStr,
       hasPaidToday,
       rcsDetails,
-      finesDetails
+      finesDetails,
+      caucaoInstallment
     };
   };
 
@@ -1043,6 +1082,18 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                             </div>
                           )}
 
+                          {calc.caucaoInstallment && (
+                            <div className="pt-2 border-t border-neutral-200/40 space-y-2">
+                              <p className="text-[8px] font-black uppercase tracking-wider text-[#C5A059]">Garantia Contratual (Caução)</p>
+                              <div className="flex justify-between items-center text-[11px] text-neutral-600 border-l-2 border-[#C5A059] pl-3">
+                                <div>
+                                  <p className="font-bold text-neutral-800 line-clamp-1">Parcela {calc.caucaoInstallment.number}/{calc.caucaoInstallment.total}</p>
+                                </div>
+                                <span className="font-black text-neutral-900">+ R$ {calc.caucaoInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                            </div>
+                          )}
+
                           <div className="pt-3 border-t border-neutral-200/40 flex items-center justify-between">
                             <span className="text-[10px] font-black text-neutral-800 uppercase tracking-widest">Ajuste Manual</span>
                             <div className="flex items-center gap-1.5">
@@ -1157,10 +1208,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                           <div className="flex items-baseline gap-1">
                             <span className="text-base text-[#C5A059] font-black">R$</span>
                             <span className="text-3xl font-black text-white tracking-tighter leading-none">
-                              {calc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {(calc.total + (calc.caucaoInstallment ? calc.caucaoInstallment.value : 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
-                          <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Aluguel + Ajustes + Reserva</p>
+                          <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Aluguel + Ajustes + Reserva {calc.caucaoInstallment ? '+ Caução' : ''}</p>
                         </div>
                         
                         <div className="pt-4 border-t border-neutral-800 flex items-center gap-2">
@@ -1203,7 +1254,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                     allTransactions={transactions}
                     availableCategories={availableCategories}
                     onClose={() => setPaymentSelectionRental(null)}
-                    onConfirmPayment={(rentalId, calcObj, customDesc) => {
+                    onConfirmPayment={async (rentalId, calcObj, customDesc, caucaoToPay) => {
+                      if (caucaoToPay && onPayCaucao) {
+                        await onPayCaucao(rentalId, caucaoToPay.number, caucaoToPay.value);
+                      }
                       onConfirmPayment(rentalId, { ...calcObj, customDescription: customDesc, customRepDescription: customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva') });
                     }}
                     calculateBoletoForCycle={calculateBoletoForCycle}
