@@ -17,6 +17,20 @@ const formatDate = (dateStr) => {
   return dateStr;
 };
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return '---';
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return formatDate(dateStr);
+    return d.toLocaleString('pt-BR', { 
+      day: '2-digit', month: '2-digit', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+  } catch (e) {
+    return formatDate(dateStr);
+  }
+};
+
 const EMPTY_FORM = {
   plate: '', model: '', km: '', date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
   description: '', parts: [{ name: '', qty: 1, unitValue: '' }],
@@ -32,6 +46,7 @@ const AdminOficina = ({
   onCloseServiceOrder, 
   onUpdateServiceOrder,
   onDeleteServiceOrder,
+  onCloseReplacementContract,
   serviceOrders = [] 
 }) => {
   const [showForm, setShowForm] = useState(false);
@@ -39,7 +54,11 @@ const AdminOficina = ({
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewingOS, setViewingOS] = useState(null);
   const [editingOS, setEditingOS] = useState(null);
+  const [closingOS, setClosingOS] = useState(null);
+  const [closingRC, setClosingRC] = useState(null);
+  const [closeDate, setCloseDate] = useState(new Date().toISOString().split('T')[0]);
   const [replacementCarPlate, setReplacementCarPlate] = useState('');
+  const [replacementCarStartDate, setReplacementCarStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [isRented, setIsRented] = useState(false);
   const [plateSearch, setPlateSearch] = useState('');
   const [showPlateDropdown, setShowPlateDropdown] = useState(false);
@@ -111,15 +130,15 @@ const AdminOficina = ({
       }
     } else {
       const os = { ...form, openedAt: new Date().toISOString(), total: totalOS };
-      onCloseServiceOrder(os, 'open', replacementCarPlate);
+      onCloseServiceOrder(os, 'open', replacementCarPlate, null, form.date);
     }
     setShowForm(false);
     setForm(EMPTY_FORM);
     setReplacementCarPlate('');
   };
 
-  const handleCloseOS = (os) => {
-    onCloseServiceOrder(os, 'close');
+  const handleCloseOS = (os, selectedDate) => {
+    onCloseServiceOrder(os, 'close', null, selectedDate);
     setViewingOS(null);
   };
 
@@ -133,6 +152,10 @@ const AdminOficina = ({
       (os.model || '').toLowerCase().includes(term) ||
       (os.description || '').toLowerCase().includes(term)
     );
+  }).sort((a, b) => {
+    const dateA = new Date(a.createdAt || a.openedAt || a.date || 0);
+    const dateB = new Date(b.createdAt || b.openedAt || b.date || 0);
+    return dateB - dateA;
   });
 
   return (
@@ -179,7 +202,10 @@ const AdminOficina = ({
               <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${os.status === 'Concluída' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
                 {os.status}
               </span>
-              <span className="text-[9px] font-bold text-neutral-300 uppercase">{formatDate(os.date)}</span>
+              <div className="text-right">
+                <span className="block text-[9px] font-bold text-neutral-300 uppercase">Adicionado em:</span>
+                <span className="block text-[10px] font-black text-neutral-500">{formatDateTime(os.createdAt || os.openedAt || os.date)}</span>
+              </div>
             </div>
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Car size={22} /></div>
@@ -415,6 +441,19 @@ const AdminOficina = ({
                           <option key={v.id} value={v.plate}>{v.plate} — {v.model}</option>
                         ))}
                       </select>
+                      
+                      {replacementCarPlate && (
+                        <div className="mt-4 space-y-2">
+                          <label className="text-[9px] uppercase tracking-widest text-blue-400 font-black ml-1">Data de Retirada do Carro Reserva</label>
+                          <input 
+                            type="date"
+                            value={replacementCarStartDate}
+                            onChange={e => setReplacementCarStartDate(e.target.value)}
+                            className="w-full bg-white border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm"
+                          />
+                        </div>
+                      )}
+
                       {replacementCarPlate ? (() => {
                         const repV = vehicles.find(v => v.plate === replacementCarPlate);
                         const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
@@ -478,12 +517,17 @@ const AdminOficina = ({
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{viewingOS.plate} — {viewingOS.model}</p>
                 </div>
               </div>
-              <button onClick={() => setViewingOS(null)} className="text-neutral-300 hover:text-neutral-900"><X size={24} /></button>
+              <button onClick={() => setViewingOS(null)} className="text-neutral-300 hover:text-neutral-900 print:hidden"><X size={24} /></button>
             </div>
 
             <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {[['Data', formatDate(viewingOS.date)], ['KM', `${viewingOS.km} km`], ['Responsável', viewingOS.responsible], ['Prestador', viewingOS.provider || '---']].map(([label, val]) => (
+                {[
+                  ['Abertura', formatDate(viewingOS.date)], 
+                  ['Conclusão', viewingOS.status === 'Concluída' && viewingOS.closedAt ? formatDate(viewingOS.closedAt) : (viewingOS.status === 'Concluída' ? formatDate(viewingOS.date) : '---')],
+                  ['KM', `${viewingOS.km || '---'} km`], 
+                  ['Responsável', viewingOS.responsible]
+                ].map(([label, val]) => (
                   <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
                     <p className="text-[8px] uppercase text-neutral-400 font-black">{label}</p>
                     <p className="text-sm font-black text-neutral-900 mt-1">{val}</p>
@@ -521,20 +565,61 @@ const AdminOficina = ({
               </div>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0">
-              <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-200 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all flex items-center gap-2">
-                <Printer size={14} /> Imprimir / PDF
-              </button>
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-between items-center shrink-0 print:hidden">
+              <div className="flex gap-3">
+                <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-200 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-neutral-50 transition-all flex items-center gap-2">
+                  <Printer size={14} /> Imprimir / PDF
+                </button>
+                {replacementContracts?.find(rc => rc.mainVehiclePlate === viewingOS.plate && rc.status === 'Ativo') && (
+                  <button onClick={() => { setClosingRC(replacementContracts.find(rc => rc.mainVehiclePlate === viewingOS.plate && rc.status === 'Ativo')); setCloseDate(new Date().toISOString().split('T')[0]); }} className="px-6 py-3 bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-200 transition-all flex items-center gap-2">
+                    <CheckCircle2 size={14} /> Finalizar Carro Reserva
+                  </button>
+                )}
+              </div>
               {viewingOS.status === 'Aberta' && (
                 <div className="flex gap-3">
                   <button onClick={() => handleEditOS(viewingOS)} className="px-8 py-4 bg-[#C5A059] text-neutral-950 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059]/80 transition-all flex items-center gap-2 shadow-xl active:scale-95">
                     <Pencil size={14} /> Editar O.S.
                   </button>
-                  <button onClick={() => handleCloseOS(viewingOS)} className="px-8 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">
+                  <button onClick={() => { setClosingOS(viewingOS); setCloseDate(new Date().toISOString().split('T')[0]); }} className="px-8 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">
                     <Check size={16} /> Fechar e Concluir O.S.
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {closingOS && (
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm" onClick={() => setClosingOS(null)} />
+          <div className="bg-white p-8 rounded-3xl z-10 w-full max-w-md shadow-2xl relative animate-in zoom-in-95">
+            <h3 className="text-xl font-black mb-4 uppercase">Confirmar Finalização da O.S.</h3>
+            <p className="text-sm text-neutral-500 mb-6">Qual foi a data exata em que o carro foi consertado?</p>
+            <input type="date" value={closeDate} onChange={e => setCloseDate(e.target.value)} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm mb-6" />
+            <div className="flex gap-4">
+              <button onClick={() => setClosingOS(null)} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:bg-neutral-50 rounded-xl transition-all">Cancelar</button>
+              <button onClick={() => { handleCloseOS(closingOS, closeDate); setClosingOS(null); }} className="flex-1 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-xl">Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {closingRC && (
+        <div className="fixed inset-0 z-[700] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm" onClick={() => setClosingRC(null)} />
+          <div className="bg-white p-8 rounded-3xl z-10 w-full max-w-md shadow-2xl relative animate-in zoom-in-95">
+            <h3 className="text-xl font-black mb-4 uppercase">Devolução do Carro Reserva</h3>
+            <p className="text-sm text-neutral-500 mb-6">Qual foi a data exata em que o motorista devolveu o carro reserva <b>{closingRC.replacementVehiclePlate}</b>?</p>
+            <input type="date" value={closeDate} onChange={e => setCloseDate(e.target.value)} className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm mb-6" />
+            <div className="flex gap-4">
+              <button onClick={() => setClosingRC(null)} className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:bg-neutral-50 rounded-xl transition-all">Cancelar</button>
+              <button onClick={async () => {
+                await onCloseReplacementContract(closingRC.id, closeDate);
+                setClosingRC(null);
+                setSuccessModal({ show: true, title: 'Devolvido', message: 'Contrato de carro reserva finalizado com sucesso!' });
+              }} className="flex-1 py-4 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-600 transition-all shadow-xl">Confirmar</button>
             </div>
           </div>
         </div>

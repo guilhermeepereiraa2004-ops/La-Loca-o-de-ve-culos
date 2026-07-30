@@ -176,7 +176,7 @@ const AdminFrota = ({
                     <Star size={18} fill={car.isFavorite ? 'currentColor' : 'none'} />
                   </button>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-neutral-950/80 via-transparent to-transparent md:opacity-0 opacity-100 group-hover:opacity-100 transition-opacity duration-500" />
 
                   <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
                     <div className="flex flex-col w-20 h-10 bg-white border-2 border-neutral-900 rounded-lg overflow-hidden shadow-2xl scale-90 origin-top-left">
@@ -201,7 +201,7 @@ const AdminFrota = ({
                     </div>
                   </div>
 
-                  <div className="absolute bottom-4 left-4 right-4 translate-y-8 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 flex justify-between items-center">
+                  <div className="absolute bottom-4 left-4 right-4 md:translate-y-8 md:opacity-0 translate-y-0 opacity-100 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500 flex justify-between items-center">
                     <button
                       onClick={() => onViewVehicleDetail(car)}
                       className="px-6 py-2 bg-white text-neutral-900 text-[9px] uppercase tracking-widest font-black rounded-full shadow-xl hover:bg-[#C5A059] hover:text-white transition-all"

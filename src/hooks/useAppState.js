@@ -2417,7 +2417,7 @@ export const useAppState = () => {
     }
   };
 
-  const handleCloseServiceOrder = async (os, mode, replacementCarPlate) => {
+  const handleCloseServiceOrder = async (os, mode, replacementCarPlate, customEndDate = null, rcStartDate = null) => {
     if (mode === 'open') {
       const cleanOs = { ...os };
       if (cleanOs.km === '' || cleanOs.km === undefined || cleanOs.km === null) {
@@ -2445,9 +2445,14 @@ export const useAppState = () => {
         logActivity('Criar', 'Ordem Serviço', newOs.id, `Abriu O.S. #${newOs.id} para veículo ${os.plate} - Resp: ${os.responsible}`);
 
         if (replacementCarPlate) {
-          const rental = rentals.find(r => r.plate === os.plate && r.status === 'Ativo') || rentals.find(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
+          const cleanOsPlate = (os.plate || '').trim().toLowerCase();
+          const rental = rentals.find(r => {
+            const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
+            return (rPlate === cleanOsPlate || r.vehicleId === os.vehicleId) && r.status !== 'Finalizado' && r.status !== 'Encerrado';
+          });
+          
           if (rental) {
-            const repV = vehicles.find(v => v.plate === replacementCarPlate);
+            const repV = vehicles.find(v => (v.plate || '').trim().toLowerCase() === replacementCarPlate.trim().toLowerCase());
             let calcDailyRate = 80;
             if (repV && repV.weeklyRental) {
               const w = parseFloat(repV.weeklyRental);
@@ -2456,39 +2461,66 @@ export const useAppState = () => {
               const rv = parseFloat(rental.value);
               if (!isNaN(rv) && rv > 0) calcDailyRate = rv / 7;
             }
-            const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toISOString().split('T')[0], dailyRate: calcDailyRate, status: 'Ativo' };
+            const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: rcStartDate || os.date, dailyRate: calcDailyRate, status: 'Ativo' };
             const { data: rcData, error: rcError } = await supabase.from('replacement_contracts').insert([mapToSnake(rc)]).select();
-            if (!rcError && rcData) {
+            if (rcError) {
+              console.error("Erro ao criar contrato reserva:", rcError);
+              alert("O.S. criada, mas erro ao registrar carro reserva.");
+            } else if (rcData && rcData.length > 0) {
               setReplacementContracts(prev => [mapToCamel(rcData)[0], ...prev]);
-              const repV = vehicles.find(v => v.plate === replacementCarPlate);
               if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Alugado (Reserva)' });
             }
+          } else {
+            alert(`Aviso: A O.S. foi criada, mas não encontramos um contrato de aluguel ativo para o veículo ${os.plate}. O carro reserva não pôde ser vinculado.`);
           }
         }
       }
       return;
     }
 
-    const { error } = await supabase.from('service_orders').update({ status: 'Concluída', closed_at: new Date().toISOString() }).eq('id', os.id);
+    const closeDateStr = customEndDate ? new Date(`${customEndDate}T12:00:00Z`).toISOString() : new Date().toISOString();
+    const { error } = await supabase.from('service_orders').update({ status: 'Concluída', closed_at: closeDateStr }).eq('id', os.id);
     if (!error) {
-      setServiceOrders(prev => prev.map(o => o.id === os.id ? { ...o, status: 'Concluída' } : o));
-      const wasRented = rentals.some(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
-      await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Disponível' });
-
+      setServiceOrders(prev => prev.map(o => o.id === os.id ? { ...o, status: 'Concluída', closedAt: closeDateStr } : o));
       const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
+      
       if (activeRC) {
-        await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: new Date().toISOString() }).eq('id', activeRC.id);
-        setReplacementContracts(prev => prev.map(rc => 
-          rc.id === activeRC.id 
-            ? { ...rc, status: 'Encerrado', endDate: new Date().toISOString().split('T')[0] } 
-            : rc
-        ));
-        const repV = vehicles.find(v => v.plate === activeRC.replacementVehiclePlate);
-        if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Disponível' });
+        // Se ainda tem carro reserva ativo, o carro principal fica "Em Preparação" até a troca.
+        await handleUpdateVehicle({ id: os.vehicleId, status: 'Em Preparação' });
+      } else {
+        const wasRented = rentals.some(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
+        await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Disponível' });
       }
-
-      await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: os.date, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
+      const maintenanceDate = customEndDate || os.date;
+      await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: maintenanceDate, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
       logActivity('Encerrar OS', 'Manutenção', os.id, `Concluiu a ordem de serviço #${os.id} para o veículo ${os.plate} - Valor: R$ ${os.total}`);
+    }
+  };
+
+  const handleCloseReplacementContract = async (rcId, customEndDate = null) => {
+    const activeRC = replacementContracts.find(rc => rc.id === rcId);
+    if (!activeRC) return;
+
+    const rcEndDateStr = customEndDate ? new Date(`${customEndDate}T12:00:00Z`).toISOString() : new Date().toISOString();
+    const rcEndDateShort = customEndDate ? customEndDate : new Date().toISOString().split('T')[0];
+    
+    const { error } = await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: rcEndDateStr }).eq('id', activeRC.id);
+    
+    if (!error) {
+      setReplacementContracts(prev => prev.map(rc => 
+        rc.id === activeRC.id 
+          ? { ...rc, status: 'Encerrado', endDate: rcEndDateShort } 
+          : rc
+      ));
+
+      const repV = vehicles.find(v => v.plate === activeRC.replacementVehiclePlate);
+      if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Disponível' });
+
+      const mainV = vehicles.find(v => v.plate === activeRC.mainVehiclePlate);
+      if (mainV) {
+        const wasRented = rentals.some(r => r.vehicleId === mainV.id && r.status === 'Ativo');
+        await handleUpdateVehicle({ id: mainV.id, status: wasRented ? 'Alugado' : 'Disponível' });
+      }
     }
   };
 
@@ -2640,7 +2672,10 @@ export const useAppState = () => {
     handleDeleteTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
-    handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
+    handleAddInspection, handleDeleteInspection, handleUpdateServiceOrder,
+    handleCloseServiceOrder,
+    handleDeleteServiceOrder,
+    handleCloseReplacementContract,
     handleInterestSubmit,
     handleAddFine, handleUpdateFine, handleDeleteFine,
     seedData: () => console.log('Seed data is no longer available.')

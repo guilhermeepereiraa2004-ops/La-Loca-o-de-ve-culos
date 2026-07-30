@@ -574,7 +574,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   );
 };
 
-const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = [], clients = [], fines = [], transactions = [], onConfirmPayment, onPayCaucao }) => {
+const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrders = [], vehicles = [], clients = [], fines = [], transactions = [], onConfirmPayment, onPayCaucao }) => {
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState('recentes');
   const [lateFees, setLateFees] = useState({});
@@ -649,38 +649,17 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     cycleEndObj.setDate(dueDateObj.getDate() + 6);
     const cycleEndStr = cycleEndObj.toISOString().split('T')[0];
 
-    const getDaysOverlap = (startAStr, endAStr, startBStr, endBStr) => {
-      if (!startAStr || !startBStr || !endBStr) return 0;
-      
-      const dateAStart = new Date(startAStr.split('T')[0] + 'T00:00:00');
-      const todayDate = new Date();
-      todayDate.setHours(23, 59, 59, 999);
-      
-      const dateAEnd = endAStr 
-        ? new Date(endAStr.split('T')[0] + 'T23:59:59') 
-        : todayDate;
-      
-      const dateBStart = new Date(startBStr + 'T00:00:00');
-      const dateBEnd = new Date(endBStr + 'T23:59:59');
-      
-      const overlapStart = new Date(Math.max(dateAStart.getTime(), dateBStart.getTime()));
-      const overlapEnd = new Date(Math.min(dateAEnd.getTime(), dateBEnd.getTime()));
-      
-      if (overlapStart > overlapEnd) {
-        return 0;
-      }
-      
-      const diffTime = overlapEnd.getTime() - overlapStart.getTime();
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const todayStrFmt = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+
+    const isDateInPeriod = (targetStr, startStr, endStr) => {
+      const start = startStr ? startStr.split('T')[0] : '';
+      const end = endStr ? endStr.split('T')[0] : todayStrFmt;
+      if (!start) return false;
+      return targetStr >= start && targetStr <= end;
     };
 
-    let totalDaysInMaintenance = 0;
-    let totalReplacementCharge = 0;
-    let rcsDetails = [];
-
     // O aluguel principal é pré-pago (ex: paga dia 03/08 para usar de 03/08 a 09/08).
-    // O carro reserva é PÓS-PAGO (paga dia 03/08 pelo que usou na semana passada, de 27/07 a 02/08).
-    // Portanto, calculamos o overlap com a semana ANTERIOR ao ciclo atual.
+    // O carro reserva e as manutenções são PÓS-PAGOS (descontados no dia 03/08 referente à semana passada, de 27/07 a 02/08).
     const rcCycleStartObj = new Date(cycleStartObj.getTime());
     rcCycleStartObj.setDate(rcCycleStartObj.getDate() - 7);
     const rcCycleStartStr = rcCycleStartObj.toISOString().split('T')[0];
@@ -689,26 +668,62 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
     rcCycleEndObj.setDate(rcCycleEndObj.getDate() - 7);
     const rcCycleEndStr = rcCycleEndObj.toISOString().split('T')[0];
 
+    let totalDaysInMaintenance = 0;
+    let cycleDateIter = new Date(rcCycleStartStr + 'T12:00:00');
+    
+    // Calcula os dias de oficina (Abatimento) olhando dia a dia no ciclo de 7 dias
+    for (let i = 0; i < 7; i++) {
+      const currentDayStr = cycleDateIter.toISOString().split('T')[0];
+      let covered = false;
+      
+      const matchedOSs = Array.isArray(serviceOrders) ? serviceOrders.filter(os => os.plate && rentalPlate && os.plate.toLowerCase() === rentalPlate.toLowerCase()) : [];
+      for (const os of matchedOSs) {
+        if (isDateInPeriod(currentDayStr, os.date, os.status === 'Concluída' ? os.closedAt : todayStrFmt)) {
+          covered = true;
+          break;
+        }
+      }
+      
+      if (!covered) {
+        for (const rc of matchedRCs) {
+          if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
+            covered = true;
+            break;
+          }
+        }
+      }
+      
+      if (covered) totalDaysInMaintenance++;
+      cycleDateIter.setDate(cycleDateIter.getDate() + 1);
+    }
+
+    // Calcula as diárias do Carro Reserva baseado nos contratos
+    let totalReplacementCharge = 0;
+    let rcsDetails = [];
     matchedRCs.forEach(rc => {
-      const overlapDays = getDaysOverlap(rc.startDate, rc.endDate, rcCycleStartStr, rcCycleEndStr);
-      if (overlapDays > 0) {
-        totalDaysInMaintenance += overlapDays;
+      let rcOverlap = 0;
+      let rcIter = new Date(rcCycleStartStr + 'T12:00:00');
+      for (let i = 0; i < 7; i++) {
+        const currentDayStr = rcIter.toISOString().split('T')[0];
+        if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
+          rcOverlap++;
+        }
+        rcIter.setDate(rcIter.getDate() + 1);
+      }
+      
+      if (rcOverlap > 0) {
         const rate = parseFloat(rc.dailyRate) || 80;
-        totalReplacementCharge += rate * overlapDays;
+        totalReplacementCharge += rate * rcOverlap;
         
         rcsDetails.push({
           plate: rc.replacementVehiclePlate,
-          days: overlapDays,
+          days: rcOverlap,
           rate: rate.toFixed(2),
-          total: rate * overlapDays,
+          total: rate * rcOverlap,
           status: rc.status
         });
       }
     });
-
-    if (totalDaysInMaintenance > 7) {
-      totalDaysInMaintenance = 7;
-    }
 
     const abatimento = dailyRate * totalDaysInMaintenance;
     const tireTax = parseCurrency(rental.tireTax || 0) || 0;
@@ -1082,17 +1097,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                             </div>
                           )}
 
-                          {calc.caucaoInstallment && (
-                            <div className="pt-2 border-t border-neutral-200/40 space-y-2">
-                              <p className="text-[8px] font-black uppercase tracking-wider text-[#C5A059]">Garantia Contratual (Caução)</p>
-                              <div className="flex justify-between items-center text-[11px] text-neutral-600 border-l-2 border-[#C5A059] pl-3">
-                                <div>
-                                  <p className="font-bold text-neutral-800 line-clamp-1">Parcela {calc.caucaoInstallment.number}/{calc.caucaoInstallment.total}</p>
-                                </div>
-                                <span className="font-black text-neutral-900">+ R$ {calc.caucaoInstallment.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
-                            </div>
-                          )}
+
 
                           <div className="pt-3 border-t border-neutral-200/40 flex items-center justify-between">
                             <span className="text-[10px] font-black text-neutral-800 uppercase tracking-widest">Ajuste Manual</span>
@@ -1208,10 +1213,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], vehicles = 
                           <div className="flex items-baseline gap-1">
                             <span className="text-base text-[#C5A059] font-black">R$</span>
                             <span className="text-3xl font-black text-white tracking-tighter leading-none">
-                              {(calc.total + (calc.caucaoInstallment ? calc.caucaoInstallment.value : 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              {calc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
-                          <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Aluguel + Ajustes + Reserva {calc.caucaoInstallment ? '+ Caução' : ''}</p>
+                          <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Aluguel + Ajustes + Reserva</p>
                         </div>
                         
                         <div className="pt-4 border-t border-neutral-800 flex items-center gap-2">

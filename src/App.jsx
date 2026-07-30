@@ -36,6 +36,7 @@ const App = () => {
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
     handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
+    handleCloseReplacementContract,
     handleInterestSubmit,
     handleAddFine, handleUpdateFine, handleDeleteFine
   } = useAppState();
@@ -71,6 +72,7 @@ const App = () => {
         onCloseServiceOrder={handleCloseServiceOrder}
         onUpdateServiceOrder={handleUpdateServiceOrder}
         onDeleteServiceOrder={handleDeleteServiceOrder}
+        onCloseReplacementContract={handleCloseReplacementContract}
         onCompleteClosure={handleCompleteClosure}
         onPayCaucaoInstallment={handlePayCaucaoInstallment}
         onAddTransaction={handleAddTransaction}

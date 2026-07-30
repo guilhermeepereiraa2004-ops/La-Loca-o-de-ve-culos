@@ -59,7 +59,7 @@ const AdminDashboard = ({
   onAddVehicle, onUpdateVehicle, onDeleteVehicle,
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
   inspections, onAddInspection, onDeleteInspection,
-  serviceOrders, replacementContracts, onCloseServiceOrder, onUpdateServiceOrder, onDeleteServiceOrder,
+  serviceOrders, replacementContracts, onCloseServiceOrder, onUpdateServiceOrder, onDeleteServiceOrder, onCloseReplacementContract,
   onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onSeed, onGoHome, onViewVehicleDetail,
@@ -468,7 +468,19 @@ const AdminDashboard = ({
               setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
-          {activeTab === 'faturamento' && canAccess('faturamento') && <AdminFaturamento rentals={rentals} replacementContracts={replacementContracts} vehicles={vehicles} clients={clients} fines={fines} transactions={transactions} onConfirmPayment={onConfirmPayment} onPayCaucao={onPayCaucaoInstallment} />}
+          {activeTab === 'faturamento' && canAccess('faturamento') && (
+            <AdminFaturamento 
+              rentals={rentals} 
+              replacementContracts={replacementContracts} 
+              vehicles={vehicles} 
+              clients={clients} 
+              fines={fines}
+              transactions={transactions}
+              serviceOrders={serviceOrders}
+              onConfirmPayment={onConfirmPayment} 
+              onPayCaucao={onPayCaucaoInstallment} 
+            />
+          )}
           {activeTab === 'investidores' && canAccess('investidores') && (
             <AdminInvestidores 
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}
@@ -555,6 +567,7 @@ const AdminDashboard = ({
               onAddMaintenance={onAddMaintenance} onCloseServiceOrder={onCloseServiceOrder}
               onUpdateServiceOrder={onUpdateServiceOrder}
               onDeleteServiceOrder={onDeleteServiceOrder}
+              onCloseReplacementContract={onCloseReplacementContract}
             />
           )}
           </Suspense>
