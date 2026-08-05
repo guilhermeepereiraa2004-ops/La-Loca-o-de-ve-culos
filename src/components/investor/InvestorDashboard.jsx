@@ -42,7 +42,7 @@ const getFifthBusinessDay = (dateOrYear = new Date(), monthOpt) => {
   return new Date(year, month, day);
 };
 
-const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], onLogout, onGoHome }) => {
+const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], maintenances = [], onLogout, onGoHome }) => {
   const [viewingSO, setViewingSO] = useState(null);
   const [soListModal, setSoListModal] = useState(null);
   const [activeTab, setActiveTab] = useState(() => {
@@ -164,16 +164,32 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   const maintenanceHistory = transactions
     .filter(t => (t.cat?.toLowerCase().includes('manuten') || t.desc?.toLowerCase().includes('manuten')) && myVehicles.some(v => v.plate === t.vehiclePlate))
     .filter(t => !(t.date && t.date < '2026-06-01'))
-    .map(t => ({
-      id: t.id,
-      vehicle: vehicles.find(v => v.plate === t.vehiclePlate)?.model || 'Veículo',
-      plate: t.vehiclePlate,
-      type: t.desc,
-      date: t.date,
-      cost: `R$ -${Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
-      status: t.status === 'pago' || t.status === 'Concluído' ? 'Concluído' : 'Em Aberto',
-      icon: <Wrench size={16} />
-    }));
+    .map(t => {
+      let osId = null;
+      const match = t.desc?.match(/\[Manutenção #([^\]]+)\]/i);
+      if (match && maintenances) {
+        const mId = match[1];
+        const maint = maintenances.find(m => String(m.id) === String(mId));
+        if (maint && maint.observations) {
+          const osMatch = maint.observations.match(/O\.S\. #([^\s]+)/i);
+          if (osMatch) {
+            osId = osMatch[1];
+          }
+        }
+      }
+
+      return {
+        id: t.id,
+        vehicle: vehicles.find(v => v.plate === t.vehiclePlate)?.model || 'Veículo',
+        plate: t.vehiclePlate,
+        type: t.desc,
+        date: t.date,
+        cost: `R$ -${Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        status: t.status === 'pago' || t.status === 'Concluído' ? 'Concluído' : 'Em Aberto',
+        icon: <Wrench size={16} />,
+        osId
+      };
+    });
 
   const totalProtectionDiscount = myVehicles
     .filter(v => v.hasProtection)
@@ -798,7 +814,19 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                             </span>
                           </td>
                           <td className="px-10 py-8">
-                            <button className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-white transition-colors underline">Ver Comprovante</button>
+                            {m.osId ? (
+                              <button 
+                                onClick={() => {
+                                  const os = serviceOrders.find(o => String(o.id) === String(m.osId));
+                                  if (os) setViewingSO(os);
+                                }}
+                                className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-white transition-colors underline"
+                              >
+                                Ver Comprovante
+                              </button>
+                            ) : (
+                              <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-700">---</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -1064,6 +1092,14 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       {/* Modal - Detalhe de Ordem de Serviço (Modo Leitura e Impressão) */}
       {viewingSO && (
         <div className="fixed inset-0 z-[700] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-300">
+          <style type="text/css" media="print">
+            {`
+              @page { size: auto; margin: 0mm; }
+              @media print {
+                body { padding-top: 15mm; padding-bottom: 15mm; }
+              }
+            `}
+          </style>
           <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setViewingSO(null)} />
           <div className="bg-neutral-900 w-full max-w-3xl h-full md:h-auto md:max-h-[90vh] rounded-none md:rounded-[3rem] shadow-2xl relative z-10 overflow-hidden flex flex-col">
             <div className="p-6 md:p-8 border-b border-neutral-800 flex justify-between items-center shrink-0">
@@ -1076,7 +1112,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{viewingSO.plate} — {viewingSO.model}</p>
                 </div>
               </div>
-              <button onClick={() => setViewingSO(null)} className="text-neutral-300 hover:text-white"><X size={24} /></button>
+              <button onClick={() => setViewingSO(null)} className="text-neutral-300 hover:text-white print:hidden"><X size={24} /></button>
             </div>
 
             <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
@@ -1111,7 +1147,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         {viewingSO.parts.map((p, i) => {
                           const unitVal = typeof p.unitValue === 'number' ? p.unitValue : parseCurrency(p.unitValue || 0) || 0;
                           return (
-                            <tr key={i}>
+                            <tr key={i} className="text-neutral-300">
                               <td className="py-3 font-bold">{p.name}</td>
                               <td className="py-3 text-center">{p.qty}</td>
                               <td className="py-3 text-right">R$ {unitVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</td>
@@ -1148,7 +1184,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
               </div>
             </div>
 
-            <div className="p-6 md:p-8 border-t border-neutral-50 bg-[#0a0a0a]/30 flex justify-between items-center shrink-0">
+            <div className="p-6 md:p-8 border-t border-neutral-50 bg-[#0a0a0a]/30 flex justify-between items-center shrink-0 print:hidden">
               <button onClick={() => window.print()} className="px-6 py-3 border border-neutral-800 text-neutral-500 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-[#0a0a0a] transition-all flex items-center gap-2 cursor-pointer">
                 <Printer size={14} /> Imprimir / PDF
               </button>

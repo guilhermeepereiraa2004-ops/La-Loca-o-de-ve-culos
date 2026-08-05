@@ -145,6 +145,7 @@ const App = () => {
         vehicles={vehicles}
         serviceOrders={serviceOrders}
         rentals={rentals}
+        maintenances={maintenances}
         onLogout={() => {
           localStorage.removeItem('la_investor_auth');
           localStorage.removeItem('la_current_view');
