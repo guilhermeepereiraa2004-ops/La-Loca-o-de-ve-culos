@@ -1635,9 +1635,14 @@ export const useAppState = () => {
       try {
         const vehicle = vehicles.find(v => v.plate === maintenance.vehiclePlate);
         const investorName = vehicle?.investor;
-        const responsibleStr = maintenance.responsible === 'Investidor' 
-          ? (investorName ? `Investidor: ${investorName}` : 'Investidor') 
-          : 'Administradora';
+        let responsibleStr = 'Administradora';
+        if (maintenance.responsible === 'Investidor') {
+          responsibleStr = investorName ? `Investidor: ${investorName}` : 'Investidor';
+        } else if (maintenance.responsible && maintenance.responsible !== 'Administradora') {
+          responsibleStr = maintenance.responsible.startsWith('Investidor') 
+            ? maintenance.responsible 
+            : `Investidor: ${maintenance.responsible}`;
+        }
         const rawVal = parseCurrency(maintenance.value) || 0;
 
         const newTrans = {
@@ -1674,9 +1679,14 @@ export const useAppState = () => {
 
         const vehicle = vehicles.find(v => v.plate === updatedMaintenance.vehiclePlate);
         const investorName = vehicle?.investor;
-        const responsibleStr = updatedMaintenance.responsible === 'Investidor' 
-          ? (investorName ? `Investidor: ${investorName}` : 'Investidor') 
-          : 'Administradora';
+        let responsibleStr = 'Administradora';
+        if (updatedMaintenance.responsible === 'Investidor') {
+          responsibleStr = investorName ? `Investidor: ${investorName}` : 'Investidor';
+        } else if (updatedMaintenance.responsible && updatedMaintenance.responsible !== 'Administradora') {
+          responsibleStr = updatedMaintenance.responsible.startsWith('Investidor') 
+            ? updatedMaintenance.responsible 
+            : `Investidor: ${updatedMaintenance.responsible}`;
+        }
         const rawVal = parseCurrency(updatedMaintenance.value) || 0;
 
         const txData = {
