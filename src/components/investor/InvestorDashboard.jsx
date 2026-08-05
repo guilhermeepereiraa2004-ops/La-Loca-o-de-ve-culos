@@ -1035,7 +1035,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
               {soListModal.orders.map(os => (
                 <div key={os.id} className="p-5 border border-neutral-800 rounded-2xl hover:border-[#D4AF37] transition-all flex justify-between items-center bg-[#0a0a0a]/50">
                   <div>
-                    <h5 className="text-sm font-black text-neutral-950">{os.plate} — {os.model}</h5>
+                    <h5 className="text-sm font-black text-white">{os.plate} — {os.model}</h5>
                     <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">{formatDate(os.date)}</p>
                     <p className="text-xs text-neutral-400 mt-2 line-clamp-1">{os.description}</p>
                   </div>
