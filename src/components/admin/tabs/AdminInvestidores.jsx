@@ -264,6 +264,7 @@ const AdminInvestidores = ({
   const [selectedMonthForCalc, setSelectedMonthForCalc] = useState(null); // For memory modal month filter
   const [selectedPlateFilter, setSelectedPlateFilter] = useState('all');
   const [investorSearch, setInvestorSearch] = useState('');
+  const [visibleLimit, setVisibleLimit] = useState(12);
 
   const loadPayoutHistory = useCallback(async (investorId) => {
     const records = await getPayoutsForInvestor(investorId);
@@ -1166,7 +1167,7 @@ const AdminInvestidores = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
-            {filteredAndSortedInvestors.map((investor) => {
+            {filteredAndSortedInvestors.slice(0, visibleLimit).map((investor) => {
               const { payout, currentMonthNet, carriedDebt, competenciaKey } = calculateInvestorPayout(investor);
               const invVehs = (vehicles || []).filter(v => {
                 const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
@@ -1426,6 +1427,17 @@ const AdminInvestidores = ({
                 </div>
               );
             })}
+
+            {visibleLimit < filteredAndSortedInvestors.length && (
+              <div className="col-span-full mt-4 mb-8 flex justify-center">
+                <button
+                  onClick={() => setVisibleLimit(prev => prev + 12)}
+                  className="px-8 py-4 bg-neutral-950 text-[#C5A059] text-[10px] uppercase tracking-[0.2em] font-black rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-neutral-950/10"
+                >
+                  Carregar Mais ({filteredAndSortedInvestors.length - visibleLimit} restantes)
+                </button>
+              </div>
+            )}
 
             {filteredAndSortedInvestors.length === 0 && (
               <div className="col-span-full py-20 flex flex-col items-center justify-center text-neutral-400 space-y-4 bg-white rounded-[2.5rem] border border-dashed border-neutral-200">
