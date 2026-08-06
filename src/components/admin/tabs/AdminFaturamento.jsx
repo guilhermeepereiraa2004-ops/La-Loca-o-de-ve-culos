@@ -1279,8 +1279,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                   />
                 )}
               </div>
-            ))}
-            
+            );
+          })}
             {visibleLimit < filtered.length && (
               <div className="mt-8 flex justify-center">
                 <button
