@@ -22,20 +22,28 @@ const AdminLocacoes = ({
   onRenewContract
 }) => {
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = React.useState('');
   const [dateStart, setDateStart] = React.useState('');
   const [dateEnd, setDateEnd] = React.useState('');
   const [displayLimit, setDisplayLimit] = React.useState(15);
 
-  const safeRentals = Array.isArray(rentals) ? rentals : [];
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
-  const filteredRentals = safeRentals.filter(rental => {
+  const safeRentals = React.useMemo(() => Array.isArray(rentals) ? rentals : [], [rentals]);
+
+  const filteredRentals = React.useMemo(() => safeRentals.filter(rental => {
     try {
       const rawDate = rental.startDate || rental.date;
 
       // 1. Search term filter
-      if (searchTerm) {
+      if (debouncedSearchTerm) {
         const normalizeString = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-        const term = normalizeString(searchTerm).replace(/-/g, '');
+        const term = normalizeString(debouncedSearchTerm).replace(/-/g, '');
         const condutor = normalizeString(rental.userName || rental.user);
         const placa = normalizeString(rental.vehiclePlate || rental.plate).replace(/-/g, '');
         const modelo = normalizeString(rental.vehicleModel || rental.vehicle);
@@ -77,18 +85,18 @@ const AdminLocacoes = ({
     } catch (e) {
       return true;
     }
-  });
+  }), [safeRentals, debouncedSearchTerm, dateStart, dateEnd, rentalFilter]);
 
-  const totalFaturamento = safeRentals.reduce((acc, r) => {
+  const totalFaturamento = React.useMemo(() => safeRentals.reduce((acc, r) => {
     try {
       const val = typeof r.value === 'string' 
         ? parseCurrency(r.value) 
         : (parseFloat(r.value) || 0);
       return acc + val;
     } catch (e) { return acc; }
-  }, 0);
+  }, 0), [safeRentals]);
 
-  const proximasDevolucoes = safeRentals.filter(r => {
+  const proximasDevolucoes = React.useMemo(() => safeRentals.filter(r => {
     try {
       const rawDate = r.startDate || r.date || new Date().toISOString().split('T')[0];
       const startDate = new Date(rawDate + 'T12:00:00');
@@ -107,7 +115,7 @@ const AdminLocacoes = ({
       const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       return diffDays <= 3 && diffDays >= 0 && r.status === 'Ativo';
     } catch (e) { return false; }
-  }).length;
+  }).length, [safeRentals]);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">

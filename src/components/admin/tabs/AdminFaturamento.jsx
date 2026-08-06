@@ -576,10 +576,19 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
 
 const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrders = [], vehicles = [], clients = [], fines = [], transactions = [], onConfirmPayment, onPayCaucao }) => {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [filterMode, setFilterMode] = useState('recentes');
   const [lateFees, setLateFees] = useState({});
   const [openHistories, setOpenHistories] = useState({});
   const [paymentSelectionRental, setPaymentSelectionRental] = useState(null);
+  const [visibleLimit, setVisibleLimit] = useState(10);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const availableCategories = React.useMemo(() => {
     const categoriesSet = new Set();
@@ -807,7 +816,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
   const safeRentals = Array.isArray(rentals) ? rentals : [];
   let filtered = safeRentals.filter(r => {
     if (r.status !== 'Ativo') return false;
-    const searchLower = search.toLowerCase();
+    const searchLower = debouncedSearch.toLowerCase();
     const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
     const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (r.userName || r.user || '').toLowerCase().includes(searchLower) || cleanPlate.includes(cleanSearch);
@@ -950,8 +959,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       {/* Rental Cards */}
       <div className="space-y-8">
         {filtered.length > 0 ? (
-          filtered.map(rental => {
-            const calc = calculateBoleto(rental);
+          <>
+            {filtered.slice(0, visibleLimit).map(rental => {
+              const calc = calculateBoleto(rental);
 
             // Filter transactions for this rental contract matching the plate of main vehicle or replacement vehicle
             const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
@@ -1269,8 +1279,19 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                   />
                 )}
               </div>
-            );
-          })
+            ))}
+            
+            {visibleLimit < filtered.length && (
+              <div className="mt-8 flex justify-center">
+                <button
+                  onClick={() => setVisibleLimit(prev => prev + 10)}
+                  className="px-8 py-3 bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900 hover:border-[#C5A059] text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+                >
+                  Carregar Mais
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="p-20 text-center bg-white border border-neutral-100 rounded-3xl shadow-sm">
             <Receipt size={32} className="mx-auto mb-4 text-neutral-200" />

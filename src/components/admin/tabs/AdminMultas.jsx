@@ -40,6 +40,14 @@ const AdminMultas = ({
   clients = []
 }) => {
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   const [statusFilter, setStatusFilter] = useState('Todos');
   const [driverFilter, setDriverFilter] = useState('Todos');
   const [vehicleFilter, setVehicleFilter] = useState('Todos');
@@ -157,7 +165,7 @@ const AdminMultas = ({
   // Filtered fines
   const filteredFines = useMemo(() => {
     return fines.filter(f => {
-      const searchLower = search.toLowerCase();
+      const searchLower = debouncedSearch.toLowerCase();
       const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
       const cleanPlate = (f.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
       const matchesSearch = 
@@ -172,7 +180,7 @@ const AdminMultas = ({
 
       return matchesSearch && matchesStatus && matchesDriver && matchesVehicle;
     });
-  }, [fines, search, statusFilter, driverFilter, vehicleFilter]);
+  }, [fines, debouncedSearch, statusFilter, driverFilter, vehicleFilter]);
 
   const loadPdfJs = () => {
     return new Promise((resolve, reject) => {

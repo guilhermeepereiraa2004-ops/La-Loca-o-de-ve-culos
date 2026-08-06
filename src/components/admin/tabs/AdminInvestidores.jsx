@@ -264,6 +264,14 @@ const AdminInvestidores = ({
   const [selectedMonthForCalc, setSelectedMonthForCalc] = useState(null); // For memory modal month filter
   const [selectedPlateFilter, setSelectedPlateFilter] = useState('all');
   const [investorSearch, setInvestorSearch] = useState('');
+  const [debouncedInvestorSearch, setDebouncedInvestorSearch] = useState('');
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedInvestorSearch(investorSearch);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [investorSearch]);
   const [visibleLimit, setVisibleLimit] = useState(12);
 
   const loadPayoutHistory = useCallback(async (investorId) => {
@@ -304,7 +312,7 @@ const AdminInvestidores = ({
   // Filter and sort investors: pending first, then positive payouts, then others
   const filteredAndSortedInvestors = [...investorsWithPayoutData]
     .filter(inv => {
-      const searchNormalized = (investorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const searchNormalized = (debouncedInvestorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
       if (!searchNormalized) return true;
       
       const nameMatch = (inv.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(searchNormalized);
