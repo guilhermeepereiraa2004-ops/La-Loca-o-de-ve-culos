@@ -167,9 +167,10 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
     const startStr = (rental.startDate || rental.date).substring(0, 10);
     const startObj = new Date(startStr + 'T12:00:00');
     
-    const today = new Date();
-    today.setHours(12, 0, 0, 0);
-    
+    const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+    const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date();
+    if (!isClosed) endLimit.setHours(12, 0, 0, 0);
+
     const safeHistory = Array.isArray(history) ? history : [];
     const specificPayments = safeHistory.filter(t => (t.desc || '').includes('Ref:'));
     let legacyPayments = safeHistory.filter(t => !(t.desc || '').includes('Ref:')).sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -183,8 +184,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
     let weekNumber = 1;
     let safety = 300;
     
-    // Gerar até a semana atual (inclusive)
-    while (iterDate <= today && safety > 0) {
+    // Gerar até o endLimit (inclusive)
+    while (iterDate <= endLimit && safety > 0) {
       const dueStr = iterDate.toISOString().split('T')[0];
       const calc = calculateBoletoForCycle(rental, dueStr, true);
       
@@ -195,11 +196,11 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       let cycleAdjustments = [];
       
       // 1. Verifica se tem pagamento específico para esta semana
-      const specificPayment = specificPayments.find(t => t.desc.includes(labelRef));
+      const specificMatches = specificPayments.filter(t => t.desc.includes(labelRef));
       
-      if (specificPayment) {
+      if (specificMatches.length > 0) {
         isPaid = true;
-        actualTotal = parseFloat(specificPayment.val || 0);
+        actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || 0), 0);
         
         // Procurar em allTransactions descontos ou adicionais vinculados a este labelRef
         if (allTransactions) {
@@ -274,9 +275,10 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
             return matchesPlate && matchesRef && isAdjustment;
           });
         }
-      } else if (legacyCount > 0) {
+      } else if (legacyPayments.length > 0) {
         isPaid = true;
-        legacyCount--;
+        actualTotal = parseFloat(legacyPayments[0].val || 0);
+        legacyPayments.splice(0, 1);
       }
 
       cycles.push({
@@ -447,17 +449,42 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                         </span>
                       </div>
 
-                      <div className="flex flex-col gap-2 pt-3 border-t border-neutral-200/60 mt-3">
-                        <span className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Destino do Recebimento</span>
-                        <div className="flex gap-4">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name={`dest-${cycle.weekNumber}`} value="investor" checked={paymentDestination === 'investor'} onChange={() => setPaymentDestination('investor')} className="text-emerald-600 focus:ring-emerald-500" />
-                            <span className="text-xs font-bold text-neutral-700">Repassar ao Investidor</span>
-                          </label>
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" name={`dest-${cycle.weekNumber}`} value="admin" checked={paymentDestination === 'admin'} onChange={() => setPaymentDestination('admin')} className="text-amber-600 focus:ring-amber-500" />
-                            <span className="text-xs font-bold text-neutral-700">Reter na Empresa (Adiantamento)</span>
-                          </label>
+                      <div className="flex flex-col gap-2 pt-4 border-t border-neutral-200/60 mt-4">
+                        <span className="text-[10px] font-black text-neutral-800 uppercase tracking-widest text-center mb-1">Destino do Recebimento</span>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setPaymentDestination('investor')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                              paymentDestination === 'investor'
+                                ? 'border-emerald-500 bg-emerald-50 shadow-sm scale-[1.02]'
+                                : 'border-neutral-100 bg-white hover:border-neutral-200 hover:bg-neutral-50'
+                            }`}
+                          >
+                            <span className={`text-[11px] font-black uppercase tracking-wider ${paymentDestination === 'investor' ? 'text-emerald-700' : 'text-neutral-500'}`}>
+                              Repassar
+                            </span>
+                            <span className={`text-[9px] font-bold mt-0.5 ${paymentDestination === 'investor' ? 'text-emerald-600/80' : 'text-neutral-400'}`}>
+                              Para o Investidor
+                            </span>
+                          </button>
+                          
+                          <button
+                            type="button"
+                            onClick={() => setPaymentDestination('admin')}
+                            className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all ${
+                              paymentDestination === 'admin'
+                                ? 'border-[#C5A059] bg-[#C5A059]/10 shadow-sm scale-[1.02]'
+                                : 'border-neutral-100 bg-white hover:border-neutral-200 hover:bg-neutral-50'
+                            }`}
+                          >
+                            <span className={`text-[11px] font-black uppercase tracking-wider ${paymentDestination === 'admin' ? 'text-[#a38040]' : 'text-neutral-500'}`}>
+                              Reter
+                            </span>
+                            <span className={`text-[9px] font-bold mt-0.5 text-center leading-tight ${paymentDestination === 'admin' ? 'text-[#C5A059]' : 'text-neutral-400'}`}>
+                              Na Empresa (Já pago)
+                            </span>
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -850,9 +877,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const matchesSearch = (r.userName || r.user || '').toLowerCase().includes(searchLower) || cleanPlate.includes(cleanSearch);
     if (!matchesSearch) return false;
 
-    // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
+    // Se for o novo filtro, só mostrar os encerrados
     const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
-    if (filterMode === 'pendentes' || isClosed) {
+    if (filterMode === 'encerrados_pendentes' && !isClosed) return false;
+
+    // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
+    if (filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || isClosed) {
       const startStr = (r.startDate || r.date).substring(0, 10);
       const startObj = new Date(startStr + 'T12:00:00');
       
@@ -868,12 +898,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
       const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
       const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
-      const activeRC = matchedRCs.find(rc => rc.status === 'Ativo') || null;
-      const repPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
+      const allRepPlates = matchedRCs.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
 
       const rHistory = (transactions || []).filter(t => {
         const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-        const isMatch = tPlate === rPlate || (repPlate && tPlate === repPlate);
+        const isMatch = tPlate === rPlate || allRepPlates.includes(tPlate);
         
         // Excluir transações anteriores ao início da locação para não puxar histórico do veículo com outros motoristas
         const rentalStartDate = r.startDate || r.date;
@@ -885,7 +914,18 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       });
 
       const legacyCount = rHistory.filter(t => !(t.desc || '').includes('Ref:')).length;
-      const specificCount = rHistory.filter(t => (t.desc || '').includes('Ref:')).length;
+      
+      const specificRefs = new Set();
+      rHistory.forEach(t => {
+        const desc = t.desc || '';
+        const match = desc.match(/(Ref:\s*\d{2}\/\d{2}\/\d{4}\s*a\s*\d{2}\/\d{2}\/\d{4})/i);
+        if (match) {
+          specificRefs.add(match[1]);
+        } else if (desc.includes('Ref:')) {
+          specificRefs.add(desc); // fallback
+        }
+      });
+      const specificCount = specificRefs.size;
 
       // Se total de semanas de vida é maior que a soma de transações, tem pendência
       // Se não tem pendência e tá encerrado, some da tela!
@@ -957,6 +997,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             >
               <AlertCircle size={10} /> Pendentes
             </button>
+            <button
+              onClick={() => setFilterMode('encerrados_pendentes')}
+              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap flex items-center gap-1 ${filterMode === 'encerrados_pendentes' ? 'bg-red-100 text-red-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
+            >
+              <AlertCircle size={10} /> Inadimplentes (Encerrados)
+            </button>
           </div>
         </div>
       </div>
@@ -989,15 +1035,21 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             {filtered.slice(0, visibleLimit).map(rental => {
               const calc = calculateBoleto(rental);
 
-            // Filter transactions for this rental contract matching the plate of main vehicle or replacement vehicle
+            // Filter transactions for this rental contract matching the plate of main vehicle or any replacement vehicle ever used
             const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
-            const activeRC = calc.activeRC;
-            const replacementPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
+            const rentalDriver = (rental.user || rental.userName || '').trim().toLowerCase();
+            const matchedRCsForHistory = Array.isArray(replacementContracts)
+              ? replacementContracts.filter(rc => {
+                  if (rc.mainVehiclePlate && rentalPlate) return rc.mainVehiclePlate.toLowerCase() === rentalPlate;
+                  return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver;
+                })
+              : [];
+            const allReplacementPlates = matchedRCsForHistory.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
 
             const rawHistory = (transactions || [])
               .filter(t => {
                 const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-                const isMatchingPlate = tPlate && (tPlate === rentalPlate || (replacementPlate && tPlate === replacementPlate));
+                const isMatchingPlate = tPlate && (tPlate === rentalPlate || allReplacementPlates.includes(tPlate));
                 if (!isMatchingPlate) return false;
 
                 // Apenas incluir transações a partir da data de início da locação para evitar herdar pagamentos antigos de outros motoristas do mesmo veículo
@@ -1072,7 +1124,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                         </div>
                         <div>
                           <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tight">{rental.userName || rental.user}</h4>
-                          <div className="flex items-center gap-2 mt-1">
+                          <div className="flex flex-wrap items-center gap-2 mt-1">
+                            {rental.status !== 'Ativo' && (
+                              <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 animate-pulse">
+                                {rental.status === 'Encerrado' || rental.status === 'Finalizado' ? 'Encerrado com Pendência' : rental.status}
+                              </span>
+                            )}
                             <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500">
                               Cobrança: {getDayOfWeek(rental.startDate || rental.date)}s
                             </span>

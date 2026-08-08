@@ -2090,7 +2090,7 @@ export const useAppState = () => {
         cat: 'Aluguel',
         vehiclePlate: rental.plate,
         status: 'Concluído',
-        responsible: ''
+        responsible: isRetido ? 'Administradora' : ''
       });
     }
 
@@ -2104,12 +2104,12 @@ export const useAppState = () => {
         cat: 'Aluguel',
         vehiclePlate: replacementPlate,
         status: 'Concluído',
-        responsible: ''
+        responsible: isRetido ? 'Administradora' : ''
       });
     }
 
     // 2a. Taxa de Administração - Carro Principal (Entrada - Empresa)
-    if (mainAdminRevenue > 0) {
+    if (mainAdminRevenue > 0 && !isRetido) {
       trans.push({
         date: transactionDate,
         type: 'in',
@@ -2137,7 +2137,7 @@ export const useAppState = () => {
     }
 
     // 2b. Taxa de Administração - Carro Reserva (Entrada - Empresa)
-    if (repAdminRevenue > 0 && replacementPlate) {
+    if (repAdminRevenue > 0 && replacementPlate && !isRetido) {
       trans.push({
         date: transactionDate,
         type: 'in',
