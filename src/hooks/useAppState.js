@@ -2499,7 +2499,7 @@ export const useAppState = () => {
         await handleUpdateVehicle({ id: os.vehicleId, status: 'Em Preparação' });
       } else {
         const wasRented = rentals.some(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
-        await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Disponível' });
+        await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Em Preparação' });
       }
       const maintenanceDate = customEndDate || os.date;
       await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: maintenanceDate, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
