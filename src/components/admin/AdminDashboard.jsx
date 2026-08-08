@@ -205,8 +205,8 @@ const AdminDashboard = ({
           const adminTaxPercent = parseFloat(vehicle.adminTax || 20) / 100;
           
           const rawValue = Math.abs(transactionData.val);
-          if (rawValue > tireTax) {
-            const adminTaxValue = (rawValue - tireTax) * adminTaxPercent;
+          if (rawValue > 0) {
+            const adminTaxValue = rawValue * adminTaxPercent;
             
             if (tireTax > 0) {
               await onAddTransaction({

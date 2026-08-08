@@ -169,12 +169,9 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
     const today = new Date();
     today.setHours(12, 0, 0, 0);
     
-    // Contagem de pagamentos legados (genéricos sem Ref)
     const safeHistory = Array.isArray(history) ? history : [];
-    let legacyCount = safeHistory.filter(t => !(t.desc || '').includes('Ref:')).length;
-    
-    // Pagamentos específicos (com Ref)
     const specificPayments = safeHistory.filter(t => (t.desc || '').includes('Ref:'));
+    let legacyPayments = safeHistory.filter(t => !(t.desc || '').includes('Ref:')).sort((a, b) => new Date(a.date) - new Date(b.date));
     
     const cycles = [];
     let iterDate = new Date(startObj);
@@ -216,10 +213,24 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
             return matchesPlate && matchesRef && isAdjustment;
           });
         }
-      } else if (legacyCount > 0) {
-        // 2. Se não tem específico, consome um genérico da fila cronológica
-        isPaid = true;
-        legacyCount--;
+      } else {
+        // 2. Se não tem específico, procura um pagamento genérico que tenha sido feito dentro da data do ciclo (ou até 7 dias depois)
+        const matchedLegacyIdx = legacyPayments.findIndex(t => {
+          if (!t.date) return false;
+          const tDate = t.date.substring(0, 10);
+          
+          const endPlus7Obj = new Date(calc.cycleEnd + 'T12:00:00');
+          endPlus7Obj.setDate(endPlus7Obj.getDate() + 7);
+          const endPlus7 = endPlus7Obj.toISOString().split('T')[0];
+          
+          return tDate >= calc.cycleStart && tDate <= endPlus7;
+        });
+        
+        if (matchedLegacyIdx !== -1) {
+          isPaid = true;
+          actualTotal = parseFloat(legacyPayments[matchedLegacyIdx].val || 0);
+          legacyPayments.splice(matchedLegacyIdx, 1);
+        }
       }
       
       cycles.push({
