@@ -2077,13 +2077,16 @@ export const useAppState = () => {
     const transactionDate = billingData.dueDate || new Date().toISOString().split('T')[0];
     const trans = [];
 
+    const isRetido = billingData.destination === 'admin';
+    const retidoSuffix = isRetido ? ' [Retido Administradora]' : '';
+
     // 1a. Pagamento de Aluguel Carro Principal (Entrada - base do investidor principal)
     if (mainRent > 0) {
       trans.push({
         date: transactionDate,
         type: 'in',
         val: mainRent,
-        desc: billingData.customDescription || `Pagamento Aluguel - ${rental.user}`,
+        desc: (billingData.customDescription || `Pagamento Aluguel - ${rental.user}`) + retidoSuffix,
         cat: 'Aluguel',
         vehiclePlate: rental.plate,
         status: 'Concluído',
@@ -2097,7 +2100,7 @@ export const useAppState = () => {
         date: transactionDate,
         type: 'in',
         val: repRent,
-        desc: billingData.customRepDescription || `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`,
+        desc: (billingData.customRepDescription || `Pagamento Aluguel Reserva (${replacementPlate}) - ${rental.user}`) + retidoSuffix,
         cat: 'Aluguel',
         vehiclePlate: replacementPlate,
         status: 'Concluído',

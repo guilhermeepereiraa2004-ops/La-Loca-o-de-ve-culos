@@ -59,6 +59,12 @@ const getCompanyShareForTransaction = (t, vehicles = [], rentals = []) => {
   if (category === 'aluguel') {
     const descLower = (t.desc || '').toLowerCase();
     const isAsaas = descLower.includes('recebimento') || descLower.includes('asaas');
+    const isRetido = descLower.includes('[retido');
+    
+    if (isRetido) {
+      return val;
+    }
+    
     if (!isAsaas) {
       return 0;
     }
@@ -154,9 +160,9 @@ const AdminFinanceiro = ({
       const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
       const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
       
-      // Hide manual rent transactions (gross rent) from the company cash flow totals
+      // Hide manual rent transactions (gross rent) from the company cash flow totals, EXCEPT [Retido]
       const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
-        !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+        !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas') || (t.desc || '').toLowerCase().includes('[retido'));
 
       const tDate = t.date ? t.date.substring(0, 10) : '';
       const matchesExactDate = (!dateFilterStart || tDate >= dateFilterStart) && (!dateFilterEnd || tDate <= dateFilterEnd);
@@ -199,9 +205,9 @@ const AdminFinanceiro = ({
         (t.responsible && t.responsible.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (t.vehiclePlate && t.vehiclePlate.replace(/-/g, '').toLowerCase().includes(searchTerm.replace(/-/g, '').toLowerCase()));
 
-      // Hide manual rent transactions (gross rent) from the company transactions list
+      // Hide manual rent transactions (gross rent) from the company transactions list, EXCEPT [Retido]
       const isManualRent = t.type === 'in' && (t.cat || '').toLowerCase().trim() === 'aluguel' && 
-        !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas'));
+        !((t.desc || '').toLowerCase().includes('recebimento') || (t.desc || '').toLowerCase().includes('asaas') || (t.desc || '').toLowerCase().includes('[retido'));
         
       const tDate = t.date ? t.date.substring(0, 10) : '';
       const matchesExactDate = (!dateFilterStart || tDate >= dateFilterStart) && (!dateFilterEnd || tDate <= dateFilterEnd);

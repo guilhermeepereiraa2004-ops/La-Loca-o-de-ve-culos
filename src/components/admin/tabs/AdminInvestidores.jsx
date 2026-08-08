@@ -80,6 +80,14 @@ const AdminInvestidores = ({
     if (category === 'aluguel') {
       const descLower = (t.desc || '').toLowerCase();
       const isAsaas = descLower.includes('recebimento') || descLower.includes('asaas');
+      const isRetido = descLower.includes('[retido');
+
+      if (isRetido) {
+        return {
+          share: 0,
+          explanation: 'Valor integral retido pela administradora (Adiantamento prévio)'
+        };
+      }
       
       const vehicle = invVehicles.find(v => v.plate === t.vehiclePlate);
       const adminTaxPercent = parseFloat(vehicle?.adminTax || 20);

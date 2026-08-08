@@ -161,6 +161,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   const [additionalPaymentCat, setAdditionalPaymentCat] = useState('');
   const [additionalPaymentDesc, setAdditionalPaymentDesc] = useState('');
   const [showAdditionalFields, setShowAdditionalFields] = useState(false);
+  const [paymentDestination, setPaymentDestination] = useState('investor'); // 'investor' ou 'admin'
   
   React.useEffect(() => {
     const startStr = (rental.startDate || rental.date).substring(0, 10);
@@ -445,6 +446,20 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           R$ {((parseFloat(customValue) || 0) - (parseFloat(companyDiscount) || 0) + (parseFloat(additionalPaymentValue) || 0) + (includeCaucao && cycle.calc.caucaoInstallment ? cycle.calc.caucaoInstallment.value : 0)).toFixed(2).replace('.', ',')}
                         </span>
                       </div>
+
+                      <div className="flex flex-col gap-2 pt-3 border-t border-neutral-200/60 mt-3">
+                        <span className="text-[10px] font-bold text-neutral-800 uppercase tracking-wider">Destino do Recebimento</span>
+                        <div className="flex gap-4">
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name={`dest-${cycle.weekNumber}`} value="investor" checked={paymentDestination === 'investor'} onChange={() => setPaymentDestination('investor')} className="text-emerald-600 focus:ring-emerald-500" />
+                            <span className="text-xs font-bold text-neutral-700">Repassar ao Investidor</span>
+                          </label>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name={`dest-${cycle.weekNumber}`} value="admin" checked={paymentDestination === 'admin'} onChange={() => setPaymentDestination('admin')} className="text-amber-600 focus:ring-amber-500" />
+                            <span className="text-xs font-bold text-neutral-700">Reter na Empresa (Adiantamento)</span>
+                          </label>
+                        </div>
+                      </div>
                     </div>
                     
                     <div className="flex gap-2 w-full justify-end mt-2">
@@ -459,6 +474,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           setAdditionalPaymentCat('');
                           setAdditionalPaymentDesc('');
                           setShowAdditionalFields(false);
+                          setPaymentDestination('investor');
                         }}
                         className="px-4 py-2 bg-neutral-200 hover:bg-neutral-300 text-neutral-700 text-xs font-bold rounded-md transition-colors"
                       >
@@ -509,7 +525,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           
                           const caucaoToPay = includeCaucao ? cycle.calc.caucaoInstallment : null;
                           
-                          setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay });
+                          setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay, destination: paymentDestination });
                         }}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md transition-colors shadow-sm"
                       >
@@ -544,6 +560,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                         onClick={() => {
                           setEditingCycle(cycle.weekNumber);
                           setCustomValue(cycle.calc.total.toFixed(2));
+                          setPaymentDestination('investor');
                         }}
                         className="flex-shrink-0 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md transition-colors"
                       >
@@ -565,7 +582,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           confirmText="Sim, confirmar"
           cancelText="Não, cancelar"
           onConfirm={() => {
-            onConfirmPayment(pendingConfirm.rentalId, pendingConfirm.modifiedCalc, pendingConfirm.desc, pendingConfirm.caucaoToPay);
+            onConfirmPayment(pendingConfirm.rentalId, pendingConfirm.modifiedCalc, pendingConfirm.desc, pendingConfirm.caucaoToPay, pendingConfirm.destination);
             setPendingConfirm(null);
             setEditingCycle(null);
             setShowSuccess(true);
@@ -826,31 +843,30 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
   let filtered = safeRentals.filter(r => {
-    if (r.status !== 'Ativo') return false;
+    if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return false;
     const searchLower = debouncedSearch.toLowerCase();
     const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
     const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (r.userName || r.user || '').toLowerCase().includes(searchLower) || cleanPlate.includes(cleanSearch);
     if (!matchesSearch) return false;
 
-    // Se o filtro for 'pendentes', precisamos checar se tem atraso
-    if (filterMode === 'pendentes') {
+    // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
+    const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
+    if (filterMode === 'pendentes' || isClosed) {
       const startStr = (r.startDate || r.date).substring(0, 10);
       const startObj = new Date(startStr + 'T12:00:00');
-      const today = new Date();
-      today.setHours(12, 0, 0, 0);
+      
+      const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
+      if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
       let iterDate = new Date(startObj);
       let totalWeeks = 0;
-      while (iterDate <= today && totalWeeks < 300) {
+      while (iterDate <= endLimit && totalWeeks < 300) {
         totalWeeks++;
         iterDate.setDate(iterDate.getDate() + 7);
       }
 
       const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
-      // O activeRC não é super necessário para essa contagem rápida, pois estamos só checando atrasos brutos 
-      // e os pagamentos de RC caem no mesmo plate do carro titular ou são ignorados no count de "Aluguel" puros
-      // Mas para sermos precisos:
       const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
       const activeRC = matchedRCs.find(rc => rc.status === 'Ativo') || null;
       const repPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
@@ -872,8 +888,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const specificCount = rHistory.filter(t => (t.desc || '').includes('Ref:')).length;
 
       // Se total de semanas de vida é maior que a soma de transações, tem pendência
-      // OBS: Isso pode ser falso positivo para clientes que pagam em vários PIXes, 
-      // mas é a melhor aproximação para a listagem rápida.
+      // Se não tem pendência e tá encerrado, some da tela!
       if (totalWeeks <= legacyCount + specificCount) {
         return false;
       }
@@ -1280,11 +1295,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                     allTransactions={transactions}
                     availableCategories={availableCategories}
                     onClose={() => setPaymentSelectionRental(null)}
-                    onConfirmPayment={async (rentalId, calcObj, customDesc, caucaoToPay) => {
+                    onConfirmPayment={async (rentalId, calcObj, customDesc, caucaoToPay, destination = 'investor') => {
                       if (caucaoToPay && onPayCaucao) {
                         await onPayCaucao(rentalId, caucaoToPay.number, caucaoToPay.value);
                       }
-                      onConfirmPayment(rentalId, { ...calcObj, customDescription: customDesc, customRepDescription: customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva') });
+                      onConfirmPayment(rentalId, { ...calcObj, customDescription: customDesc, customRepDescription: customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva'), destination });
                     }}
                     calculateBoletoForCycle={calculateBoletoForCycle}
                   />
