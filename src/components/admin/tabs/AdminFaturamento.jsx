@@ -195,12 +195,15 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       let actualTotal = null;
       let cycleAdjustments = [];
       
+      let isRetido = false;
+
       // 1. Verifica se tem pagamento específico para esta semana
       const specificMatches = specificPayments.filter(t => t.desc.includes(labelRef));
       
       if (specificMatches.length > 0) {
         isPaid = true;
         actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || 0), 0);
+        isRetido = specificMatches.some(t => (t.desc || '').toLowerCase().includes('[retido'));
         
         // Procurar em allTransactions descontos ou adicionais vinculados a este labelRef
         if (allTransactions) {
@@ -242,6 +245,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         label: labelRef,
         isPaid,
         actualTotal,
+        isRetido,
         adjustments: cycleAdjustments
       });
       
@@ -259,10 +263,13 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       let actualTotal = null;
       let cycleAdjustments = [];
       
-      const specificPayment = specificPayments.find(t => t.desc.includes(labelRef));
-      if (specificPayment) {
+      let isRetido = false;
+      
+      const specificMatches = specificPayments.filter(t => t.desc.includes(labelRef));
+      if (specificMatches.length > 0) {
         isPaid = true;
-        actualTotal = parseFloat(specificPayment.val || 0);
+        actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || 0), 0);
+        isRetido = specificMatches.some(t => (t.desc || '').toLowerCase().includes('[retido'));
         
         if (allTransactions) {
           const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
@@ -288,6 +295,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         label: labelRef,
         isPaid,
         actualTotal,
+        isRetido,
         adjustments: cycleAdjustments
       });
     }
@@ -566,6 +574,11 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                       <div className={`text-lg font-black ${cycle.isPaid ? 'text-emerald-700' : 'text-[#C5A059]'}`}>
                         R$ {(cycle.actualTotal !== null && cycle.actualTotal !== undefined ? cycle.actualTotal : cycle.calc.total).toFixed(2).replace('.', ',')}
                       </div>
+                      {cycle.isPaid && cycle.isRetido !== undefined && (
+                        <div className={`mt-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${cycle.isRetido ? 'bg-[#C5A059]/20 text-[#a38040]' : 'bg-emerald-100 text-emerald-700'}`}>
+                          {cycle.isRetido ? 'Retido (Admin)' : 'Repasse (Investidor)'}
+                        </div>
+                      )}
                       {cycle.isPaid && cycle.adjustments && cycle.adjustments.length > 0 && (
                         <div className="mt-1 space-y-0.5 w-full text-right">
                           {cycle.adjustments.map((adj, idx) => (
