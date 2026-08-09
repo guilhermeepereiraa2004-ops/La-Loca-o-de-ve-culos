@@ -1775,6 +1775,15 @@ export const useAppState = () => {
 
       await handleUpdateVehicle({ id: rental.vehicleId, status: 'Em preparação' });
 
+      // Garante que se houver um carro reserva ativo com esse motorista, ele também será devolvido
+      const activeRCs = replacementContracts.filter(rc => 
+        (rc.mainVehiclePlate === rental.plate || rc.mainVehiclePlate === rental.vehiclePlate) && 
+        rc.status === 'Ativo'
+      );
+      for (const activeRC of activeRCs) {
+        await handleCloseReplacementContract(activeRC.id, todayStr);
+      }
+
       const transactionsToAdd = [];
       const today = todayStr;
 
