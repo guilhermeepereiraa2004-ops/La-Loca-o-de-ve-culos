@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   X, Menu, TrendingUp, Car, Wrench, Wallet, Calendar, 
-  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart
+  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart, Activity
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { EditorialLabel } from '../ui/EditorialLabel';
@@ -215,13 +215,24 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       
       if (!monthlyPerformance[monthKey]) {
         monthlyPerformance[monthKey] = {
-          gross: 0, adminTax: 0, maintenance: 0, protection: 0, insurance: 0, other: 0, net: 0
+          gross: 0, adminTax: 0, maintenance: 0, protection: 0, insurance: 0, other: 0, net: 0, vehicles: {}
         };
       }
       
       const cat = t.cat?.toLowerCase().trim() || '';
       const val = Math.abs(t.val || 0);
+      const plate = t.vehiclePlate || 'GERAL';
       
+      if (!monthlyPerformance[monthKey].vehicles[plate]) {
+        const vRef = myVehicles.find(v => v.plate === plate);
+        monthlyPerformance[monthKey].vehicles[plate] = {
+          plate,
+          model: vRef ? vRef.model : (plate === 'GERAL' ? 'Outros (Não vinculado)' : plate),
+          gross: 0, adminTax: 0, maintenance: 0, protection: 0, insurance: 0, other: 0, net: 0
+        };
+      }
+      
+      const vPerf = monthlyPerformance[monthKey].vehicles[plate];
       const isSeguroFranquia = cat.includes('seguro') || cat.includes('franquia');
       const isProtecaoVeicular = cat.includes('proteç') || cat.includes('protec');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
@@ -230,32 +241,46 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         if (!isBeforeJune2026) {
           monthlyPerformance[monthKey].insurance += val;
           monthlyPerformance[monthKey].net -= val;
+          vPerf.insurance += val;
+          vPerf.net -= val;
         }
       } else if (isProtecaoVeicular) {
         if (!isBeforeJune2026) {
           monthlyPerformance[monthKey].protection += val;
           monthlyPerformance[monthKey].net -= val;
+          vPerf.protection += val;
+          vPerf.net -= val;
         }
       } else if (t.type === 'in') {
         if (cat === 'taxa adm') {
           monthlyPerformance[monthKey].adminTax += val;
           monthlyPerformance[monthKey].net -= val;
+          vPerf.adminTax += val;
+          vPerf.net -= val;
         } else {
           monthlyPerformance[monthKey].gross += val;
+          vPerf.gross += val;
           const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
           const taxRate = v ? (parseFloat(v.adminTax || 20) / 100) : 0;
           const calculatedTax = val * taxRate;
           monthlyPerformance[monthKey].adminTax += calculatedTax;
           monthlyPerformance[monthKey].net += val;
           monthlyPerformance[monthKey].net -= calculatedTax;
+          
+          vPerf.adminTax += calculatedTax;
+          vPerf.net += val;
+          vPerf.net -= calculatedTax;
         }
       } else if (t.type === 'out') {
         if (!isBeforeJune2026) {
           monthlyPerformance[monthKey].net -= val;
+          vPerf.net -= val;
           if (cat.includes('manuten')) {
             monthlyPerformance[monthKey].maintenance += val;
+            vPerf.maintenance += val;
           } else {
             monthlyPerformance[monthKey].other += val;
+            vPerf.other += val;
           }
         }
       }
@@ -333,7 +358,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         netValue: finalPayout,
         status,
         date: paymentDateLabel,
-        realPayout
+        realPayout,
+        vehicles: perf?.vehicles || {}
       });
     }
   }
@@ -428,6 +454,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           {[
             { id: 'dashboard', label: 'Dashboard', icon: PieChart },
             { id: 'rendimentos', label: 'Rendimentos', icon: TrendingUp },
+            { id: 'metricas', label: 'Métricas', icon: Activity },
             { id: 'minha-frota', label: 'Meus Veículos', icon: Car },
             { id: 'manutencao', label: 'Manutenções', icon: Wrench },
             { id: 'pagamentos', label: 'Dividendos', icon: Wallet },
@@ -599,7 +626,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 <EditorialLabel className="text-[#D4AF37] mb-2">Relatório Consolidado</EditorialLabel>
                 <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Rendimentos por Veículo</h2>
               </div>
-              <div className="overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-neutral-800 bg-[#0a0a0a]/80 text-[10px] uppercase tracking-widest text-neutral-500">
@@ -666,9 +694,181 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden flex flex-col gap-4">
+                {myVehicles.map((v) => (
+                  <div key={`mobile-${v.id}`} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
+                    <div className="p-5 flex items-center gap-4 bg-black/40 border-b border-neutral-800">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
+                        <img
+                          src={v.image || '/logo-new.png'}
+                          className="w-full h-full object-cover opacity-100 transition-all"
+                          alt={v.model}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
+                          style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: 'transparent' } : {}}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-black uppercase text-white tracking-widest">{v.model}</p>
+                        <p className="text-[10px] font-mono text-neutral-500 mt-0.5">{v.plate}</p>
+                      </div>
+                      <div>
+                        {v.currentYield > 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-950/80 border border-emerald-500/30 text-[#00E676] shadow-[0_0_10px_rgba(0,230,118,0.15)] drop-shadow-sm">
+                            {v.yieldPerc}
+                          </span>
+                        ) : v.currentYield < 0 ? (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-red-950/80 border border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(248,113,113,0.15)]">
+                            {v.yieldPerc}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-neutral-100 text-neutral-500">
+                            0.00%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Investido</p>
+                        <p className="text-sm font-semibold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                          R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Rend. Líquido</p>
+                        {v.currentYield > 0 ? (
+                          <p className="text-sm font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                            R$ {v.currentYield.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        ) : v.currentYield < 0 ? (
+                          <p className="text-sm font-bold font-mono text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">
+                            - R$ {Math.abs(v.currentYield).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        ) : (
+                          <p className="text-sm font-medium font-mono text-neutral-500 drop-shadow-sm">R$ 0,00</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
                 {myVehicles.length === 0 && (
                   <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold">
                     Nenhum veículo encontrado.
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'metricas' && (
+            <div className="space-y-12">
+              <div className="mb-10">
+                <EditorialLabel className="text-[#D4AF37] mb-2">Histórico Detalhado</EditorialLabel>
+                <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Métricas Mês a Mês</h2>
+              </div>
+              
+              <div className="space-y-8">
+                {dividendHistory.map(month => {
+                  const vehicles = Object.values(month.vehicles);
+                  if (vehicles.length === 0) return null;
+                  
+                  return (
+                    <div key={month.period} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
+                      <div className="p-6 bg-black border-b border-neutral-800 flex justify-between items-center">
+                        <h3 className="text-lg font-black uppercase text-white tracking-widest">{month.period}</h3>
+                        <span className="text-[10px] font-bold text-[#D4AF37] tracking-widest uppercase">
+                          Líquido Mês: R$ {month.netValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      {/* Desktop Table View */}
+                      <div className="hidden md:block overflow-x-auto">
+                        <table className="w-full text-left border-collapse whitespace-nowrap">
+                          <thead>
+                            <tr className="border-b border-neutral-800 bg-[#0a0a0a]/50 text-[10px] uppercase tracking-widest text-neutral-500">
+                              <th className="p-4 font-bold">Veículo</th>
+                              <th className="p-4 font-bold text-right">Bruto</th>
+                              <th className="p-4 font-bold text-right">Tx. Admin</th>
+                              <th className="p-4 font-bold text-right">Manut.</th>
+                              <th className="p-4 font-bold text-right">Proteção/Seg.</th>
+                              <th className="p-4 font-bold text-right">Líquido</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-neutral-800">
+                            {vehicles.map(v => (
+                              <tr key={v.plate} className="hover:bg-[#0a0a0a] transition-colors">
+                                <td className="p-4">
+                                  <p className="text-[11px] font-bold uppercase text-white">{v.model}</p>
+                                  <p className="text-[9px] font-mono text-neutral-500">{v.plate}</p>
+                                </td>
+                                <td className="p-4 text-right text-[11px] font-mono text-neutral-300">
+                                  R$ {v.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-4 text-right text-[11px] font-mono text-amber-500/70">
+                                  - R$ {v.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-4 text-right text-[11px] font-mono text-red-400/70">
+                                  - R$ {v.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-4 text-right text-[11px] font-mono text-amber-500/70">
+                                  - R$ {(v.protection + v.insurance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                                <td className="p-4 text-right text-[11px] font-mono font-bold text-[#00E676]">
+                                  R$ {v.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Card View */}
+                      <div className="md:hidden flex flex-col divide-y divide-neutral-800">
+                        {vehicles.map(v => (
+                          <div key={v.plate} className="p-5 flex flex-col gap-4 hover:bg-[#0a0a0a] transition-colors">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="text-xs font-black uppercase text-white tracking-widest">{v.model}</p>
+                                <p className="text-[10px] font-mono text-neutral-500 mt-1">{v.plate}</p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Líquido</p>
+                                <p className="text-sm font-mono font-black text-[#00E676]">
+                                  R$ {v.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 bg-black/50 p-4 rounded-2xl border border-neutral-800/50">
+                              <div>
+                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Bruto</p>
+                                <p className="text-[11px] font-mono text-neutral-300">R$ {v.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Tx. Admin</p>
+                                <p className="text-[11px] font-mono text-amber-500/70">- R$ {v.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Manutenção</p>
+                                <p className="text-[11px] font-mono text-red-400/70">- R$ {v.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              </div>
+                              <div>
+                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Proteção/Seg.</p>
+                                <p className="text-[11px] font-mono text-amber-500/70">- R$ {(v.protection + v.insurance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                {dividendHistory.length === 0 && (
+                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold bg-neutral-900 rounded-3xl border border-neutral-800">
+                    Nenhum histórico de rendimentos encontrado.
                   </div>
                 )}
               </div>
@@ -681,7 +881,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 <EditorialLabel className="text-[#D4AF37] mb-2">Gestão de Patrimônio</EditorialLabel>
                 <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Minha Frota</h2>
               </div>
-              <div className="overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
                 <table className="w-full text-left border-collapse whitespace-nowrap">
                   <thead>
                     <tr className="border-b border-neutral-800 bg-[#0a0a0a]/80 text-[10px] uppercase tracking-widest text-neutral-500">
@@ -734,8 +935,53 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     ))}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden flex flex-col gap-4">
+                {myVehicles.map((v, idx) => (
+                  <div key={`mobile-fleet-${idx}`} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
+                    <div className="p-5 flex items-center gap-4 bg-black/40 border-b border-neutral-800">
+                      <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
+                        <img
+                          src={v.image || '/logo-new.png'}
+                          className="w-full h-full object-cover opacity-100 transition-all"
+                          alt={v.model}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
+                          style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: 'transparent' } : {}}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-xs font-black uppercase text-white tracking-widest">{v.model}</p>
+                        <p className="text-[10px] font-mono text-neutral-500 mt-0.5">{v.plate}</p>
+                      </div>
+                      <div>
+                        {getStatusBadge(v.status)}
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 grid grid-cols-3 gap-4 text-center items-center">
+                      <div className="flex flex-col gap-1 items-center justify-center">
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Ano</p>
+                        <p className="text-sm font-semibold font-mono text-neutral-400">{v.year}</p>
+                      </div>
+                      <div className="flex flex-col gap-1 items-center justify-center">
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Taxa</p>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#FF6A00]/10 border border-[#FF6A00]/40 text-[#FF6A00] shadow-[0_0_15px_rgba(255,106,0,0.25)] drop-shadow-sm">
+                          {v.investorTax || (100 - (parseFloat(v.adminTax) || 20))}%
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1 items-center justify-center border-l border-neutral-800/50 pl-2">
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Aportado</p>
+                        <p className="text-xs font-semibold font-mono text-[#00D0FF] drop-shadow-[0_0_10px_rgba(0,208,255,0.5)]">
+                          R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
                 {myVehicles.length === 0 && (
-                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold">
+                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold bg-neutral-900 rounded-3xl border border-neutral-800">
                     Nenhum veículo encontrado na frota.
                   </div>
                 )}
@@ -774,8 +1020,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 </button>
               </div>
 
-              {/* List */}
-              <div className="bg-neutral-900 rounded-[3rem] border border-neutral-800 shadow-sm overflow-hidden">
+              {/* Desktop Table View */}
+              <div className="hidden md:block bg-neutral-900 rounded-[3rem] border border-neutral-800 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
@@ -833,6 +1079,66 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     </tbody>
                   </table>
                 </div>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden flex flex-col gap-4">
+                {filteredMaintenances.map((m) => (
+                  <div key={`mobile-m-${m.id}`} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
+                    <div className="p-5 flex items-start gap-4 bg-black/40 border-b border-neutral-800">
+                      <div className="w-10 h-10 bg-neutral-950 text-[#D4AF37] rounded-xl flex items-center justify-center shadow-lg shrink-0 mt-1">
+                        {m.icon}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-sm font-black text-white leading-tight">{m.type}</p>
+                        <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mt-1">{formatDate(m.date)}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 grid grid-cols-2 gap-4 items-center border-b border-neutral-800/50">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Veículo</p>
+                        <p className="text-xs font-bold text-white">{m.vehicle}</p>
+                        <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-black">{m.plate}</p>
+                      </div>
+                      <div className="text-right flex flex-col items-end">
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Status</p>
+                        <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${m.status === 'Concluído' ? 'bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm' : 'bg-orange-950/50 border border-orange-900 text-orange-400'}`}>
+                          {m.status}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-5 flex justify-between items-center bg-black/20">
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Custo</p>
+                        <p className="text-sm font-black text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">
+                          {m.cost.includes('-') ? m.cost : '- ' + m.cost}
+                        </p>
+                      </div>
+                      <div>
+                        {m.osId ? (
+                          <button 
+                            onClick={() => {
+                              const os = serviceOrders.find(o => String(o.id) === String(m.osId));
+                              if (os) setViewingSO(os);
+                            }}
+                            className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-white transition-colors underline"
+                          >
+                            Ver Comprovante
+                          </button>
+                        ) : (
+                          <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-700">---</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {filteredMaintenances.length === 0 && (
+                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold bg-neutral-900 rounded-3xl border border-neutral-800">
+                    Nenhuma manutenção encontrada.
+                  </div>
+                )}
               </div>
             </div>
           )}
