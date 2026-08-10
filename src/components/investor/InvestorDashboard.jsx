@@ -1265,11 +1265,11 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                             <h4 className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 border-b border-neutral-800 pb-2">Composição de Receita</h4>
                             <div className="flex justify-between items-center text-sm">
                               <span className="text-neutral-400 font-medium">Valor Bruto (Aluguéis)</span>
-                              <span className="font-semibold font-mono text-white drop-shadow-md">R$ {d.gross.toLocaleString('pt-BR')}</span>
+                              <span className="font-semibold font-mono text-white drop-shadow-md">R$ {d.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                             <div className="flex justify-between items-center text-sm text-neutral-200">
                               <span className="font-medium text-neutral-400">Taxa Adm. (Gestão)</span>
-                              <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.adminTax.toLocaleString('pt-BR')}</span>
+                              <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           </div>
 
@@ -1278,26 +1278,26 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                             <div className="space-y-3">
                               <div className="flex justify-between items-center text-xs">
                                 <span className="text-neutral-400">Manutenção Corretiva</span>
-                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.maintenance.toLocaleString('pt-BR')}</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs">
                                 <span className="text-neutral-400">Seguro Franquia (Fixo)</span>
-                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.insurance.toLocaleString('pt-BR')}</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.insurance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs">
                                 <span className="text-neutral-400">Proteção Veicular</span>
-                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.protection.toLocaleString('pt-BR')}</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.protection.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               {(d.discounts.other || 0) > 0 && (
                                 <div className="flex justify-between items-center text-xs">
                                   <span className="text-neutral-400 font-medium">Outros Abatimentos</span>
-                                  <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.other.toLocaleString('pt-BR')}</span>
+                                  <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.other.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               )}
                               {(d.discounts.carriedDebt || 0) < 0 && (
                                 <div className="flex justify-between items-center text-xs p-2 bg-rose-950/30 rounded-md border border-rose-900/50">
                                   <span className="text-rose-400 font-semibold flex items-center gap-1">Dívida Anterior</span>
-                                  <span className="font-bold font-mono text-rose-400">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR')}</span>
+                                  <span className="font-bold font-mono text-rose-400">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               )}
                             </div>
