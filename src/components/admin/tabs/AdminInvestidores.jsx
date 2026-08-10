@@ -57,7 +57,7 @@ const AdminInvestidores = ({
       };
     }
 
-    if (category.includes('prote') || category.includes('veicular')) {
+    if (category.includes('proteç') || category.includes('protec')) {
       return { 
         share: -absVal, 
         explanation: `Despesa de proteção veicular: - R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 

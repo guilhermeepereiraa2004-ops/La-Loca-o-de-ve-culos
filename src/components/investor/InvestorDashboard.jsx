@@ -130,7 +130,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   // Calcular ganhos e despesas reais do investidor a partir das transações
   const investorTransactions = transactions.filter(t => {
     const cat = t.cat?.toLowerCase().trim() || '';
-    const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+    const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('proteç') || cat.includes('protec');
     
     if (isSpecialAutoTrans && t.vehiclePlate && myVehicles.some(v => v.plate === t.vehiclePlate)) {
       return true;
@@ -145,7 +145,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   const realInvestorRevenue = investorTransactions
     .filter(t => {
       const cat = t.cat?.toLowerCase().trim() || '';
-      const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+      const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('proteç') || cat.includes('protec');
       return t.type === 'in' && !isSpecialAutoTrans;
     })
     .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
@@ -153,7 +153,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   const realInvestorExpenses = investorTransactions
     .filter(t => {
       const cat = t.cat?.toLowerCase().trim() || '';
-      const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('prote') || cat.includes('veicular');
+      const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('proteç') || cat.includes('protec');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
       if (isBeforeJune2026) return false;
       return t.type === 'out' || isSpecialAutoTrans;
@@ -223,7 +223,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       const val = Math.abs(t.val || 0);
       
       const isSeguroFranquia = cat.includes('seguro') || cat.includes('franquia');
-      const isProtecaoVeicular = cat.includes('prote') || cat.includes('veicular');
+      const isProtecaoVeicular = cat.includes('proteç') || cat.includes('protec');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
 
       if (isSeguroFranquia) {
