@@ -439,8 +439,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       </button>
 
       {/* Sidebar */}
-      <aside className={`bg-black border-r border-neutral-900 text-white flex flex-col p-8 fixed h-full z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
-        <div className={`mb-16 transition-all duration-300 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
+      <aside className={`bg-black border-r border-neutral-900 text-white flex flex-col p-8 fixed h-[100dvh] overflow-y-auto z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
+        <div className={`mb-16 transition-all duration-300 shrink-0 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
           <div className="flex items-center gap-2">
             <img src="/logo.png" className="h-6 w-auto object-contain" alt="L.A Locação de Veículos" />
             <div className="flex flex-col">
@@ -474,7 +474,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           ))}
         </nav>
 
-        <div className="border-t border-neutral-900 pt-4 mt-auto space-y-2">
+        <div className="border-t border-neutral-900 pt-4 mt-auto shrink-0 space-y-2 pb-4">
           <button
             onClick={onGoHome}
             className="flex items-center gap-4 p-4 text-neutral-500 hover:text-[#D4AF37] transition-colors w-full"
