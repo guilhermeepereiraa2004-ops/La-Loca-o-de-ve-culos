@@ -9,6 +9,25 @@ const VehicleFormModal = ({
 }) => {
   const [isEditorOpen, setIsEditorOpen] = React.useState(false);
   const [tempImageSrc, setTempImageSrc] = React.useState('');
+  const [isUnlocked, setIsUnlocked] = React.useState(false);
+  const [showMasterAuthModal, setShowMasterAuthModal] = React.useState(false);
+  const [masterPasswordInput, setMasterPasswordInput] = React.useState('');
+  const [masterAuthError, setMasterAuthError] = React.useState('');
+
+  const handleUnlock = () => {
+    setMasterPasswordInput('');
+    setMasterAuthError('');
+    setShowMasterAuthModal(true);
+  };
+
+  const confirmUnlock = () => {
+    if (masterPasswordInput === 'Lareferencia') {
+      setIsUnlocked(true);
+      setShowMasterAuthModal(false);
+    } else {
+      setMasterAuthError('Senha incorreta!');
+    }
+  };
 
   const handleEditorSave = (editedFile, editedDataUrl) => {
     setVehicleForm({
@@ -110,26 +129,34 @@ const VehicleFormModal = ({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
-                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && (
-                          <span className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md">Trava de Locação</span>
+                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked && (
+                          <button type="button" onClick={handleUnlock} className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1" title="Clique para destravar com a senha mestre">
+                            🔒 Trava de Locação
+                          </button>
+                        )}
+                        {isUnlocked && (
+                          <span className="text-[8px] text-emerald-500 font-bold uppercase tracking-widest bg-emerald-50 px-2 py-0.5 rounded-md">
+                            🔓 Destravado
+                          </span>
                         )}
                       </div>
                       <select 
                         value={vehicleForm.status ?? 'Disponível'} 
                         onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} 
-                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)')}
+                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked}
                         className={`w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm ${
-                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') ? 'opacity-70 cursor-not-allowed' : ''
+                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked ? 'opacity-70 cursor-not-allowed' : ''
                         }`}
                       >
                         <option value="Disponível">Disponível</option>
                         <option value="Alugado">Alugado</option>
+                        <option value="Alugado (Reserva)">Alugado (Reserva)</option>
                         <option value="Manutenção">Manutenção</option>
                         <option value="Em preparação">Em preparação</option>
                         <option value="Indisponível">Indisponível</option>
                       </select>
-                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && (
-                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">Status bloqueado. Encerre o contrato para liberar o veículo.</p>
+                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked && (
+                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">Status bloqueado. Encerre o contrato para liberar o veículo, ou clique na trava para forçar.</p>
                       )}
                     </div>
                   </div>
@@ -799,6 +826,54 @@ const VehicleFormModal = ({
           </button>
         </div>
       </div>
+      
+      {/* Modal de Senha Mestre */}
+      {showMasterAuthModal && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm" onClick={() => setShowMasterAuthModal(false)} />
+          <div className="relative bg-white w-full max-w-sm rounded-[2rem] shadow-2xl p-6 sm:p-8 flex flex-col space-y-6 animate-in zoom-in-95 duration-200">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4">
+                <span className="text-3xl">🔒</span>
+              </div>
+              <h3 className="text-xl font-black text-neutral-900 tracking-tight uppercase">Autenticação</h3>
+              <p className="text-xs text-neutral-500 font-medium">Digite a senha mestre para destravar o status deste veículo.</p>
+            </div>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <input 
+                  type="password" 
+                  value={masterPasswordInput} 
+                  onChange={e => { setMasterPasswordInput(e.target.value); setMasterAuthError(''); }} 
+                  onKeyDown={e => e.key === 'Enter' && confirmUnlock()}
+                  className={`w-full bg-neutral-50 border p-4 rounded-2xl outline-none focus:ring-2 transition-all font-bold text-center tracking-widest ${masterAuthError ? 'border-red-300 focus:ring-red-500/20 text-red-900' : 'border-neutral-200 focus:ring-neutral-900/20'}`} 
+                  placeholder="••••••••" 
+                  autoFocus
+                />
+                {masterAuthError && <p className="text-[10px] text-red-500 font-bold text-center mt-1">{masterAuthError}</p>}
+              </div>
+              
+              <div className="flex gap-3 pt-2">
+                <button 
+                  type="button"
+                  onClick={() => setShowMasterAuthModal(false)} 
+                  className="flex-1 px-4 py-3 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-black uppercase tracking-widest rounded-xl transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="button"
+                  onClick={confirmUnlock} 
+                  className="flex-1 px-4 py-3 bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-black uppercase tracking-widest rounded-xl transition-colors shadow-lg shadow-neutral-900/20"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
