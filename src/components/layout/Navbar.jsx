@@ -81,14 +81,17 @@ const Navbar = ({ onSetView }) => {
         <div className="flex md:hidden items-center gap-3">
           <button
             onClick={() => onSetView('investor-login')}
-            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95 border ${
+            className={`h-9 px-3 rounded-xl flex items-center justify-center gap-1.5 transition-all duration-300 active:scale-95 border ${
               scrolled
                 ? 'bg-neutral-50 border-neutral-200/60 text-[#D4AF37] shadow-sm'
                 : 'bg-white/10 border-white/15 text-[#D4AF37] backdrop-blur-md'
             }`}
-            title="Portal Investidor"
+            title="Painel de Investidor"
           >
-            <TrendingUp size={16} />
+            <TrendingUp size={14} />
+            <span className="text-[9px] font-bold uppercase tracking-wider whitespace-nowrap">
+              Painel de Investidor
+            </span>
           </button>
           <button
             onClick={() => onSetView('admin-login')}
