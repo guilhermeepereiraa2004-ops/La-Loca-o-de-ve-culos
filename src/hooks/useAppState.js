@@ -641,6 +641,7 @@ export const useAppState = () => {
               if (hasFranchise) {
                 const paymentDayFranchise = 10; // Padrão dia 10 de cada mês
                 if (currentDay >= paymentDayFranchise) {
+                  // Verifica se já existe no banco (transações já carregadas)
                   const alreadyExists = loadedTransactions.some(t => {
                     if (t.vehiclePlate !== v.plate) return false;
                     const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
@@ -653,8 +654,15 @@ export const useAppState = () => {
                       return false;
                     }
                   });
+
+                  // Verifica se já foi adicionado no batch atual (evita duplicata no mesmo ciclo)
+                  const alreadyQueued = newTransactionsToInsert.some(t =>
+                    t.vehicle_plate === v.plate &&
+                    t.cat === 'Seguro Franquia' &&
+                    t.date === `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`
+                  );
                   
-                  if (!alreadyExists) {
+                  if (!alreadyExists && !alreadyQueued) {
                     const isInternal = !v.investor || v.investor.toLowerCase().trim() === 'interno' || v.investor.toLowerCase().trim() === 'nenhum';
                     const respStr = isInternal ? 'Administradora' : `Investidor: ${v.investor}`;
                     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
@@ -687,8 +695,12 @@ export const useAppState = () => {
                 console.error("Erro ao inserir transações automáticas:", insertError);
               }
             }
+            // Reseta o flag para permitir reexecução legítima em novas sessões
+            isGeneratingTransactions = false;
           }
         } catch (autoErr) {
+          // Garante reset do flag mesmo em caso de erro
+          isGeneratingTransactions = false;
           console.error("Erro no processo de auto-geração de transações:", autoErr);
         }
       } catch (err) {
