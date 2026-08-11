@@ -136,6 +136,33 @@ const TABLE_MAPPINGS = {
     installmentValue: 'installment_value',
     billingSuspended: 'billing_suspended',
     createdAt: 'created_at'
+  },
+  workshop_inventory: {
+    id: 'id',
+    imageUrl: 'image_url',
+    name: 'name',
+    code: 'code',
+    brand: 'brand',
+    description: 'description',
+    costPrice: 'cost_price',
+    sellingPrice: 'selling_price',
+    minStock: 'min_stock',
+    quantity: 'quantity',
+    applications: 'applications',
+    similarParts: 'similar_parts',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
+  },
+  workshop_financials: {
+    id: 'id',
+    date: 'date',
+    description: 'description',
+    type: 'type',
+    category: 'category',
+    value: 'value',
+    status: 'status',
+    createdAt: 'created_at',
+    updatedAt: 'updated_at'
   }
 };
 
@@ -230,6 +257,10 @@ export const useAppState = () => {
   const [inspections, setInspections] = useState([]);
   const [globalAlert, setGlobalAlert] = useState({ isOpen: false, title: '', message: '', type: 'success' });
   const [serviceOrders, setServiceOrders] = useState([]);
+  const [appointments, setAppointments] = useState([]);
+  const [quotes, setQuotes] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [workshopFinancials, setWorkshopFinancials] = useState([]);
   const [systemUsers, setSystemUsers] = useState([]);
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
@@ -429,6 +460,10 @@ export const useAppState = () => {
           { table: 'maintenances', setter: setMaintenances },
           { table: 'inspections', setter: setInspections },
           { table: 'service_orders', setter: setServiceOrders },
+          { table: 'workshop_appointments', setter: setAppointments },
+          { table: 'workshop_quotes', setter: setQuotes },
+          { table: 'workshop_inventory', setter: setInventory },
+          { table: 'workshop_financials', setter: setWorkshopFinancials },
           { table: 'system_users', setter: setSystemUsers },
           { table: 'clients', setter: setClients },
           { table: 'replacement_contracts', setter: setReplacementContracts }
@@ -747,6 +782,41 @@ export const useAppState = () => {
       console.error("Erro ao atualizar status do lead:", error);
       alert(`Erro ao atualizar status do lead: ${parseDbError(error)}`);
     }
+  };
+
+  const handleAddAppointment = async (appointment) => {
+    const { data, error } = await supabase.from('workshop_appointments').insert([mapToSnake(appointment)]).select();
+    if (!error && data) {
+      const camelData = mapToCamel(data, 'workshop_appointments')[0];
+      setAppointments(prev => [...prev, camelData]);
+      logActivity('Criar', 'Agendamento', data[0].id, `Criou novo agendamento para ${appointment.clientName || 'Cliente'}`);
+      return { success: true, data: camelData };
+    }
+    console.error("Erro ao criar agendamento:", error);
+    alert(`Erro ao criar agendamento: ${parseDbError(error)}`);
+    return { success: false, error };
+  };
+
+  const handleUpdateAppointment = async (updated) => {
+    const { error } = await supabase.from('workshop_appointments').update(mapToSnake(updated)).eq('id', updated.id);
+    if (!error) {
+      setAppointments(prev => prev.map(a => a.id === updated.id ? updated : a));
+      logActivity('Atualizar', 'Agendamento', updated.id, `Atualizou o agendamento`);
+      return { success: true };
+    }
+    console.error("Erro ao atualizar agendamento:", error);
+    alert(`Erro ao atualizar agendamento: ${parseDbError(error)}`);
+    return { success: false, error };
+  };
+
+  const handleDeleteAppointment = async (id) => {
+    const { error } = await supabase.from('workshop_appointments').delete().eq('id', id);
+    if (!error) {
+      setAppointments(prev => prev.filter(a => a.id !== id));
+      logActivity('Apagar', 'Agendamento', id, `Excluiu o agendamento ID ${id}`);
+      return { success: true };
+    }
+    return { success: false, error };
   };
 
   const handleDeleteLead = async (id) => {
@@ -2677,9 +2747,163 @@ export const useAppState = () => {
     setShowSuccessPopup(true);
   };
 
+  const handleAddQuote = async (quoteData) => {
+    try {
+      const payload = mapToSnake(quoteData, 'workshop_quotes');
+      const { data, error } = await supabase.from('workshop_quotes').insert([payload]).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const newQuote = mapToCamel(data, 'workshop_quotes')[0];
+        setQuotes(prev => [newQuote, ...prev]);
+        logActivity('Criar', 'Orçamento', data[0].id, `Criou o orçamento para ${quoteData.clientName}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao adicionar orçamento:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleUpdateQuote = async (id, updates) => {
+    try {
+      const payload = mapToSnake(updates, 'workshop_quotes');
+      const { data, error } = await supabase.from('workshop_quotes').update(payload).eq('id', id).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const updated = mapToCamel(data, 'workshop_quotes')[0];
+        setQuotes(prev => prev.map(q => q.id === id ? updated : q));
+        logActivity('Atualizar', 'Orçamento', id, `Atualizou o orçamento ${id.substring(0, 5)}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao atualizar orçamento:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteQuote = async (id) => {
+    try {
+      const { error } = await supabase.from('workshop_quotes').delete().eq('id', id);
+      if (error) throw error;
+      setQuotes(prev => prev.filter(q => q.id !== id));
+      logActivity('Excluir', 'Orçamento', id, `Excluiu o orçamento ${id.substring(0, 5)}`);
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao excluir orçamento:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleAddInventoryItem = async (itemData) => {
+    try {
+      const payload = mapToSnake(itemData, 'workshop_inventory');
+      const { data, error } = await supabase.from('workshop_inventory').insert([payload]).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const newItem = mapToCamel(data, 'workshop_inventory')[0];
+        setInventory(prev => [newItem, ...prev]);
+        logActivity('Criar', 'Estoque', data[0].id, `Adicionou o produto ${itemData.name} ao estoque`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao adicionar produto:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleUpdateInventoryItem = async (id, updates) => {
+    try {
+      const payload = { ...mapToSnake(updates, 'workshop_inventory'), updated_at: new Date().toISOString() };
+      const { data, error } = await supabase.from('workshop_inventory').update(payload).eq('id', id).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const updated = mapToCamel(data, 'workshop_inventory')[0];
+        setInventory(prev => prev.map(i => i.id === id ? updated : i));
+        logActivity('Atualizar', 'Estoque', id, `Atualizou o produto ${updates.name || id}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao atualizar produto:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteInventoryItem = async (id) => {
+    try {
+      const { error } = await supabase.from('workshop_inventory').delete().eq('id', id);
+      if (error) throw error;
+      setInventory(prev => prev.filter(i => i.id !== id));
+      logActivity('Excluir', 'Estoque', id, `Excluiu um produto do estoque`);
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao excluir produto:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteAllInventoryItems = async () => {
+    try {
+      const { error } = await supabase.from('workshop_inventory').delete().gt('quantity', -999999); // Deleta todos (condição sempre verdadeira)
+      if (error) throw error;
+      setInventory([]);
+      logActivity('Excluir', 'Estoque', null, `Excluiu TODOS os produtos do estoque`);
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao excluir todos os produtos:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleAddWorkshopFinancial = async (itemData) => {
+    try {
+      const payload = mapToSnake(itemData, 'workshop_financials');
+      const { data, error } = await supabase.from('workshop_financials').insert([payload]).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const newItem = mapToCamel(data, 'workshop_financials')[0];
+        setWorkshopFinancials(prev => [newItem, ...prev]);
+        logActivity('Criar', 'Financeiro Oficina', data[0].id, `Adicionou o lançamento ${itemData.description}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao adicionar financeiro:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleUpdateWorkshopFinancial = async (id, updates) => {
+    try {
+      const payload = { ...mapToSnake(updates, 'workshop_financials'), updated_at: new Date().toISOString() };
+      const { data, error } = await supabase.from('workshop_financials').update(payload).eq('id', id).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const updated = mapToCamel(data, 'workshop_financials')[0];
+        setWorkshopFinancials(prev => prev.map(i => i.id === id ? updated : i));
+        logActivity('Atualizar', 'Financeiro Oficina', id, `Atualizou o lançamento ${updates.description || id}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao atualizar financeiro:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteWorkshopFinancial = async (id) => {
+    try {
+      const { error } = await supabase.from('workshop_financials').delete().eq('id', id);
+      if (error) throw error;
+      setWorkshopFinancials(prev => prev.filter(i => i.id !== id));
+      logActivity('Excluir', 'Financeiro Oficina', id, `Excluiu um lançamento financeiro`);
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao excluir financeiro:', err);
+      return { success: false, error: err };
+    }
+  };
+
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
-    inspections, serviceOrders, systemUsers, clients, replacementContracts,
+    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, systemUsers, clients, replacementContracts,
     fines, isFinesDbConnected,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
@@ -2699,6 +2923,10 @@ export const useAppState = () => {
     handleDeleteServiceOrder,
     handleCloseReplacementContract,
     handleInterestSubmit,
+    handleAddAppointment, handleUpdateAppointment, handleDeleteAppointment,
+    handleAddQuote, handleUpdateQuote, handleDeleteQuote,
+    handleAddInventoryItem, handleUpdateInventoryItem, handleDeleteInventoryItem, handleDeleteAllInventoryItems,
+    handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial,
     handleAddFine, handleUpdateFine, handleDeleteFine,
     seedData: () => console.log('Seed data is no longer available.')
   };

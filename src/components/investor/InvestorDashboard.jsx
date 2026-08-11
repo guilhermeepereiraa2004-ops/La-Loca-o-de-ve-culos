@@ -7,6 +7,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
 import { parseCurrency } from '../../utils/currencyUtils';
+import InvestorCalcModal from './InvestorCalcModal';
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '---';
@@ -45,11 +46,13 @@ const getFifthBusinessDay = (dateOrYear = new Date(), monthOpt) => {
 const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], maintenances = [], onLogout, onGoHome }) => {
   const [viewingSO, setViewingSO] = useState(null);
   const [soListModal, setSoListModal] = useState(null);
+  const [showCalcModal, setShowCalcModal] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem('la_investor_active_tab');
     return savedTab || 'dashboard';
   });
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
+  const [fleetStatusFilter, setFleetStatusFilter] = useState('Todos');
   const [realPayouts, setRealPayouts] = useState([]);
 
   useEffect(() => {
@@ -125,6 +128,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   });
 
   // Calcular valor total investido com base nos veículos
+  
+  const filteredMyVehicles = myVehicles.filter(v => {
+    if (fleetStatusFilter === 'Todos') return true;
+    if (fleetStatusFilter === 'Alugado' && v.status === 'Alugado (Reserva)') return true;
+    return v.status === fleetStatusFilter;
+  });
+
   const totalInvested = myVehicles.reduce((acc, v) => acc + (v.investValue || 0), 0);
 
   // Calcular ganhos e despesas reais do investidor a partir das transações
@@ -439,7 +449,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       </button>
 
       {/* Sidebar */}
-      <aside className={`bg-black border-r border-neutral-900 text-white flex flex-col p-8 fixed h-[100dvh] overflow-y-auto z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
+      <aside className={`bg-black border-r border-neutral-900 text-white flex flex-col p-8 fixed h-[100dvh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden z-50 transition-all duration-500 ease-in-out ${isSidebarOpen ? 'translate-x-0 w-72' : '-translate-x-full w-0 opacity-0 xl:w-20 xl:translate-x-0 xl:opacity-100'}`}>
         <div className={`mb-16 transition-all duration-300 shrink-0 ${!isSidebarOpen ? 'xl:opacity-0' : 'opacity-100'}`}>
           <div className="flex items-center gap-2">
             <img src="/logo.png" className="h-6 w-auto object-contain" alt="L.A Locação de Veículos" />
@@ -454,8 +464,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           {[
             { id: 'dashboard', label: 'Dashboard', icon: PieChart },
             { id: 'rendimentos', label: 'Rendimentos', icon: TrendingUp },
-            { id: 'metricas', label: 'Métricas', icon: Activity },
-            { id: 'minha-frota', label: 'Meus Veículos', icon: Car },
+                        { id: 'minha-frota', label: 'Meus Veículos', icon: Car },
             { id: 'manutencao', label: 'Manutenções', icon: Wrench },
             { id: 'pagamentos', label: 'Dividendos', icon: Wallet },
           ].map((item) => (
@@ -622,9 +631,18 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
           {activeTab === 'rendimentos' && (
             <div className="space-y-12">
-              <div className="mb-10">
-                <EditorialLabel className="text-[#D4AF37] mb-2">Relatório Consolidado</EditorialLabel>
-                <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Rendimentos por Veículo</h2>
+              <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                  <EditorialLabel className="text-[#D4AF37] mb-2">Relatório Consolidado</EditorialLabel>
+                  <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Rendimentos por Veículo</h2>
+                </div>
+                <button
+                  onClick={() => setShowCalcModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-neutral-800 text-white font-bold rounded-xl uppercase tracking-widest text-xs hover:bg-neutral-700 transition-colors border border-neutral-700 w-fit shrink-0 shadow-sm"
+                >
+                  <Activity size={16} className="text-[#D4AF37]" />
+                  Ver Cálculo Detalhado
+                </button>
               </div>
               {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
@@ -764,122 +782,35 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
             </div>
           )}
 
-          {activeTab === 'metricas' && (
-            <div className="space-y-12">
-              <div className="mb-10">
-                <EditorialLabel className="text-[#D4AF37] mb-2">Histórico Detalhado</EditorialLabel>
-                <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Métricas Mês a Mês</h2>
-              </div>
-              
-              <div className="space-y-8">
-                {dividendHistory.map(month => {
-                  const vehicles = Object.values(month.vehicles);
-                  if (vehicles.length === 0) return null;
-                  
-                  return (
-                    <div key={month.period} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
-                      <div className="p-6 bg-black border-b border-neutral-800 flex justify-between items-center">
-                        <h3 className="text-lg font-black uppercase text-white tracking-widest">{month.period}</h3>
-                        <span className="text-[10px] font-bold text-[#D4AF37] tracking-widest uppercase">
-                          Líquido Mês: R$ {month.netValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                      {/* Desktop Table View */}
-                      <div className="hidden md:block overflow-x-auto">
-                        <table className="w-full text-left border-collapse whitespace-nowrap">
-                          <thead>
-                            <tr className="border-b border-neutral-800 bg-[#0a0a0a]/50 text-[10px] uppercase tracking-widest text-neutral-500">
-                              <th className="p-4 font-bold">Veículo</th>
-                              <th className="p-4 font-bold text-right">Bruto</th>
-                              <th className="p-4 font-bold text-right">Tx. Admin</th>
-                              <th className="p-4 font-bold text-right">Manut.</th>
-                              <th className="p-4 font-bold text-right">Proteção/Seg.</th>
-                              <th className="p-4 font-bold text-right">Líquido</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-neutral-800">
-                            {vehicles.map(v => (
-                              <tr key={v.plate} className="hover:bg-[#0a0a0a] transition-colors">
-                                <td className="p-4">
-                                  <p className="text-[11px] font-bold uppercase text-white">{v.model}</p>
-                                  <p className="text-[9px] font-mono text-neutral-500">{v.plate}</p>
-                                </td>
-                                <td className="p-4 text-right text-[11px] font-mono text-neutral-300">
-                                  R$ {v.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </td>
-                                <td className="p-4 text-right text-[11px] font-mono text-amber-500/70">
-                                  - R$ {v.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </td>
-                                <td className="p-4 text-right text-[11px] font-mono text-red-400/70">
-                                  - R$ {v.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </td>
-                                <td className="p-4 text-right text-[11px] font-mono text-amber-500/70">
-                                  - R$ {(v.protection + v.insurance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </td>
-                                <td className="p-4 text-right text-[11px] font-mono font-bold text-[#00E676]">
-                                  R$ {v.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {/* Mobile Card View */}
-                      <div className="md:hidden flex flex-col divide-y divide-neutral-800">
-                        {vehicles.map(v => (
-                          <div key={v.plate} className="p-5 flex flex-col gap-4 hover:bg-[#0a0a0a] transition-colors">
-                            <div className="flex justify-between items-start">
-                              <div>
-                                <p className="text-xs font-black uppercase text-white tracking-widest">{v.model}</p>
-                                <p className="text-[10px] font-mono text-neutral-500 mt-1">{v.plate}</p>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Líquido</p>
-                                <p className="text-sm font-mono font-black text-[#00E676]">
-                                  R$ {v.net.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4 bg-black/50 p-4 rounded-2xl border border-neutral-800/50">
-                              <div>
-                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Bruto</p>
-                                <p className="text-[11px] font-mono text-neutral-300">R$ {v.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Tx. Admin</p>
-                                <p className="text-[11px] font-mono text-amber-500/70">- R$ {v.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Manutenção</p>
-                                <p className="text-[11px] font-mono text-red-400/70">- R$ {v.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Proteção/Seg.</p>
-                                <p className="text-[11px] font-mono text-amber-500/70">- R$ {(v.protection + v.insurance).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
-                {dividendHistory.length === 0 && (
-                  <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold bg-neutral-900 rounded-3xl border border-neutral-800">
-                    Nenhum histórico de rendimentos encontrado.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
           {activeTab === 'minha-frota' && (
             <div className="space-y-12">
               <div className="mb-10">
                 <EditorialLabel className="text-[#D4AF37] mb-2">Gestão de Patrimônio</EditorialLabel>
                 <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Minha Frota</h2>
+              </div>
+              
+              {/* FILTER FOR FLEET STATUS */}
+              <div className="flex bg-neutral-900 p-1 rounded-2xl border border-neutral-800 shadow-sm shrink-0 overflow-x-auto no-scrollbar mb-8">
+                {['Todos', 'Disponível', 'Alugado', 'Manutenção', 'Em preparação', 'Indisponível'].map((status) => {
+                  const count = status === 'Todos' 
+                    ? myVehicles.length 
+                    : myVehicles.filter(v => v.status === status || (status === 'Alugado' && v.status === 'Alugado (Reserva)')).length;
+                  
+                  let buttonStyle = 'text-neutral-500 hover:text-white';
+                  if (fleetStatusFilter === status) {
+                     buttonStyle = 'bg-neutral-800 text-white shadow-lg border border-neutral-700';
+                  }
+
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => setFleetStatusFilter(status)}
+                      className={`px-6 py-4 rounded-xl text-[10px] uppercase tracking-widest font-bold transition-all whitespace-nowrap ${buttonStyle}`}
+                    >
+                      {status} ({count})
+                    </button>
+                  );
+                })}
               </div>
               {/* Desktop Table View */}
               <div className="hidden md:block overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
@@ -894,7 +825,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-800">
-                    {myVehicles.map((v, idx) => (
+                    {filteredMyVehicles.map((v, idx) => (
                       <tr key={idx} className="hover:bg-[#0a0a0a] transition-colors group">
                         <td className="p-6">
                           <div className="flex items-center gap-4">
@@ -939,7 +870,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
               {/* Mobile Card View */}
               <div className="md:hidden flex flex-col gap-4">
-                {myVehicles.map((v, idx) => (
+                {filteredMyVehicles.map((v, idx) => (
                   <div key={`mobile-fleet-${idx}`} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
                     <div className="p-5 flex items-center gap-4 bg-black/40 border-b border-neutral-800">
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
@@ -980,7 +911,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     </div>
                   </div>
                 ))}
-                {myVehicles.length === 0 && (
+                {filteredMyVehicles.length === 0 && (
                   <div className="p-12 text-center text-neutral-400 text-sm uppercase tracking-widest font-bold bg-neutral-900 rounded-3xl border border-neutral-800">
                     Nenhum veículo encontrado na frota.
                   </div>
@@ -1500,6 +1431,17 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
             </div>
           </div>
         </div>
+      )}
+
+      {showCalcModal && (
+        <InvestorCalcModal
+          investor={investor}
+          vehicles={vehicles}
+          transactions={transactions}
+          rentals={rentals}
+          realPayouts={realPayouts}
+          onClose={() => setShowCalcModal(false)}
+        />
       )}
     </div>
   );
