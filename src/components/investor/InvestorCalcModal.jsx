@@ -106,10 +106,24 @@ import { X, Landmark, Car, Calendar, Filter, History, AlertCircle, Info, Wallet,
 
     if (invVehicles.length === 0) return { payout: 0, currentMonthNet: 0, prevMonthKey: null, currentMonthKey: null, carriedDebt: 0, vehicles: [], transactionsDetails: [], previewDetails: [], previewNet: 0, monthlySummaries: [] };
 
-    const investorTrans = (transactions || []).filter(t => 
-      invVehicles.some(v => v.plate === t.vehiclePlate) ||
-      (t.responsible?.toLowerCase().trim() === `investidor: ${inv.name?.toLowerCase().trim()}`)
-    );
+    const investorTrans = (transactions || []).filter(t => {
+      if (invVehicles.some(v => v.plate === t.vehiclePlate)) return true;
+      
+      if (t.responsible) {
+        const respStr = String(t.responsible).toLowerCase().trim();
+        const invNameStr = (inv.name || '').toLowerCase().trim();
+        
+        if (respStr === `investidor: ${invNameStr}`) return true;
+        
+        if (respStr.startsWith('investidor:')) {
+          const respName = respStr.replace('investidor:', '').trim();
+          if (respName && (invNameStr.includes(respName) || respName.includes(invNameStr))) {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
 
     const today = new Date();
     const currentMonthKey = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
