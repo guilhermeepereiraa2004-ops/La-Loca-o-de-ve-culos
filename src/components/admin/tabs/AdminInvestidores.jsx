@@ -247,6 +247,7 @@ const AdminInvestidores = ({
       const total = net + carriedBalance;
       const [yr, mo] = month.split('-');
       monthlySummaries.push({
+        monthKey: month,
         month: `${monthLabels[parseInt(mo) - 1]}/${yr}`,
         net, carriedBefore: carriedBalance, totalAfter: total
       });
@@ -438,7 +439,7 @@ const AdminInvestidores = ({
             const invPayoutHistory = Array.isArray(payoutHistory[selectedInvForCalc.id]) ? payoutHistory[selectedInvForCalc.id] : [];
             activeIsPaid = invPayoutHistory.some(r => r.reference_month === activeMonth);
         } else {
-            const summary = monthlySummaries.find(s => s.monthKey === activeMonth || s.month === activeMonth || s.month.includes(activeMonth.split('-')[0]));
+            const summary = monthlySummaries.find(s => s.monthKey === activeMonth);
             if (summary) {
                 activeNet = summary.net;
                 activeCarriedDebt = summary.carriedBefore;
@@ -594,15 +595,7 @@ const AdminInvestidores = ({
                           </div>
                         </div>
 
-                        {/* Líquido a Repassar Card */}
-                        <div className="col-span-2 lg:col-span-1 p-4 rounded-xl border border-neutral-900 bg-neutral-900 flex flex-col justify-between text-white relative overflow-hidden shadow-sm">
-                          <div className="space-y-1 z-10">
-                            <p className="text-[10px] uppercase text-neutral-400 font-medium tracking-wide">Liquidação Final</p>
-                            <p className={`text-2xl font-semibold font-mono tracking-tight ${activePayout >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                              {formatCurrency(payout)}
-                            </p>
-                          </div>
-                        </div>
+
                       </div>
                     </div>
 
