@@ -127,11 +127,18 @@ const VehicleFormModal = ({
                       <input type="text" required value={vehicleForm.renavam ?? ''} onChange={e => setVehicleForm({...vehicleForm, renavam: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm" placeholder="00000000000" />
                     </div>
                     <div className="space-y-2">
+                      <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data de Entrada</label>
+                      <input type="date" value={vehicleForm.entryDate ?? ''} onChange={e => setVehicleForm({...vehicleForm, entryDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm text-neutral-600" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
-                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked && (
+                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
                           <button type="button" onClick={handleUnlock} className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1" title="Clique para destravar com a senha mestre">
-                            🔒 Trava de Locação
+                            🔒 Trava de Segurança
                           </button>
                         )}
                         {isUnlocked && (
@@ -143,9 +150,9 @@ const VehicleFormModal = ({
                       <select 
                         value={vehicleForm.status ?? 'Disponível'} 
                         onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} 
-                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked}
+                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked}
                         className={`w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm ${
-                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked ? 'opacity-70 cursor-not-allowed' : ''
+                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked ? 'opacity-70 cursor-not-allowed' : ''
                         }`}
                       >
                         <option value="Disponível">Disponível</option>
@@ -155,8 +162,8 @@ const VehicleFormModal = ({
                         <option value="Em preparação">Em preparação</option>
                         <option value="Indisponível">Indisponível</option>
                       </select>
-                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && !isUnlocked && (
-                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">Status bloqueado. Encerre o contrato para liberar o veículo, ou clique na trava para forçar.</p>
+                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
+                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">Status bloqueado. {vehicleForm.status === 'Indisponível' ? 'Clique na trava para forçar a liberação do veículo.' : 'Encerre o contrato para liberar o veículo, ou clique na trava para forçar.'}</p>
                       )}
                     </div>
                   </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp, X, Coins, Wallet, AlertCircle, Filter, ArrowUpRight, ArrowDownRight, Car } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp, X, Coins, Wallet, AlertCircle, Filter, ArrowUpRight, ArrowDownRight, Car, CheckCircle2 } from 'lucide-react';
 import { formatCPF, formatCpfCnpj } from '../../../utils/cpfFormatter';
 import InvestorPayoutModal from '../modals/InvestorPayoutModal.jsx';
 import { getPayoutsForInvestor, formatReferenceMonth } from '../../../utils/investorPayouts.js';
@@ -526,7 +526,7 @@ const AdminInvestidores = ({
                          onChange={(e) => setSelectedMonthForCalc(e.target.value)}
                          className="w-full bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm rounded-lg px-3 py-2 outline-none font-bold cursor-pointer"
                        >
-                         {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
+                         {Array.from(new Set([...Object.keys(transactionsByMonth || {}), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
                            const [yr, mo] = m.split('-');
                            const label = `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`;
                            return <option key={m} value={m}>{label} {m === competenciaKey ? '(Vigente)' : ''}</option>
@@ -542,27 +542,36 @@ const AdminInvestidores = ({
                         {/* Competência Vigente Card */}
                         <div className="col-span-2 lg:col-span-1 bg-white p-4 rounded-xl border border-neutral-200 flex flex-col justify-between relative overflow-hidden">
                           <div className="space-y-1 z-10">
-                            <p className="text-[10px] uppercase text-neutral-500 font-medium tracking-wide">Receita Bruta {activeMonth === competenciaKey ? "Vigente" : ""}</p>
+                            <p className="text-[10px] uppercase text-neutral-500 font-medium tracking-wide">Receita {activeMonth === competenciaKey ? "Vigente" : ""}</p>
                             <p className="text-xl font-medium text-neutral-900 font-mono tracking-tight">{formatCurrency(activeNet)}</p>
                           </div>
                           <div className="mt-3 z-10 flex">
-                            {!activeIsPaid ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
-                                Aguardando pagamento
+                            {activeIsPaid ? (
+                              activePayout <= 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
+                                  Nada a pagar
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                                  <CheckCircle2 size={10} /> Repasse Realizado
+                                </span>
+                              )
+                            ) : activeMonth === currentMonthKey ? (
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                                Em andamento
                               </span>
                             ) : activePayout <= 0 ? (
                               <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
                                 Nada a pagar
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                                Em andamento
+                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                Aguardando pagamento
                               </span>
                             )}
                           </div>
                         </div>
 
-                        
                         {/* Entradas e Saidas Card */}
                         <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex flex-col justify-center shadow-sm">
                            <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Entradas</span>
@@ -1652,15 +1661,28 @@ const AdminInvestidores = ({
                   </h5>
                   
                   <div className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Senha do Portal</label>
+                    <div className="space-y-2 relative">
+                      <div className="flex items-center justify-between ml-1">
+                        <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Senha do Portal</label>
+                        {investorForm.passwordChangedAt && (
+                          <span className="text-[9px] uppercase tracking-widest font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            <CheckCircle2 size={10} /> Alterada pelo Investidor
+                          </span>
+                        )}
+                      </div>
                       <input 
                         type="text" 
                         value={investorForm.password || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, password: e.target.value })} 
-                        className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner font-mono tracking-widest" 
+                        className={`w-full bg-white border py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 transition-all shadow-inner font-mono tracking-widest ${investorForm.passwordChangedAt ? 'border-emerald-200 focus:ring-emerald-500/10 focus:border-emerald-500' : 'border-neutral-100 focus:ring-[#C5A059]/10 focus:border-[#C5A059]'}`} 
                         placeholder="Senha segura de acesso" 
                       />
+                      {investorForm.passwordChangedAt && (
+                        <p className="text-[10px] text-emerald-600 font-medium ml-1 mt-2">
+                          A nova senha escolhida é: <strong className="font-mono">{investorForm.password}</strong><br />
+                          <span className="text-[9px] text-neutral-400 font-normal">Alterada em: {new Date(investorForm.passwordChangedAt).toLocaleString('pt-BR')}</span>
+                        </p>
+                      )}
                     </div>
 
                     <div className="space-y-2">

@@ -29,3 +29,8 @@ export const parseCurrency = (val) => {
     return parseFloat(stripped) || 0;
   }
 };
+
+export const formatCurrency = (val) => {
+  const number = parseCurrency(val);
+  return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+};

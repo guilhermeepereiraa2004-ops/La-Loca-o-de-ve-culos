@@ -65,18 +65,7 @@ export function computeNotifications(params = {}) {
   }
 
   // ─── FINANCEIRO ───────────────────────────────────────────────────────────
-  // Transações com status "Pendente"
-  const pendingTransactions = transactions.filter(t => t.status === 'Pendente');
-  if (pendingTransactions.length > 0) {
-    badges.financeiro = pendingTransactions.length;
-    alerts.push({
-      module: 'financeiro',
-      label: 'Financeiro',
-      count: pendingTransactions.length,
-      message: `${pendingTransactions.length} lançamento${pendingTransactions.length > 1 ? 's' : ''} pendente${pendingTransactions.length > 1 ? 's' : ''}`,
-      color: 'amber',
-    });
-  }
+  // Removido a pedido do usuário (não notificar lançamentos pendentes no financeiro)
 
   // ─── CAUÇÃO ───────────────────────────────────────────────────────────────
   // Parcelas de caução em aberto

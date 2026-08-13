@@ -341,6 +341,8 @@ const AdminDashboard = ({
       else if (deleteType === 'lead') success = await onDeleteLead(itemToDelete.id);
       else if (deleteType === 'client') success = await onDeleteClient(itemToDelete.id);
       else if (deleteType === 'transaction') success = await onDeleteTransaction(itemToDelete.id);
+      else if (deleteType === 'maintenance') success = await onDeleteMaintenance(itemToDelete.id);
+      else if (deleteType === 'service_order') success = await onDeleteServiceOrder(itemToDelete.id);
       
       console.log("ADMIN_DASHBOARD: Resultado da exclusão:", success);
       if (success) {
@@ -518,6 +520,9 @@ const AdminDashboard = ({
               onUpdateMaintenance={isAdmin ? onUpdateMaintenance : undefined}
               onDeleteMaintenance={isAdmin ? onDeleteMaintenance : undefined}
               setShowAdminSuccess={setShowAdminSuccess} isReadOnly={!isAdmin}
+              setItemToDelete={setItemToDelete}
+              setDeleteType={setDeleteType}
+              setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
           {activeTab === 'vistoria' && canAccess('vistoria') && (
@@ -568,6 +573,9 @@ const AdminDashboard = ({
               onUpdateServiceOrder={onUpdateServiceOrder}
               onDeleteServiceOrder={onDeleteServiceOrder}
               onCloseReplacementContract={onCloseReplacementContract}
+              setItemToDelete={setItemToDelete}
+              setDeleteType={setDeleteType}
+              setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
           </Suspense>

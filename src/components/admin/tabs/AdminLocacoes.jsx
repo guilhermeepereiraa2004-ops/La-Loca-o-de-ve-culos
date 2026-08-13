@@ -412,7 +412,7 @@ const AdminLocacoes = ({
                                 onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })} 
                                 className="flex-1 py-2 bg-[#C5A059] text-white text-[8px] font-black uppercase tracking-widest rounded-xl shadow-sm flex items-center justify-center gap-1 border border-white/10 hover:bg-[#C5A059]/95 transition-all"
                               >
-                                <ShieldCheck size={11} /> Realizar Entrega
+                                <ShieldCheck size={11} /> Realizar Vistoria de Entrega
                               </button>
                             )}
                             

@@ -47,6 +47,9 @@ const AdminOficina = ({
   onUpdateServiceOrder,
   onDeleteServiceOrder,
   onCloseReplacementContract,
+  setItemToDelete,
+  setDeleteType,
+  setShowDeleteAuthModal,
   serviceOrders = [] 
 }) => {
   const [showForm, setShowForm] = useState(false);
@@ -189,73 +192,117 @@ const AdminOficina = ({
         <input type="text" value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por placa, modelo ou serviço..." className="w-full bg-white border border-neutral-100 p-5 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-light shadow-sm" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-        {filtered.length === 0 && (
-          <div className="col-span-3 text-center py-20 bg-neutral-50 rounded-[3rem] border border-neutral-100">
-            <Wrench size={48} className="mx-auto text-neutral-200 mb-4" />
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-300">Nenhuma O.S. encontrada</p>
-          </div>
-        )}
-        {filtered.map(os => (
-          <div key={os.id} className="bg-white rounded-[2.5rem] border border-neutral-100 p-8 shadow-sm hover:shadow-xl transition-all group">
-            <div className="flex justify-between items-start mb-6">
-              <span className={`px-3 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest border ${os.status === 'Concluída' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                {os.status}
-              </span>
-              <div className="text-right">
-                <span className="block text-[9px] font-bold text-neutral-300 uppercase">Adicionado em:</span>
-                <span className="block text-[10px] font-black text-neutral-500">{formatDateTime(os.createdAt || os.openedAt || os.date)}</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-[#C5A059]"><Car size={22} /></div>
-              <div>
-                <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{os.plate}</h4>
-                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{os.model}</p>
-              </div>
-            </div>
-            <p className="text-xs font-medium text-neutral-600 mb-4 line-clamp-2">{os.description}</p>
-            <div className="flex justify-between items-center pt-4 border-t border-neutral-50">
-              <div>
-                <p className="text-[8px] uppercase text-neutral-400 font-black">Responsável</p>
-                <p className="text-[10px] font-black text-neutral-700">{os.responsible}</p>
-              </div>
-              <div className="text-right">
-                <p className="text-[8px] uppercase text-neutral-400 font-black">Total</p>
-                <p className="text-sm font-black text-neutral-900">{(os.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</p>
-              </div>
-            </div>
-            <div className="mt-4 flex gap-3">
-              <button onClick={() => setViewingOS(os)} className="flex-1 py-3 bg-neutral-50 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-neutral-900 hover:text-white transition-all flex items-center justify-center gap-2">
-                <Eye size={14} /> Ver Detalhes
-              </button>
-              {os.status === 'Aberta' && (
-                <button 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditOS(os);
-                  }}
-                  className="px-4 py-3 bg-[#C5A059]/10 text-[#C5A059] hover:bg-[#C5A059] hover:text-neutral-950 rounded-xl transition-all flex items-center justify-center active:scale-95 animate-in fade-in"
-                  title="Editar O.S."
-                >
-                  <Pencil size={14} />
-                </button>
+      <div className="bg-white rounded-[2rem] border border-neutral-100 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="border-b border-neutral-200 bg-neutral-50/50">
+                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Nº</th>
+                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Responsável / Cliente</th>
+                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Veículo</th>
+                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Status</th>
+                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Valor</th>
+                <th className="py-4 px-6 text-[10px] font-black uppercase tracking-widest text-neutral-400">Data</th>
+                <th className="py-4 px-6 text-center text-[10px] font-black uppercase tracking-widest text-neutral-400">Ações</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-neutral-200">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="text-center py-20 bg-neutral-50">
+                    <Wrench size={32} className="mx-auto text-neutral-200 mb-3" />
+                    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-neutral-300">Nenhuma O.S. encontrada</p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(os => {
+                  const activeRental = rentals.find(r => r.plate === os.plate && r.status === 'Ativo');
+                  const clientName = activeRental ? (activeRental.user || activeRental.nome) : os.responsible;
+
+                  return (
+                    <tr 
+                      key={os.id} 
+                      className="hover:bg-neutral-50 transition-colors group cursor-pointer"
+                      onClick={() => setViewingOS(os)}
+                    >
+                      <td className="py-4 px-6 text-sm font-medium text-neutral-500">
+                        #{String(os.id).slice(-5)}
+                      </td>
+                      <td className="py-4 px-6 text-sm font-bold text-neutral-800">
+                        {clientName}
+                      </td>
+                      <td className="py-4 px-6 text-sm font-medium text-neutral-600">
+                        {os.plate} {os.model}
+                      </td>
+                      <td className="py-4 px-6">
+                        <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${os.status === 'Concluída' || os.status === 'Entregue' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                          {os.status}
+                        </span>
+                      </td>
+                      <td className="py-4 px-6 text-sm font-medium text-neutral-600">
+                        {(os.total || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="mb-2">
+                          <p className="text-[9px] uppercase tracking-widest font-black text-neutral-400 mb-0.5">Data da O.S.:</p>
+                          <p className="text-sm font-bold text-neutral-700">{formatDate(os.date)}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] uppercase tracking-widest font-black text-neutral-400 mb-0.5">Adicionado em:</p>
+                          <p className="text-xs font-bold text-neutral-500">{formatDateTime(os.createdAt || os.openedAt || os.date)}</p>
+                        </div>
+                      </td>
+                      <td className="py-4 px-6">
+                        <div className="flex justify-center items-center gap-3">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setViewingOS(os);
+                            }}
+                            className="text-neutral-400 hover:text-neutral-900 transition-colors"
+                            title="Ver Detalhes"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          {os.status === 'Aberta' && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditOS(os);
+                              }}
+                              className="text-neutral-400 hover:text-[#C5A059] transition-colors"
+                              title="Editar O.S."
+                            >
+                              <Pencil size={16} />
+                            </button>
+                          )}
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (setItemToDelete && setDeleteType && setShowDeleteAuthModal) {
+                                setItemToDelete(os);
+                                setDeleteType('service_order');
+                                setShowDeleteAuthModal(true);
+                              } else {
+                                if (window.confirm(`Deseja realmente excluir permanentemente a O.S. do veículo ${os.plate || 'desconhecido'}?`)) {
+                                  onDeleteServiceOrder(os.id);
+                                }
+                              }
+                            }} 
+                            className="text-red-400 hover:text-red-600 transition-colors"
+                            title="Excluir O.S."
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
-              <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (window.confirm(`Deseja realmente excluir permanentemente a O.S. do veículo ${os.plate || 'desconhecido'}?`)) {
-                    onDeleteServiceOrder(os.id);
-                  }
-                }} 
-                className="px-4 py-3 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl transition-all flex items-center justify-center active:scale-95"
-                title="Excluir O.S."
-              >
-                <Trash2 size={14} />
-              </button>
-            </div>
-          </div>
-        ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {showForm && (
@@ -523,7 +570,8 @@ const AdminOficina = ({
             <div id="os-print-area" className="flex-1 overflow-y-auto p-6 md:p-10 space-y-6 md:space-y-8">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                  ['Abertura', formatDate(viewingOS.date)], 
+                  ['Data da O.S.', formatDate(viewingOS.date)],
+                  ['Adicionado em', formatDateTime(viewingOS.createdAt || viewingOS.openedAt || viewingOS.date)], 
                   ['Conclusão', viewingOS.status === 'Concluída' && viewingOS.closedAt ? formatDate(viewingOS.closedAt) : (viewingOS.status === 'Concluída' ? formatDate(viewingOS.date) : '---')],
                   ['KM', `${viewingOS.km || '---'} km`], 
                   ['Responsável', viewingOS.responsible]

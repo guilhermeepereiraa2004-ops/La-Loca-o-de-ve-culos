@@ -104,7 +104,9 @@ const AdminFinanceiro = ({
   setDeleteType,
   setShowDeleteAuthModal
 }) => {
-  const [selectedMonth, setSelectedMonth] = useState('Todos'); // 'Todos' or 'YYYY-MM'
+  const now = new Date();
+  const currentMonthValue = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthValue); // 'Todos' or 'YYYY-MM'
   const [dateFilterStart, setDateFilterStart] = useState('');
   const [dateFilterEnd, setDateFilterEnd] = useState('');
   const [searchTerm, setSearchTerm] = useState('');

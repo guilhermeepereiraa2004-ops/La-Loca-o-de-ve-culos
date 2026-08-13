@@ -183,10 +183,6 @@ const InvestorLogin = ({ onLoginSuccess, onBack, investors = [] }) => {
               {isBlocked ? `Bloqueado — ${formatTime(retryAfterSeconds)}` : 'Entrar no Portal'}
             </button>
           </form>
-
-          <p className="text-center text-[10px] uppercase tracking-widest text-neutral-500 font-bold">
-            Esqueceu sua senha? <span className="text-[#D4AF37] cursor-pointer hover:underline">Recuperar</span>
-          </p>
         </div>
       </div>
 

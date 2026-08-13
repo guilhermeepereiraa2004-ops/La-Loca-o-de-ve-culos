@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { X, Landmark, Car, Calendar, Filter, History, AlertCircle, Info, Wallet, Trash2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Landmark, Car, Calendar, Filter, History, AlertCircle, Info, Wallet, Trash2, CheckCircle2 } from 'lucide-react';
 
   const getInvestorShareForTransaction = (t, invVehicles = [], rentals = []) => {
     if (!t || t.status !== 'Concluído') return { share: 0, explanation: 'Ignorado (Não concluído)' };
@@ -256,9 +256,15 @@ import { X, Landmark, Car, Calendar, Filter, History, AlertCircle, Info, Wallet,
   };
 
 
-const InvestorCalcModal = ({ investor, vehicles = [], transactions = [], rentals = [], realPayouts = [], onClose }) => {
+const InvestorCalcModal = ({ investor, vehicles = [], transactions = [], rentals = [], realPayouts = [], initialPlateFilter = 'all', hideSummarySidebar = false, onClose }) => {
   const [selectedMonthForCalc, setSelectedMonthForCalc] = useState(null);
-  const [selectedPlateFilter, setSelectedPlateFilter] = useState('all');
+  const [selectedPlateFilter, setSelectedPlateFilter] = useState(initialPlateFilter || 'all');
+
+  useEffect(() => {
+    if (initialPlateFilter) {
+      setSelectedPlateFilter(initialPlateFilter);
+    }
+  }, [initialPlateFilter]);
 
         if (!investor) return null;
 
@@ -372,93 +378,97 @@ const InvestorCalcModal = ({ investor, vehicles = [], transactions = [], rentals
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
                   
                   {/* Coluna Esquerda: Resumo Consolidado */}
-                  <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-0">
+                  {!hideSummarySidebar && (
+                    <div className="lg:col-span-3 space-y-6 lg:sticky lg:top-0">
 
-                    {/* Filtro Mobile de Mês */}
-                    <div className="block lg:hidden bg-white p-3 rounded-xl border border-neutral-200 shadow-sm">
-                       <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Mês de Referência (Competência)</label>
-                       <select
-                         value={activeMonth}
-                         onChange={(e) => setSelectedMonthForCalc(e.target.value)}
-                         className="w-full bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm rounded-lg px-3 py-2 outline-none font-bold cursor-pointer"
-                       >
-                         {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
-                           const [yr, mo] = m.split('-');
-                           const label = `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`;
-                           return <option key={m} value={m}>{label} {m === competenciaKey ? '(Vigente)' : ''}</option>
-                         })}
-                       </select>
-                    </div>
-                    
-                    <div>
-                      <h5 className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold mb-3 flex items-center gap-1.5">
-                        <Landmark size={14} className="text-neutral-400" /> Resumo de Saldo
-                      </h5>
-                      <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
-                        {/* Competência Vigente Card */}
-                        <div className="col-span-2 lg:col-span-1 bg-white p-4 rounded-xl border border-neutral-200 flex flex-col justify-between relative overflow-hidden">
-                          <div className="space-y-1 z-10">
-                            <p className="text-[10px] uppercase text-neutral-500 font-medium tracking-wide">Receita Bruta {activeMonth === competenciaKey ? "Vigente" : ""}</p>
-                            <p className="text-xl font-medium text-neutral-900 font-mono tracking-tight">{formatCurrency(activeNet)}</p>
+                      {/* Filtro Mobile de Mês */}
+                      <div className="block lg:hidden bg-white p-3 rounded-xl border border-neutral-200 shadow-sm">
+                         <label className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mb-1.5 block">Mês de Referência (Competência)</label>
+                         <select
+                           value={activeMonth}
+                           onChange={(e) => setSelectedMonthForCalc(e.target.value)}
+                           className="w-full bg-neutral-50 border border-neutral-200 text-neutral-700 text-sm rounded-lg px-3 py-2 outline-none font-bold cursor-pointer"
+                         >
+                           {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
+                             const [yr, mo] = m.split('-');
+                             const label = `${monthLabelsLong[parseInt(mo) - 1]}/${yr}`;
+                             return <option key={m} value={m}>{label} {m === competenciaKey ? '(Vigente)' : ''}</option>
+                           })}
+                         </select>
+                      </div>
+                      
+                      <div>
+                        <h5 className="text-[10px] uppercase tracking-wider text-neutral-500 font-semibold mb-3 flex items-center gap-1.5">
+                          <Landmark size={14} className="text-neutral-400" /> Resumo de Saldo
+                        </h5>
+                        <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
+                          {/* Competência Vigente Card */}
+                          <div className="col-span-2 lg:col-span-1 bg-white p-4 rounded-xl border border-neutral-200 flex flex-col justify-between relative overflow-hidden">
+                            <div className="space-y-1 z-10">
+                              <p className="text-[10px] uppercase text-neutral-500 font-semibold tracking-wide">
+                                Receita {selectedPlateFilter !== 'all' ? `(${selectedPlateFilter})` : activeMonth === competenciaKey ? "Vigente" : ""}
+                              </p>
+                              <p className="text-xl font-bold text-neutral-900 font-mono tracking-tight">
+                                {formatCurrency(selectedPlateFilter === 'all' ? activeNet : filteredTotalNet)}
+                              </p>
+                            </div>
+                            <div className="mt-3 z-10 flex">
+                              {activeIsPaid ? (
+                                activePayout <= 0 ? (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
+                                    Nada a pagar
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 text-[9px] font-semibold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
+                                    <CheckCircle2 size={10} /> Repasse Realizado
+                                  </span>
+                                )
+                              ) : activeMonth === currentMonthKey ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-blue-50 text-blue-700 px-2 py-0.5 rounded border border-blue-200">
+                                  Em andamento
+                                </span>
+                              ) : activePayout <= 0 ? (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
+                                  Nada a pagar
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
+                                  Aguardando pagamento
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="mt-3 z-10 flex">
-                            {!activeIsPaid ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-amber-50 text-amber-700 px-2 py-0.5 rounded border border-amber-200">
-                                Aguardando pagamento
-                              </span>
-                            ) : activePayout <= 0 ? (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-neutral-100 text-neutral-600 px-2 py-0.5 rounded border border-neutral-200">
-                                Nada a pagar
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[9px] font-medium bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded border border-emerald-200">
-                                Em andamento
-                              </span>
-                            )}
+
+                          
+                          {/* Entradas e Saidas Card */}
+                          <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex flex-col justify-center shadow-sm">
+                             <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Entradas</span>
+                             <span className="text-sm lg:text-base font-black font-mono text-emerald-800 tracking-tight">+ {formatCurrency(totalEntradas)}</span>
                           </div>
-                        </div>
-
-                        
-                        {/* Entradas e Saidas Card */}
-                        <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 flex flex-col justify-center shadow-sm">
-                           <span className="text-[9px] font-bold uppercase tracking-widest text-emerald-600 mb-0.5">Entradas</span>
-                           <span className="text-sm lg:text-base font-black font-mono text-emerald-800 tracking-tight">+ {formatCurrency(totalEntradas)}</span>
-                        </div>
-                        <div className="bg-rose-50 p-3 rounded-xl border border-rose-100 flex flex-col justify-center shadow-sm">
-                           <span className="text-[9px] font-bold uppercase tracking-widest text-rose-600 mb-0.5">Saídas</span>
-                           <span className="text-sm lg:text-base font-black font-mono text-rose-800 tracking-tight">- {formatCurrency(totalSaidas)}</span>
-                        </div>
-
-                        {/* Dívidas Anteriores Card */}
-                        <div className={`col-span-2 lg:col-span-1 p-4 rounded-xl border flex flex-col justify-between relative overflow-hidden ${
-                          carriedDebt < 0 
-                            ? 'bg-rose-50/30 border-rose-200 text-rose-800' 
-                            : 'bg-white border-neutral-200 text-neutral-800'
-                        }`}>
-                          <div className="space-y-1">
-                            <p className={`text-[10px] uppercase font-medium tracking-wide ${carriedDebt < 0 ? 'text-rose-600' : 'text-neutral-500'}`}>Despesas / Saldo Negativo</p>
-                            <p className="text-xl font-medium font-mono tracking-tight">{formatCurrency(carriedDebt)}</p>
+                          <div className="bg-rose-50 p-3 rounded-xl border border-rose-100 flex flex-col justify-center shadow-sm">
+                             <span className="text-[9px] font-bold uppercase tracking-widest text-rose-600 mb-0.5">Saídas</span>
+                             <span className="text-sm lg:text-base font-black font-mono text-rose-800 tracking-tight">- {formatCurrency(totalSaidas)}</span>
                           </div>
-                        </div>
 
-                        {/* Líquido a Repassar Card */}
-                        <div className="col-span-2 lg:col-span-1 p-4 rounded-xl border border-neutral-900 bg-neutral-900 flex flex-col justify-between text-white relative overflow-hidden shadow-sm">
-                          <div className="space-y-1 z-10">
-                            <p className="text-[10px] uppercase text-neutral-400 font-medium tracking-wide">Liquidação Final</p>
-                            <p className={`text-2xl font-semibold font-mono tracking-tight ${activePayout >= 0 ? 'text-white' : 'text-rose-400'}`}>
-                              {formatCurrency(activePayout)}
-                            </p>
+                          {/* Dívidas Anteriores Card */}
+                          <div className={`col-span-2 lg:col-span-1 p-4 rounded-xl border flex flex-col justify-between relative overflow-hidden ${
+                            carriedDebt < 0 
+                              ? 'bg-rose-50/30 border-rose-200 text-rose-800' 
+                              : 'bg-white border-neutral-200 text-neutral-600'
+                          }`}>
+                            <div className="space-y-1">
+                              <p className="text-[9px] uppercase font-bold tracking-wider text-neutral-400">Abatimento Dívida Anterior</p>
+                              <p className="text-sm font-semibold font-mono">{formatCurrency(carriedDebt)}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
+
                     </div>
-
-                    
-
-                  </div>
+                  )}
 
                   {/* Coluna Direita: Detalhes das Transações e Dívidas (2/3) */}
-                  <div className="lg:col-span-9 space-y-8">
+                  <div className={`${hideSummarySidebar ? 'lg:col-span-12' : 'lg:col-span-9'} space-y-8`}>
                     
                     {/* Seção de Transações */}
                     <div>
@@ -469,7 +479,7 @@ const InvestorCalcModal = ({ investor, vehicles = [], transactions = [], rentals
                             <select
                               value={activeMonth}
                               onChange={(e) => setSelectedMonthForCalc(e.target.value)}
-                              className="hidden lg:block ml-2 bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs rounded-md px-2 py-1 outline-none font-semibold cursor-pointer hover:bg-neutral-200 transition-colors"
+                              className={`${hideSummarySidebar ? 'block' : 'hidden lg:block'} ml-2 bg-neutral-100 border border-neutral-200 text-neutral-700 text-xs rounded-md px-2 py-1 outline-none font-semibold cursor-pointer hover:bg-neutral-200 transition-colors`}
                             >
                               {Array.from(new Set([...Object.keys(transactionsByMonth), competenciaKey].filter(Boolean))).sort().reverse().map(m => {
                                 const [yr, mo] = m.split('-');
@@ -686,7 +696,7 @@ const InvestorCalcModal = ({ investor, vehicles = [], transactions = [], rentals
                     </div>
 
                     {/* Evolução de Dívidas (Saldo de Meses Passados) */}
-                    {monthlySummaries.length > 0 && (
+                    {!hideSummarySidebar && monthlySummaries.length > 0 && (
                       <div className="bg-white border border-neutral-200 p-4 sm:p-6 rounded-xl">
                         <h5 className="text-sm font-bold text-neutral-800 uppercase tracking-tight mb-4 flex items-center gap-2 border-b border-neutral-100 pb-3">
                           <History size={16} className="text-neutral-500" /> Histórico de Repasses

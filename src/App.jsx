@@ -1,4 +1,5 @@
 import React from 'react';
+import { supabase } from './lib/supabase';
 
 // Components
 import AdminLogin from './components/auth/AdminLogin';
@@ -12,16 +13,23 @@ import InterestModal from './components/ui/modals/InterestModal';
 import SuccessModal from './components/ui/modals/SuccessModal';
 import GlobalAlertModal from './components/ui/modals/GlobalAlertModal';
 import ImageViewer from './components/ui/ImageViewer';
+import OficinaLogin from './components/oficina/OficinaLogin';
+import OficinaDashboard from './components/oficina/OficinaDashboard';
 
 
 // Hooks
 import { useAppState } from './hooks/useAppState';
 
-const App = () => {
+const App = ({ isOficinaDomain = false }) => {
+  const [isOficinaAuthenticated, setIsOficinaAuthenticated] = React.useState(() => {
+    return localStorage.getItem('la_oficina_auth') === 'true';
+  });
+
   const {
     view, setView,
     leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, clients, replacementContracts,
+    quotes, appointments, inventory, workshopFinancials,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     fines, isFinesDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
@@ -38,12 +46,79 @@ const App = () => {
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
     handleCloseReplacementContract,
     handleInterestSubmit,
-    handleAddFine, handleUpdateFine, handleDeleteFine
+    handleAddFine, handleUpdateFine, handleDeleteFine,
+    handleAddQuote, handleUpdateQuote, handleDeleteQuote,
+    handleAddAppointment, handleUpdateAppointment, handleDeleteAppointment,
+    handleAddInventoryItem, handleUpdateInventoryItem, handleDeleteInventoryItem, handleDeleteAllInventoryItems,
+    handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial
   } = useAppState();
 
 
 
 
+
+  // Oficina View (Domain Based)
+  if (isOficinaDomain) {
+    if (!isOficinaAuthenticated) {
+      return (
+        <OficinaLogin 
+          onLoginSuccess={() => {
+            localStorage.setItem('la_oficina_auth', 'true');
+            setIsOficinaAuthenticated(true);
+          }}
+          onBack={() => {
+            // Se tentar voltar, como está no subdomínio, manda para o domínio principal (ou recarrega se não tiver)
+            window.location.href = window.location.protocol + '//' + window.location.hostname.replace('oficina.', '');
+          }}
+        />
+      );
+    }
+    
+    return (
+      <>
+        <GlobalAlertModal 
+          isOpen={globalAlert.isOpen}
+          title={globalAlert.title}
+          message={globalAlert.message}
+          type={globalAlert.type}
+          onClose={() => setGlobalAlert({ ...globalAlert, isOpen: false })}
+        />
+        <OficinaDashboard
+          vehicles={vehicles}
+          clients={clients}
+          quotes={quotes}
+          appointments={appointments}
+          inventory={inventory}
+          workshopFinancials={workshopFinancials}
+          serviceOrders={serviceOrders}
+          rentals={rentals}
+          replacementContracts={replacementContracts}
+          onCloseServiceOrder={handleCloseServiceOrder}
+          onAddServiceOrder={handleAddMaintenance} // Using existing logic if applicable
+          onUpdateServiceOrder={handleUpdateServiceOrder}
+          onDeleteServiceOrder={handleDeleteServiceOrder}
+          onCloseReplacementContract={handleCloseReplacementContract}
+          onAddQuote={handleAddQuote}
+          onUpdateQuote={handleUpdateQuote}
+          onDeleteQuote={handleDeleteQuote}
+          onAddAppointment={handleAddAppointment}
+          onUpdateAppointment={handleUpdateAppointment}
+          onDeleteAppointment={handleDeleteAppointment}
+          onAddInventoryItem={handleAddInventoryItem}
+          onUpdateInventoryItem={handleUpdateInventoryItem}
+          onDeleteInventoryItem={handleDeleteInventoryItem}
+          onDeleteAllInventoryItems={handleDeleteAllInventoryItems}
+          onAddWorkshopFinancial={handleAddWorkshopFinancial}
+          onUpdateWorkshopFinancial={handleUpdateWorkshopFinancial}
+          onDeleteWorkshopFinancial={handleDeleteWorkshopFinancial}
+          onLogout={() => {
+            localStorage.removeItem('la_oficina_auth');
+            setIsOficinaAuthenticated(false);
+          }}
+        />
+      </>
+    );
+  }
 
   // Admin View
   if (view === 'admin') {
@@ -130,6 +205,26 @@ const App = () => {
 
   // Investor View
   if (view === 'investor') {
+    // Troca de senha do investidor direto no Supabase (sem confirmação por e-mail)
+    const handleChangeInvestorPassword = async (newPassword) => {
+      try {
+        if (!currentUser?.id) throw new Error('Investidor não identificado.');
+        const changedAt = new Date().toISOString();
+        const { error } = await supabase
+          .from('investors')
+          .update({ password: newPassword, password_changed_at: changedAt })
+          .eq('id', currentUser.id);
+        if (error) throw error;
+        // Atualizar o currentUser em cache para refletir a nova senha
+        const updated = { ...currentUser, password: newPassword, passwordChangedAt: changedAt };
+        localStorage.setItem('la_investor_auth', JSON.stringify(updated));
+        setCurrentUser(updated);
+        return { success: true };
+      } catch (err) {
+        console.error('Erro ao trocar senha:', err);
+        return { success: false, error: err.message || 'Erro desconhecido' };
+      }
+    };
     return (
       <>
         <GlobalAlertModal 
@@ -146,6 +241,8 @@ const App = () => {
         serviceOrders={serviceOrders}
         rentals={rentals}
         maintenances={maintenances}
+        inspections={inspections}
+        onChangePassword={handleChangeInvestorPassword}
         onLogout={() => {
           localStorage.removeItem('la_investor_auth');
           localStorage.removeItem('la_current_view');

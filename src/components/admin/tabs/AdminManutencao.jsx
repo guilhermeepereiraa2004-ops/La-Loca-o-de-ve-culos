@@ -11,7 +11,10 @@ const AdminManutencao = ({
   onAddMaintenance = () => {},
   onUpdateMaintenance = () => {},
   onDeleteMaintenance = () => {},
-  setShowAdminSuccess = () => {}
+  setShowAdminSuccess = () => {},
+  setItemToDelete,
+  setDeleteType,
+  setShowDeleteAuthModal
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -472,7 +475,15 @@ const AdminManutencao = ({
                       <Pencil size={14} />
                     </button>
                     <button
-                      onClick={() => onDeleteMaintenance(m.id)}
+                      onClick={() => {
+                        if (setItemToDelete && setDeleteType && setShowDeleteAuthModal) {
+                          setItemToDelete(m);
+                          setDeleteType('maintenance');
+                          setShowDeleteAuthModal(true);
+                        } else {
+                          onDeleteMaintenance(m.id);
+                        }
+                      }}
                       className="w-10 h-10 bg-red-50 text-red-400 rounded-xl flex items-center justify-center hover:bg-red-500 hover:text-white transition-all shadow-sm"
                       title="Excluir"
                     >

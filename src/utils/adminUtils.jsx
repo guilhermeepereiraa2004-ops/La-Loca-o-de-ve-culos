@@ -130,7 +130,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   return {
     mainStats: [
-      { label: 'Veículos Ativos', value: activeVehicles, icon: <Car size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
+      { label: 'Veículos Alugados', value: activeVehicles, icon: <Car size={20} />, color: 'text-amber-600', bg: 'bg-amber-50' },
       { label: 'Disponíveis', value: availableVehicles, icon: <Car size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },
       { label: 'Em Manutenção', value: maintenanceVehicles, icon: <Wrench size={20} />, color: 'text-red-600', bg: 'bg-red-50' },
       { label: 'Receita (Mês)', value: `R$ ${monthlyRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, icon: <TrendingUp size={20} />, color: 'text-emerald-600', bg: 'bg-emerald-50' },

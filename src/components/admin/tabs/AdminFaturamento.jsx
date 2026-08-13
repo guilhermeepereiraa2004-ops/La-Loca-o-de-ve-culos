@@ -882,6 +882,65 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
   };
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
+
+  const pendingStats = React.useMemo(() => {
+    let pend1 = 0, pend2 = 0, pend3 = 0, encPendente = 0, cicloAtivo = 0;
+    
+    safeRentals.forEach(r => {
+      if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return;
+      const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
+      
+      if (!isClosed) cicloAtivo++;
+
+      const startStr = (r.startDate || r.date).substring(0, 10);
+      const startObj = new Date(startStr + 'T12:00:00');
+      
+      const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
+      if (!isClosed) endLimit.setHours(12, 0, 0, 0);
+
+      let iterDate = new Date(startObj);
+      let totalWeeks = 0;
+      while (iterDate <= endLimit && totalWeeks < 300) {
+        totalWeeks++;
+        iterDate.setDate(iterDate.getDate() + 7);
+      }
+
+      const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
+      const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
+      const allRepPlates = matchedRCs.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
+
+      const rHistory = (transactions || []).filter(t => {
+        const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
+        const isMatch = tPlate === rPlate || allRepPlates.includes(tPlate);
+        const rentalStartDate = r.startDate || r.date;
+        if (rentalStartDate && t.date && t.date < rentalStartDate) return false;
+        return isMatch && t.type === 'in' && (t.cat || '').toLowerCase() === 'aluguel';
+      });
+
+      const legacyCount = rHistory.filter(t => !(t.desc || '').includes('Ref:')).length;
+      
+      const specificRefs = new Set();
+      rHistory.forEach(t => {
+        const desc = t.desc || '';
+        const match = desc.match(/(Ref:\s*\d{2}\/\d{2}\/\d{4}\s*a\s*\d{2}\/\d{2}\/\d{4})/i);
+        if (match) specificRefs.add(match[1]);
+        else if (desc.includes('Ref:')) specificRefs.add(desc);
+      });
+      const specificCount = specificRefs.size;
+
+      const pendingWeeks = totalWeeks - (legacyCount + specificCount);
+      
+      if (pendingWeeks > 0) {
+        if (isClosed) encPendente++;
+        else if (pendingWeeks === 1) pend1++;
+        else if (pendingWeeks === 2) pend2++;
+        else if (pendingWeeks >= 3) pend3++;
+      }
+    });
+    
+    return { pend1, pend2, pend3, encPendente, cicloAtivo };
+  }, [safeRentals, transactions, replacementContracts]);
+
   let filtered = safeRentals.filter(r => {
     if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return false;
     const searchLower = debouncedSearch.toLowerCase();
@@ -895,7 +954,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     if (filterMode === 'encerrados_pendentes' && !isClosed) return false;
 
     // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
-    if (filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || isClosed) {
+    const isPendingFilter = filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || filterMode.startsWith('pendentes_');
+    if (isPendingFilter || isClosed) {
       const startStr = (r.startDate || r.date).substring(0, 10);
       const startObj = new Date(startStr + 'T12:00:00');
       
@@ -942,8 +1002,14 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
       // Se total de semanas de vida é maior que a soma de transações, tem pendência
       // Se não tem pendência e tá encerrado, some da tela!
-      if (totalWeeks <= legacyCount + specificCount) {
-        return false;
+      const pendingWeeks = totalWeeks - (legacyCount + specificCount);
+      
+      if (isPendingFilter || isClosed) {
+        if (pendingWeeks <= 0) return false;
+        
+        if (filterMode === 'pendentes_1' && pendingWeeks !== 1) return false;
+        if (filterMode === 'pendentes_2' && pendingWeeks !== 2) return false;
+        if (filterMode === 'pendentes_3' && pendingWeeks < 3) return false;
       }
     }
     
@@ -1004,25 +1070,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             >
               Início Mais Antigo
             </button>
-            <button
-              onClick={() => setFilterMode('pendentes')}
-              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap flex items-center gap-1 ${filterMode === 'pendentes' ? 'bg-amber-100 text-amber-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
-            >
-              <AlertCircle size={10} /> Pendentes
-            </button>
-            <button
-              onClick={() => setFilterMode('encerrados_pendentes')}
-              className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-colors whitespace-nowrap flex items-center gap-1 ${filterMode === 'encerrados_pendentes' ? 'bg-red-100 text-red-800 shadow-sm' : 'text-neutral-500 hover:text-neutral-700'}`}
-            >
-              <AlertCircle size={10} /> Inadimplentes (Encerrados)
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-10">
-        <div className="p-6 bg-neutral-900 rounded-2xl shadow-md relative overflow-hidden">
+      {/* Summary Cards acting as Filters */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
+        <div className="col-span-2 p-6 bg-neutral-900 rounded-2xl shadow-md relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-[#C5A059]/5 blur-xl -mr-10 -mt-10" />
           <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Previsão Semanal</p>
           <div className="flex items-baseline gap-0.5">
@@ -1032,13 +1086,47 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             </h4>
           </div>
         </div>
-        <div className="p-6 bg-white rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-between">
+
+        <div onClick={() => setFilterMode('recentes')} className={`col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'recentes' ? 'bg-[#C5A059]/10 border-[#C5A059] ring-2 ring-[#C5A059]/20' : 'bg-white border-neutral-200 hover:bg-neutral-50'}`}>
           <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Ciclo Ativo</p>
           <div>
-            <h4 className="text-3xl font-black text-neutral-900 tracking-tight leading-none">{filtered.length}</h4>
-            <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-wider mt-1">Condutores Ativos</p>
+            <h4 className="text-3xl font-black text-neutral-900 tracking-tight leading-none">{pendingStats.cicloAtivo}</h4>
+            <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-wider mt-1">Todos (S/ filtro)</p>
           </div>
         </div>
+
+        <div onClick={() => setFilterMode('pendentes_1')} className={`col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'pendentes_1' ? 'bg-amber-100 border-amber-300 ring-2 ring-amber-400/20' : 'bg-white border-neutral-200 hover:bg-amber-50'}`}>
+          <p className="text-[9px] uppercase tracking-[0.1em] text-amber-600/70 font-black mb-1 leading-tight">1 Sem. Pendente</p>
+          <div>
+            <h4 className="text-3xl font-black text-amber-600 tracking-tight leading-none">{pendingStats.pend1}</h4>
+            <p className="text-[8px] text-amber-600/50 font-bold uppercase tracking-wider mt-1">Contratos</p>
+          </div>
+        </div>
+
+        <div onClick={() => setFilterMode('pendentes_2')} className={`col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'pendentes_2' ? 'bg-amber-100 border-amber-400 ring-2 ring-amber-500/20' : 'bg-white border-neutral-200 hover:bg-amber-50'}`}>
+          <p className="text-[9px] uppercase tracking-[0.1em] text-amber-700/70 font-black mb-1 leading-tight">2 Sem. Pendente</p>
+          <div>
+            <h4 className="text-3xl font-black text-amber-700 tracking-tight leading-none">{pendingStats.pend2}</h4>
+            <p className="text-[8px] text-amber-700/50 font-bold uppercase tracking-wider mt-1">Contratos</p>
+          </div>
+        </div>
+
+        <div onClick={() => setFilterMode('pendentes_3')} className={`col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'pendentes_3' ? 'bg-red-100 border-red-300 ring-2 ring-red-400/20' : 'bg-white border-neutral-200 hover:bg-red-50'}`}>
+          <p className="text-[9px] uppercase tracking-[0.1em] text-red-500/70 font-black mb-1 flex items-center gap-1 leading-tight"><AlertCircle size={10} /> Alertas 3+ Sem</p>
+          <div>
+            <h4 className="text-3xl font-black text-red-600 tracking-tight leading-none">{pendingStats.pend3}</h4>
+            <p className="text-[8px] text-red-500/50 font-bold uppercase tracking-wider mt-1">Críticos</p>
+          </div>
+        </div>
+
+        <div onClick={() => setFilterMode('encerrados_pendentes')} className={`col-span-2 lg:col-span-3 xl:col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'encerrados_pendentes' ? 'bg-red-950 border-red-900 ring-2 ring-red-500/20' : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'}`}>
+          <p className="text-[9px] uppercase tracking-[0.1em] text-red-500/70 font-black mb-1 leading-tight">Inadimplentes</p>
+          <div>
+            <h4 className="text-3xl font-black text-red-500 tracking-tight leading-none">{pendingStats.encPendente}</h4>
+            <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Contratos Encerrados</p>
+          </div>
+        </div>
+
       </div>
 
       {/* Rental Cards */}
@@ -1124,6 +1212,35 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             const history = grouped.sort((a, b) => new Date(b.date) - new Date(a.date));
             const paidWeeksCount = history.filter(t => (t.cat || '').toLowerCase() === 'aluguel').length;
 
+            // Compute pending weeks strictly for the visual badge
+            let badgePendingWeeks = 0;
+            if (rental.startDate || rental.date) {
+              const startStr = (rental.startDate || rental.date).substring(0, 10);
+              const startObj = new Date(startStr + 'T12:00:00');
+              const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+              const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date();
+              if (!isClosed) endLimit.setHours(12, 0, 0, 0);
+
+              let iterDate = new Date(startObj);
+              let totalWeeks = 0;
+              while (iterDate <= endLimit && totalWeeks < 300) {
+                totalWeeks++;
+                iterDate.setDate(iterDate.getDate() + 7);
+              }
+
+              const rentalTransactions = rawHistory.filter(t => (t.cat || '').toLowerCase() === 'aluguel');
+              const legacyCount = rentalTransactions.filter(t => !(t.desc || '').includes('Ref:')).length;
+              const specificRefs = new Set();
+              rentalTransactions.forEach(t => {
+                const desc = t.desc || '';
+                const match = desc.match(/(Ref:\s*\d{2}\/\d{2}\/\d{4}\s*a\s*\d{2}\/\d{2}\/\d{4})/i);
+                if (match) specificRefs.add(match[1]);
+                else if (desc.includes('Ref:')) specificRefs.add(desc);
+              });
+              
+              badgePendingWeeks = totalWeeks - (legacyCount + specificRefs.size);
+            }
+
             return (
               <div key={rental.id} className="bg-white rounded-3xl border border-neutral-150 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-neutral-200">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-0">
@@ -1143,6 +1260,23 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                                 {rental.status === 'Encerrado' || rental.status === 'Finalizado' ? 'Encerrado com Pendência' : rental.status}
                               </span>
                             )}
+                            
+                            {badgePendingWeeks === 1 && rental.status === 'Ativo' && (
+                              <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                                1 Sem. Pendente
+                              </span>
+                            )}
+                            {badgePendingWeeks === 2 && rental.status === 'Ativo' && (
+                              <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500 text-white border border-amber-600">
+                                2 Sem. Pendente
+                              </span>
+                            )}
+                            {badgePendingWeeks >= 3 && rental.status === 'Ativo' && (
+                              <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-red-600 text-white border border-red-700 animate-pulse">
+                                3+ Sem. Pendente
+                              </span>
+                            )}
+
                             <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500">
                               Cobrança: {getDayOfWeek(rental.startDate || rental.date)}s
                             </span>

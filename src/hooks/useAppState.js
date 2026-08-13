@@ -103,6 +103,7 @@ const TABLE_MAPPINGS = {
     cpf: 'cpf',
     address: 'address',
     password: 'password',
+    passwordChangedAt: 'password_changed_at',
     status: 'status',
     bank: 'bank',
     pix: 'pix'
@@ -1545,6 +1546,7 @@ export const useAppState = () => {
     dbVehicle['belt_change_interval_km'] = parseFloat(vehicle.beltChangeIntervalKm) || null;
     dbVehicle['dividend'] = parseBRL(vehicle.dividend);
     dbVehicle['investor_id'] = investorId;
+    dbVehicle['entry_date'] = vehicle.entryDate ? vehicle.entryDate : null;
 
     const { data, error } = await supabase.from('vehicles').insert([dbVehicle]).select();
     if (!error && data) {
@@ -1617,6 +1619,7 @@ export const useAppState = () => {
     dbVehicle['last_belt_change_km'] = parseFloat(vehicle.lastBeltChangeKm) || null;
     dbVehicle['belt_change_interval_km'] = parseFloat(vehicle.beltChangeIntervalKm) || null;
     dbVehicle['dividend'] = parseBRL(vehicle.dividend);
+    dbVehicle['entry_date'] = vehicle.entryDate ? vehicle.entryDate : null;
 
     const { error } = await supabase.from('vehicles').update(dbVehicle).eq('id', vehicle.id);
     if (!error) {

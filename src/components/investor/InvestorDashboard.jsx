@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
-  X, Menu, TrendingUp, Car, Wrench, Wallet, Calendar, 
-  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart, Activity
+  X, Menu, TrendingUp, TrendingDown, Car, Wrench, Wallet, Calendar, Clock, Gauge, KeyRound, Lock, Eye as EyeIcon, EyeOff,
+  Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart, Activity,
+  ChevronDown, Check, Filter, SlidersHorizontal, DollarSign, ArrowUpRight, ArrowDownRight
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { EditorialLabel } from '../ui/EditorialLabel';
@@ -43,17 +44,56 @@ const getFifthBusinessDay = (dateOrYear = new Date(), monthOpt) => {
   return new Date(year, month, day);
 };
 
-const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], maintenances = [], onLogout, onGoHome }) => {
+const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], maintenances = [], inspections = [], onChangePassword, onLogout, onGoHome }) => {
   const [viewingSO, setViewingSO] = useState(null);
   const [soListModal, setSoListModal] = useState(null);
   const [showCalcModal, setShowCalcModal] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
+  const [pwShowFields, setPwShowFields] = useState({ current: false, newPw: false, confirm: false });
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwError, setPwError] = useState('');
+  const [pwSuccess, setPwSuccess] = useState(false);
+  const [calcModalVehiclePlate, setCalcModalVehiclePlate] = useState('all');
   const [activeTab, setActiveTab] = useState(() => {
     const savedTab = localStorage.getItem('la_investor_active_tab');
     return savedTab || 'dashboard';
   });
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
+  const [maintenanceStartDate, setMaintenanceStartDate] = useState('');
+  const [maintenanceEndDate, setMaintenanceEndDate] = useState('');
+  const [isVehicleDropdownOpen, setIsVehicleDropdownOpen] = useState(false);
+  const [vehicleSearchTerm, setVehicleSearchTerm] = useState('');
+  const vehicleDropdownRef = useRef(null);
+
   const [fleetStatusFilter, setFleetStatusFilter] = useState('Todos');
+  const [rendimentosSortFilter, setRendimentosSortFilter] = useState('padrao');
+  const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+  const sortDropdownRef = useRef(null);
   const [realPayouts, setRealPayouts] = useState([]);
+
+  const sortOptions = [
+    { id: 'padrao', label: 'Ordem Padrão (Todos os Ativos)', icon: SlidersHorizontal },
+    { id: 'maior_media_mensal', label: 'Maior Média Mensal (R$)', icon: ArrowUpRight, color: 'text-[#00E676]' },
+    { id: 'maior_roi', label: 'Maior Rentabilidade (ROI %)', icon: TrendingUp, color: 'text-[#00E676]' },
+    { id: 'menor_roi', label: 'Menor Rentabilidade (ROI %)', icon: TrendingDown, color: 'text-red-400' },
+    { id: 'maior_investimento', label: 'Maior Valor Investido', icon: DollarSign, color: 'text-[#D4AF37]' },
+    { id: 'maior_retorno', label: 'Maior Retorno Gerado (R$)', icon: ArrowUpRight, color: 'text-[#00E676]' },
+    { id: 'menor_retorno', label: 'Menor Retorno Gerado (R$)', icon: ArrowDownRight, color: 'text-red-400' },
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (vehicleDropdownRef.current && !vehicleDropdownRef.current.contains(e.target)) {
+        setIsVehicleDropdownOpen(false);
+      }
+      if (sortDropdownRef.current && !sortDropdownRef.current.contains(e.target)) {
+        setIsSortDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     if (activeTab) {
@@ -87,7 +127,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     let protectionSum = 0;
     let insuranceSum = 0;
 
+    const distinctMonths = new Set();
+
     vehicleTrans.forEach(t => {
+      if (t.date) distinctMonths.add(t.date.substring(0, 7));
       const cat = t.cat?.toLowerCase().trim() || '';
       const val = Math.abs(t.val || 0);
 
@@ -119,21 +162,71 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     const currentYield = gross - adminTaxSum - (maintenanceSum + protectionSum + insuranceSum);
     const yieldPerc = investValue > 0 ? ((currentYield / investValue) * 100).toFixed(2) + '%' : '0.00%';
 
+    const activeMonthsCount = Math.max(1, distinctMonths.size);
+    const monthlyAvgReturn = currentYield / activeMonthsCount;
+    const monthlyAvgReturnPerc = investValue > 0 ? (monthlyAvgReturn / investValue) * 100 : 0;
+    const paybackMonths = (investValue > 0 && monthlyAvgReturn > 0) ? `${(investValue / monthlyAvgReturn).toFixed(1)} meses` : '---';
+
     return {
       ...v,
       investValue,
       currentYield,
-      yieldPerc
+      yieldPerc,
+      monthlyAvgReturn,
+      monthlyAvgReturnPerc,
+      paybackMonths
     };
   });
 
+  const sortedRendimentosVehicles = useMemo(() => {
+    const list = [...myVehicles];
+    switch (rendimentosSortFilter) {
+      case 'maior_media_mensal':
+        return list.sort((a, b) => (b.monthlyAvgReturn || 0) - (a.monthlyAvgReturn || 0));
+      case 'maior_roi':
+        return list.sort((a, b) => (parseFloat(b.yieldPerc) || 0) - (parseFloat(a.yieldPerc) || 0));
+      case 'menor_roi':
+        return list.sort((a, b) => (parseFloat(a.yieldPerc) || 0) - (parseFloat(b.yieldPerc) || 0));
+      case 'maior_investimento':
+        return list.sort((a, b) => (b.investValue || 0) - (a.investValue || 0));
+      case 'maior_retorno':
+        return list.sort((a, b) => (b.currentYield || 0) - (a.currentYield || 0));
+      case 'menor_retorno':
+        return list.sort((a, b) => (a.currentYield || 0) - (b.currentYield || 0));
+      default:
+        return list;
+    }
+  }, [myVehicles, rendimentosSortFilter]);
+
   // Calcular valor total investido com base nos veículos
-  
   const filteredMyVehicles = myVehicles.filter(v => {
     if (fleetStatusFilter === 'Todos') return true;
-    if (fleetStatusFilter === 'Alugado' && v.status === 'Alugado (Reserva)') return true;
+    if (fleetStatusFilter === 'Alugado') return v.status === 'Alugado' || v.status === 'Alugado (Reserva)';
     return v.status === fleetStatusFilter;
   });
+
+  // Calcular o KM mais recente de cada veículo baseado nas vistorias (qualquer tipo)
+  const latestKmByPlate = useMemo(() => {
+    const km = {};
+    inspections.forEach(ins => {
+      const plate = (ins.vehiclePlate || '').toUpperCase().replace('-', '');
+      if (!plate) return;
+      const kmVal = parseInt((ins.km || '').toString().replace(/\D/g, ''), 10);
+      if (isNaN(kmVal)) return;
+      // Usar a data da vistoria para determinar a mais recente
+      const insDate = ins.date || ins.createdAt || '';
+      if (!km[plate] || insDate > km[plate].date) {
+        km[plate] = { km: kmVal, date: insDate, type: ins.type };
+      }
+    });
+    return km;
+  }, [inspections]);
+
+  // Helper para obter o KM mais recente de um veículo
+  const getLatestKm = (vehiclePlate) => {
+    const normalizedPlate = (vehiclePlate || '').toUpperCase().replace('-', '');
+    return latestKmByPlate[normalizedPlate] || null;
+  };
 
   const totalInvested = myVehicles.reduce((acc, v) => acc + (v.investValue || 0), 0);
 
@@ -174,6 +267,18 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   const maintenanceHistory = transactions
     .filter(t => (t.cat?.toLowerCase().includes('manuten') || t.desc?.toLowerCase().includes('manuten')) && myVehicles.some(v => v.plate === t.vehiclePlate))
     .filter(t => !(t.date && t.date < '2026-06-01'))
+    .filter(t => {
+      if (t.responsible === 'Administradora' || t.responsible === 'Empresa') return false;
+      const match = t.desc?.match(/\[Manutenção #([^\]]+)\]/i);
+      if (match && maintenances) {
+        const mId = match[1];
+        const maint = maintenances.find(m => String(m.id) === String(mId));
+        if (maint && (maint.responsible === 'Administradora' || maint.responsible === 'Empresa')) {
+          return false;
+        }
+      }
+      return true;
+    })
     .map(t => {
       let osId = null;
       const match = t.desc?.match(/\[Manutenção #([^\]]+)\]/i);
@@ -374,9 +479,13 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     }
   }
 
-  const filteredMaintenances = maintenanceHistory.filter(m =>
-    maintenanceFilter === 'todos' || m.vehicle === maintenanceFilter
-  );
+  const filteredMaintenances = maintenanceHistory.filter(m => {
+    const matchVehicle = maintenanceFilter === 'todos' || m.plate === maintenanceFilter;
+    let matchDate = true;
+    if (maintenanceStartDate && m.date) matchDate = matchDate && m.date >= maintenanceStartDate;
+    if (maintenanceEndDate && m.date) matchDate = matchDate && m.date <= maintenanceEndDate;
+    return matchVehicle && matchDate;
+  });
 
   const totalInsurance = 39.90 * myVehicles.filter(v => v.franchiseInsurance).length;
 
@@ -385,15 +494,27 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   const yearDividends = dividendHistory.reduce((acc, d) => acc + d.netValue, 0);
 
   const avgYield = totalInvested > 0 ? ((currentMonthDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
+  const totalRoiPerc = totalInvested > 0 ? ((yearDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
 
   // Generate graph bars dynamically based on reverse chronological history
-  const graphBars = [...dividendHistory].reverse().map(d => {
-    const shortMonth = d.period.split(' ')[0].substring(0, 3);
-    return {
-      m: shortMonth,
-      v: d.netValue
-    };
-  });
+  // Exclui o mês vigente do gráfico a menos que o pagamento/repasse já esteja registrado
+  const currentMonthKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
+  const graphBars = [...dividendHistory]
+    .filter(d => {
+      const isCurrentMonth = d.refMonthStr === currentMonthKey;
+      if (isCurrentMonth && !d.realPayout) {
+        return false;
+      }
+      return true;
+    })
+    .reverse()
+    .map(d => {
+      const shortMonth = d.period.split(' ')[0].substring(0, 3);
+      return {
+        m: shortMonth,
+        v: d.netValue
+      };
+    });
 
   const maxNet = Math.max(...graphBars.map(b => b.v), 1);
   const graphBarsWithPercentage = graphBars.map(b => ({
@@ -415,6 +536,11 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         return <span className="px-3 py-1 bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400 text-[9px] font-black uppercase tracking-widest rounded-full">Manutenção</span>;
       case 'indisponível': 
         return <span className="px-3 py-1 bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400 text-[9px] font-black uppercase tracking-widest rounded-full">Indisponível</span>;
+      case 'em preparação':
+      case 'em preparacao':
+      case 'preparação':
+      case 'preparacao':
+        return <span className="px-3 py-1 bg-blue-950/80 border border-blue-500/30 shadow-[0_0_10px_rgba(59,130,246,0.15)] text-blue-400 text-[9px] font-black uppercase tracking-widest rounded-full">{status}</span>;
       case 'disponível': 
         return <span className="px-3 py-1 bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm text-[9px] font-black uppercase tracking-widest rounded-full">Disponível</span>;
       default: 
@@ -474,10 +600,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 setActiveTab(item.id);
                 if (window.innerWidth < 1280) setIsSidebarOpen(false);
               }}
-              className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 group ${activeTab === item.id ? 'bg-[#D4AF37] text-neutral-950 font-black' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'
+              className={`w-full flex items-center gap-3 p-2.5 rounded-2xl transition-all duration-300 group ${activeTab === item.id ? 'bg-[#D4AF37] text-neutral-950 font-black' : 'text-neutral-500 hover:text-white hover:bg-neutral-800'
                 }`}
             >
-              <item.icon size={20} className={activeTab === item.id ? 'text-neutral-950' : 'group-hover:text-[#D4AF37]'} />
+              <item.icon size={17} className={activeTab === item.id ? 'text-neutral-950' : 'group-hover:text-[#D4AF37]'} />
               <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>{item.label}</span>
             </button>
           ))}
@@ -486,16 +612,28 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         <div className="border-t border-neutral-900 pt-4 mt-auto shrink-0 space-y-2 pb-4">
           <button
             onClick={onGoHome}
-            className="flex items-center gap-4 p-4 text-neutral-500 hover:text-[#D4AF37] transition-colors w-full"
+            className="flex items-center gap-3 p-2.5 text-neutral-500 hover:text-[#D4AF37] transition-colors w-full"
           >
-            <Eye size={20} />
+            <Eye size={17} />
             <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Página Inicial</span>
           </button>
           <button
-            onClick={onLogout}
-            className="flex items-center gap-4 p-4 text-neutral-500 hover:text-red-400 transition-colors w-full"
+            onClick={() => {
+              setPwForm({ current: '', newPw: '', confirm: '' });
+              setPwError('');
+              setPwSuccess(false);
+              setShowChangePasswordModal(true);
+            }}
+            className="flex items-center gap-3 p-2.5 text-neutral-500 hover:text-[#D4AF37] transition-colors w-full"
           >
-            <X size={20} />
+            <KeyRound size={17} />
+            <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Alterar Senha</span>
+          </button>
+          <button
+            onClick={onLogout}
+            className="flex items-center gap-3 p-2.5 text-neutral-500 hover:text-red-400 transition-colors w-full"
+          >
+            <X size={17} />
             <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>Sair do Portal</span>
           </button>
         </div>
@@ -530,67 +668,117 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                 </div>
               </header>
               {/* Payment Schedule Banner */}
-              <div className="bg-neutral-900 rounded-3xl p-8 mb-10 border border-[#D4AF37]/30 shadow-[0_0_25px_rgba(212,175,55,0.15)] hover:shadow-[0_0_35px_rgba(212,175,55,0.25)] transition-shadow relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 group">
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
-                <div className="flex items-center gap-6 z-10 pl-2">
-                  <div className="w-12 h-12 rounded-xl bg-[#0a0a0a] flex items-center justify-center text-neutral-500 border border-neutral-800">
-                    <Calendar size={20} />
+              <div className="bg-gradient-to-r from-neutral-900 via-neutral-900/95 to-neutral-950 rounded-3xl p-6 md:p-8 mb-10 border border-[#D4AF37]/30 shadow-[0_0_30px_rgba(212,175,55,0.12)] hover:shadow-[0_0_40px_rgba(212,175,55,0.22)] transition-all duration-300 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 group">
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-[#D4AF37] via-[#00E676] to-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
+                
+                <div className="flex items-center gap-5 z-10 pl-2">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#D4AF37]/20 via-[#D4AF37]/10 to-transparent border border-[#D4AF37]/40 flex items-center justify-center text-[#D4AF37] shadow-[0_0_20px_rgba(212,175,55,0.2)] shrink-0">
+                    <Calendar size={26} className="drop-shadow-[0_0_8px_rgba(212,175,55,0.6)]" />
                   </div>
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Cronograma de Repasse</p>
-                    <h2 className="text-2xl font-bold text-white uppercase tracking-tight">
-                      Próximo Pagamento: <span className="text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.4)]">{nextPaymentDate.toLocaleDateString('pt-BR')}</span>
-                    </h2>
-                    <p className="text-neutral-400 text-[10px] mt-2 font-bold uppercase tracking-widest">
-                      Regra: 5º Dia Útil de cada mês — Processamento Automático
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock size={12} className="text-[#D4AF37]" />
+                      <span className="text-[10px] uppercase tracking-widest text-[#D4AF37] font-extrabold">Cronograma de Repasse</span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                      <h2 className="text-xl md:text-2xl font-black text-white uppercase tracking-tight">Próximo Pagamento:</h2>
+                      <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-xl bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#D4AF37] font-mono font-bold text-lg md:text-xl shadow-[0_0_15px_rgba(212,175,55,0.25)]">
+                        {nextPaymentDate.toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <p className="text-neutral-400 text-[11px] mt-2 font-medium flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37]" />
+                      Regra: 5º Dia Útil de cada mês
                     </p>
                   </div>
                 </div>
-                <div className="hidden lg:block h-12 w-[1px] bg-neutral-800" />
-                <div className="text-center md:text-right z-10 pr-4">
+
+                <div className="hidden lg:block h-14 w-[1px] bg-neutral-800" />
+
+                <div className="text-center md:text-right z-10 pr-2 shrink-0">
                   <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mb-2">Status do Ciclo</p>
-                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] border border-emerald-100">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)]0 animate-pulse" />
-                    <span className="text-[10px] font-bold text-[#00E676] drop-shadow-sm uppercase tracking-widest">Aguardando Fechamento</span>
+                  <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-emerald-950/80 border border-emerald-500/40 text-[#00E676] shadow-[0_0_20px_rgba(0,230,118,0.2)]">
+                    <div className="w-2.5 h-2.5 rounded-full bg-[#00E676] animate-pulse shadow-[0_0_10px_rgba(0,230,118,0.8)]" />
+                    <span className="text-xs font-black uppercase tracking-wider">Aguardando Fechamento</span>
                   </div>
                 </div>
               </div>
               {/* Top Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div className="bg-neutral-900 p-8 rounded-3xl border border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] transition-shadow group">
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Valor Total Investido</p>
-                  <p className="text-2xl font-bold font-mono text-white drop-shadow-md">R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                  <div className="mt-4 h-1 bg-neutral-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-[#D4AF37] w-3/4 shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6">
+                
+                {/* Card 1: Valor Total Investido */}
+                <div className="bg-neutral-900 p-5 xl:p-6 rounded-3xl border border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] transition-shadow group flex flex-col justify-between h-full">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 h-4 flex items-center">Valor Total Investido</p>
+                    <p className="text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-bold font-mono text-white drop-shadow-md whitespace-nowrap">
+                      R$ {totalInvested.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mt-2 h-4 flex items-center">
+                      <span>Patrimônio em Ativos</span>
+                    </p>
                   </div>
-                </div>
-                <div className={`bg-neutral-900 p-8 rounded-3xl border transition-shadow group ${currentMonthDividends > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : currentMonthDividends < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Dividendos (Mês Atual)</p>
-                  <p className={`text-2xl font-bold font-mono ${currentMonthDividends > 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : currentMonthDividends < 0 ? 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'text-white drop-shadow-md'}`}>
-                    R$ {currentMonthDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-2 flex items-center gap-1">
-                    <TrendingUp size={10} className={currentMonthDividends >= 0 ? "text-[#00E676]" : "text-red-500"} /> 
-                    <span className={currentMonthDividends >= 0 ? "text-[#00E676]" : "text-red-500"}>
-                      Ciclo Atual
+                  <div className="mt-6 pt-3 border-t border-neutral-800/60 flex items-center">
+                    <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-wider font-bold text-neutral-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.8)]" /> Frota Ativa
                     </span>
-                  </p>
-                </div>
-                <div className={`bg-neutral-900 p-8 rounded-3xl border transition-shadow group ${yearDividends > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : yearDividends < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Acumulado no Ano</p>
-                  <p className={`text-2xl font-bold font-mono ${yearDividends > 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : yearDividends < 0 ? 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'text-white drop-shadow-md'}`}>
-                    R$ {yearDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </p>
-                  <div className="mt-4 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.8)]" />
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-400">Ano Fiscal 2026</span>
                   </div>
                 </div>
-                <div className="bg-neutral-900 p-8 rounded-3xl border border-[#D4AF37]/50 shadow-[0_0_25px_rgba(212,175,55,0.3)] hover:shadow-[0_0_35px_rgba(212,175,55,0.5)] transition-shadow group">
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-4">Rendimento Médio</p>
-                  <p className="text-2xl font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_10px_rgba(212,175,55,0.4)]">{avgYield}</p>
-                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mt-2">Mensal (Real)</p>
+
+                {/* Card 2: Dividendos (Mês Atual) */}
+                <div className={`bg-neutral-900 p-5 xl:p-6 rounded-3xl border transition-shadow group flex flex-col justify-between h-full ${currentMonthDividends > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : currentMonthDividends < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 h-4 flex items-center">Dividendos (Mês Atual)</p>
+                    <p className={`text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-bold font-mono whitespace-nowrap ${currentMonthDividends > 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : currentMonthDividends < 0 ? 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'text-white drop-shadow-md'}`}>
+                      R$ {currentMonthDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mt-2 h-4 flex items-center gap-1.5">
+                      <span className="text-[#D4AF37] font-mono font-bold text-xs">{avgYield}</span>
+                      <span>Rendimento Mensal</span>
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-3 border-t border-neutral-800/60 flex items-center">
+                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${currentMonthDividends >= 0 ? "text-[#00E676]" : "text-red-500"}`}>
+                      <TrendingUp size={12} /> Ciclo Atual
+                    </span>
+                  </div>
                 </div>
+
+                {/* Card 3: Retorno Operacional Total */}
+                <div className={`bg-neutral-900 p-5 xl:p-6 rounded-3xl border transition-shadow group flex flex-col justify-between h-full ${yearDividends > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : yearDividends < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 h-4 flex items-center">Retorno Operacional</p>
+                    <p className={`text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-bold font-mono whitespace-nowrap ${yearDividends > 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : yearDividends < 0 ? 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]' : 'text-white drop-shadow-md'}`}>
+                      R$ {yearDividends.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mt-2 h-4 flex items-center">
+                      <span>Lucro Líquido Gerado</span>
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-3 border-t border-neutral-800/60 flex items-center">
+                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${yearDividends >= 0 ? "text-[#00E676]" : "text-red-500"}`}>
+                      <TrendingUp size={12} /> Acumulado Frota
+                    </span>
+                  </div>
+                </div>
+
+                {/* Card 4: ROI Total (%) */}
+                <div className={`bg-neutral-900 p-5 xl:p-6 rounded-3xl border transition-shadow group flex flex-col justify-between h-full ${parseFloat(totalRoiPerc) > 0 ? 'border-[#00E676]/30 shadow-[0_0_25px_rgba(0,230,118,0.3)] hover:shadow-[0_0_35px_rgba(0,230,118,0.5)]' : parseFloat(totalRoiPerc) < 0 ? 'border-red-800/60 shadow-[0_0_25px_rgba(248,113,113,0.3)] hover:shadow-[0_0_35px_rgba(248,113,113,0.5)]' : 'border-neutral-600/50 shadow-[0_0_20px_rgba(255,255,255,0.15)] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)]'}`}>
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 h-4 flex items-center">ROI Total (%)</p>
+                    <p className={`text-base sm:text-lg lg:text-base xl:text-xl 2xl:text-2xl font-black font-mono whitespace-nowrap ${parseFloat(totalRoiPerc) >= 0 ? 'text-[#00E676] drop-shadow-[0_0_10px_rgba(0,230,118,0.4)]' : 'text-red-500 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]'}`}>
+                      {parseFloat(totalRoiPerc) >= 0 ? '+' : ''}{totalRoiPerc}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold mt-2 h-4 flex items-center">
+                      <span>Retorno Acumulado</span>
+                    </p>
+                  </div>
+                  <div className="mt-6 pt-3 border-t border-neutral-800/60 flex items-center">
+                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase tracking-wider font-bold ${parseFloat(totalRoiPerc) >= 0 ? "text-[#00E676]" : "text-red-500"}`}>
+                      <TrendingUp size={12} /> Retorno Global
+                    </span>
+                  </div>
+                </div>
+
               </div>
 
               {/* Graphs Section */}
@@ -631,92 +819,166 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
           {activeTab === 'rendimentos' && (
             <div className="space-y-12">
-              <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div className="mb-10 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-neutral-900 border border-neutral-800 p-6 md:p-8 rounded-[2rem] shadow-sm">
                 <div>
                   <EditorialLabel className="text-[#D4AF37] mb-2">Relatório Consolidado</EditorialLabel>
-                  <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Rendimentos por Veículo</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold uppercase tracking-tight text-white">Rendimentos por Veículo</h2>
                 </div>
-                <button
-                  onClick={() => setShowCalcModal(true)}
-                  className="flex items-center gap-2 px-4 py-2.5 bg-neutral-800 text-white font-bold rounded-xl uppercase tracking-widest text-xs hover:bg-neutral-700 transition-colors border border-neutral-700 w-fit shrink-0 shadow-sm"
-                >
-                  <Activity size={16} className="text-[#D4AF37]" />
-                  Ver Cálculo Detalhado
-                </button>
+
+                <div className="relative" ref={sortDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                    className="bg-[#0a0a0a] border border-neutral-800 px-5 py-3.5 rounded-2xl outline-none focus:border-[#D4AF37]/50 hover:border-neutral-700 transition-all flex items-center gap-3 text-white cursor-pointer shadow-sm group min-w-[270px] justify-between"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden text-left">
+                      <Filter size={15} className="text-[#D4AF37] shrink-0" />
+                      <span className="font-bold text-xs uppercase tracking-wider text-neutral-200 truncate">
+                        {sortOptions.find(o => o.id === rendimentosSortFilter)?.label || 'Ordem Padrão'}
+                      </span>
+                    </div>
+                    <ChevronDown 
+                      size={16} 
+                      className={`text-neutral-400 group-hover:text-white transition-transform duration-300 shrink-0 ${isSortDropdownOpen ? 'rotate-180' : ''}`} 
+                    />
+                  </button>
+
+                  {isSortDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-2 z-[99] bg-neutral-950/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-2 shadow-2xl space-y-1 animate-in fade-in slide-in-from-top-2 duration-200 min-w-[280px]">
+                      {sortOptions.map((opt) => {
+                        const IconComponent = opt.icon;
+                        const isSelected = rendimentosSortFilter === opt.id;
+
+                        return (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => {
+                              setRendimentosSortFilter(opt.id);
+                              setIsSortDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl text-xs transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-white font-bold'
+                                : 'text-neutral-300 hover:bg-neutral-900 hover:text-white font-medium'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 overflow-hidden text-left">
+                              <IconComponent size={15} className={opt.color || 'text-[#D4AF37]'} />
+                              <span className="uppercase tracking-wider truncate">{opt.label}</span>
+                            </div>
+                            {isSelected && <Check size={16} className="text-[#D4AF37] shrink-0 ml-2" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
               </div>
               {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm">
-                <table className="w-full text-left border-collapse whitespace-nowrap">
-                  <thead>
-                    <tr className="border-b border-neutral-800 bg-[#0a0a0a]/80 text-[10px] uppercase tracking-widest text-neutral-500">
-                      <th className="p-6 font-bold">Ativo (Veículo)</th>
-                      <th className="p-6 font-bold text-center">Rentabilidade (%)</th>
-                      <th className="p-6 font-bold text-right">Valor Investido</th>
-                      <th className="p-6 font-bold text-right">Rendimento Líquido</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-neutral-800">
-                    {myVehicles.map((v) => (
-                      <tr key={v.id} className="hover:bg-[#0a0a0a] transition-colors group">
-                        <td className="p-6">
-                          <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
-                              <img
-                                src={v.image || '/logo-new.png'}
-                                className="w-full h-full object-cover opacity-100 transition-all"
-                                alt={v.model}
-                                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
-                                style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: 'transparent' } : {}}
-                              />
-                            </div>
-                            <div>
-                              <p className="text-xs font-bold uppercase tracking-wide text-white">{v.model}</p>
-                              <p className="text-[10px] font-mono font-medium text-neutral-500 mt-0.5">{v.plate}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="p-6 text-center">
-                          {v.currentYield > 0 ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm">
-                              {v.yieldPerc}
-                            </span>
-                          ) : v.currentYield < 0 ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400">
-                              {v.yieldPerc}
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-neutral-100 text-neutral-500">
-                              0.00%
-                            </span>
-                          )}
-                        </td>
-                        <td className="p-6 text-right">
-                          <p className="text-sm font-semibold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
-                            R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
-                        </td>
-                        <td className="p-6 text-right">
-                          {v.currentYield > 0 ? (
-                            <p className="text-sm font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
-                              R$ {v.currentYield.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          ) : v.currentYield < 0 ? (
-                            <p className="text-sm font-bold font-mono text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">
-                              - R$ {Math.abs(v.currentYield).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </p>
-                          ) : (
-                            <p className="text-sm font-medium font-mono text-neutral-500 drop-shadow-sm">R$ 0,00</p>
-                          )}
-                        </td>
+              <div className="hidden md:block w-full bg-neutral-900 rounded-3xl border border-neutral-800 shadow-sm overflow-hidden">
+                <div className="w-full overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-neutral-800 bg-[#0a0a0a]/80 text-[9px] xl:text-[10px] uppercase tracking-wider text-neutral-500">
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold">Ativo</th>
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold text-right">Valor Investido</th>
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold text-right">Retorno Total</th>
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold text-right">Média Mensal</th>
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold text-center">Payback</th>
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold text-center">ROI Total</th>
+                        <th className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 font-bold text-center">Detalhamento</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-neutral-800">
+                      {sortedRendimentosVehicles.map((v) => (
+                        <tr key={v.id} className="hover:bg-[#0a0a0a] transition-colors group">
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5">
+                            <div className="flex items-center gap-2 lg:gap-2.5 xl:gap-3">
+                              <div className="w-8 h-8 lg:w-9 lg:h-9 xl:w-10 xl:h-10 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
+                                <img
+                                  src={v.image || '/logo-new.png'}
+                                  className="w-full h-full object-cover opacity-100 transition-all"
+                                  alt={v.model}
+                                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/logo-new.png'; e.currentTarget.style.objectFit = 'contain'; e.currentTarget.style.padding = '2px'; e.currentTarget.style.background = '#000000'; }}
+                                  style={v.image === '/logo-new.png' ? { objectFit: 'contain', padding: '2px', background: 'transparent' } : {}}
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-[10px] lg:text-[11px] xl:text-xs font-bold uppercase tracking-wide text-white truncate">{v.model}</p>
+                                <p className="text-[9px] font-mono font-medium text-neutral-500 mt-0.5">{v.plate}</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 text-right whitespace-nowrap">
+                            <p className="text-xs xl:text-sm font-semibold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                              R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                          </td>
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 text-right whitespace-nowrap">
+                            {v.currentYield > 0 ? (
+                              <p className="text-xs xl:text-sm font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
+                                R$ {v.currentYield.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                            ) : v.currentYield < 0 ? (
+                              <p className="text-xs xl:text-sm font-bold font-mono text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">
+                                - R$ {Math.abs(v.currentYield).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </p>
+                            ) : (
+                              <p className="text-xs xl:text-sm font-medium font-mono text-neutral-500 drop-shadow-sm">R$ 0,00</p>
+                            )}
+                          </td>
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 text-right whitespace-nowrap">
+                            <p className={`text-xs xl:text-sm font-semibold font-mono ${v.monthlyAvgReturn >= 0 ? 'text-[#00E676] drop-shadow-[0_0_8px_rgba(0,230,118,0.3)]' : 'text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.3)]'}`}>
+                              {v.monthlyAvgReturn < 0 ? '- ' : ''}R$ {Math.abs(v.monthlyAvgReturn || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                            <p className={`text-[10px] font-mono font-bold mt-0.5 ${v.monthlyAvgReturn >= 0 ? 'text-[#00E676]/90' : 'text-red-400/90'}`}>
+                              {v.monthlyAvgReturn < 0 ? '-' : '+'}{Math.abs(v.monthlyAvgReturnPerc || 0).toFixed(2)}% / mês
+                            </p>
+                          </td>
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 text-center whitespace-nowrap">
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] xl:text-[11px] font-bold font-mono bg-neutral-800 border border-neutral-700 text-neutral-300">
+                              {v.paybackMonths}
+                            </span>
+                          </td>
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 text-center whitespace-nowrap">
+                            {v.currentYield > 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-full text-[10px] xl:text-[11px] font-bold font-mono bg-emerald-950/80 border border-emerald-500/30 shadow-[0_0_10px_rgba(0,230,118,0.15)] text-[#00E676] drop-shadow-sm">
+                                {v.yieldPerc}
+                              </span>
+                            ) : v.currentYield < 0 ? (
+                              <span className="inline-flex items-center px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-full text-[10px] xl:text-[11px] font-bold font-mono bg-red-950/80 border border-red-500/30 shadow-[0_0_10px_rgba(248,113,113,0.15)] text-red-400">
+                                {v.yieldPerc}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center px-2 py-0.5 xl:px-2.5 xl:py-1 rounded-full text-[10px] xl:text-[11px] font-bold font-mono bg-neutral-100 text-neutral-500">
+                                0.00%
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-2 py-3 lg:px-3 lg:py-4 xl:px-4 xl:py-5 text-center whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCalcModalVehiclePlate(v.plate);
+                                setShowCalcModal(true);
+                              }}
+                              className="inline-flex items-center justify-center gap-1 px-2 py-1.5 lg:px-2.5 lg:py-1.5 xl:px-3 xl:py-2 bg-[#D4AF37]/15 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-neutral-950 font-bold text-[9px] lg:text-[9px] xl:text-[10px] uppercase tracking-wider rounded-xl transition-all border border-[#D4AF37]/30 shadow-sm cursor-pointer whitespace-nowrap"
+                            >
+                              <Activity size={12} className="shrink-0" />
+                              <span>Ver Detalhes</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Mobile Card View */}
               <div className="md:hidden flex flex-col gap-4">
-                {myVehicles.map((v) => (
+                {sortedRendimentosVehicles.map((v) => (
                   <div key={`mobile-${v.id}`} className="bg-neutral-900 rounded-3xl border border-neutral-800 overflow-hidden shadow-sm">
                     <div className="p-5 flex items-center gap-4 bg-black/40 border-b border-neutral-800">
                       <div className="w-12 h-12 rounded-lg overflow-hidden bg-neutral-100 border border-neutral-800 shrink-0">
@@ -735,41 +997,70 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                       <div>
                         {v.currentYield > 0 ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-emerald-950/80 border border-emerald-500/30 text-[#00E676] shadow-[0_0_10px_rgba(0,230,118,0.15)] drop-shadow-sm">
-                            {v.yieldPerc}
+                            ROI: {v.yieldPerc}
                           </span>
                         ) : v.currentYield < 0 ? (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-red-950/80 border border-red-500/30 text-red-400 shadow-[0_0_10px_rgba(248,113,113,0.15)]">
-                            {v.yieldPerc}
+                            ROI: {v.yieldPerc}
                           </span>
                         ) : (
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-neutral-100 text-neutral-500">
-                            0.00%
+                            ROI: 0.00%
                           </span>
                         )}
                       </div>
                     </div>
                     
-                    <div className="p-5 grid grid-cols-2 gap-4">
+                    <div className="p-5 grid grid-cols-2 sm:grid-cols-4 gap-3 text-center border-b border-neutral-800/50">
                       <div>
-                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Investido</p>
-                        <p className="text-sm font-semibold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
-                          R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Valor Investido</p>
+                        <p className="text-xs font-semibold font-mono text-[#D4AF37]">
+                          R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Rend. Líquido</p>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Retorno Op.</p>
                         {v.currentYield > 0 ? (
-                          <p className="text-sm font-bold font-mono text-[#D4AF37] drop-shadow-[0_0_8px_rgba(212,175,55,0.4)]">
-                            R$ {v.currentYield.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <p className="text-xs font-bold font-mono text-[#D4AF37]">
+                            R$ {v.currentYield.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </p>
                         ) : v.currentYield < 0 ? (
-                          <p className="text-sm font-bold font-mono text-red-400 drop-shadow-[0_0_8px_rgba(248,113,113,0.4)]">
-                            - R$ {Math.abs(v.currentYield).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          <p className="text-xs font-bold font-mono text-red-400">
+                            - R$ {Math.abs(v.currentYield).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                           </p>
                         ) : (
-                          <p className="text-sm font-medium font-mono text-neutral-500 drop-shadow-sm">R$ 0,00</p>
+                          <p className="text-xs font-medium font-mono text-neutral-500">R$ 0</p>
                         )}
                       </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Média Mensal</p>
+                        <p className={`text-xs font-bold font-mono ${v.monthlyAvgReturn >= 0 ? 'text-[#00E676]' : 'text-red-400'}`}>
+                          R$ {Math.abs(v.monthlyAvgReturn || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        </p>
+                        <p className={`text-[9px] font-mono font-bold mt-0.5 ${v.monthlyAvgReturn >= 0 ? 'text-[#00E676]/90' : 'text-red-400/90'}`}>
+                          {v.monthlyAvgReturn < 0 ? '-' : '+'}{Math.abs(v.monthlyAvgReturnPerc || 0).toFixed(2)}% / mês
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mb-1">Payback Est.</p>
+                        <p className="text-xs font-bold font-mono text-neutral-300">
+                          {v.paybackMonths}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-black/40 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCalcModalVehiclePlate(v.plate);
+                          setShowCalcModal(true);
+                        }}
+                        className="w-full py-2.5 bg-[#D4AF37]/15 hover:bg-[#D4AF37] text-[#D4AF37] hover:text-neutral-950 font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all border border-[#D4AF37]/30 flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <Activity size={14} />
+                        <span>Ver Detalhamento de Contas</span>
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -779,6 +1070,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   </div>
                 )}
               </div>
+
+
             </div>
           )}
 
@@ -820,8 +1113,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                       <th className="p-6 font-bold">Ativo (Veículo)</th>
                       <th className="p-6 font-bold text-center">Status Operacional</th>
                       <th className="p-6 font-bold text-center">Ano</th>
+                      <th className="p-6 font-bold text-center">KM Aproximado</th>
                       <th className="p-6 font-bold text-right">Taxa Investidor</th>
-                      <th className="p-6 font-bold text-right">Valor Aportado</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-neutral-800">
@@ -852,15 +1145,24 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         <td className="p-6 text-center text-sm font-semibold font-mono text-neutral-400">
                           {v.year}
                         </td>
+                        <td className="p-6 text-center">
+                          {(() => {
+                            const kmData = getLatestKm(v.plate);
+                            if (!kmData) return <span className="text-neutral-600 text-xs font-mono">---</span>;
+                            return (
+                              <div className="flex flex-col items-center gap-1">
+                                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono font-bold text-xs shadow-[0_0_10px_rgba(59,130,246,0.15)]">
+                                  <Gauge size={12} className="text-blue-400" />
+                                  {kmData.km.toLocaleString('pt-BR')} km
+                                </span>
+                              </div>
+                            );
+                          })()}
+                        </td>
                         <td className="p-6 text-right">
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#FF6A00]/10 border border-[#FF6A00]/40 text-[#FF6A00] shadow-[0_0_15px_rgba(255,106,0,0.25)] drop-shadow-[0_0_5px_rgba(255,106,0,0.5)]">
                             {v.investorTax || (100 - (parseFloat(v.adminTax) || 20))}%
                           </span>
-                        </td>
-                        <td className="p-6 text-right">
-                          <p className="text-sm font-semibold font-mono text-[#00D0FF] drop-shadow-[0_0_10px_rgba(0,208,255,0.5)]">
-                            R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </p>
                         </td>
                       </tr>
                     ))}
@@ -897,16 +1199,25 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         <p className="text-sm font-semibold font-mono text-neutral-400">{v.year}</p>
                       </div>
                       <div className="flex flex-col gap-1 items-center justify-center">
+                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">KM Aproximado</p>
+                        {(() => {
+                          const kmData = getLatestKm(v.plate);
+                          if (!kmData) return <p className="text-xs font-mono text-neutral-600">---</p>;
+                          return (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-blue-950/60 border border-blue-500/30 text-blue-300 font-mono font-bold text-[10px]">
+                                <Gauge size={10} />
+                                {kmData.km.toLocaleString('pt-BR')}
+                              </span>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="flex flex-col gap-1 items-center justify-center">
                         <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Taxa</p>
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#FF6A00]/10 border border-[#FF6A00]/40 text-[#FF6A00] shadow-[0_0_15px_rgba(255,106,0,0.25)] drop-shadow-sm">
                           {v.investorTax || (100 - (parseFloat(v.adminTax) || 20))}%
                         </span>
-                      </div>
-                      <div className="flex flex-col gap-1 items-center justify-center border-l border-neutral-800/50 pl-2">
-                        <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold">Aportado</p>
-                        <p className="text-xs font-semibold font-mono text-[#00D0FF] drop-shadow-[0_0_10px_rgba(0,208,255,0.5)]">
-                          R$ {Number(v.investValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -925,24 +1236,137 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
               {/* Filters */}
               <div className="flex flex-col md:flex-row gap-8 items-end justify-between bg-black border border-neutral-800 p-8 rounded-[2rem] border border-neutral-800 shadow-sm">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
-                  <div className="space-y-2">
+                  <div className="space-y-2 relative" ref={vehicleDropdownRef}>
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Filtrar por Veículo</label>
-                    <select
-                      value={maintenanceFilter}
-                      onChange={(e) => setMaintenanceFilter(e.target.value)}
-                      className="w-full bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white earance-none cursor-pointer"
+                    <button
+                      type="button"
+                      onClick={() => setIsVehicleDropdownOpen(!isVehicleDropdownOpen)}
+                      className="w-full bg-[#0a0a0a] border border-neutral-800 p-4 rounded-2xl outline-none focus:border-[#D4AF37]/50 hover:border-neutral-700 transition-all flex items-center justify-between text-white cursor-pointer shadow-sm group"
                     >
-                      <option value="todos">Todos os Veículos</option>
-                      {myVehicles.map(v => (
-                        <option key={v.id} value={v.model}>{v.model} ({v.plate})</option>
-                      ))}
-                    </select>
+                      <div className="flex items-center gap-3 overflow-hidden">
+                        <Car size={18} className="text-[#D4AF37] shrink-0" />
+                        {maintenanceFilter === 'todos' ? (
+                          <span className="font-bold text-xs uppercase tracking-wider text-white truncate">
+                            Todos os Veículos ({myVehicles.length})
+                          </span>
+                        ) : (() => {
+                          const selectedVeh = myVehicles.find(v => v.plate === maintenanceFilter);
+                          return selectedVeh ? (
+                            <div className="flex items-center gap-2 overflow-hidden text-left">
+                              <span className="font-bold text-xs uppercase tracking-wider text-white truncate">
+                                {selectedVeh.model}
+                              </span>
+                              <span className="px-2 py-0.5 rounded bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] font-mono text-[10px] font-bold shrink-0">
+                                {selectedVeh.plate}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="font-bold text-xs uppercase tracking-wider text-white truncate">
+                              {maintenanceFilter}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                      <ChevronDown 
+                        size={18} 
+                        className={`text-neutral-400 group-hover:text-white transition-transform duration-300 shrink-0 ml-2 ${isVehicleDropdownOpen ? 'rotate-180' : ''}`} 
+                      />
+                    </button>
+
+                    {isVehicleDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 mt-2 z-[99] bg-neutral-950/95 backdrop-blur-xl border border-neutral-800 rounded-2xl p-3 shadow-2xl space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                        {/* Input de busca rápida */}
+                        <div className="relative">
+                          <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-neutral-500" />
+                          <input
+                            type="text"
+                            placeholder="Buscar veículo ou placa..."
+                            value={vehicleSearchTerm}
+                            onChange={(e) => setVehicleSearchTerm(e.target.value)}
+                            className="w-full bg-neutral-900 border border-neutral-800 pl-9 pr-8 py-2.5 rounded-xl text-xs font-bold text-white placeholder-neutral-500 outline-none focus:border-[#D4AF37]/50 transition-all"
+                          />
+                          {vehicleSearchTerm && (
+                            <button 
+                              onClick={() => setVehicleSearchTerm('')}
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white"
+                            >
+                              <X size={12} />
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Lista de veículos ordenada */}
+                        <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMaintenanceFilter('todos');
+                              setIsVehicleDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between p-3 rounded-xl text-xs font-bold transition-all ${
+                              maintenanceFilter === 'todos'
+                                ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-[#D4AF37]'
+                                : 'text-neutral-300 hover:bg-neutral-900 hover:text-white'
+                            }`}
+                          >
+                            <span className="uppercase tracking-wider font-bold">Todos os Veículos ({myVehicles.length})</span>
+                            {maintenanceFilter === 'todos' && <Check size={16} className="text-[#D4AF37]" />}
+                          </button>
+
+                          <div className="h-[1px] bg-neutral-800 my-1" />
+
+                          {[...myVehicles]
+                            .sort((a, b) => (a.model || '').localeCompare(b.model || '') || (a.plate || '').localeCompare(b.plate || ''))
+                            .filter(v => {
+                              if (!vehicleSearchTerm.trim()) return true;
+                              const term = vehicleSearchTerm.toLowerCase().trim();
+                              return (v.model?.toLowerCase().includes(term) || v.plate?.toLowerCase().includes(term));
+                            })
+                            .map((v) => {
+                              const isSelected = maintenanceFilter === v.plate;
+                              return (
+                                <button
+                                  key={v.id || v.plate}
+                                  type="button"
+                                  onClick={() => {
+                                    setMaintenanceFilter(v.plate);
+                                    setIsVehicleDropdownOpen(false);
+                                  }}
+                                  className={`w-full flex items-center justify-between p-3 rounded-xl text-xs transition-all ${
+                                    isSelected
+                                      ? 'bg-[#D4AF37]/15 border border-[#D4AF37]/40 text-white'
+                                      : 'text-neutral-300 hover:bg-neutral-900 hover:text-white'
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 overflow-hidden text-left">
+                                    <span className="font-bold uppercase tracking-wider truncate">{v.model}</span>
+                                    <span className="px-2 py-0.5 rounded bg-neutral-900 border border-neutral-800 text-[#D4AF37] font-mono text-[10px] font-bold shrink-0">
+                                      {v.plate}
+                                    </span>
+                                  </div>
+                                  {isSelected && <Check size={16} className="text-[#D4AF37] shrink-0 ml-2" />}
+                                </button>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-2">
                     <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Período</label>
                     <div className="grid grid-cols-2 gap-4">
-                      <input type="date" className="bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white text-xs" />
-                      <input type="date" className="bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white text-xs" />
+                      <input 
+                        type="date" 
+                        value={maintenanceStartDate}
+                        onChange={(e) => setMaintenanceStartDate(e.target.value)}
+                        className="bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white text-xs" 
+                      />
+                      <input 
+                        type="date" 
+                        value={maintenanceEndDate}
+                        onChange={(e) => setMaintenanceEndDate(e.target.value)}
+                        className="bg-[#0a0a0a] border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#D4AF37]/20 transition-all font-bold text-white text-xs" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -1076,6 +1500,23 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
           {activeTab === 'pagamentos' && (
             <div className="space-y-10 animate-in slide-in-from-right-4 duration-700">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <EditorialLabel className="text-[#D4AF37] mb-2">Demonstrativo Financeiro</EditorialLabel>
+                  <h2 className="text-3xl font-bold uppercase tracking-tight text-white">Dividendos & Repasses</h2>
+                </div>
+                <button
+                  onClick={() => {
+                    setCalcModalVehiclePlate('all');
+                    setShowCalcModal(true);
+                  }}
+                  className="flex items-center gap-2 px-5 py-3 bg-[#D4AF37] text-neutral-950 font-bold rounded-xl uppercase tracking-widest text-xs hover:bg-[#c4a02e] transition-colors border border-[#D4AF37] w-fit shrink-0 shadow-lg shadow-[#D4AF37]/10 cursor-pointer"
+                >
+                  <Activity size={16} className="text-neutral-950" />
+                  Ver Cálculo Detalhado
+                </button>
+              </div>
+
               <div className="grid grid-cols-1 gap-8">
                 {dividendHistory.map((d) => {
                   const totalDiscounts = d.discounts.maintenance + d.discounts.insurance + d.discounts.protection + (d.discounts.other || 0);
@@ -1100,24 +1541,9 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     const idMatch = so.vehicleId && myVehicleIds.includes(so.vehicleId);
                     if (!plateMatch && !idMatch) return false;
                     if (!so.date) return false;
+                    if (so.responsible === 'Administradora' || so.responsible === 'Empresa') return false;
                     const soMonth = so.date.split('T')[0].substring(0, 7);
                     return soMonth === d.refMonthStr;
-                  });
-
-                  const monthRentalsWithDocs = rentals.filter(r => {
-                    const plateMatch = r.plate && myVehiclePlates.includes(r.plate);
-                    const idMatch = r.vehicleId && myVehicleIds.includes(r.vehicleId);
-                    if (!plateMatch && !idMatch) return false;
-                    const startMonth = r.startDate ? r.startDate.substring(0, 7) : null;
-                    const endMonth = r.endDate ? r.endDate.substring(0, 7) : null;
-                    const hasDoc = r.signedContract || r.contratoAssinado || r.docs?.signedContract || r.documentos?.signedContract;
-                    if (!hasDoc) return false;
-                    if (startMonth && startMonth <= d.refMonthStr) {
-                      if (!endMonth || endMonth >= d.refMonthStr || r.status === 'Ativo') {
-                        return true;
-                      }
-                    }
-                    return false;
                   });
 
                   const docsList = [];
@@ -1129,12 +1555,6 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   }
                   if (monthServiceOrders.length > 0) {
                     docsList.push({ type: 'service_order', label: 'Ordem Serviço', orders: monthServiceOrders });
-                  }
-                  if (monthRentalsWithDocs.length > 0) {
-                    const urls = monthRentalsWithDocs.map(r => r.signedContract || r.contratoAssinado || r.docs?.signedContract || r.documentos?.signedContract).filter(Boolean);
-                    if (urls.length > 0) {
-                      docsList.push({ type: 'vehicle_doc', label: 'Docs Veículo', url: urls[0], urls: urls });
-                    }
                   }
 
                   return (
@@ -1191,16 +1611,18 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                       </div>
 
                       <div className="flex-1 p-8 space-y-8">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 xl:gap-10">
                           <div className="space-y-4">
                             <h4 className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 border-b border-neutral-800 pb-2">Composição de Receita</h4>
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="text-neutral-400 font-medium">Valor Bruto (Aluguéis)</span>
-                              <span className="font-semibold font-mono text-white drop-shadow-md">R$ {d.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-sm text-neutral-200">
-                              <span className="font-medium text-neutral-400">Taxa Adm. (Gestão)</span>
-                              <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <div className="space-y-3">
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-neutral-400 font-medium whitespace-nowrap">Valor Bruto (Aluguéis)</span>
+                                <span className="font-semibold font-mono text-white drop-shadow-md shrink-0 whitespace-nowrap ml-2">R$ {d.gross.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
+                              <div className="flex justify-between items-center text-xs text-neutral-200">
+                                <span className="font-medium text-neutral-400 whitespace-nowrap">Taxa Adm. (Gestão)</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)] shrink-0 whitespace-nowrap ml-2">- R$ {d.adminTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                              </div>
                             </div>
                           </div>
 
@@ -1208,27 +1630,27 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                             <h4 className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 border-b border-neutral-800 pb-2">Retenções e Descontos</h4>
                             <div className="space-y-3">
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-neutral-400">Manutenção Corretiva</span>
-                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="text-neutral-400 whitespace-nowrap">Manutenção Corretiva/Preventiva</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)] shrink-0 whitespace-nowrap ml-2">- R$ {d.discounts.maintenance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-neutral-400">Seguro Franquia (Fixo)</span>
-                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.insurance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="text-neutral-400 whitespace-nowrap">Seguro Franquia (Fixo)</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)] shrink-0 whitespace-nowrap ml-2">- R$ {d.discounts.insurance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               <div className="flex justify-between items-center text-xs">
-                                <span className="text-neutral-400">Proteção Veicular</span>
-                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.protection.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                <span className="text-neutral-400 whitespace-nowrap">Proteção Veicular/Rastreador</span>
+                                <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)] shrink-0 whitespace-nowrap ml-2">- R$ {d.discounts.protection.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               {(d.discounts.other || 0) > 0 && (
                                 <div className="flex justify-between items-center text-xs">
-                                  <span className="text-neutral-400 font-medium">Outros Abatimentos</span>
-                                  <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)]">- R$ {d.discounts.other.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  <span className="text-neutral-400 font-medium whitespace-nowrap">Outros Abatimentos</span>
+                                  <span className="font-semibold font-mono text-rose-400 drop-shadow-[0_0_8px_rgba(251,113,133,0.4)] shrink-0 whitespace-nowrap ml-2">- R$ {d.discounts.other.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               )}
                               {(d.discounts.carriedDebt || 0) < 0 && (
                                 <div className="flex justify-between items-center text-xs p-2 bg-rose-950/30 rounded-md border border-rose-900/50">
-                                  <span className="text-rose-400 font-semibold flex items-center gap-1">Dívida Anterior</span>
-                                  <span className="font-bold font-mono text-rose-400">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  <span className="text-rose-400 font-semibold flex items-center gap-1 whitespace-nowrap">Dívida Anterior</span>
+                                  <span className="font-bold font-mono text-rose-400 shrink-0 whitespace-nowrap ml-2">- R$ {Math.abs(d.discounts.carriedDebt).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
                               )}
                             </div>
@@ -1440,8 +1862,122 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           transactions={transactions}
           rentals={rentals}
           realPayouts={realPayouts}
-          onClose={() => setShowCalcModal(false)}
+          initialPlateFilter={calcModalVehiclePlate}
+          hideSummarySidebar={calcModalVehiclePlate !== 'all'}
+          onClose={() => {
+            setShowCalcModal(false);
+            setCalcModalVehiclePlate('all');
+          }}
         />
+      )}
+
+      {/* ===== MODAL ALTERAR SENHA ===== */}
+      {showChangePasswordModal && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div className="w-full max-w-md bg-[#0a0a0a] border border-neutral-800 rounded-3xl shadow-[0_0_60px_rgba(212,175,55,0.15)] overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-8 py-6 border-b border-neutral-800 bg-black/60">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-[#D4AF37]/10 border border-[#D4AF37]/30 flex items-center justify-center">
+                  <KeyRound size={18} className="text-[#D4AF37]" />
+                </div>
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">Segurança</p>
+                  <h3 className="text-base font-black uppercase tracking-tight text-white">Alterar Senha</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowChangePasswordModal(false)}
+                className="w-8 h-8 rounded-xl bg-neutral-800 hover:bg-neutral-700 flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-8 py-6 space-y-5">
+              {pwSuccess ? (
+                <div className="flex flex-col items-center gap-4 py-6 text-center">
+                  <div className="w-16 h-16 rounded-full bg-[#00E676]/10 border border-[#00E676]/30 flex items-center justify-center shadow-[0_0_30px_rgba(0,230,118,0.2)]">
+                    <CheckCircle2 size={32} className="text-[#00E676]" />
+                  </div>
+                  <p className="text-sm font-bold text-white uppercase tracking-widest">Senha alterada com sucesso!</p>
+                  <p className="text-xs text-neutral-500">Use sua nova senha no próximo acesso.</p>
+                  <button
+                    onClick={() => setShowChangePasswordModal(false)}
+                    className="mt-2 px-6 py-3 bg-[#D4AF37] text-neutral-950 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-[#f0c93a] transition-colors"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* Campo senha atual */}
+                  {[
+                    { key: 'current', label: 'Senha Atual' },
+                    { key: 'newPw', label: 'Nova Senha' },
+                    { key: 'confirm', label: 'Confirmar Nova Senha' },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold">{label}</label>
+                      <div className="relative">
+                        <Lock size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 pointer-events-none" />
+                        <input
+                          type={pwShowFields[key] ? 'text' : 'password'}
+                          value={pwForm[key]}
+                          onChange={e => setPwForm(prev => ({ ...prev, [key]: e.target.value }))}
+                          placeholder="••••••••"
+                          className="w-full bg-neutral-900 border border-neutral-700 text-white text-sm rounded-2xl pl-10 pr-12 py-3.5 outline-none focus:border-[#D4AF37]/60 focus:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all placeholder-neutral-700 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPwShowFields(prev => ({ ...prev, [key]: !prev[key] }))}
+                          className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-600 hover:text-neutral-300 transition-colors"
+                        >
+                          {pwShowFields[key] ? <EyeOff size={15} /> : <EyeIcon size={15} />}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {pwError && (
+                    <div className="px-4 py-3 rounded-2xl bg-red-950/60 border border-red-500/30 text-red-400 text-xs font-semibold">
+                      {pwError}
+                    </div>
+                  )}
+
+                  <button
+                    disabled={pwLoading}
+                    onClick={async () => {
+                      setPwError('');
+                      if (!pwForm.current) return setPwError('Informe a senha atual.');
+                      if (!pwForm.newPw || pwForm.newPw.length < 4) return setPwError('A nova senha deve ter ao menos 4 caracteres.');
+                      if (pwForm.newPw !== pwForm.confirm) return setPwError('Nova senha e confirmação não coincidem.');
+                      // Verificar senha atual
+                      if (pwForm.current !== (investor?.password || '')) return setPwError('Senha atual incorreta.');
+                      setPwLoading(true);
+                      const result = await onChangePassword?.(pwForm.newPw);
+                      setPwLoading(false);
+                      if (result?.success) {
+                        setPwSuccess(true);
+                      } else {
+                        setPwError(result?.error || 'Erro ao salvar. Tente novamente.');
+                      }
+                    }}
+                    className="w-full py-4 bg-[#D4AF37] text-neutral-950 font-black text-[10px] uppercase tracking-widest rounded-2xl hover:bg-[#f0c93a] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.3)] mt-2"
+                  >
+                    {pwLoading ? (
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                    ) : (
+                      <KeyRound size={14} />
+                    )}
+                    {pwLoading ? 'Salvando...' : 'Salvar nova senha'}
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
