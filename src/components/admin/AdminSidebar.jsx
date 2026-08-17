@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   TrendingUp, Car, Mail, Key, Users, User, Wallet, Landmark, Wrench, Eye, X, Menu, 
-  ClipboardList, Receipt, ShieldAlert
+  ClipboardList, Receipt, ShieldAlert, Bell
 } from 'lucide-react';
 
 const AdminSidebar = ({ 
@@ -29,6 +29,7 @@ const AdminSidebar = ({
     { id: 'locacao',       label: 'Locação', icon: Key },
     { id: 'clientes',      label: 'Clientes', icon: User },
     { id: 'investidores',  label: 'Investidores', icon: Users },
+    { id: 'avisos',        label: 'Avisos', icon: Bell },
     { id: 'financeiro',    label: 'Financeiro', icon: Wallet },
     { id: 'caucao',        label: 'Caução', icon: Landmark },
     { id: 'manutencaoAdmin', label: 'Manutenção', icon: Wrench },

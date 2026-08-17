@@ -50,7 +50,9 @@ const App = ({ isOficinaDomain = false }) => {
     handleAddQuote, handleUpdateQuote, handleDeleteQuote,
     handleAddAppointment, handleUpdateAppointment, handleDeleteAppointment,
     handleAddInventoryItem, handleUpdateInventoryItem, handleDeleteInventoryItem, handleDeleteAllInventoryItems,
-    handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial
+    handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial,
+    oilChanges, handleAddOilChange, handleUpdateOilChange, handleDeleteOilChange,
+    notices, handleAddNotice, handleDeleteNotice, handleMarkNoticeRead
   } = useAppState();
 
 
@@ -90,6 +92,7 @@ const App = ({ isOficinaDomain = false }) => {
           appointments={appointments}
           inventory={inventory}
           workshopFinancials={workshopFinancials}
+          oilChanges={oilChanges}
           serviceOrders={serviceOrders}
           rentals={rentals}
           replacementContracts={replacementContracts}
@@ -111,6 +114,9 @@ const App = ({ isOficinaDomain = false }) => {
           onAddWorkshopFinancial={handleAddWorkshopFinancial}
           onUpdateWorkshopFinancial={handleUpdateWorkshopFinancial}
           onDeleteWorkshopFinancial={handleDeleteWorkshopFinancial}
+          onAddOilChange={handleAddOilChange}
+          onUpdateOilChange={handleUpdateOilChange}
+          onDeleteOilChange={handleDeleteOilChange}
           onLogout={() => {
             localStorage.removeItem('la_oficina_auth');
             setIsOficinaAuthenticated(false);
@@ -198,6 +204,9 @@ const App = ({ isOficinaDomain = false }) => {
         onViewVehicleDetail={(v) => setView('vehicle-' + v.id)}
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
+        notices={notices}
+        onAddNotice={handleAddNotice}
+        onDeleteNotice={handleDeleteNotice}
       />
       </>
     );
@@ -243,6 +252,8 @@ const App = ({ isOficinaDomain = false }) => {
         maintenances={maintenances}
         inspections={inspections}
         onChangePassword={handleChangeInvestorPassword}
+        notices={notices}
+        onMarkNoticeRead={handleMarkNoticeRead}
         onLogout={() => {
           localStorage.removeItem('la_investor_auth');
           localStorage.removeItem('la_current_view');

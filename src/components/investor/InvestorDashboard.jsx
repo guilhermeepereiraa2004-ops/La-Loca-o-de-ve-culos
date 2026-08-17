@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   X, Menu, TrendingUp, TrendingDown, Car, Wrench, Wallet, Calendar, Clock, Gauge, KeyRound, Lock, Eye as EyeIcon, EyeOff,
   Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart, Activity,
-  ChevronDown, Check, Filter, SlidersHorizontal, DollarSign, ArrowUpRight, ArrowDownRight
+  ChevronDown, Check, Filter, SlidersHorizontal, DollarSign, ArrowUpRight, ArrowDownRight, Bell, Youtube
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
 import { parseCurrency } from '../../utils/currencyUtils';
 import InvestorCalcModal from './InvestorCalcModal';
+import InvestorAvisos from './InvestorAvisos';
 
 const formatDate = (dateStr) => {
   if (!dateStr) return '---';
@@ -44,7 +45,7 @@ const getFifthBusinessDay = (dateOrYear = new Date(), monthOpt) => {
   return new Date(year, month, day);
 };
 
-const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], maintenances = [], inspections = [], onChangePassword, onLogout, onGoHome }) => {
+const InvestorDashboard = ({ investor, transactions = [], vehicles = [], serviceOrders = [], rentals = [], maintenances = [], inspections = [], notices = [], onChangePassword, onMarkNoticeRead, onLogout, onGoHome }) => {
   const [viewingSO, setViewingSO] = useState(null);
   const [soListModal, setSoListModal] = useState(null);
   const [showCalcModal, setShowCalcModal] = useState(false);
@@ -593,7 +594,11 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                         { id: 'minha-frota', label: 'Meus Veículos', icon: Car },
             { id: 'manutencao', label: 'Manutenções', icon: Wrench },
             { id: 'pagamentos', label: 'Dividendos', icon: Wallet },
-          ].map((item) => (
+            { id: 'avisos', label: 'Avisos', icon: Bell },
+          ].map((item) => {
+            const myNotices = notices.filter(n => n.targetType === 'all' || (n.targetIds && n.targetIds.includes(investor?.id)));
+            const unreadCount = item.id === 'avisos' ? myNotices.filter(n => !(n.readBy || []).includes(investor?.id)).length : 0;
+            return (
             <button
               key={item.id}
               onClick={() => {
@@ -605,8 +610,12 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
             >
               <item.icon size={17} className={activeTab === item.id ? 'text-neutral-950' : 'group-hover:text-[#D4AF37]'} />
               <span className={`text-[10px] uppercase tracking-widest font-bold transition-all duration-300 ${!isSidebarOpen ? 'xl:hidden' : 'block'}`}>{item.label}</span>
+              {item.id === 'avisos' && unreadCount > 0 && (
+                <span className="ml-auto bg-red-500 text-white text-[9px] font-black rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-pulse">{unreadCount}</span>
+              )}
             </button>
-          ))}
+            );
+          })}
         </nav>
 
         <div className="border-t border-neutral-900 pt-4 mt-auto shrink-0 space-y-2 pb-4">
@@ -1700,6 +1709,16 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'avisos' && (
+            <div className="animate-in slide-in-from-right-4 duration-700">
+              <InvestorAvisos 
+                investor={investor}
+                notices={notices}
+                onMarkNoticeRead={onMarkNoticeRead}
+              />
             </div>
           )}
         </div>

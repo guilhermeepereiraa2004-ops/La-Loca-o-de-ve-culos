@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ClipboardList, X, Menu, LogOut, Wrench, Calculator, Package, DollarSign } from 'lucide-react';
+import { Calendar as CalendarIcon, ClipboardList, X, Menu, LogOut, Wrench, Calculator, Package, DollarSign, Droplet } from 'lucide-react';
 
 const OficinaSidebar = ({ 
   isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab, onLogout
@@ -23,6 +23,7 @@ const OficinaSidebar = ({
     { id: 'orcamentos', label: 'Orçamentos', icon: Calculator },
     { id: 'estoque', label: 'Estoque', icon: Package },
     { id: 'financeiro', label: 'Financeiro', icon: DollarSign },
+    { id: 'troca_oleo', label: 'Troca de Óleo', icon: Droplet },
   ];
 
   return (

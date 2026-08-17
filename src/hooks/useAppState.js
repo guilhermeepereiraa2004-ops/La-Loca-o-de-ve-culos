@@ -164,6 +164,27 @@ const TABLE_MAPPINGS = {
     status: 'status',
     createdAt: 'created_at',
     updatedAt: 'updated_at'
+  },
+  oil_changes: {
+    id: 'id',
+    vehiclePlate: 'vehicle_plate',
+    date: 'date',
+    km: 'km',
+    nextKm: 'next_km',
+    value: 'value',
+    observations: 'observations',
+    createdAt: 'created_at'
+  },
+  investor_notices: {
+    id: 'id',
+    title: 'title',
+    message: 'message',
+    videoUrl: 'video_url',
+    targetType: 'target_type',
+    targetIds: 'target_ids',
+    readBy: 'read_by',
+    createdAt: 'created_at',
+    createdBy: 'created_by'
   }
 };
 
@@ -250,6 +271,8 @@ export const useAppState = () => {
     }
   }, [view]);
   const [leads, setLeads] = useState([]);
+  const [oilChanges, setOilChanges] = useState([]);
+  const [notices, setNotices] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [investors, setInvestors] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -467,7 +490,9 @@ export const useAppState = () => {
           { table: 'workshop_financials', setter: setWorkshopFinancials },
           { table: 'system_users', setter: setSystemUsers },
           { table: 'clients', setter: setClients },
-          { table: 'replacement_contracts', setter: setReplacementContracts }
+          { table: 'replacement_contracts', setter: setReplacementContracts },
+          { table: 'oil_changes', setter: setOilChanges },
+          { table: 'investor_notices', setter: setNotices }
         ];
 
         let loadedTransactions = [];
@@ -2916,9 +2941,109 @@ export const useAppState = () => {
     }
   };
 
+  const handleAddOilChange = async (itemData) => {
+    try {
+      const payload = mapToSnake(itemData, 'oil_changes');
+      const { data, error } = await supabase.from('oil_changes').insert([payload]).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const newItem = mapToCamel(data, 'oil_changes')[0];
+        setOilChanges(prev => [newItem, ...prev]);
+        logActivity('Criar', 'Troca de Óleo', data[0].id, `Registrou troca de óleo placa ${itemData.vehiclePlate}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao registrar troca de óleo:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleUpdateOilChange = async (id, updates) => {
+    try {
+      const payload = { ...mapToSnake(updates, 'oil_changes') };
+      const { data, error } = await supabase.from('oil_changes').update(payload).eq('id', id).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const updated = mapToCamel(data, 'oil_changes')[0];
+        setOilChanges(prev => prev.map(i => i.id === id ? updated : i));
+        logActivity('Atualizar', 'Troca de Óleo', id, `Atualizou registro de troca placa ${updates.vehiclePlate || ''}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao atualizar troca de óleo:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteOilChange = async (id) => {
+    try {
+      const { error } = await supabase.from('oil_changes').delete().eq('id', id);
+      if (error) throw error;
+      setOilChanges(prev => prev.filter(i => i.id !== id));
+      logActivity('Excluir', 'Troca de Óleo', id, `Excluiu um registro de troca de óleo`);
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao excluir troca de óleo:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleAddNotice = async (noticeData) => {
+    try {
+      const payload = {
+        title: noticeData.title,
+        message: noticeData.message,
+        video_url: noticeData.videoUrl || null,
+        target_type: noticeData.targetType || 'all',
+        target_ids: noticeData.targetIds || null,
+        read_by: [],
+        created_by: currentUser?.name || currentUser?.nome || 'Admin'
+      };
+      const { data, error } = await supabase.from('investor_notices').insert([payload]).select();
+      if (error) throw error;
+      if (data && data[0]) {
+        const newNotice = mapToCamel(data, 'investor_notices')[0];
+        setNotices(prev => [newNotice, ...prev]);
+        logActivity('Criar', 'Aviso', data[0].id, `Enviou aviso "${noticeData.title}" para ${noticeData.targetType === 'all' ? 'todos investidores' : 'investidores selecionados'}`);
+      }
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao enviar aviso:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleDeleteNotice = async (id) => {
+    try {
+      const { error } = await supabase.from('investor_notices').delete().eq('id', id);
+      if (error) throw error;
+      setNotices(prev => prev.filter(n => n.id !== id));
+      logActivity('Excluir', 'Aviso', id, 'Excluiu um aviso');
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao excluir aviso:', err);
+      return { success: false, error: err };
+    }
+  };
+
+  const handleMarkNoticeRead = async (noticeId, investorId) => {
+    try {
+      const notice = notices.find(n => n.id === noticeId);
+      if (!notice) return;
+      const currentReadBy = notice.readBy || [];
+      if (currentReadBy.includes(investorId)) return; // já lido
+      const updatedReadBy = [...currentReadBy, investorId];
+      const { error } = await supabase.from('investor_notices').update({ read_by: updatedReadBy }).eq('id', noticeId);
+      if (error) throw error;
+      setNotices(prev => prev.map(n => n.id === noticeId ? { ...n, readBy: updatedReadBy } : n));
+    } catch (err) {
+      console.error('Erro ao marcar aviso como lido:', err);
+    }
+  };
+
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
-    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, systemUsers, clients, replacementContracts,
+    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices, systemUsers, clients, replacementContracts,
     fines, isFinesDbConnected,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
@@ -2936,6 +3061,7 @@ export const useAppState = () => {
     handleAddInspection, handleDeleteInspection, handleUpdateServiceOrder,
     handleCloseServiceOrder,
     handleDeleteServiceOrder,
+    handleAddOilChange, handleUpdateOilChange, handleDeleteOilChange,
     handleCloseReplacementContract,
     handleInterestSubmit,
     handleAddAppointment, handleUpdateAppointment, handleDeleteAppointment,
@@ -2943,6 +3069,7 @@ export const useAppState = () => {
     handleAddInventoryItem, handleUpdateInventoryItem, handleDeleteInventoryItem, handleDeleteAllInventoryItems,
     handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial,
     handleAddFine, handleUpdateFine, handleDeleteFine,
+    handleAddNotice, handleDeleteNotice, handleMarkNoticeRead,
     seedData: () => console.log('Seed data is no longer available.')
   };
 };

@@ -181,15 +181,15 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {[
-                { id: 'front', label: 'Frente Completa' },
-                { id: 'rear', label: 'Traseira Completa' },
-                { id: 'sideRightFront', label: 'Lat. Dir. Dianteira' },
-                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
-                { id: 'sideRightRear', label: 'Lat. Dir. Traseira' },
-                { id: 'sideLeftRear', label: 'Lat. Esq. Traseira' },
-                { id: 'plate', label: 'Placa do Veículo' },
                 { id: 'odometer', label: 'Hodômetro (KM)' },
                 { id: 'dashboard', label: 'Painel Ligado' },
+                { id: 'plate', label: 'Placa do Veículo' },
+                { id: 'front', label: 'Frente Completa' },
+                { id: 'sideRightFront', label: 'Lat. Dir. Dianteira' },
+                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
+                { id: 'rear', label: 'Traseira Completa' },
+                { id: 'sideRightRear', label: 'Lat. Dir. Traseira' },
+                { id: 'sideLeftRear', label: 'Lat. Esq. Traseira' },
                 { id: 'interior1', label: 'Interior 1' },
                 { id: 'interior2', label: 'Interior 2' },
                 { id: 'tools', label: 'Triang/Mac/Chave' },

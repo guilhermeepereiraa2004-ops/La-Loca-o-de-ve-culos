@@ -6,6 +6,7 @@ import OficinaHeader from './OficinaHeader';
 import OficinaOrcamentos from './OficinaOrcamentos';
 import OficinaEstoque from './OficinaEstoque';
 import OficinaFinanceiro from './OficinaFinanceiro';
+import OficinaTrocasOleo from './OficinaTrocasOleo';
 
 const OficinaDashboard = (props) => {
   const [activeTab, setActiveTab] = useState('agenda'); // 'agenda' or 'os'
@@ -59,6 +60,11 @@ const OficinaDashboard = (props) => {
           {activeTab === 'financeiro' && (
             <div className="p-4 md:p-5 xl:p-6 2xl:p-8 h-full">
               <OficinaFinanceiro {...props} />
+            </div>
+          )}
+          {activeTab === 'troca_oleo' && (
+            <div className="p-4 md:p-5 xl:p-6 2xl:p-8 h-full">
+              <OficinaTrocasOleo {...props} />
             </div>
           )}
         </div>
