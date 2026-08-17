@@ -168,13 +168,16 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
           <div className="flex-1 bg-neutral-200/30 p-4 md:p-12 overflow-y-auto">
             <div id="print-term" className="bg-white shadow-2xl mx-auto w-full max-w-[800px] p-8 md:p-16 min-h-[1000px] print:p-0 print:shadow-none font-serif text-neutral-900">
               <div className="border-b-2 border-neutral-900 pb-6 mb-8 flex justify-between items-end">
-                <div>
-                  <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">L.A Administração e Locação de Veículos</h1>
-                  <p className="text-[9px] uppercase text-neutral-500 font-bold mt-1 leading-relaxed">
-                    Rua Joaquim Soares Bezerra, nº 84 – Farolândia, Aracaju – SE<br/>
-                    CEP 49032-460<br/>
-                    CNPJ: 57.626.158/0001-99
-                  </p>
+                <div className="flex items-center gap-6">
+                  <img src="/logo-new.png" alt="L.A Locação" className="h-16 w-auto object-contain" />
+                  <div>
+                    <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">L.A Administração e Locação de Veículos</h1>
+                    <p className="text-[9px] uppercase text-neutral-500 font-bold mt-1 leading-relaxed">
+                      Rua Joaquim Soares Bezerra, nº 84 – Farolândia, Aracaju – SE<br/>
+                      CEP 49032-460<br/>
+                      CNPJ: 57.626.158/0001-99
+                    </p>
+                  </div>
                 </div>
                 <div className="text-right">
                   <h2 className="text-lg font-black uppercase tracking-tight text-neutral-900">Termo de Rescisão e Distrato</h2>
@@ -303,9 +306,43 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body * { visibility: hidden; }
-          #print-term, #print-term * { visibility: visible; }
-          #print-term { position: absolute; left: 0; top: 0; width: 100%; margin: 0; padding: 0; }
+          @page { margin: 10mm; }
+          body { 
+            -webkit-print-color-adjust: exact; 
+            print-color-adjust: exact; 
+            background: white !important; 
+          }
+          
+          /* Oculta completamente tudo que NÃO faz parte da árvore do #print-term */
+          body *:not(:has(#print-term)):not(#print-term):not(#print-term *) {
+            display: none !important;
+          }
+
+          /* Reseta os contêineres pais para não interferirem no layout */
+          html:has(#print-term),
+          body:has(#print-term),
+          div:has(#print-term) {
+            position: static !important;
+            overflow: visible !important;
+            height: auto !important;
+            max-height: none !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: transparent !important;
+            transform: none !important;
+          }
+
+          #print-term {
+            width: 100% !important;
+            max-width: none !important;
+          }
+
+          /* Evita cortes no meio de tabelas e assinaturas */
+          section, table, tr, img {
+            page-break-inside: avoid;
+          }
         }
       `}} />
     </div>
