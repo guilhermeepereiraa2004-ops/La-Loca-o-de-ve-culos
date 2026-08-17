@@ -13,7 +13,8 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
     balance: 0,
     type: 'return', // 'return' or 'debt'
     earlyTerminationPenalty: 0,
-    scheduledEndDate: ''
+    scheduledEndDate: '',
+    isEarlyTermination: false
   });
 
   useEffect(() => {
@@ -21,14 +22,17 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       // 1. Debts from inspection
       const inspectionDebts = (inspection.deductions || []).reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
 
+      // Helper for safe plate comparison
+      const matchPlate = (p1, p2) => (p1 || '').replace('-', '').toUpperCase() === (p2 || '').replace('-', '').toUpperCase();
+
       // 2. Unpaid fines (From transactions)
       const unpaidFines = transactions
-        .filter(t => t.vehiclePlate === rental.plate && (t.cat === 'Multa' || t.desc.toLowerCase().includes('multa')) && t.status === 'pendente')
+        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && (t.cat === 'Multa' || (t.desc && t.desc.toLowerCase().includes('multa'))) && (t.status || '').toLowerCase() === 'pendente')
         .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
 
       // 3. Unpaid rentals (From transactions)
       const unpaidRentals = transactions
-        .filter(t => t.vehiclePlate === rental.plate && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && t.status === 'pendente')
+        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && (t.status || '').toLowerCase() === 'pendente')
         .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
 
       // 4. Unpaid Caucao (Balance remaining)
@@ -76,9 +80,11 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       }
 
       const isEarlyTermination = scheduledEndStr && todayStr < scheduledEndStr;
-      const earlyTerminationPenalty = isEarlyTermination ? paidCaucao : 0;
+      
+      const baseDebts = inspectionDebts + unpaidFines + unpaidRentals;
+      const earlyTerminationPenalty = isEarlyTermination ? Math.max(0, paidCaucao - baseDebts) : 0;
 
-      const totalDebts = inspectionDebts + unpaidFines + unpaidRentals + earlyTerminationPenalty;
+      const totalDebts = baseDebts + earlyTerminationPenalty;
       const caucaoAvailable = paidCaucao;
       const balance = caucaoAvailable - totalDebts;
 
@@ -92,7 +98,8 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         balance: Math.abs(balance),
         type: balance >= 0 ? 'return' : 'debt',
         earlyTerminationPenalty,
-        scheduledEndDate: scheduledEndStr
+        scheduledEndDate: scheduledEndStr,
+        isEarlyTermination
       });
     }
   }, [inspection, rental, transactions]);
@@ -122,7 +129,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-10 space-y-10">
-          {closureData.earlyTerminationPenalty > 0 && (
+          {closureData.isEarlyTermination && (
             <div className="p-6 bg-amber-50 border border-amber-200 rounded-3xl flex items-start gap-4 animate-in slide-in-from-top-4 duration-500">
               <div className="w-12 h-12 bg-amber-500 rounded-2xl flex items-center justify-center text-white shrink-0 shadow-lg">
                 <AlertTriangle size={24} />
@@ -131,7 +138,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                 <h5 className="text-sm font-black uppercase text-amber-900 mb-1">Rescisão Antecipada Detectada</h5>
                 <p className="text-xs text-amber-700/80 leading-relaxed font-bold">
                   O contrato está sendo encerrado antes do término planejado ({closureData.scheduledEndDate ? new Date(closureData.scheduledEndDate + 'T12:00:00').toLocaleDateString('pt-BR') : 'Não Informado'}). 
-                  Como consequência, o condutor perde integralmente o valor de sua caução (R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}), retida como multa de rescisão.
+                  A caução (R$ {closureData.caucaoAvailable.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) será utilizada para abater possíveis débitos pendentes. Qualquer saldo remanescente da caução (R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}) será retido como multa de rescisão.
                 </p>
               </div>
             </div>
@@ -173,7 +180,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                     {closureData.earlyTerminationPenalty > 0 && (
                       <tr className="bg-amber-50/50">
                         <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-amber-950 uppercase">Multa Rescisão Antecipada</td>
-                        <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-amber-700 uppercase tracking-tight">Perda Integral da Caução</td>
+                        <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-amber-700 uppercase tracking-tight">Retenção de Saldo Remanescente da Caução</td>
                         <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-amber-600 text-right">R$ {closureData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       </tr>
                     )}

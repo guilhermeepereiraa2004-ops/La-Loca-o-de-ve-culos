@@ -169,8 +169,12 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
             <div id="print-term" className="bg-white shadow-2xl mx-auto w-full max-w-[800px] p-8 md:p-16 min-h-[1000px] print:p-0 print:shadow-none font-serif text-neutral-900">
               <div className="border-b-2 border-neutral-900 pb-6 mb-8 flex justify-between items-end">
                 <div>
-                  <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">L.A Locação de Veículos</h1>
-                  <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black">L.A. LOCAÇÃO E ADMINISTRAÇÃO LTDA</p>
+                  <h1 className="text-2xl font-black uppercase tracking-tighter text-neutral-900">L.A Administração e Locação de Veículos</h1>
+                  <p className="text-[9px] uppercase text-neutral-500 font-bold mt-1 leading-relaxed">
+                    Rua Joaquim Soares Bezerra, nº 84 – Farolândia, Aracaju – SE<br/>
+                    CEP 49032-460<br/>
+                    CNPJ: 57.626.158/0001-99
+                  </p>
                 </div>
                 <div className="text-right">
                   <h2 className="text-lg font-black uppercase tracking-tight text-neutral-900">Termo de Rescisão e Distrato</h2>
@@ -201,7 +205,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
 
                 {/* 2. ITENS DE VISTORIA */}
                 <section className="space-y-3">
-                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">II. ITENS AUFERIDOS NA VISTORIA DE DEVOLUÇÃO</p>
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">II. ITENS AFERIDOS NA VISTORIA DE DEVOLUÇÃO</p>
                   {deductions.length > 0 ? (
                     <table className="w-full text-left border-collapse text-[10px]">
                       <thead>
@@ -239,7 +243,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                   <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">III. CONSOLIDAÇÃO FINANCEIRA E LIQUIDAÇÃO</p>
                   <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-100 space-y-2 text-[11px]">
                     <div className="flex justify-between text-neutral-600">
-                      <span>Total de Débitos Consolidados (Vistoria, Multas, Aluguéis, Caução pendente):</span>
+                      <span>Total de Débitos Consolidados (Vistoria, Multas, Aluguéis, Rescisão):</span>
                       <span className="font-mono text-neutral-950 font-bold">R$ {closureData.totalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-neutral-600">
@@ -269,9 +273,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                 <section className="space-y-3">
                   <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">IV. CLÁUSULA DE RESPONSABILIDADE FUTURA</p>
                   <p className="text-[10px] text-neutral-600 leading-relaxed text-justify">
-                    O motorista declara ciência e concordância de que a assinatura deste distrato não quita ou extingue a responsabilidade de débitos de natureza superveniente. Assim, <strong>poderão ser incluídos e cobrados débitos adicionais</strong> referentes a: 
-                    (a) multas de trânsito não liquidadas ou notificadas após a devolução, cuja infração tenha ocorrido comprovadamente durante o período de vigência desta locação; 
-                    (b) aluguéis, diárias, juros ou encargos vencidos e não pagos até a presente data de encerramento.
+                    O motorista declara ciência e concordância de que a assinatura deste distrato não quita nem extingue a responsabilidade por débitos, danos, avarias ou obrigações de natureza superveniente relacionados ao veículo e ao período de vigência desta locação. Assim, poderão ser incluídos e cobrados débitos adicionais referentes a: (a) multas de trânsito não liquidadas ou notificadas após a devolução, cuja infração tenha ocorrido comprovadamente durante o período de vigência desta locação; (b) aluguéis, diárias, juros ou encargos vencidos e não pagos até a presente data de encerramento; (c) avarias ocultas, danos ou irregularidades não identificados ou não aferidos na vistoria de devolução, inclusive aqueles que somente se tornem perceptíveis posteriormente; (d) acessórios quebrados, danificados ou faltantes, bem como itens e equipamentos que deveriam acompanhar o veículo; e (e) defeitos mecânicos e/ou elétricos ocasionados por mau uso, negligência, imprudência, imperícia, condução inadequada ou utilização em desacordo com as orientações de uso do veículo, ainda que não tenham sido aferidos ou identificados na vistoria de devolução, desde que comprovadamente relacionados ao período da locação ou à conduta do locatário. A eventual cobrança deverá ser acompanhada, sempre que possível, de laudo, registro fotográfico, orçamento, nota fiscal ou outro documento comprobatório.
                   </p>
                 </section>
 
