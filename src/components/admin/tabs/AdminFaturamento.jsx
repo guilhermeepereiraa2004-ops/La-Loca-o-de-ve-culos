@@ -145,6 +145,63 @@ const CategorySelect = ({ value, onChange, options, placeholder, className }) =>
   );
 };
 
+const getRentalPaymentDay = (r) => {
+  if (r.paymentDay !== undefined && r.paymentDay !== -1 && r.paymentDay !== null) return parseInt(r.paymentDay);
+  if (r.documentos?.payment_day !== undefined && r.documentos?.payment_day !== -1 && r.documentos?.payment_day !== null) return parseInt(r.documentos.payment_day);
+  if (r.docs?.payment_day !== undefined && r.docs?.payment_day !== -1 && r.docs?.payment_day !== null) return parseInt(r.docs.payment_day);
+  return -1;
+};
+
+const getRentalCycles = (rental, targetEndLimit = new Date()) => {
+  const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
+  const startObj = new Date(startStr + 'T12:00:00');
+  const pDay = getRentalPaymentDay(rental);
+  
+  const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+  const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date(targetEndLimit.getTime());
+  if (!isClosed) endLimit.setHours(12, 0, 0, 0);
+
+  const cycles = [];
+  let iterDateObj = new Date(startObj.getTime());
+  let weekNumber = 1;
+  let safety = 300;
+  
+  while (iterDateObj <= endLimit && safety > 0) {
+    let cycleStartObj = new Date(iterDateObj.getTime());
+    let cycleEndObj = new Date(iterDateObj.getTime());
+    
+    if (weekNumber === 1 && pDay !== -1) {
+      const startDay = cycleStartObj.getDay();
+      if (startDay !== pDay) {
+        let proRataDays = pDay - startDay;
+        if (proRataDays <= 0) proRataDays += 7;
+        cycleEndObj.setDate(cycleEndObj.getDate() + proRataDays - 1);
+      } else {
+        cycleEndObj.setDate(cycleEndObj.getDate() + 6);
+      }
+    } else {
+      cycleEndObj.setDate(cycleEndObj.getDate() + 6);
+    }
+    
+    const cStartStr = cycleStartObj.toISOString().split('T')[0];
+    const cEndStr = cycleEndObj.toISOString().split('T')[0];
+    
+    cycles.push({
+      weekNumber,
+      startStr: cStartStr,
+      endStr: cEndStr,
+      dueStr: cStartStr // Pré-pago: vencimento no início do ciclo
+    });
+    
+    iterDateObj = new Date(cycleEndObj.getTime());
+    iterDateObj.setDate(iterDateObj.getDate() + 1);
+    weekNumber++;
+    safety--;
+  }
+  
+  return cycles;
+};
+
 const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, onClose, onConfirmPayment, calculateBoletoForCycle, availableCategories }) => {
   const [pastCycles, setPastCycles] = useState([]);
   const [editingCycle, setEditingCycle] = useState(null);
@@ -174,20 +231,12 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
     const safeHistory = Array.isArray(history) ? history : [];
     const specificPayments = safeHistory.filter(t => (t.desc || '').includes('Ref:'));
     let legacyPayments = safeHistory.filter(t => !(t.desc || '').includes('Ref:')).sort((a, b) => new Date(a.date) - new Date(b.date));
-    
     const cycles = [];
-    let iterDate = new Date(startObj);
-    
-    // NOTA: Como é pré-pago, o primeiro vencimento É a própria data de início do contrato.
-    // Portanto, não somamos 7 dias antes de começar o loop.
-    
-    let weekNumber = 1;
-    let safety = 300;
+    const rentalCycles = getRentalCycles(rental, endLimit);
     
     // Gerar até o endLimit (inclusive)
-    while (iterDate <= endLimit && safety > 0) {
-      const dueStr = iterDate.toISOString().split('T')[0];
-      const calc = calculateBoletoForCycle(rental, dueStr, true);
+    rentalCycles.forEach(cycleInfo => {
+      const calc = calculateBoletoForCycle(rental, cycleInfo.dueStr, true, cycleInfo.startStr, cycleInfo.endStr);
       
       const labelRef = `Ref: ${calc.cycleStart.split('-').reverse().join('/')} a ${calc.cycleEnd.split('-').reverse().join('/')}`;
       
@@ -239,8 +288,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       }
       
       cycles.push({
-        weekNumber,
-        dueDate: dueStr,
+        weekNumber: cycleInfo.weekNumber,
+        dueDate: cycleInfo.dueStr,
         calc,
         label: labelRef,
         isPaid,
@@ -248,11 +297,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         isRetido,
         adjustments: cycleAdjustments
       });
-      
-      iterDate.setDate(iterDate.getDate() + 7);
-      weekNumber++;
-      safety--;
-    }
+    });
     
     // A Semana Atual (currentCalc) geralmente é a próxima (iterDate que passou de today).
     // Vamos adicioná-la se já não estiver na lista
@@ -289,7 +334,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       }
 
       cycles.push({
-        weekNumber,
+        weekNumber: cycles.length > 0 ? cycles[cycles.length - 1].weekNumber + 1 : 1,
         dueDate: currentCalc.dueDate,
         calc: currentCalc,
         label: labelRef,
@@ -672,13 +717,14 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     alert('Pagamento confirmado e receita enviada ao financeiro!');
   };
 
-  const calculateBoletoForCycle = (rental, targetDueDateStr, isPastCycle = false) => {
-    const weeklyRate = parseCurrency(rental.value || 0) || 0;
-    const dailyRate = weeklyRate / 7;
+
+  const calculateBoletoForCycle = (rental, targetDueDateStr, isPastCycle = false, customCycleStartStr = null, customCycleEndStr = null) => {
+    const defaultWeeklyRate = parseCurrency(rental.value || 0) || 0;
+    const dailyRate = defaultWeeklyRate / 7;
 
     let dueDateStr = targetDueDateStr;
     if (!dueDateStr) {
-      return { weeklyRate, dailyRate, daysInMaintenance: 0, abatimento: 0, replacementCharge: 0, replacementDays: 0, replacementDailyRate: 0, tireTax: 0, total: weeklyRate, activeRC: null, rcsDetails: [], hasPaidToday: false, dueDate: '' };
+      return { weeklyRate: defaultWeeklyRate, dailyRate, daysInMaintenance: 0, abatimento: 0, replacementCharge: 0, replacementDays: 0, replacementDailyRate: 0, tireTax: 0, total: defaultWeeklyRate, activeRC: null, rcsDetails: [], hasPaidToday: false, dueDate: '' };
     }
 
     const rentalPlate = rental.plate || rental.vehiclePlate;
@@ -707,24 +753,20 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         return t.type === 'in' && t.cat?.toLowerCase() === 'aluguel' && t.date === todayStr;
       });
 
-      if (hasPaidToday) {
-        try {
-          const dObj = new Date(dueDateStr + 'T12:00:00');
-          dObj.setDate(dObj.getDate() + 7);
-          dueDateStr = dObj.toISOString().split('T')[0];
-        } catch (e) {}
-      }
     }
 
     const dueDateObj = new Date(dueDateStr + 'T12:00:00');
     
-    // Pré-pago: o ciclo COMEÇA na data de vencimento e vai até 6 dias depois
-    const cycleStartObj = new Date(dueDateObj.getTime());
-    const cycleStartStr = cycleStartObj.toISOString().split('T')[0];
+    // Pré-pago flexível
+    const cycleStartStr = customCycleStartStr || dueDateObj.toISOString().split('T')[0];
+    const cycleEndStr = customCycleEndStr || (function(){
+      const endObj = new Date(dueDateObj.getTime());
+      endObj.setDate(endObj.getDate() + 6);
+      return endObj.toISOString().split('T')[0];
+    })();
 
-    const cycleEndObj = new Date(dueDateObj.getTime());
-    cycleEndObj.setDate(dueDateObj.getDate() + 6);
-    const cycleEndStr = cycleEndObj.toISOString().split('T')[0];
+    const cycleDays = Math.round((new Date(cycleEndStr + 'T12:00:00') - new Date(cycleStartStr + 'T12:00:00')) / 86400000) + 1;
+    const cycleBaseRate = dailyRate * cycleDays;
 
     const todayStrFmt = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
 
@@ -735,21 +777,18 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       return targetStr >= start && targetStr <= end;
     };
 
-    // O aluguel principal é pré-pago (ex: paga dia 03/08 para usar de 03/08 a 09/08).
-    // O carro reserva e as manutenções são PÓS-PAGOS (descontados no dia 03/08 referente à semana passada, de 27/07 a 02/08).
-    const rcCycleStartObj = new Date(cycleStartObj.getTime());
-    rcCycleStartObj.setDate(rcCycleStartObj.getDate() - 7);
+    const rcCycleStartObj = new Date(cycleStartStr + 'T12:00:00');
+    rcCycleStartObj.setDate(rcCycleStartObj.getDate() - cycleDays);
     const rcCycleStartStr = rcCycleStartObj.toISOString().split('T')[0];
 
-    const rcCycleEndObj = new Date(cycleEndObj.getTime());
-    rcCycleEndObj.setDate(rcCycleEndObj.getDate() - 7);
+    const rcCycleEndObj = new Date(cycleEndStr + 'T12:00:00');
+    rcCycleEndObj.setDate(rcCycleEndObj.getDate() - cycleDays);
     const rcCycleEndStr = rcCycleEndObj.toISOString().split('T')[0];
 
     let totalDaysInMaintenance = 0;
     let cycleDateIter = new Date(rcCycleStartStr + 'T12:00:00');
     
-    // Calcula os dias de oficina (Abatimento) olhando dia a dia no ciclo de 7 dias
-    for (let i = 0; i < 7; i++) {
+    for (let i = 0; i < cycleDays; i++) {
       const currentDayStr = cycleDateIter.toISOString().split('T')[0];
       let covered = false;
       
@@ -774,13 +813,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       cycleDateIter.setDate(cycleDateIter.getDate() + 1);
     }
 
-    // Calcula as diárias do Carro Reserva baseado nos contratos
     let totalReplacementCharge = 0;
     let rcsDetails = [];
     matchedRCs.forEach(rc => {
       let rcOverlap = 0;
       let rcIter = new Date(rcCycleStartStr + 'T12:00:00');
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < cycleDays; i++) {
         const currentDayStr = rcIter.toISOString().split('T')[0];
         if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
           rcOverlap++;
@@ -803,7 +841,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     });
 
     const abatimento = dailyRate * totalDaysInMaintenance;
-    const tireTax = parseCurrency(rental.tireTax || 0) || 0;
+    const tireTax = ((parseCurrency(rental.tireTax || 0) || 0) / 7) * cycleDays;
     const lateFeeVal = parseFloat(lateFees[rental.id] || 0);
 
     // Find matching fines for this rental/driver
@@ -853,11 +891,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       }
     });
 
-    const baseTotal = (weeklyRate - abatimento) + totalReplacementCharge + tireTax + finesTotal;
+    const baseTotal = (cycleBaseRate - abatimento) + totalReplacementCharge + tireTax + finesTotal;
     const total = baseTotal + lateFeeVal;
 
     return { 
-      weeklyRate, 
+      weeklyRate: cycleBaseRate, 
       dailyRate, 
       daysInMaintenance: totalDaysInMaintenance, 
       abatimento, 
@@ -878,7 +916,21 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
   };
 
   const calculateBoleto = (rental) => {
-    return calculateBoletoForCycle(rental, getNextDueDate(rental.startDate || rental.date), false);
+    const cyclesInfo = getRentalCycles(rental, new Date());
+    const currentInfo = cyclesInfo[cyclesInfo.length - 1] || { startStr: '', endStr: '', dueStr: '' };
+    const calc = calculateBoletoForCycle(rental, currentInfo.dueStr, false, currentInfo.startStr, currentInfo.endStr);
+    
+    if (calc.hasPaidToday) {
+       const nextWeekObj = new Date();
+       nextWeekObj.setDate(nextWeekObj.getDate() + 7);
+       const futureCycles = getRentalCycles(rental, nextWeekObj);
+       const nextInfo = futureCycles.find(c => c.weekNumber === (currentInfo.weekNumber || 1) + 1);
+       if (nextInfo) {
+         return calculateBoletoForCycle(rental, nextInfo.dueStr, false, nextInfo.startStr, nextInfo.endStr);
+       }
+    }
+    
+    return calc;
   };
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
@@ -898,12 +950,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
       if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
-      let iterDate = new Date(startObj);
-      let totalWeeks = 0;
-      while (iterDate <= endLimit && totalWeeks < 300) {
-        totalWeeks++;
-        iterDate.setDate(iterDate.getDate() + 7);
-      }
+      const totalWeeks = getRentalCycles(r, endLimit).length;
 
       const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
       const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
@@ -962,12 +1009,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
       if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
-      let iterDate = new Date(startObj);
-      let totalWeeks = 0;
-      while (iterDate <= endLimit && totalWeeks < 300) {
-        totalWeeks++;
-        iterDate.setDate(iterDate.getDate() + 7);
-      }
+      const totalWeeks = getRentalCycles(r, endLimit).length;
 
       const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
       const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
@@ -1239,12 +1281,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
               const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date();
               if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
-              let iterDate = new Date(startObj);
-              let totalWeeks = 0;
-              while (iterDate <= endLimit && totalWeeks < 300) {
-                totalWeeks++;
-                iterDate.setDate(iterDate.getDate() + 7);
-              }
+              const totalWeeks = getRentalCycles(rental, endLimit).length;
 
               const rentalTransactions = rawHistory.filter(t => (t.cat || '').toLowerCase() === 'aluguel');
               const legacyCount = rentalTransactions.filter(t => !(t.desc || '').includes('Ref:')).length;

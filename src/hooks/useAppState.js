@@ -878,6 +878,11 @@ export const useAppState = () => {
       // Map keys to Portuguese database schema
       const payload = mapToSnake(rental, 'rentals');
       
+      // Remove payment_day from root since it's saved inside documentos JSON
+      if ('payment_day' in payload) {
+        delete payload['payment_day'];
+      }
+      
       // Limpeza de campos que são apenas para o frontend ou calculados
       delete payload.id;
       delete payload.image;
@@ -1340,6 +1345,10 @@ export const useAppState = () => {
 
       // Map to database schema
       const payload = mapToSnake(finalRental, 'rentals');
+      
+      if ('payment_day' in payload) {
+        delete payload['payment_day'];
+      }
       
       // Clean up for update (Supabase update doesn't like some fields if they are missing or different type)
       delete payload.id;
