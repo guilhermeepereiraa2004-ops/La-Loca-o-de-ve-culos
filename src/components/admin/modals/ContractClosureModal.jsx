@@ -52,9 +52,33 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         }, 0);
 
       // 3. Unpaid rentals (From transactions)
-      const unpaidRentals = transactions
-        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && matchDriverTrans(t) && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && (t.status || '').toLowerCase() === 'pendente')
-        .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
+      const unpaidRentalTransactions = transactions
+        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && matchDriverTrans(t) && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && (t.status || '').toLowerCase() === 'pendente');
+
+      let unpaidRentals = 0;
+      let hasProratedAdjust = false;
+      let proratedDaysUsed = 0;
+
+      unpaidRentalTransactions.forEach(t => {
+        let val = parseFloat(t.val) || 0;
+        
+        if (t.date) {
+           const tDate = new Date(t.date + 'T12:00:00');
+           const today = new Date();
+           const diffTime = today.getTime() - tDate.getTime();
+           const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+           
+           // Se a transação for da semana atual (iniciou há menos de 7 dias) e estamos cobrando a semana antecipadamente ou pós
+           if (diffDays >= 0 && diffDays < 7) {
+              const daysToCharge = Math.max(1, diffDays); // Cobra pelo menos 1 dia se devolver no mesmo dia
+              val = (val / 7) * daysToCharge;
+              hasProratedAdjust = true;
+              proratedDaysUsed = daysToCharge;
+           }
+        }
+        
+        unpaidRentals += val;
+      });
 
       // 4. Unpaid Caucao (Balance remaining)
       const totalCaucao = parseCurrency(rental.depositTotal) || 0;
@@ -113,6 +137,8 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         inspectionDebts,
         unpaidFines,
         unpaidRentals,
+        hasProratedAdjust,
+        proratedDaysUsed,
         unpaidCaucao,
         totalDebts,
         caucaoAvailable,
@@ -194,7 +220,9 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidFines.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
                     <tr>
-                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">Aluguéis Vencidos</td>
+                      <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">
+                        Aluguéis Vencidos {closureData.hasProratedAdjust ? `(Proporcional de ${closureData.proratedDaysUsed} dias)` : ''}
+                      </td>
                       <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Aba Cobranças</td>
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>

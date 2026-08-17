@@ -1162,7 +1162,25 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                 // Show rental, fine and tire tax payments from the client (type 'in' of category 'Aluguel', 'multa' or 'taxa de pneus')
                 const category = (t.cat || '').toLowerCase();
                 const isPaymentCategory = category === 'aluguel' || category === 'multa' || category === 'taxa de pneus';
-                return t.type === 'in' && isPaymentCategory;
+                
+                if (t.type === 'in' && isPaymentCategory) {
+                  // Prevenir cruzamento de pagamentos de condutores diferentes no mesmo carro
+                  const normalizeString = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+                  const descNorm = normalizeString(t.desc);
+                  const driverNorm = normalizeString(rentalDriver);
+                  const firstName = driverNorm.split(' ')[0];
+                  
+                  if (descNorm.includes('aluguel')) {
+                    // Verifica se é uma descrição padrão do sistema que contém o nome
+                    if (descNorm.includes('primeiro aluguel') || descNorm.includes('pagamento aluguel')) {
+                      if (firstName && !descNorm.includes(firstName)) {
+                        return false;
+                      }
+                    }
+                  }
+                  return true;
+                }
+                return false;
               });
 
             const hasPaidToday = calc.hasPaidToday;

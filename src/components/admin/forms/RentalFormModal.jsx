@@ -611,6 +611,33 @@ const RentalFormModal = ({
                         const totalRentalContract = baseVal * duration;
                         const weeklyTotal = baseVal + tireVal + installmentVal;
 
+                        // CÁLCULO PROPORCIONAL
+                        let isProRata = false;
+                        let proRataDays = 0;
+                        let firstPaymentBase = baseVal;
+                        let firstPaymentTire = tireVal;
+                        
+                        let targetDayName = getDayOfWeek(rentalForm.startDate);
+                        let targetDayNumber = -1;
+
+                        if (rentalForm.startDate) {
+                          const start = new Date(rentalForm.startDate + 'T12:00:00');
+                          const startDay = start.getDay();
+                          
+                          if (rentalForm.paymentDay !== undefined && rentalForm.paymentDay !== -1 && rentalForm.paymentDay !== startDay) {
+                             isProRata = true;
+                             targetDayNumber = rentalForm.paymentDay;
+                             const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
+                             targetDayName = dayNames[targetDayNumber];
+                             
+                             proRataDays = targetDayNumber - startDay;
+                             if (proRataDays <= 0) proRataDays += 7;
+                             firstPaymentBase = (baseVal / 7) * proRataDays;
+                             firstPaymentTire = (tireVal / 7) * proRataDays;
+                          }
+                        }
+                        const firstPaymentTotal = firstPaymentBase + firstPaymentTire + installmentVal;
+
                         return (
                           <>
                             <div className="flex justify-between items-center bg-[#C5A059] p-5 rounded-[1.8rem] shadow-xl shadow-[#C5A059]/10 mb-8 border border-white/20">
@@ -620,10 +647,10 @@ const RentalFormModal = ({
                                 </div>
                                 <div>
                                   <span className="text-white text-[10px] uppercase tracking-[0.2em] font-black block">Dia de Cobrança</span>
-                                  <span className="text-black/60 text-[9px] font-bold uppercase">{getDayOfWeek(rentalForm.startDate)}</span>
+                                  <span className="text-black/60 text-[9px] font-bold uppercase">{targetDayName}</span>
                                 </div>
                               </div>
-                              <span className="text-white text-lg font-black uppercase tracking-tighter">Sempre {getDayOfWeek(rentalForm.startDate).split('-')[0]}</span>
+                              <span className="text-white text-lg font-black uppercase tracking-tighter">Sempre {targetDayName.split('-')[0]}</span>
                             </div>
 
                             <div className="space-y-4">
@@ -686,10 +713,16 @@ const RentalFormModal = ({
                                   <p className="text-[9px] text-neutral-600 font-medium leading-tight max-w-[140px] uppercase tracking-widest">Base + Pneus + Parcela</p>
                                 </div>
                                 <div className="text-right">
+                                  {isProRata && (
+                                    <div className="mb-4 text-right bg-[#C5A059]/10 p-4 rounded-2xl border border-[#C5A059]/20">
+                                      <span className="text-[#C5A059] text-[10px] font-black uppercase tracking-widest block mb-1">Pagamento no Ato ({proRataDays} diárias)</span>
+                                      <span className="text-white text-2xl font-black tracking-tighter leading-none">R$ {firstPaymentTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                  )}
                                   <span className="text-[#C5A059] text-5xl font-black tracking-tighter block leading-none mb-1">
                                     {weeklyTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
-                                  <span className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.3em]">REAIS / SEMANA</span>
+                                  <span className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.3em]">{isProRata ? 'ALUGUEL SEMANAL (APÓS ATO)' : 'REAIS / SEMANA'}</span>
                                 </div>
                               </div>
                             </div>
@@ -747,6 +780,23 @@ const RentalFormModal = ({
                           <div className="space-y-3">
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data de Início do Contrato</label>
                             <input type="date" required value={rentalForm.startDate || ''} onChange={e => setRentalForm({...rentalForm, startDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
+                          </div>
+                          <div className="space-y-3">
+                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dia de Pagamento Semanal</label>
+                            <select 
+                              value={rentalForm.paymentDay ?? -1} 
+                              onChange={e => setRentalForm({...rentalForm, paymentDay: parseInt(e.target.value)})} 
+                              className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm text-neutral-900 appearance-none"
+                            >
+                              <option value={-1}>Padrão (Mesmo dia do Início)</option>
+                              <option value={0}>Domingo</option>
+                              <option value={1}>Segunda-feira</option>
+                              <option value={2}>Terça-feira</option>
+                              <option value={3}>Quarta-feira</option>
+                              <option value={4}>Quinta-feira</option>
+                              <option value={5}>Sexta-feira</option>
+                              <option value={6}>Sábado</option>
+                            </select>
                           </div>
                           <div className="space-y-3">
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Vigência (Nº de Semanas)</label>

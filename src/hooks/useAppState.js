@@ -942,7 +942,8 @@ export const useAppState = () => {
         estadoCivil: rental.estadoCivil || null,
         cep: rental.cep || null,
         cidadeUf: rental.cidadeUf || null,
-        address: rental.address || null
+        address: rental.address || null,
+        payment_day: rental.paymentDay !== undefined && rental.paymentDay !== -1 ? rental.paymentDay : null
       };
 
       if (uploadedDocs.signedContract) {
@@ -1096,8 +1097,22 @@ export const useAppState = () => {
 
         // --- Geração Automática das Transações de Primeiro Pagamento ---
         try {
-          const weeklyRate = parseFloat(newRental.value) || 0;
-          const tireTax = parseFloat(newRental.tireTax) || 0;
+          let weeklyRate = parseFloat(newRental.value) || 0;
+          let tireTax = parseFloat(newRental.tireTax) || 0;
+          
+          let proRataDays = 7;
+          let isProRata = false;
+          if (rental.startDate && rental.paymentDay !== undefined && rental.paymentDay !== -1) {
+            const startDay = new Date(rental.startDate + 'T12:00:00').getDay();
+            if (startDay !== rental.paymentDay) {
+              isProRata = true;
+              proRataDays = rental.paymentDay - startDay;
+              if (proRataDays <= 0) proRataDays += 7;
+              weeklyRate = (weeklyRate / 7) * proRataDays;
+              tireTax = (tireTax / 7) * proRataDays;
+            }
+          }
+
           const vehiclePlate = enrichedRental.plate || '';
           
           const adminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
@@ -1112,7 +1127,7 @@ export const useAppState = () => {
               date: transDate,
               type: 'in',
               val: weeklyRate,
-              desc: `Primeiro Aluguel (Automático) - ${newRental.userName || newRental.user}`,
+              desc: `Primeiro Aluguel ${isProRata ? `(Proporcional ${proRataDays}d)` : '(Automático)'} - ${newRental.userName || newRental.user}`,
               cat: 'Aluguel',
               vehiclePlate: vehiclePlate,
               status: 'Concluído',
@@ -1126,7 +1141,7 @@ export const useAppState = () => {
               date: transDate,
               type: 'in',
               val: adminPart,
-              desc: `Taxa Adm Primeiro Aluguel - ${newRental.userName || newRental.user}`,
+              desc: `Taxa Adm Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
               cat: 'Taxa Adm',
               vehiclePlate: vehiclePlate,
               status: 'Concluído',
@@ -1140,7 +1155,7 @@ export const useAppState = () => {
               date: transDate,
               type: 'in',
               val: tireTax,
-              desc: `Taxa de Pneus Primeiro Aluguel - ${newRental.userName || newRental.user}`,
+              desc: `Taxa de Pneus Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
               cat: 'taxa de pneus',
               vehiclePlate: vehiclePlate,
               status: 'Concluído',
