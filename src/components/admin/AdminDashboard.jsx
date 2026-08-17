@@ -18,6 +18,7 @@ const AdminClientes = React.lazy(() => import('./tabs/AdminClientes'));
 const AdminFaturamento = React.lazy(() => import('./tabs/AdminFaturamento'));
 const AdminMultas = React.lazy(() => import('./tabs/AdminMultas'));
 const AdminLogs = React.lazy(() => import('./tabs/AdminLogs'));
+const AdminAvisos = React.lazy(() => import('./tabs/AdminAvisos'));
 
 // Tab loading fallback
 const TabLoader = () => (
@@ -71,7 +72,10 @@ const AdminDashboard = ({
   onAddFine,
   onUpdateFine,
   onDeleteFine,
-  onRenewRental
+  onRenewRental,
+  notices = [],
+  onAddNotice,
+  onDeleteNotice
 }) => {
   const {
     isSidebarOpen, setIsSidebarOpen, activeTab, setActiveTab,
@@ -578,6 +582,14 @@ const AdminDashboard = ({
               setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
+          {activeTab === 'avisos' && canAccess('avisos') && (
+            <AdminAvisos
+              investors={investors}
+              notices={notices}
+              onAddNotice={onAddNotice}
+              onDeleteNotice={onDeleteNotice}
+            />
+          )}
           </Suspense>
         </div>
       </main>
@@ -691,6 +703,7 @@ const AdminDashboard = ({
           inspection={selectedInspection || pendingInspection}
           rental={selectedRental}
           transactions={transactions}
+          fines={fines}
           onClose={() => setShowClosureModal(false)}
           onConfirm={(data) => {
             setFinalClosureData(data);

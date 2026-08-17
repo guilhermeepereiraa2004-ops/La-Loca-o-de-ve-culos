@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ShieldAlert, Check, AlertTriangle, ArrowRight, Wallet, Landmark, FileText, Landmark as BankIcon, Receipt, Ban } from 'lucide-react';
 import { parseCurrency } from '../../../utils/currencyUtils';
 
-const ContractClosureModal = ({ inspection, rental, rentals = [], transactions = [], onClose, onConfirm }) => {
+const ContractClosureModal = ({ inspection, rental, rentals = [], transactions = [], fines = [], onClose, onConfirm }) => {
   const [closureData, setClosureData] = useState({
     inspectionDebts: 0,
     unpaidFines: 0,
@@ -25,14 +25,35 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       // Helper for safe plate comparison
       const matchPlate = (p1, p2) => (p1 || '').replace('-', '').toUpperCase() === (p2 || '').replace('-', '').toUpperCase();
 
-      // 2. Unpaid fines (From transactions)
-      const unpaidFines = transactions
-        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && (t.cat === 'Multa' || (t.desc && t.desc.toLowerCase().includes('multa'))) && (t.status || '').toLowerCase() === 'pendente')
-        .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
+      const driverName = (rental.userName || rental.user || '').toLowerCase().trim();
+      const matchDriverTrans = (t) => {
+        if (!driverName) return true; // fallback
+        const resp = (t.responsible || '').toLowerCase();
+        const desc = (t.desc || '').toLowerCase();
+        return resp.includes(driverName) || desc.includes(driverName);
+      };
+
+      // 2. Unpaid fines (From fines array)
+      const unpaidFines = (fines || [])
+        .filter(f => {
+          const isSamePlate = matchPlate(f.vehiclePlate, rental.plate);
+          const isSameDriver = (f.driverName || '').toLowerCase().trim() === driverName;
+          const isSameRental = f.rentalId && f.rentalId === rental.id;
+          return isSamePlate && (isSameDriver || isSameRental) && ['pendente', 'em cobrança'].includes((f.status || '').toLowerCase());
+        })
+        .reduce((acc, curr) => {
+          const totalValue = parseFloat(curr.value) || 0;
+          if (curr.installments > 1 && curr.paidInstallments) {
+            const paidCount = curr.paidInstallments.length;
+            const remainingCount = curr.installments - paidCount;
+            return acc + (remainingCount * (parseFloat(curr.installmentValue) || (totalValue / curr.installments)));
+          }
+          return acc + totalValue;
+        }, 0);
 
       // 3. Unpaid rentals (From transactions)
       const unpaidRentals = transactions
-        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && (t.status || '').toLowerCase() === 'pendente')
+        .filter(t => matchPlate(t.vehiclePlate, rental.plate) && matchDriverTrans(t) && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && (t.status || '').toLowerCase() === 'pendente')
         .reduce((acc, curr) => acc + (parseFloat(curr.val) || 0), 0);
 
       // 4. Unpaid Caucao (Balance remaining)
