@@ -146,10 +146,20 @@ const CategorySelect = ({ value, onChange, options, placeholder, className }) =>
 };
 
 const getRentalPaymentDay = (r) => {
-  if (r.paymentDay !== undefined && r.paymentDay !== -1 && r.paymentDay !== null) return parseInt(r.paymentDay);
-  if (r.documentos?.payment_day !== undefined && r.documentos?.payment_day !== -1 && r.documentos?.payment_day !== null) return parseInt(r.documentos.payment_day);
-  if (r.docs?.payment_day !== undefined && r.docs?.payment_day !== -1 && r.docs?.payment_day !== null) return parseInt(r.docs.payment_day);
-  return -1;
+  const parseDay = (val) => {
+    if (val === undefined || val === null || val === '') return -1;
+    const parsed = parseInt(val, 10);
+    if (isNaN(parsed) || parsed < 0 || parsed > 6) return -1;
+    return parsed;
+  };
+
+  let day = parseDay(r.paymentDay);
+  if (day !== -1) return day;
+  
+  day = parseDay(r.documentos?.payment_day);
+  if (day !== -1) return day;
+  
+  return parseDay(r.docs?.payment_day);
 };
 
 const getRentalCycles = (rental, targetEndLimit = new Date()) => {
