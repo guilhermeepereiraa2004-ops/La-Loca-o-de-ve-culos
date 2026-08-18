@@ -61,7 +61,7 @@ const AdminDashboard = ({
   maintenances, onAddMaintenance, onUpdateMaintenance, onDeleteMaintenance,
   inspections, onAddInspection, onDeleteInspection,
   serviceOrders, replacementContracts, onCloseServiceOrder, onUpdateServiceOrder, onDeleteServiceOrder, onCloseReplacementContract,
-  onCompleteClosure, onPayCaucaoInstallment, onConfirmPayment,
+  onCompleteClosure, onPayCaucaoInstallment, onDeleteCaucao, onConfirmPayment,
   currentUser, systemUsers, onAddSystemUser, onUpdateSystemUser, onDeleteSystemUser,
   onLogout, onSeed, onGoHome, onViewVehicleDetail,
   selectedImage, setSelectedImage,
@@ -516,7 +516,7 @@ const AdminDashboard = ({
               setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
-          {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} />}
+          {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} onDeleteCaucao={onDeleteCaucao} />}
           {activeTab === 'manutencaoAdmin' && canAccess('manutencaoAdmin') && (
             <AdminManutencao 
               vehicles={vehicles} maintenances={maintenances}
@@ -577,6 +577,34 @@ const AdminDashboard = ({
               onUpdateServiceOrder={onUpdateServiceOrder}
               onDeleteServiceOrder={onDeleteServiceOrder}
               onCloseReplacementContract={onCloseReplacementContract}
+              onOpenCarroReserva={(os) => {
+                setActiveTab('locacao');
+                const activeRental = rentals.find(r => r.plate === os.plate && r.status === 'Ativo');
+                const clientName = activeRental?.user || os.responsible;
+                setRentalForm(prev => ({
+                  ...prev,
+                  rentalType: 'daily',
+                  tireTax: '0',
+                  user: clientName,
+                  isReplacement: true,
+                  mainVehiclePlate: os.plate,
+                  birthDate: activeRental?.birthDate || '',
+                  cnhValidity: activeRental?.cnhValidity || '',
+                  cpf: activeRental?.cpf || '',
+                  rg: activeRental?.rg || '',
+                  address: activeRental?.address || '',
+                  cep: activeRental?.cep || '',
+                  cidadeUf: activeRental?.cidadeUf || '',
+                  nacionalidade: activeRental?.nacionalidade || '',
+                  estadoCivil: activeRental?.estadoCivil || '',
+                  clientPhone: activeRental?.clientPhone || '',
+                  email: activeRental?.email || '',
+                  cnhNumber: activeRental?.cnhNumber || '',
+                  cnhRegisterNumber: activeRental?.cnhRegisterNumber || '',
+                  clientId: activeRental?.clientId || ''
+                }));
+                setShowAddForm(true);
+              }}
               setItemToDelete={setItemToDelete}
               setDeleteType={setDeleteType}
               setShowDeleteAuthModal={setShowDeleteAuthModal}

@@ -42,7 +42,7 @@ const App = ({ isOficinaDomain = false }) => {
     handleUpdateRental, handleRenewRental, handleAddClient, handleUpdateClient, handleDeleteClient, handleAddInvestor, handleUpdateInvestor, handleDeleteInvestor,
     handleAddVehicle, handleUpdateVehicle, handleDeleteVehicle, handleAddTransaction, handleUpdateTransaction, handleUpdateTransactionStatus, handleDeleteTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
-    handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
+    handleCompleteClosure, handlePayCaucaoInstallment, handleDeleteCaucao, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleCloseServiceOrder, handleUpdateServiceOrder, handleDeleteServiceOrder,
     handleCloseReplacementContract,
     handleInterestSubmit,
@@ -156,6 +156,7 @@ const App = ({ isOficinaDomain = false }) => {
         onCloseReplacementContract={handleCloseReplacementContract}
         onCompleteClosure={handleCompleteClosure}
         onPayCaucaoInstallment={handlePayCaucaoInstallment}
+        onDeleteCaucao={handleDeleteCaucao}
         onAddTransaction={handleAddTransaction}
         onUpdateTransaction={handleUpdateTransaction}
         onUpdateTransactionStatus={handleUpdateTransactionStatus}

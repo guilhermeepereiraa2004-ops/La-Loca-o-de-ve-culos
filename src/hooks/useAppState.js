@@ -899,6 +899,8 @@ export const useAppState = () => {
       delete payload.cidade_uf;
       delete payload.vehicle_year;
       delete payload.vehicle_renavam;
+      delete payload.is_replacement;
+      delete payload.main_vehicle_plate;
 
       // --- NOVO: Upload de Documentos ---
       const uploadedDocs = { ...(rental.docs || {}) };
@@ -1126,46 +1128,48 @@ export const useAppState = () => {
           const transDate = newRental.startDate || new Date().toISOString().split('T')[0];
           const autoTransactions = [];
           
-          // 1. Aluguel Bruto (Entrada - base para divisão do investidor)
-          if (weeklyRate > 0) {
-            autoTransactions.push({
-              date: transDate,
-              type: 'in',
-              val: weeklyRate,
-              desc: `Primeiro Aluguel ${isProRata ? `(Proporcional ${proRataDays}d)` : '(Automático)'} - ${newRental.userName || newRental.user}`,
-              cat: 'Aluguel',
-              vehiclePlate: vehiclePlate,
-              status: 'Concluído',
-              responsible: ''
-            });
-          }
-          
-          // 2. Taxa Adm (Entrada - 100% da Administradora)
-          if (adminPart > 0) {
-            autoTransactions.push({
-              date: transDate,
-              type: 'in',
-              val: adminPart,
-              desc: `Taxa Adm Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
-              cat: 'Taxa Adm',
-              vehiclePlate: vehiclePlate,
-              status: 'Concluído',
-              responsible: 'Administradora'
-            });
-          }
-          
-          // 3. Taxa de Pneus (Entrada - 100% da Administradora)
-          if (tireTax > 0) {
-            autoTransactions.push({
-              date: transDate,
-              type: 'in',
-              val: tireTax,
-              desc: `Taxa de Pneus Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
-              cat: 'taxa de pneus',
-              vehiclePlate: vehiclePlate,
-              status: 'Concluído',
-              responsible: 'Administradora'
-            });
+          if (newRental.rentalType !== 'daily') {
+            // 1. Aluguel Bruto (Entrada - base para divisão do investidor)
+            if (weeklyRate > 0) {
+              autoTransactions.push({
+                date: transDate,
+                type: 'in',
+                val: weeklyRate,
+                desc: `Primeiro Aluguel ${isProRata ? `(Proporcional ${proRataDays}d)` : '(Automático)'} - ${newRental.userName || newRental.user}`,
+                cat: 'Aluguel',
+                vehiclePlate: vehiclePlate,
+                status: 'Concluído',
+                responsible: ''
+              });
+            }
+            
+            // 2. Taxa Adm (Entrada - 100% da Administradora)
+            if (adminPart > 0) {
+              autoTransactions.push({
+                date: transDate,
+                type: 'in',
+                val: adminPart,
+                desc: `Taxa Adm Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
+                cat: 'Taxa Adm',
+                vehiclePlate: vehiclePlate,
+                status: 'Concluído',
+                responsible: 'Administradora'
+              });
+            }
+            
+            // 3. Taxa de Pneus (Entrada - 100% da Administradora)
+            if (tireTax > 0) {
+              autoTransactions.push({
+                date: transDate,
+                type: 'in',
+                val: tireTax,
+                desc: `Taxa de Pneus Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
+                cat: 'taxa de pneus',
+                vehiclePlate: vehiclePlate,
+                status: 'Concluído',
+                responsible: 'Administradora'
+              });
+            }
           }
           
           if (autoTransactions.length > 0) {
@@ -1366,6 +1370,8 @@ export const useAppState = () => {
       delete payload.cidade_uf;
       delete payload.vehicle_year;
       delete payload.vehicle_renavam;
+      delete payload.is_replacement;
+      delete payload.main_vehicle_plate;
       
       if (payload.value) payload.value = parseCurrency(payload.value);
       if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
@@ -2101,6 +2107,53 @@ export const useAppState = () => {
         isOpen: true,
         title: 'Erro!',
         message: `Erro ao processar pagamento: ${parseDbError(err)}`,
+        type: 'error'
+      });
+    }
+  };
+
+  const handleDeleteCaucao = async (rentalId) => {
+    try {
+      const updatePayload = {
+        'total do depósito': 0,
+        deposit_installments: 0,
+        'caução_paga': 0
+      };
+
+      const { error } = await supabase.from('rentals').update(updatePayload).eq('id', rentalId);
+      if (error) {
+        // Tenta fallback com os campos em snake_case ou dentro de docs se der erro
+        if (error.code === 'PGRST204' || error.code === '42703' || (error.message && error.message.includes('paid_installments'))) {
+          const { error: fallbackError } = await supabase.from('rentals').update({ 
+            'caução_paga': 0 
+          }).eq('id', rentalId);
+          if (fallbackError) throw fallbackError;
+        } else {
+          throw error;
+        }
+      }
+
+      setRentals(prev => prev.map(r => r.id === rentalId ? { 
+        ...r, 
+        depositTotal: 0,
+        depositInstallments: 0,
+        depositReceived: 0,
+        depositPaid: 0,
+        paidInstallments: []
+      } : r));
+      
+      setGlobalAlert({
+        isOpen: true,
+        title: 'Sucesso!',
+        message: `Caução removida com sucesso!`,
+        type: 'success'
+      });
+    } catch (err) {
+      console.error("Erro ao apagar caução:", err);
+      setGlobalAlert({
+        isOpen: true,
+        title: 'Erro!',
+        message: `Erro ao apagar caução: ${parseDbError(err)}`,
         type: 'error'
       });
     }
@@ -3173,7 +3226,7 @@ export const useAppState = () => {
     handleUpdateTransactionStatus,
     handleDeleteTransaction,
     handleAddMaintenance, handleUpdateMaintenance, handleDeleteMaintenance,
-    handleCompleteClosure, handlePayCaucaoInstallment, handleConfirmPayment,
+    handleCompleteClosure, handlePayCaucaoInstallment, handleDeleteCaucao, handleConfirmPayment,
     handleAddInspection, handleDeleteInspection, handleUpdateServiceOrder,
     handleCloseServiceOrder,
     handleDeleteServiceOrder,
