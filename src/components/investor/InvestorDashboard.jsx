@@ -265,7 +265,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
 
   // Maintenance history from transactions
-  const maintenanceHistory = transactions
+  const maintenanceHistoryTransactions = transactions
     .filter(t => (t.cat?.toLowerCase().includes('manuten') || t.desc?.toLowerCase().includes('manuten')) && myVehicles.some(v => v.plate === t.vehiclePlate))
     .filter(t => !(t.date && t.date < '2026-06-01'))
     .filter(t => {
@@ -282,14 +282,20 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     })
     .map(t => {
       let osId = null;
+      let receiptUrl = null;
       const match = t.desc?.match(/\[Manutenção #([^\]]+)\]/i);
       if (match && maintenances) {
         const mId = match[1];
         const maint = maintenances.find(m => String(m.id) === String(mId));
-        if (maint && maint.observations) {
-          const osMatch = maint.observations.match(/O\.S\. #([^\s]+)/i);
-          if (osMatch) {
-            osId = osMatch[1];
+        if (maint) {
+          if (maint.observations) {
+            const osMatch = maint.observations.match(/O\.S\. #([^\s]+)/i);
+            if (osMatch) {
+              osId = osMatch[1];
+            }
+          }
+          if (maint.receiptUrl) {
+            receiptUrl = maint.receiptUrl;
           }
         }
       }
@@ -303,9 +309,28 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         cost: `R$ -${Math.abs(t.val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
         status: t.status === 'pago' || t.status === 'Concluído' ? 'Concluído' : 'Em Aberto',
         icon: <Wrench size={16} />,
-        osId
+        osId,
+        receiptUrl
       };
     });
+
+  const maintenanceHistory = [
+    ...maintenanceHistoryTransactions,
+    ...serviceOrders
+      .filter(so => so.status !== 'Concluída' && so.status !== 'Cancelada' && so.responsible !== 'Administradora' && so.responsible !== 'Empresa' && myVehicles.some(v => v.plate === so.plate))
+      .map(so => ({
+        id: `os-${so.id}`,
+        vehicle: so.model || 'Veículo',
+        plate: so.plate,
+        type: `[O.S. #${String(so.id).split('-')[0]}] ${so.description || 'Serviço em andamento'}`,
+        date: so.date || (so.created_at ? so.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+        cost: `R$ -${Math.abs(so.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+        status: 'Em Aberto',
+        icon: <Wrench size={16} />,
+        osId: so.id,
+        receiptUrl: null
+      }))
+  ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
   const totalProtectionDiscount = myVehicles
     .filter(v => v.hasProtection)
@@ -1432,8 +1457,20 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                                 }}
                                 className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-white transition-colors underline"
                               >
-                                Ver Comprovante
+                                Ver O.S.
                               </button>
+                            ) : m.receiptUrl ? (
+                              <div className="flex flex-col gap-1 items-start">
+                                {m.receiptUrl.split(',').map((url, idx) => (
+                                  <button 
+                                    key={idx}
+                                    onClick={() => window.open(url, '_blank')}
+                                    className="text-[10px] uppercase tracking-widest font-black text-[#D4AF37] hover:text-white transition-colors underline whitespace-nowrap"
+                                  >
+                                    {m.receiptUrl.split(',').length > 1 ? `Anexo ${idx + 1}` : 'Ver Comprovante'}
+                                  </button>
+                                ))}
+                              </div>
                             ) : (
                               <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-700">---</span>
                             )}
@@ -1489,8 +1526,20 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                             }}
                             className="text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-white transition-colors underline"
                           >
-                            Ver Comprovante
+                            Ver O.S.
                           </button>
+                        ) : m.receiptUrl ? (
+                          <div className="flex flex-col gap-1 items-start">
+                            {m.receiptUrl.split(',').map((url, idx) => (
+                              <button 
+                                key={idx}
+                                onClick={() => window.open(url, '_blank')}
+                                className="text-[10px] uppercase tracking-widest font-black text-[#D4AF37] hover:text-white transition-colors underline whitespace-nowrap"
+                              >
+                                {m.receiptUrl.split(',').length > 1 ? `Anexo ${idx + 1}` : 'Ver Comprovante'}
+                              </button>
+                            ))}
+                          </div>
                         ) : (
                           <span className="text-[10px] uppercase tracking-widest font-bold text-neutral-700">---</span>
                         )}
@@ -1555,6 +1604,15 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     return soMonth === d.refMonthStr;
                   });
 
+                  const monthMaintenances = maintenances.filter(m => {
+                    const plateMatch = m.vehiclePlate && myVehiclePlates.includes(m.vehiclePlate);
+                    if (!plateMatch) return false;
+                    if (!m.date) return false;
+                    if (m.responsible === 'Administradora' || m.responsible === 'Empresa') return false;
+                    const mMonth = m.date.split('T')[0].substring(0, 7);
+                    return mMonth === d.refMonthStr && m.receiptUrl;
+                  });
+
                   const docsList = [];
                   if (invoiceUrl) {
                     docsList.push({ type: 'invoice', label: 'Nota Fiscal', url: invoiceUrl });
@@ -1564,6 +1622,20 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                   }
                   if (monthServiceOrders.length > 0) {
                     docsList.push({ type: 'service_order', label: 'Ordem Serviço', orders: monthServiceOrders });
+                  }
+                  if (monthMaintenances.length > 0) {
+                    monthMaintenances.forEach(m => {
+                      if (m.receiptUrl) {
+                        m.receiptUrl.split(',').forEach((url, idx) => {
+                          const total = m.receiptUrl.split(',').length;
+                          docsList.push({ 
+                            type: 'maintenance_receipt', 
+                            label: `Manutenção ${m.vehiclePlate}${total > 1 ? ` (${idx + 1}/${total})` : ''}`, 
+                            url 
+                          });
+                        });
+                      }
+                    });
                   }
 
                   return (
@@ -1689,7 +1761,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                                 } else {
                                   return (
                                     <a 
-                                      key={doc.label}
+                                      key={`${doc.url}-${doc.label}`}
                                       href={doc.url} 
                                       target="_blank" 
                                       rel="noopener noreferrer"

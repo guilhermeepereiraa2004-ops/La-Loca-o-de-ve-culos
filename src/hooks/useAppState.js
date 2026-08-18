@@ -1759,8 +1759,48 @@ export const useAppState = () => {
   };
 
   const handleAddMaintenance = async (maintenance) => {
-    const { data, error } = await supabase.from('maintenances').insert([mapToSnake(maintenance)]).select();
-    if (!error && data && data.length > 0) {
+    let receiptUrl = null;
+    let urls = [];
+    
+    if (maintenance.receiptFiles && maintenance.receiptFiles.length > 0) {
+      try {
+        for (const file of maintenance.receiptFiles) {
+          const url = await uploadFile(file, 'manutencoes');
+          if (url) urls.push(url);
+        }
+        if (urls.length > 0) receiptUrl = urls.join(',');
+      } catch (err) {
+        console.error("Erro ao fazer upload dos comprovantes:", err);
+        alert("Erro ao fazer upload dos comprovantes.");
+        return;
+      }
+    } else if (maintenance.receiptFile) {
+      try {
+        receiptUrl = await uploadFile(maintenance.receiptFile, 'manutencoes');
+      } catch (err) {
+        console.error("Erro ao fazer upload do comprovante:", err);
+        alert("Erro ao fazer upload do comprovante.");
+        return;
+      }
+    }
+
+    const cleanMaintenance = { 
+      ...maintenance, 
+      value: parseCurrency(maintenance.value) || 0,
+      currentKm: maintenance.currentKm ? parseInt(maintenance.currentKm.toString().replace(/\D/g, ''), 10) : null,
+      receiptUrl
+    };
+    delete cleanMaintenance.receiptFile;
+    delete cleanMaintenance.receiptFiles;
+    delete cleanMaintenance.clearReceipts;
+    delete cleanMaintenance.vehicleDescription;
+    const { data, error } = await supabase.from('maintenances').insert([mapToSnake(cleanMaintenance)]).select();
+    if (error) {
+      console.error("Erro ao lançar manutenção:", error);
+      alert(`Erro ao lançar manutenção: ${error.message || JSON.stringify(error)}`);
+      return;
+    }
+    if (data && data.length > 0) {
       const inserted = mapToCamel(data)[0];
       setMaintenances(prev => [inserted, ...prev]);
       logActivity('Criar', 'Manutenção', inserted.id, `Lançou manutenção para o veículo ${maintenance.vehiclePlate} - Tipo: ${maintenance.serviceType} - R$ ${maintenance.value}`);
@@ -1801,9 +1841,56 @@ export const useAppState = () => {
   };
 
   const handleUpdateMaintenance = async (updatedMaintenance) => {
-    const { error } = await supabase.from('maintenances').update(mapToSnake(updatedMaintenance)).eq('id', updatedMaintenance.id);
+    let receiptUrl = updatedMaintenance.receiptUrl || null;
+    
+    if (updatedMaintenance.clearReceipts) {
+      receiptUrl = null;
+    }
+
+    let newUrls = [];
+    if (updatedMaintenance.receiptFiles && updatedMaintenance.receiptFiles.length > 0) {
+      try {
+        for (const file of updatedMaintenance.receiptFiles) {
+          const url = await uploadFile(file, 'manutencoes');
+          if (url) newUrls.push(url);
+        }
+        if (newUrls.length > 0) {
+          receiptUrl = receiptUrl ? `${receiptUrl},${newUrls.join(',')}` : newUrls.join(',');
+        }
+      } catch (err) {
+        console.error("Erro ao fazer upload dos comprovantes:", err);
+        alert("Erro ao fazer upload dos comprovantes.");
+        return;
+      }
+    } else if (updatedMaintenance.receiptFile) {
+      try {
+        const url = await uploadFile(updatedMaintenance.receiptFile, 'manutencoes');
+        if (url) receiptUrl = receiptUrl ? `${receiptUrl},${url}` : url;
+      } catch (err) {
+        console.error("Erro ao fazer upload do comprovante:", err);
+        alert("Erro ao fazer upload do comprovante.");
+        return;
+      }
+    }
+
+    const cleanMaintenance = { 
+      ...updatedMaintenance, 
+      value: parseCurrency(updatedMaintenance.value) || 0,
+      currentKm: updatedMaintenance.currentKm ? parseInt(updatedMaintenance.currentKm.toString().replace(/\D/g, ''), 10) : null,
+      receiptUrl
+    };
+    delete cleanMaintenance.receiptFile;
+    delete cleanMaintenance.receiptFiles;
+    delete cleanMaintenance.clearReceipts;
+    delete cleanMaintenance.vehicleDescription;
+    const { error } = await supabase.from('maintenances').update(mapToSnake(cleanMaintenance)).eq('id', updatedMaintenance.id);
+    if (error) {
+      console.error("Erro ao atualizar manutenção:", error);
+      alert(`Erro ao atualizar manutenção: ${error.message || JSON.stringify(error)}`);
+      return;
+    }
     if (!error) {
-      setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? updatedMaintenance : m));
+      setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? { ...updatedMaintenance, value: cleanMaintenance.value, currentKm: cleanMaintenance.currentKm, receiptUrl: cleanMaintenance.receiptUrl } : m));
       logActivity('Atualizar', 'Manutenção', updatedMaintenance.id, `Atualizou dados de manutenção do veículo ${updatedMaintenance.vehiclePlate} - Tipo: ${updatedMaintenance.serviceType}`);
 
       // Sincronizar transação existente ou criar uma nova se não existir
@@ -2584,6 +2671,11 @@ export const useAppState = () => {
       
       // Clean up fields that do not exist in the database table
       delete cleanOs.vehicleDescription;
+      
+      if (cleanOs.laborValue !== undefined) cleanOs.laborValue = parseCurrency(cleanOs.laborValue) || 0;
+      if (cleanOs.parts) {
+        cleanOs.parts = cleanOs.parts.map(p => ({ ...p, unitValue: parseCurrency(p.unitValue) || 0 }));
+      }
       
       const payload = mapToSnake({ ...cleanOs, status: 'Aberta' });
       const { data, error } = await supabase.from('service_orders').insert([payload]).select();

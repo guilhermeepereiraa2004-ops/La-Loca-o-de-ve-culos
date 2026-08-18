@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Wrench, Calendar, Car, DollarSign, User, Info, 
   Plus, Search, Pencil, Trash2, AlertTriangle, CheckCircle2,
-  Clock, MapPin, ClipboardList, ChevronDown, Tag
+  Clock, MapPin, ClipboardList, ChevronDown, Tag, Upload
 } from 'lucide-react';
 
 const AdminManutencao = ({
@@ -31,7 +31,10 @@ const AdminManutencao = ({
     provider: '',
     currentKm: '',
     responsible: 'Administradora',
-    observations: ''
+    observations: '',
+    receiptFile: null,
+    receiptFiles: [],
+    clearReceipts: false
   });
 
   // Auto-fill model when plate is selected
@@ -358,6 +361,55 @@ const AdminManutencao = ({
                   placeholder="Descreva detalhes do serviço, peças trocadas, etc."
                 />
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Comprovante (PDF)</label>
+              <div className="relative">
+                <Upload size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300" />
+                <input 
+                  type="file" 
+                  accept=".pdf"
+                  multiple
+                  onChange={e => setMaintenanceForm({ ...maintenanceForm, receiptFiles: Array.from(e.target.files) })}
+                  className="w-full bg-neutral-50 border-none p-4 pl-12 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm text-neutral-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-[#C5A059]/10 file:text-[#C5A059] hover:file:bg-[#C5A059]/20" 
+                />
+              </div>
+
+              {/* Arquivos selecionados agora */}
+              {maintenanceForm.receiptFiles && maintenanceForm.receiptFiles.length > 0 && (
+                <div className="ml-1 mt-2 text-xs text-[#C5A059] font-bold">
+                  {maintenanceForm.receiptFiles.length} arquivo(s) selecionado(s) para envio.
+                </div>
+              )}
+
+              {/* Arquivos antigos já salvos */}
+              {maintenanceForm.receiptUrl && !maintenanceForm.clearReceipts && (
+                <div className="ml-1 mt-3 p-3 bg-neutral-100 rounded-xl border border-neutral-200">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-neutral-600 font-bold">Comprovantes já anexados:</span>
+                    <button
+                      type="button"
+                      onClick={() => setMaintenanceForm({ ...maintenanceForm, clearReceipts: true })}
+                      className="text-[10px] uppercase tracking-widest font-black text-red-500 hover:text-red-700 underline"
+                    >
+                      Remover Antigos
+                    </button>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {maintenanceForm.receiptUrl.split(',').map((url, idx) => (
+                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+                        Anexo {idx + 1}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {maintenanceForm.clearReceipts && (
+                <div className="ml-1 mt-1 text-xs text-red-500 font-bold">
+                  Os comprovantes antigos serão apagados ao salvar.
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-6 pt-6">
