@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as BankIcon, Receipt, AlertTriangle } from 'lucide-react';
+import { ShieldCheck, Clock, Landmark, Search, Check, FileCheck, X, Landmark as BankIcon, Receipt, AlertTriangle, Trash2 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { parseCurrency } from '../../../utils/currencyUtils';
 
@@ -7,25 +7,35 @@ const ITEMS_PER_PAGE = 12;
 
 const AdminCaucao = ({
   rentals = [],
-  payCaucaoInstallment
+  payCaucaoInstallment,
+  onDeleteCaucao
 }) => {
   const [search, setSearch] = useState('');
   const [selectedRental, setSelectedRental] = useState(null);
   const [showPayModal, setShowPayModal] = useState(false);
   const [pendingInstallment, setPendingInstallment] = useState(null);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [rentalToDelete, setRentalToDelete] = useState(null);
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
-  const totalCustodia = safeRentals.reduce((acc, r) => acc + (parseCurrency(r.depositReceived || r.depositPaid || 0) || 0), 0);
-  const totalReceber = safeRentals.reduce((acc, r) => {
+  const validCaucaoRentals = safeRentals.filter(r => {
+    const total = parseCurrency(r.depositTotal || 0) || 0;
+    // Também incluir se por algum erro tiver pago mas o total estiver 0
+    const paid = parseCurrency(r.depositReceived || r.depositPaid || 0) || 0;
+    return total > 0 || paid > 0;
+  });
+
+  const totalCustodia = validCaucaoRentals.reduce((acc, r) => acc + (parseCurrency(r.depositReceived || r.depositPaid || 0) || 0), 0);
+  const totalReceber = validCaucaoRentals.reduce((acc, r) => {
     const total = parseCurrency(r.depositTotal || 0) || 0;
     const received = parseCurrency(r.depositReceived || r.depositPaid || 0) || 0;
     return acc + (total - received);
   }, 0);
-  const totalContratado = safeRentals.reduce((acc, r) => acc + (parseCurrency(r.depositTotal || 0) || 0), 0);
+  const totalContratado = validCaucaoRentals.reduce((acc, r) => acc + (parseCurrency(r.depositTotal || 0) || 0), 0);
 
-  const filteredRentals = safeRentals.filter(r => {
+  const filteredRentals = validCaucaoRentals.filter(r => {
     const searchLower = search.toLowerCase();
     const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
     const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
@@ -235,19 +245,33 @@ const AdminCaucao = ({
 
                       {/* Actions Column */}
                       <td className="px-3 py-2 xl:px-4 xl:py-2.5 2xl:px-6 2xl:py-3 bg-white border-y border-neutral-100 transition-all group-hover:border-[#C5A059]/30 shadow-sm group-hover:shadow-xl group-hover:shadow-neutral-900/5 text-center">
-                        {remaining > 0 ? (
-                          <button
-                            onClick={() => handleOpenPayModal(rental)}
-                            className="px-4 py-2.5 xl:px-4 xl:py-2.5 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 mx-auto group/btn"
-                          >
-                            <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
-                          </button>
-                        ) : (
-                          <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100">
-                            <FileCheck size={16} />
-                            <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
-                          </div>
-                        )}
+                        <div className="flex items-center justify-center gap-2">
+                          {remaining > 0 ? (
+                            <button
+                              onClick={() => handleOpenPayModal(rental)}
+                              className="px-4 py-2.5 xl:px-4 xl:py-2.5 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center gap-2 shadow-xl shadow-neutral-900/10 group/btn"
+                            >
+                              <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 px-3 py-1.5 xl:px-3 xl:py-1.5 rounded-2xl border border-emerald-100">
+                              <FileCheck size={16} />
+                              <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
+                            </div>
+                          )}
+                          {onDeleteCaucao && (
+                            <button 
+                              onClick={() => {
+                                setRentalToDelete(rental.id);
+                                setShowDeleteModal(true);
+                              }}
+                              className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors group"
+                              title="Apagar Caução"
+                            >
+                              <Trash2 size={16} className="group-hover:scale-110 transition-transform" />
+                            </button>
+                          )}
+                        </div>
                       </td>
 
                       {/* Status Column */}
@@ -357,19 +381,31 @@ const AdminCaucao = ({
                     </div>
                   </div>
 
-                  <div className="pt-1">
+                  <div className="pt-1 flex gap-2">
                     {remaining > 0 ? (
                       <button
                         onClick={() => handleOpenPayModal(rental)}
-                        className="w-full py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 shadow-md group/btn active:scale-95"
+                        className="flex-1 py-3 bg-neutral-900 text-[#C5A059] text-[9px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] hover:text-white transition-all flex items-center justify-center gap-2 shadow-md group/btn active:scale-95"
                       >
                         <Receipt size={14} className="group-hover/btn:scale-110 transition-transform" /> Marcar como Pago
                       </button>
                     ) : (
-                      <div className="flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 py-3 rounded-2xl border border-emerald-100">
+                      <div className="flex-1 flex items-center gap-2 text-emerald-500 justify-center bg-emerald-50 py-3 rounded-2xl border border-emerald-100">
                         <FileCheck size={16} />
                         <span className="text-[9px] font-black uppercase tracking-widest">Liquidado</span>
                       </div>
+                    )}
+                    {onDeleteCaucao && (
+                      <button 
+                        onClick={() => {
+                          setRentalToDelete(rental.id);
+                          setShowDeleteModal(true);
+                        }}
+                        className="flex-shrink-0 w-[46px] flex items-center justify-center rounded-2xl border border-red-100 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-colors group"
+                        title="Apagar Caução"
+                      >
+                        <Trash2 size={16} className="group-hover:scale-110 transition-transform" />
+                      </button>
                     )}
                   </div>
                 </div>
@@ -519,6 +555,49 @@ const AdminCaucao = ({
 
             <div className="p-8 bg-neutral-50/50 flex justify-center border-t border-neutral-100">
               <p className="text-[8px] text-neutral-400 font-bold uppercase tracking-[0.2em]">Liquidando garantia contratual de {selectedRental.userName || selectedRental.user}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Caução Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => { setShowDeleteModal(false); setRentalToDelete(null); }} />
+          <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-500">
+            <div className="p-8 bg-red-50 border-b border-red-100 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-100/50 rounded-bl-full -mr-16 -mt-16" />
+              <AlertTriangle size={48} className="text-red-500 mx-auto mb-6 relative z-10" />
+              <h4 className="text-2xl font-black uppercase tracking-tighter text-red-900 mb-2 relative z-10">Apagar Caução</h4>
+              <p className="text-[10px] text-red-600 font-black uppercase tracking-widest relative z-10">Atenção: Ação irreversível</p>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <p className="text-sm font-medium text-neutral-600 text-center leading-relaxed">
+                Tem certeza que deseja apagar a caução deste contrato? Esta ação removerá a exigência de caução do sistema para esta locação.
+              </p>
+
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={() => {
+                    onDeleteCaucao(rentalToDelete);
+                    setShowDeleteModal(false);
+                    setRentalToDelete(null);
+                  }}
+                  className="w-full py-4 bg-red-500 text-white text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl shadow-xl shadow-red-500/20 hover:bg-red-600 hover:scale-[1.02] active:scale-95 transition-all"
+                >
+                  Sim, apagar caução
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setRentalToDelete(null);
+                  }}
+                  className="w-full py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 hover:bg-neutral-50 rounded-2xl transition-all"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
         </div>
