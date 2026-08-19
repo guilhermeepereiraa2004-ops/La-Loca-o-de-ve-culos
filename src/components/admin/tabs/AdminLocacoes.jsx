@@ -92,7 +92,8 @@ const AdminLocacoes = ({
       const val = typeof r.value === 'string' 
         ? parseCurrency(r.value) 
         : (parseFloat(r.value) || 0);
-      return acc + val;
+      const weeklyVal = r.rentalType === 'daily' ? val * 7 : val;
+      return acc + weeklyVal;
     } catch (e) { return acc; }
   }, 0), [safeRentals]);
 
@@ -333,11 +334,12 @@ const AdminLocacoes = ({
                           </div>
                           <span className={`px-2.5 py-1 rounded-xl text-[8px] font-black uppercase tracking-wider ${
                             isClosed ? 'bg-neutral-100 text-neutral-500' :
+                            rental.rentalType === 'daily' ? 'bg-[#C5A059]/10 text-[#C5A059] border border-[#C5A059]/30' :
                             dates.remaining <= 2 ? 'bg-red-50 text-red-600 border border-red-100/50' :
                             dates.remaining <= 5 ? 'bg-amber-50 text-amber-600 border border-amber-100/50' :
                             'bg-emerald-50 text-emerald-600 border border-emerald-100/50'
                           }`}>
-                            {isClosed ? 'Finalizado' : dates.remaining > 0 ? `Restam ${dates.remaining} dias` : 'Vencido'}
+                            {isClosed ? 'Finalizado' : rental.rentalType === 'daily' ? 'Uso Diário' : dates.remaining > 0 ? `Restam ${dates.remaining} dias` : 'Vencido'}
                           </span>
                         </div>
 
@@ -391,21 +393,21 @@ const AdminLocacoes = ({
                           <div className="flex justify-between items-baseline">
                             <span className="text-lg font-black text-neutral-900 leading-none">
                               {typeof rental.value === 'number' ? `R$ ${rental.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : (rental.value || 'R$ 0,00')}
-                              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">/ sem</span>
+                              <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-widest ml-1">/ {rental.rentalType === 'daily' ? 'dia' : 'sem'}</span>
                             </span>
                             <span className="text-xs font-black text-[#C5A059] uppercase tracking-wide">
-                              {rental.durationWeeks ? `${rental.durationWeeks} sem` : (rental.period || 'Curto Prazo')}
+                              {rental.rentalType === 'daily' ? 'Diária' : (rental.durationWeeks ? `${rental.durationWeeks} sem` : (rental.period || 'Curto Prazo'))}
                             </span>
                           </div>
 
                           <div className="pt-2.5 border-t border-neutral-100 flex justify-between text-[9px] font-bold uppercase tracking-wider text-neutral-400">
                             <span>Início: {dates.start.toLocaleDateString('pt-BR')}</span>
-                            <span>Fim: {dates.end.toLocaleDateString('pt-BR')}</span>
+                            <span>{rental.rentalType === 'daily' ? 'Fim: Em Aberto' : `Fim: ${dates.end.toLocaleDateString('pt-BR')}`}</span>
                           </div>
                         </div>
 
                         {/* Operational Alerts / Pending Inspections */}
-                        {!isClosed && (!hasEntrega || (dates.remaining <= 3 && !hasDevolucao)) && (
+                        {!isClosed && (!hasEntrega || (rental.rentalType !== 'daily' && dates.remaining <= 3 && !hasDevolucao)) && (
                           <div className="flex gap-2.5 mb-5">
                             {rental.status === 'Ativo' && !hasEntrega && (
                               <button 
@@ -416,7 +418,7 @@ const AdminLocacoes = ({
                               </button>
                             )}
                             
-                            {rental.status === 'Ativo' && dates.remaining <= 3 && !hasDevolucao && (
+                            {rental.status === 'Ativo' && rental.rentalType !== 'daily' && dates.remaining <= 3 && !hasDevolucao && (
                               <button 
                                 onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Devolução' })} 
                                 className="flex-1 py-2 bg-red-600 text-white text-[8px] font-black uppercase tracking-widest rounded-xl shadow-sm animate-pulse border border-white/10 hover:bg-red-700 transition-all flex items-center justify-center gap-1"

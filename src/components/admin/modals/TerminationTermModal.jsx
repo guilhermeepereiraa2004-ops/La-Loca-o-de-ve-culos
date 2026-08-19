@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { X, Printer, CheckCircle, FileText, Upload, Loader2, Check, AlertCircle, ArrowRight } from 'lucide-react';
+import { X, Printer, CheckCircle, FileText, Upload, Loader2, Check, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
 
 /* VERSION V04 - CLEANED AND VERIFIED */
 
-const TerminationTermModal = ({ inspection, rental, clients = [], closureData, onClose, onFinalize }) => {
+const TerminationTermModal = ({ inspection, rental, clients = [], closureData, onClose, onBack, onFinalize }) => {
   const [attachment, setAttachment] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [step, setStep] = useState(1);
@@ -65,6 +65,15 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
         {/* Header */}
         <div className="bg-neutral-900 p-6 md:p-8 border-b border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 sticky top-0 z-30 shrink-0">
           <div className="flex items-center gap-4">
+            {onBack && (
+              <button 
+                onClick={onBack} 
+                className="w-10 h-10 bg-white/5 flex items-center justify-center rounded-xl hover:bg-white/10 transition-all text-white mr-1"
+                title="Voltar para a tela anterior"
+              >
+                <ArrowLeft size={20} />
+              </button>
+            )}
             <div className="w-12 h-12 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-900 shadow-lg shadow-[#C5A059]/20">
               <FileText size={24} />
             </div>

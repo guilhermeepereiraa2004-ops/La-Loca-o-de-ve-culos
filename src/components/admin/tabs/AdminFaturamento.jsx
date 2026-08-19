@@ -926,6 +926,34 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
   };
 
   const calculateBoleto = (rental) => {
+    if (rental.rentalType === 'daily') {
+      const startStr = rental.startDate || rental.date;
+      const startDate = startStr ? new Date(startStr + 'T12:00:00') : new Date();
+      const today = new Date();
+      const diffTime = today.getTime() - startDate.getTime();
+      const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
+      const total = diffDays * dailyValue;
+      return { 
+        total, 
+        dueDate: '', 
+        cycleStart: startStr, 
+        cycleEnd: today.toISOString().split('T')[0],
+        weeklyRate: dailyValue,
+        tireTax: 0,
+        lateFineValue: 0,
+        lateDays: 0,
+        isLate: false,
+        abatimento: 0,
+        replacementCharge: 0,
+        adjustments: [],
+        isPaid: false,
+        isRetido: false,
+        hasPaidToday: false,
+        hasFullPaymentToday: false
+      };
+    }
+
     const cyclesInfo = getRentalCycles(rental, new Date());
     const currentInfo = cyclesInfo[cyclesInfo.length - 1] || { startStr: '', endStr: '', dueStr: '' };
     const calc = calculateBoletoForCycle(rental, currentInfo.dueStr, false, currentInfo.startStr, currentInfo.endStr);
@@ -1318,7 +1346,14 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                           {(rental.userName || rental.user || '?').charAt(0).toUpperCase()}
                         </div>
                         <div>
-                          <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tight">{rental.userName || rental.user}</h4>
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tight">{rental.userName || rental.user}</h4>
+                            {rental.rentalType === 'daily' && (
+                              <span className="px-2 py-0.5 bg-neutral-900 text-[#C5A059] rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">
+                                Carro Reserva
+                              </span>
+                            )}
+                          </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             {rental.status !== 'Ativo' && (
                               <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 animate-pulse">
@@ -1357,7 +1392,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                           <span className="text-xs font-black text-neutral-900 uppercase tracking-tight">{rental.vehicleModel || rental.vehicle}</span>
                           <span className="font-mono text-[9px] font-bold px-2 py-0.5 rounded bg-neutral-100 text-neutral-600 border border-neutral-200/60 uppercase">{rental.plate || rental.vehiclePlate}</span>
                         </div>
-                        <p className="text-[10px] text-neutral-400 font-bold">Base: R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / sem</p>
+                        <p className="text-[10px] text-neutral-400 font-bold">Base: R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / {rental.rentalType === 'daily' ? 'dia' : 'sem'}</p>
                       </div>
                     </div>
 
@@ -1372,10 +1407,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                             <span className="font-bold text-neutral-800">R$ {calc.weeklyRate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                           
-                          <div className="flex justify-between items-center text-xs font-medium text-neutral-500">
-                            <span>Taxa de Pneus</span>
-                            <span className="font-bold text-neutral-800">R$ {calc.tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </div>
+                          {rental.rentalType !== 'daily' && (
+                            <div className="flex justify-between items-center text-xs font-medium text-neutral-500">
+                              <span>Taxa de Pneus</span>
+                              <span className="font-bold text-neutral-800">R$ {calc.tireTax.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          )}
 
                           {calc.daysInMaintenance > 0 && (
                             <div className="flex justify-between items-center text-xs p-2.5 bg-red-50/50 rounded-xl border border-red-100 text-red-700">
@@ -1421,42 +1458,52 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                       </div>
 
                       {/* Módulo 2: Carro Reserva */}
-                      <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${calc.replacementCharge > 0 ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' : 'bg-neutral-50/30 border-neutral-100/70 opacity-60'}`}>
-                        <div className="w-full">
-                          <h6 className={`text-[10px] uppercase font-black tracking-widest border-b pb-2 ${calc.replacementCharge > 0 ? 'text-[#C5A059] border-neutral-800' : 'text-neutral-800 border-neutral-100'}`}>Carro Reserva</h6>
-                          {calc.replacementCharge > 0 ? (
-                            <div className="space-y-4 pt-3">
-                              {calc.rcsDetails.map((rc, idx) => (
-                                <div key={idx} className="flex items-center justify-between gap-2">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-7 h-7 bg-neutral-800 rounded-lg flex items-center justify-center text-[#C5A059]"><Car size={13} /></div>
-                                    <div>
-                                      <p className="text-xs font-black uppercase tracking-tight">{rc.plate}</p>
-                                      <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider leading-none">
-                                        {rc.days}d × R$ {rc.rate} {rc.status === 'Encerrado' && '(Finalizado)'}
-                                      </p>
+                      {rental.rentalType === 'daily' ? (
+                        <div className="p-5 rounded-2xl border transition-all flex flex-col justify-center items-center text-center bg-[#C5A059]/5 border-[#C5A059]/20 shadow-sm">
+                          <Car size={24} className="mb-2 text-[#C5A059] opacity-80" />
+                          <h6 className="text-[10px] uppercase font-black tracking-widest text-neutral-800 pb-1">Este é um Carro Reserva</h6>
+                          <p className="text-[7px] text-neutral-400/80 font-bold uppercase mt-1">
+                            Vinculado à placa {rental.mainVehiclePlate || 'Principal'}
+                          </p>
+                        </div>
+                      ) : (
+                        <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${calc.replacementCharge > 0 ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' : 'bg-neutral-50/30 border-neutral-100/70 opacity-60'}`}>
+                          <div className="w-full">
+                            <h6 className={`text-[10px] uppercase font-black tracking-widest border-b pb-2 ${calc.replacementCharge > 0 ? 'text-[#C5A059] border-neutral-800' : 'text-neutral-800 border-neutral-100'}`}>Carro Reserva</h6>
+                            {calc.replacementCharge > 0 ? (
+                              <div className="space-y-4 pt-3">
+                                {calc.rcsDetails.map((rc, idx) => (
+                                  <div key={idx} className="flex items-center justify-between gap-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-7 h-7 bg-neutral-800 rounded-lg flex items-center justify-center text-[#C5A059]"><Car size={13} /></div>
+                                      <div>
+                                        <p className="text-xs font-black uppercase tracking-tight">{rc.plate}</p>
+                                        <p className="text-[7px] text-neutral-400 font-bold uppercase tracking-wider leading-none">
+                                          {rc.days}d × R$ {rc.rate} {rc.status === 'Encerrado' && '(Finalizado)'}
+                                        </p>
+                                      </div>
                                     </div>
+                                    <span className="text-[11px] font-bold text-neutral-355">+ R$ {rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                   </div>
-                                  <span className="text-[11px] font-bold text-neutral-355">+ R$ {rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center text-center py-10 text-neutral-400">
-                              <AlertCircle size={20} className="mb-2 text-neutral-300 opacity-60" />
-                              <p className="text-[8px] font-black uppercase tracking-widest leading-none">Sem adicionais ativos</p>
-                              <p className="text-[7px] text-neutral-400/80 font-bold uppercase mt-1">Sem carro reserva neste ciclo</p>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="flex flex-col items-center justify-center text-center py-10 text-neutral-400">
+                                <AlertCircle size={20} className="mb-2 text-neutral-300 opacity-60" />
+                                <p className="text-[8px] font-black uppercase tracking-widest leading-none">Sem adicionais ativos</p>
+                                <p className="text-[7px] text-neutral-400/80 font-bold uppercase mt-1">Sem carro reserva neste ciclo</p>
+                              </div>
+                            )}
+                          </div>
+
+                          {calc.replacementCharge > 0 && (
+                            <div className="flex justify-between items-center pt-3 border-t border-neutral-800 mt-4">
+                              <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Total Adicional</span>
+                              <span className="text-sm font-black text-[#C5A059]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
                         </div>
-
-                        {calc.replacementCharge > 0 && (
-                          <div className="flex justify-between items-center pt-3 border-t border-neutral-800 mt-4">
-                            <span className="text-[9px] font-bold text-neutral-400 uppercase tracking-widest">Total Adicional</span>
-                            <span className="text-sm font-black text-[#C5A059]">+ R$ {calc.replacementCharge.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </div>
-                        )}
-                      </div>
+                      )}
                     </div>
 
                     {/* Módulo 3: Histórico de Pagamentos Confirmados */}
@@ -1514,24 +1561,30 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                       
                       <div className="space-y-4 relative">
                         <div>
-                          <p className="text-[8px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Total do Ciclo</p>
+                          <p className="text-[8px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">
+                            {rental.rentalType === 'daily' ? 'Previsão de Diárias (Acumulado)' : 'Total do Ciclo'}
+                          </p>
                           <div className="flex items-baseline gap-1">
                             <span className="text-base text-[#C5A059] font-black">R$</span>
                             <span className="text-3xl font-black text-white tracking-tighter leading-none">
                               {calc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
-                          <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Aluguel + Ajustes + Reserva</p>
+                          <p className="text-[7px] text-neutral-500 font-bold uppercase tracking-wider mt-1">
+                            {rental.rentalType === 'daily' ? 'Diárias Abertas Pendentes' : 'Aluguel + Ajustes + Reserva'}
+                          </p>
                         </div>
                         
                         <div className="pt-4 border-t border-neutral-800 flex items-center gap-2">
                           <CalendarDays size={12} className="text-[#C5A059] shrink-0" />
                           <div>
-                            <p className="text-[7px] text-neutral-500 font-black uppercase tracking-widest">Próximo Vencimento</p>
+                            <p className="text-[7px] text-neutral-500 font-black uppercase tracking-widest">
+                              {rental.rentalType === 'daily' ? 'Cobrança Programada' : 'Próximo Vencimento'}
+                            </p>
                             <p className="text-xs font-black text-[#C5A059] uppercase tracking-tight">
-                              {calc.dueDate ? new Date(calc.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', {
-                                weekday: 'short', day: '2-digit', month: '2-digit'
-                              }) : '—'}
+                              {rental.rentalType === 'daily' 
+                                ? 'No Encerramento' 
+                                : (calc.dueDate ? new Date(calc.dueDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' }) : '—')}
                             </p>
                           </div>
                         </div>
@@ -1540,17 +1593,19 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
                     {/* Actions Panel */}
                     <div className="space-y-3">
-                      <button
-                        onClick={() => setPaymentSelectionRental(rental.id)}
-                        className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${
-                          hasPaidToday 
-                            ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300 border border-neutral-300' 
-                            : 'bg-[#C5A059] text-neutral-900 hover:bg-neutral-950 hover:text-white'
-                        }`}
-                      >
-                        {hasPaidToday ? 'ABRIR CICLOS / PAGAMENTOS' : 'Confirmar Pagamento Manual'}
-                        <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />
-                      </button>
+                      {rental.rentalType !== 'daily' && (
+                        <button
+                          onClick={() => setPaymentSelectionRental(rental.id)}
+                          className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${
+                            hasPaidToday 
+                              ? 'bg-neutral-200 text-neutral-700 hover:bg-neutral-300 border border-neutral-300' 
+                              : 'bg-[#C5A059] text-neutral-900 hover:bg-neutral-950 hover:text-white'
+                          }`}
+                        >
+                          {hasPaidToday ? 'ABRIR CICLOS / PAGAMENTOS' : 'Confirmar Pagamento Manual'}
+                          <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

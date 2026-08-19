@@ -47,6 +47,7 @@ const AdminOficina = ({
   onUpdateServiceOrder,
   onDeleteServiceOrder,
   onCloseReplacementContract,
+  onOpenCarroReserva,
   setItemToDelete,
   setDeleteType,
   setShowDeleteAuthModal,
@@ -60,9 +61,7 @@ const AdminOficina = ({
   const [closingOS, setClosingOS] = useState(null);
   const [closingRC, setClosingRC] = useState(null);
   const [closeDate, setCloseDate] = useState(new Date().toISOString().split('T')[0]);
-  const [replacementCarPlate, setReplacementCarPlate] = useState('');
-  const [replacementCarStartDate, setReplacementCarStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [isRented, setIsRented] = useState(false);
+
   const [plateSearch, setPlateSearch] = useState('');
   const [showPlateDropdown, setShowPlateDropdown] = useState(false);
   const [successModal, setSuccessModal] = useState({ show: false, title: '', message: '', type: 'success' });
@@ -84,10 +83,7 @@ const AdminOficina = ({
         });
       }
       
-      const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
-      setIsRented(!!rental);
     } else {
-      setIsRented(false);
       setForm(prev => ({ ...prev, vehicleDescription: '' }));
     }
   }, [form.plate, vehicles, rentals, editingOS]);
@@ -113,8 +109,6 @@ const AdminOficina = ({
       ...os,
       parts: os.parts && os.parts.length > 0 ? os.parts : [{ name: '', qty: 1, unitValue: '' }]
     });
-    const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
-    setReplacementCarPlate(activeRC ? activeRC.replacementVehiclePlate : '');
     setViewingOS(null);
     setShowForm(true);
   };
@@ -123,21 +117,19 @@ const AdminOficina = ({
     e.preventDefault();
     if (editingOS) {
       const os = { ...form, total: totalOS };
-      const res = await onUpdateServiceOrder(os, replacementCarPlate);
+      const res = await onUpdateServiceOrder(os, null);
       setEditingOS(null);
       setShowForm(false);
       setForm(EMPTY_FORM);
-      setReplacementCarPlate('');
       if (res && res.message) {
         setSuccessModal({ show: true, type: res.success ? 'success' : 'warning', title: res.success ? 'Sucesso' : 'Atenção', message: res.message });
       }
     } else {
       const os = { ...form, openedAt: new Date().toISOString(), total: totalOS };
-      onCloseServiceOrder(os, 'open', replacementCarPlate, null, form.date);
+      onCloseServiceOrder(os, 'open', null, null, form.date);
     }
     setShowForm(false);
     setForm(EMPTY_FORM);
-    setReplacementCarPlate('');
   };
 
   const handleCloseOS = (os, selectedDate) => {
@@ -466,72 +458,7 @@ const AdminOficina = ({
                   </p>
                 </div>
 
-                {isRented && (
-                  <div className="p-6 bg-blue-50 border border-blue-100 rounded-[2rem] space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-600 text-white rounded-xl flex items-center justify-center shadow-lg"><Car size={20} /></div>
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-blue-600">Fluxo de Carro Reserva</p>
-                        <p className="text-xs font-bold text-blue-900">Este veículo possui um contrato ativo. Deseja vincular um carro reserva?</p>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <label className="text-[9px] uppercase tracking-widest text-blue-400 font-black ml-1">Selecionar Carro Reserva (Opcional)</label>
-                      <select 
-                        value={replacementCarPlate} 
-                        onChange={e => setReplacementCarPlate(e.target.value)} 
-                        className="w-full bg-white border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm"
-                      >
-                        <option value="">Nenhum carro reserva</option>
-                        {vehicles.filter(v => v.status === 'Disponível' || (replacementCarPlate && v.plate === replacementCarPlate)).map(v => (
-                          <option key={v.id} value={v.plate}>{v.plate} — {v.model}</option>
-                        ))}
-                      </select>
-                      
-                      {replacementCarPlate && (
-                        <div className="mt-4 space-y-2">
-                          <label className="text-[9px] uppercase tracking-widest text-blue-400 font-black ml-1">Data de Retirada do Carro Reserva</label>
-                          <input 
-                            type="date"
-                            value={replacementCarStartDate}
-                            onChange={e => setReplacementCarStartDate(e.target.value)}
-                            className="w-full bg-white border border-blue-100 p-4 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 font-bold text-sm"
-                          />
-                        </div>
-                      )}
 
-                      {replacementCarPlate ? (() => {
-                        const repV = vehicles.find(v => v.plate === replacementCarPlate);
-                        const rental = rentals.find(r => r.plate === form.plate && r.status === 'Ativo');
-                        let calcDailyRate = 80;
-                        let textCalc = "R$ 80,00 (padrão)";
-                        if (repV && repV.weeklyRental) {
-                          const w = parseFloat(repV.weeklyRental);
-                          if (!isNaN(w) && w > 0) {
-                            calcDailyRate = w / 7;
-                            textCalc = `Valor semanal do veículo (R$ ${w.toFixed(2)}) ÷ 7 = Diária de R$ ${calcDailyRate.toFixed(2)}`;
-                          }
-                        } else if (rental && rental.value) {
-                          const rv = parseFloat(rental.value);
-                          if (!isNaN(rv) && rv > 0) {
-                            calcDailyRate = rv / 7;
-                            textCalc = `Valor semanal original (R$ ${rv.toFixed(2)}) ÷ 7 = Diária de R$ ${calcDailyRate.toFixed(2)}`;
-                          }
-                        }
-                        return (
-                          <p className="text-[10px] text-blue-500 font-bold uppercase tracking-widest pl-1 italic mt-2">
-                            * {textCalc}
-                          </p>
-                        );
-                      })() : (
-                        <p className="text-[9px] text-blue-400 font-medium uppercase tracking-widest pl-1 italic mt-2">
-                          * Selecione um veículo para ver o cálculo da diária reserva.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
 
                 <div className="p-6 bg-neutral-900 rounded-2xl flex justify-between items-center">
                   <p className="text-[9px] font-black text-neutral-400 uppercase">Total estimado da O.S.</p>
@@ -626,6 +553,9 @@ const AdminOficina = ({
               </div>
               {viewingOS.status === 'Aberta' && (
                 <div className="flex gap-3">
+                  <button onClick={() => { setViewingOS(null); onOpenCarroReserva?.(viewingOS); }} className="px-8 py-4 bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-amber-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">
+                    <Car size={16} /> Carro Reserva
+                  </button>
                   <button onClick={() => handleEditOS(viewingOS)} className="px-8 py-4 bg-[#C5A059] text-neutral-950 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059]/80 transition-all flex items-center gap-2 shadow-xl active:scale-95">
                     <Pencil size={14} /> Editar O.S.
                   </button>

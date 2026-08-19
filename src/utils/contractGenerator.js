@@ -122,7 +122,7 @@ export const generateRentalContract = async (rental) => {
     if (depositPaidVal === depositTotalVal) {
       formaPagamentoCaucao = `${depositPaidBrl.formatado} (${depositPaidBrl.extenso}) pago à vista no ato da assinatura.`;
     } else {
-      formaPagamentoCaucao = `${depositPaidBrl.formatado} (${depositPaidBrl.extenso}) à vista no ato da assinatura e o saldo de ${depositBalanceBrl.formatado} (${depositBalanceBrl.extenso}) parcelado em ${depositInstallments} parcelas semanais de ${depositInstallmentBrl.formatado} (${depositInstallmentBrl.extenso}), a serem pagas juntamente com a parcela semanal da locação.`;
+      formaPagamentoCaucao = `${depositPaidBrl.formatado} (${depositPaidBrl.extenso}) à vista no ato da assinatura e o saldo de ${depositBalanceBrl.formatado} (${depositBalanceBrl.extenso}) parcelado em ${depositInstallments} parcelas ${rental.rentalType === 'daily' ? 'diárias' : 'semanais'} de ${depositInstallmentBrl.formatado} (${depositInstallmentBrl.extenso}), a serem pagas juntamente com a parcela ${rental.rentalType === 'daily' ? 'diária' : 'semanal'} da locação.`;
     }
 
     const months = [
@@ -338,12 +338,19 @@ export const generateRentalContract = async (rental) => {
             }),
             new Paragraph({
               children: [
-                new TextRun(`4.1 O valor total do presente contrato é de `),
-                new TextRun({ text: `${totalContractBrl.formatado} (${totalContractBrl.extenso})`, bold: true }),
-                new TextRun(`, correspondente ao período de `),
-                new TextRun({ text: `${duration} (${numeroParaExtenso(duration)}) semanas`, bold: true }),
-                new TextRun(`. O LOCATÁRIO pagará à LOCADORA, a título de locação, o valor semanal de `),
-                new TextRun({ text: `${weeklyBrl.formatado} (${weeklyBrl.extenso}).`, bold: true })
+                ...(rental.rentalType === 'daily' 
+                  ? [
+                      new TextRun(`4.1 O presente contrato é celebrado por prazo indeterminado. O LOCATÁRIO pagará à LOCADORA, a título de locação, o valor diário de `),
+                      new TextRun({ text: `${weeklyBrl.formatado} (${weeklyBrl.extenso}).`, bold: true })
+                    ]
+                  : [
+                      new TextRun(`4.1 O valor total do presente contrato é de `),
+                      new TextRun({ text: `${totalContractBrl.formatado} (${totalContractBrl.extenso})`, bold: true }),
+                      new TextRun(`, correspondente ao período de `),
+                      new TextRun({ text: `${duration} (${numeroParaExtenso(duration)}) semanas`, bold: true }),
+                      new TextRun(`. O LOCATÁRIO pagará à LOCADORA, a título de locação, o valor semanal de `),
+                      new TextRun({ text: `${weeklyBrl.formatado} (${weeklyBrl.extenso}).`, bold: true })
+                    ])
               ],
               alignment: AlignmentType.JUSTIFIED,
               spacing: { after: 120 },
@@ -357,7 +364,9 @@ export const generateRentalContract = async (rental) => {
             }),
             new Paragraph({
               children: [
-                new TextRun(`4.2 Os pagamentos semanais deverão ser efetuados no mesmo dia da semana em que o LOCATÁRIO retirou o veículo (ex: se retirou na ${getDayOfWeekName(rental.startDate)}, os vencimentos serão todas as ${getDayOfWeekName(rental.startDate)}s).`)
+                new TextRun(rental.rentalType === 'daily'
+                  ? `4.2 Os pagamentos diários serão acumulados e o montante final deverá ser quitado no momento de encerramento do contrato e devolução do veículo.`
+                  : `4.2 Os pagamentos semanais deverão ser efetuados no mesmo dia da semana em que o LOCATÁRIO retirou o veículo (ex: se retirou na ${getDayOfWeekName(rental.startDate)}, os vencimentos serão todas as ${getDayOfWeekName(rental.startDate)}s).`)
               ],
               alignment: AlignmentType.JUSTIFIED,
               spacing: { after: 120 },
@@ -424,7 +433,7 @@ export const generateRentalContract = async (rental) => {
             }),
             new Paragraph({
               children: [
-                new TextRun(`6.2 O LOCATÁRIO, não vindo a efetuar o pagamento da locação no seu vencimento semanal ou quaisquer outros encargos (parcela da caução, multas, reparos por mau uso, etc.) de sua responsabilidade, fica facultado à parte contrária o imediato bloqueio do veículo e/ou rescisão do contrato, além da posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência. Caberá ao LOCATÁRIO ressarcir o LOCADOR das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais.`)
+                new TextRun(`6.2 O LOCATÁRIO, não vindo a efetuar o pagamento da locação no seu vencimento ${rental.rentalType === 'daily' ? 'diário' : 'semanal'} ou quaisquer outros encargos (parcela da caução, multas, reparos por mau uso, etc.) de sua responsabilidade, fica facultado à parte contrária o imediato bloqueio do veículo e/ou rescisão do contrato, além da posse do veículo configurada como Apropriação Indébita, implicando também a possibilidade de adoção de medidas judiciais, inclusive Busca e Apreensão do veículo e/ou lavratura de Boletim de Ocorrência. Caberá ao LOCATÁRIO ressarcir o LOCADOR das despesas oriundas da retenção indevida do bem, arcando ainda com as despesas judiciais e/ou extrajudiciais.`)
               ],
               alignment: AlignmentType.JUSTIFIED,
               spacing: { after: 120 },

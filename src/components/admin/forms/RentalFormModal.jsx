@@ -184,9 +184,12 @@ const RentalFormModal = ({
           </div>
           
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-1">
-            {['Veículo', 'Condutor', 'Financeiro', 'Contrato'].map((step, idx) => {
-              const isActive = currentRentalStep === idx + 1;
-              const isCompleted = currentRentalStep > idx + 1;
+            {(rentalForm.isReplacement 
+              ? ['Veículo', 'Financeiro', 'Contrato'] 
+              : ['Veículo', 'Condutor', 'Financeiro', 'Contrato']).map((step, idx) => {
+              const actualStep = rentalForm.isReplacement ? (idx === 0 ? 1 : idx === 1 ? 3 : 4) : idx + 1;
+              const isActive = currentRentalStep === actualStep;
+              const isCompleted = currentRentalStep > actualStep;
               return (
                 <div key={step} className="flex items-center">
                   <div className={`flex items-center gap-2 sm:gap-3 px-3 py-2 sm:px-6 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-500 ${isActive ? 'bg-neutral-900 shadow-xl shadow-neutral-900/10' : ''}`}>
@@ -195,7 +198,7 @@ const RentalFormModal = ({
                     </div>
                     <span className={`text-[9px] sm:text-[10px] uppercase tracking-[0.2em] font-black hidden sm:block ${isActive ? 'text-white' : 'text-neutral-400'}`}>{step}</span>
                   </div>
-                  {idx < 3 && <div className="w-6 sm:w-12 h-px bg-neutral-200 mx-1 sm:mx-2" />}
+                  {idx < (rentalForm.isReplacement ? 2 : 3) && <div className="w-6 sm:w-12 h-px bg-neutral-200 mx-1 sm:mx-2" />}
                 </div>
               );
             })}
@@ -239,15 +242,19 @@ const RentalFormModal = ({
                     <button
                       key={v.id}
                       type="button"
-                      onClick={() => setRentalForm({
-                        ...rentalForm, 
-                        plate: v.plate, 
-                        vehicle: v.model,
-                        vehicleId: v.id,
-                        vehicleYear: v.year || '',
-                        vehicleRenavam: v.renavam || '',
-                        value: v.weeklyRental || ''
-                      })}
+                      onClick={() => {
+                        let baseVal = v.weeklyRental ? (typeof v.weeklyRental === 'string' ? parseCurrency(v.weeklyRental) : v.weeklyRental) : 0;
+                        if (rentalForm.rentalType === 'daily') baseVal = baseVal / 7;
+                        setRentalForm({
+                          ...rentalForm, 
+                          plate: v.plate, 
+                          vehicle: v.model,
+                          vehicleId: v.id,
+                          vehicleYear: v.year || '',
+                          vehicleRenavam: v.renavam || '',
+                          value: baseVal > 0 ? baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''
+                        });
+                      }}
                       className={`relative p-8 rounded-[3rem] border-2 text-left transition-all duration-500 group overflow-hidden ${rentalForm.plate === v.plate ? 'border-neutral-900 bg-neutral-900 text-white shadow-2xl shadow-neutral-900/20' : 'border-neutral-100 bg-white hover:border-[#C5A059]/30 hover:shadow-xl'}`}
                     >
                       <div className="h-44 rounded-[2rem] overflow-hidden mb-6 bg-neutral-100 relative">
@@ -265,12 +272,14 @@ const RentalFormModal = ({
 
                         <div className={`p-5 rounded-2xl flex justify-between items-center transition-colors ${rentalForm.plate === v.plate ? 'bg-white/5 border border-white/10' : 'bg-neutral-50 border border-neutral-100'}`}>
                           <div className="flex flex-col">
-                            <span className="text-[8px] uppercase tracking-widest font-black opacity-50 mb-1">Valor Semanal</span>
+                            <span className="text-[8px] uppercase tracking-widest font-black opacity-50 mb-1">Valor {rentalForm.rentalType === 'daily' ? 'Diário' : 'Semanal'} Base</span>
                             <span className={`text-lg font-black tracking-tight ${rentalForm.plate === v.plate ? 'text-white' : 'text-neutral-900'}`}>
-                              {(v.weeklyRental ? 
-                                (typeof v.weeklyRental === 'string' ? parseCurrency(v.weeklyRental) : v.weeklyRental)
-                                  .toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) 
-                                : 'Sob Consulta')}
+                              {(() => {
+                                if (!v.weeklyRental) return 'Sob Consulta';
+                                let baseVal = typeof v.weeklyRental === 'string' ? parseCurrency(v.weeklyRental) : v.weeklyRental;
+                                if (rentalForm.rentalType === 'daily') baseVal = baseVal / 7;
+                                return baseVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+                              })()}
                             </span>
                           </div>
                           <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${rentalForm.plate === v.plate ? 'bg-[#C5A059] text-white' : 'bg-white text-[#C5A059]'}`}>
@@ -593,7 +602,7 @@ const RentalFormModal = ({
                       </div>
                       <div>
                         <p className="text-xs uppercase tracking-[0.3em] text-[#C5A059] font-black">Dossiê Financeiro</p>
-                        <p className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold mt-1">Cálculo de Provisão Semanal</p>
+                        <p className="text-[9px] text-neutral-500 uppercase tracking-widest font-bold mt-1">Cálculo de Provisão {rentalForm.rentalType === 'daily' ? 'Diária' : 'Semanal'}</p>
                       </div>
                     </div>
 
@@ -693,7 +702,7 @@ const RentalFormModal = ({
                               {balance > 0 && (
                                 <div className="flex justify-between items-center p-6 bg-amber-500/5 rounded-[2rem] border border-amber-500/10 mt-4 group hover:bg-amber-500/10 transition-all">
                                   <div className="flex flex-col">
-                                    <span className="text-amber-500 text-[10px] uppercase tracking-[0.2em] font-black">Parcela Semanal Caução</span>
+                                    <span className="text-amber-500 text-[10px] uppercase tracking-[0.2em] font-black">Parcela {rentalForm.rentalType === 'daily' ? 'Diária' : 'Semanal'} Caução</span>
                                     <span className="text-neutral-500 text-[8px] font-bold mt-1">Saldo restante em {installments}x</span>
                                   </div>
                                   <div className="text-right">
@@ -722,7 +731,7 @@ const RentalFormModal = ({
                                   <span className="text-[#C5A059] text-5xl font-black tracking-tighter block leading-none mb-1">
                                     {weeklyTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
-                                  <span className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.3em]">{isProRata ? 'ALUGUEL SEMANAL (APÓS ATO)' : 'REAIS / SEMANA'}</span>
+                                  <span className="text-neutral-500 text-[10px] font-black uppercase tracking-[0.3em]">{isProRata ? `ALUGUEL ${rentalForm.rentalType === 'daily' ? 'DIÁRIO' : 'SEMANAL'} (APÓS ATO)` : (rentalForm.rentalType === 'daily' ? 'REAIS / DIA' : 'REAIS / SEMANA')}</span>
                                 </div>
                               </div>
                             </div>
@@ -741,8 +750,18 @@ const RentalFormModal = ({
                       <p className="text-[9px] text-neutral-400 font-medium">Define a frequência da cobrança principal</p>
                     </div>
                     <div className="flex bg-white p-1.5 rounded-[1.5rem] shadow-sm border border-neutral-200">
-                      <button type="button" onClick={() => setRentalForm({...rentalForm, rentalType: 'daily'})} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all duration-300 ${rentalForm.rentalType === 'daily' ? 'bg-neutral-900 text-white shadow-xl' : 'text-neutral-400 hover:text-neutral-900'}`}>Diária</button>
-                      <button type="button" onClick={() => setRentalForm({...rentalForm, rentalType: 'weekly'})} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all duration-300 ${rentalForm.rentalType === 'weekly' ? 'bg-neutral-900 text-white shadow-xl' : 'text-neutral-400 hover:text-neutral-900'}`}>Semanal</button>
+                      <button type="button" onClick={() => {
+                        if (rentalForm.rentalType === 'daily') return;
+                        const baseVal = parseCurrency(rentalForm.value) || 0;
+                        const newVal = baseVal > 0 ? (baseVal / 7).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rentalForm.value;
+                        setRentalForm({...rentalForm, rentalType: 'daily', value: newVal});
+                      }} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all duration-300 ${rentalForm.rentalType === 'daily' ? 'bg-neutral-900 text-white shadow-xl' : 'text-neutral-400 hover:text-neutral-900'}`}>Diária</button>
+                      <button type="button" onClick={() => {
+                        if (rentalForm.rentalType === 'weekly') return;
+                        const baseVal = parseCurrency(rentalForm.value) || 0;
+                        const newVal = baseVal > 0 ? (baseVal * 7).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : rentalForm.value;
+                        setRentalForm({...rentalForm, rentalType: 'weekly', value: newVal});
+                      }} className={`px-8 py-3 rounded-xl text-[10px] uppercase tracking-widest font-black transition-all duration-300 ${rentalForm.rentalType === 'weekly' ? 'bg-neutral-900 text-white shadow-xl' : 'text-neutral-400 hover:text-neutral-900'}`}>Semanal</button>
                     </div>
                   </div>
 
@@ -755,20 +774,22 @@ const RentalFormModal = ({
                         </div>
                         
                         <div className="space-y-3">
-                          <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor Aluguel ({rentalForm.rentalType === 'weekly' ? 'Semana' : 'Dia'})</label>
+                          <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Valor Aluguel ({rentalForm.rentalType === 'daily' ? 'Dia' : 'Semana'})</label>
                           <div className="relative group">
                             <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-[#C5A059] transition-colors">R$</span>
                             <input type="text" required value={rentalForm.value || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, value: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
                           </div>
                         </div>
 
-                        <div className="space-y-3">
-                          <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Taxa de Pneus (Extra)</label>
-                          <div className="relative group">
-                            <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-[#C5A059] transition-colors">R$</span>
-                            <input type="text" value={rentalForm.tireTax || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, tireTax: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
+                        {rentalForm.rentalType !== 'daily' && (
+                          <div className="space-y-3">
+                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Taxa de Pneus (Extra)</label>
+                            <div className="relative group">
+                              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-neutral-300 font-black text-sm group-focus-within:text-[#C5A059] transition-colors">R$</span>
+                              <input type="text" value={rentalForm.tireTax || ''} onChange={e => { let v = e.target.value.replace(/\D/g, ''); v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 }); setRentalForm({...rentalForm, tireTax: v}); }} className="w-full bg-neutral-50 border border-neutral-100 pl-12 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-black text-lg tracking-tight" placeholder="0,00" />
+                            </div>
                           </div>
-                        </div>
+                        )}
                       </div>
 
                       <div className="space-y-6">
@@ -781,31 +802,44 @@ const RentalFormModal = ({
                             <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Data de Início do Contrato</label>
                             <input type="date" required value={rentalForm.startDate || ''} onChange={e => setRentalForm({...rentalForm, startDate: e.target.value})} className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm" />
                           </div>
-                          <div className="space-y-3">
-                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dia de Pagamento Semanal</label>
-                            <select 
-                              value={rentalForm.paymentDay ?? -1} 
-                              onChange={e => setRentalForm({...rentalForm, paymentDay: parseInt(e.target.value)})} 
-                              className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm text-neutral-900 appearance-none"
-                            >
-                              <option value={-1}>Padrão (Mesmo dia do Início)</option>
-                              <option value={0}>Domingo</option>
-                              <option value={1}>Segunda-feira</option>
-                              <option value={2}>Terça-feira</option>
-                              <option value={3}>Quarta-feira</option>
-                              <option value={4}>Quinta-feira</option>
-                              <option value={5}>Sexta-feira</option>
-                              <option value={6}>Sábado</option>
-                            </select>
-                          </div>
-                          <div className="space-y-3">
-                            <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Vigência (Nº de Semanas)</label>
-                            <div className="flex items-center bg-neutral-50 rounded-2xl p-2 h-[64px] border border-neutral-100 shadow-inner">
-                              <button type="button" onClick={() => setRentalForm({...rentalForm, durationWeeks: Math.max(1, (parseInt(rentalForm.durationWeeks) || 1) - 1).toString()})} className="w-12 h-12 flex items-center justify-center bg-white border border-neutral-200 rounded-xl text-neutral-600 hover:bg-neutral-900 hover:text-white transition-all shadow-sm">-</button>
-                              <input type="text" value={rentalForm.durationWeeks || ''} onChange={e => setRentalForm({...rentalForm, durationWeeks: e.target.value.replace(/\D/g, '')})} className="flex-1 bg-transparent border-none text-center outline-none font-black text-xl text-neutral-900 tracking-tighter" />
-                              <button type="button" onClick={() => setRentalForm({...rentalForm, durationWeeks: ((parseInt(rentalForm.durationWeeks) || 1) + 1).toString()})} className="w-12 h-12 flex items-center justify-center bg-white border border-neutral-200 rounded-xl text-neutral-600 hover:bg-neutral-900 hover:text-white transition-all shadow-sm"><Plus size={16} /></button>
+
+                          {rentalForm.rentalType === 'weekly' && (
+                            <div className="space-y-3">
+                              <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dia de Pagamento Semanal</label>
+                              <select 
+                                value={rentalForm.paymentDay ?? -1} 
+                                onChange={e => setRentalForm({...rentalForm, paymentDay: parseInt(e.target.value)})} 
+                                className="w-full bg-neutral-50 border border-neutral-100 p-5 rounded-2xl outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all font-bold text-sm text-neutral-900 appearance-none"
+                              >
+                                <option value={-1}>Padrão (Mesmo dia do Início)</option>
+                                <option value={0}>Domingo</option>
+                                <option value={1}>Segunda-feira</option>
+                                <option value={2}>Terça-feira</option>
+                                <option value={3}>Quarta-feira</option>
+                                <option value={4}>Quinta-feira</option>
+                                <option value={5}>Sexta-feira</option>
+                                <option value={6}>Sábado</option>
+                              </select>
                             </div>
-                          </div>
+                          )}
+
+                          {rentalForm.rentalType === 'weekly' ? (
+                            <div className="space-y-3">
+                              <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Vigência (Nº de Semanas)</label>
+                              <div className="flex items-center bg-neutral-50 rounded-2xl p-2 h-[64px] border border-neutral-100 shadow-inner">
+                                <button type="button" onClick={() => setRentalForm({...rentalForm, durationWeeks: Math.max(1, (parseInt(rentalForm.durationWeeks) || 1) - 1).toString()})} className="w-12 h-12 flex items-center justify-center bg-white border border-neutral-200 rounded-xl text-neutral-600 hover:bg-neutral-900 hover:text-white transition-all shadow-sm">-</button>
+                                <input type="text" value={rentalForm.durationWeeks || ''} onChange={e => setRentalForm({...rentalForm, durationWeeks: e.target.value.replace(/\D/g, '')})} className="flex-1 bg-transparent border-none text-center outline-none font-black text-xl text-neutral-900 tracking-tighter" />
+                                <button type="button" onClick={() => setRentalForm({...rentalForm, durationWeeks: ((parseInt(rentalForm.durationWeeks) || 1) + 1).toString()})} className="w-12 h-12 flex items-center justify-center bg-white border border-neutral-200 rounded-xl text-neutral-600 hover:bg-neutral-900 hover:text-white transition-all shadow-sm"><Plus size={16} /></button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="space-y-3">
+                              <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Vigência</label>
+                              <div className="flex items-center justify-center bg-neutral-50 rounded-2xl p-2 h-[64px] border border-neutral-100 shadow-inner">
+                                <span className="font-black text-lg text-neutral-400">Prazo Indeterminado</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -898,7 +932,7 @@ const RentalFormModal = ({
         <div className="p-6 md:p-12 border-t border-neutral-50 bg-neutral-50/30 flex justify-between shrink-0">
           <button 
             type="button"
-            onClick={() => setCurrentRentalStep(Math.max(1, currentRentalStep - 1))}
+            onClick={() => setCurrentRentalStep(rentalForm.isReplacement && currentRentalStep === 3 ? 1 : Math.max(1, currentRentalStep - 1))}
             disabled={currentRentalStep === 1 || isSubmitting}
             className={`px-10 py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${currentRentalStep === 1 ? 'opacity-0 pointer-events-none' : 'bg-white text-neutral-400 hover:text-neutral-900 hover:shadow-lg'} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
           >
@@ -909,7 +943,7 @@ const RentalFormModal = ({
             {currentRentalStep < totalRentalSteps ? (
               <button 
                 type="button"
-                onClick={() => setCurrentRentalStep(currentRentalStep + 1)}
+                onClick={() => setCurrentRentalStep(rentalForm.isReplacement && currentRentalStep === 1 ? 3 : currentRentalStep + 1)}
                 disabled={(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting}
                 className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >

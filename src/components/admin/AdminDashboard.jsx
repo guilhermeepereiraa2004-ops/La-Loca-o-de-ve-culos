@@ -748,6 +748,10 @@ const AdminDashboard = ({
           clients={clients}
           closureData={finalClosureData}
           onClose={() => setShowTerminationTerm(false)}
+          onBack={() => {
+            setShowTerminationTerm(false);
+            setShowClosureModal(true);
+          }}
           onFinalize={async (attachedFile) => {
             try {
               const result = await onCompleteClosure(selectedRental.id, finalClosureData, attachedFile);
