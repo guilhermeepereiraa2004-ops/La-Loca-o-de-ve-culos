@@ -812,60 +812,65 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     let totalDaysInMaintenance = 0;
     let cycleDateIter = new Date(rcCycleStartStr + 'T12:00:00');
     
-    for (let i = 0; i < cycleDays; i++) {
-      const currentDayStr = cycleDateIter.toISOString().split('T')[0];
-      let covered = false;
-      
-      const matchedOSs = Array.isArray(serviceOrders) ? serviceOrders.filter(os => os.plate && rentalPlate && os.plate.toLowerCase() === rentalPlate.toLowerCase()) : [];
-      for (const os of matchedOSs) {
-        if (isDateInPeriod(currentDayStr, os.date, os.status === 'Concluída' ? os.closedAt : todayStrFmt)) {
-          covered = true;
-          break;
-        }
-      }
-      
-      if (!covered) {
-        for (const rc of matchedRCs) {
-          if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
+    if (!isDaily) {
+      for (let i = 0; i < cycleDays; i++) {
+        const currentDayStr = cycleDateIter.toISOString().split('T')[0];
+        let covered = false;
+        
+        const matchedOSs = Array.isArray(serviceOrders) ? serviceOrders.filter(os => os.plate && rentalPlate && os.plate.toLowerCase() === rentalPlate.toLowerCase()) : [];
+        for (const os of matchedOSs) {
+          if (isDateInPeriod(currentDayStr, os.date, os.status === 'Concluída' ? os.closedAt : todayStrFmt)) {
             covered = true;
             break;
           }
         }
+        
+        if (!covered) {
+          for (const rc of matchedRCs) {
+            if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
+              covered = true;
+              break;
+            }
+          }
+        }
+        
+        if (covered) totalDaysInMaintenance++;
+        cycleDateIter.setDate(cycleDateIter.getDate() + 1);
       }
-      
-      if (covered) totalDaysInMaintenance++;
-      cycleDateIter.setDate(cycleDateIter.getDate() + 1);
     }
 
     let totalReplacementCharge = 0;
     let rcsDetails = [];
-    matchedRCs.forEach(rc => {
-      let rcOverlap = 0;
-      let rcIter = new Date(rcCycleStartStr + 'T12:00:00');
-      for (let i = 0; i < cycleDays; i++) {
-        const currentDayStr = rcIter.toISOString().split('T')[0];
-        if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
-          rcOverlap++;
+    
+    if (!isDaily) {
+      matchedRCs.forEach(rc => {
+        let rcOverlap = 0;
+        let rcIter = new Date(rcCycleStartStr + 'T12:00:00');
+        for (let i = 0; i < cycleDays; i++) {
+          const currentDayStr = rcIter.toISOString().split('T')[0];
+          if (isDateInPeriod(currentDayStr, rc.startDate, rc.endDate || todayStrFmt)) {
+            rcOverlap++;
+          }
+          rcIter.setDate(rcIter.getDate() + 1);
         }
-        rcIter.setDate(rcIter.getDate() + 1);
-      }
-      
-      if (rcOverlap > 0) {
-        const rate = parseFloat(rc.dailyRate) || 80;
-        totalReplacementCharge += rate * rcOverlap;
         
-        rcsDetails.push({
-          plate: rc.replacementVehiclePlate,
-          days: rcOverlap,
-          rate: rate.toFixed(2),
-          total: rate * rcOverlap,
-          status: rc.status
-        });
-      }
-    });
+        if (rcOverlap > 0) {
+          const rate = parseFloat(rc.dailyRate) || 80;
+          totalReplacementCharge += rate * rcOverlap;
+          
+          rcsDetails.push({
+            plate: rc.replacementVehiclePlate,
+            days: rcOverlap,
+            rate: rate.toFixed(2),
+            total: rate * rcOverlap,
+            status: rc.status
+          });
+        }
+      });
+    }
 
-    const abatimento = dailyRate * totalDaysInMaintenance;
-    const tireTax = ((parseCurrency(rental.tireTax || 0) || 0) / 7) * cycleDays;
+    const abatimento = !isDaily ? (dailyRate * totalDaysInMaintenance) : 0;
+    const tireTax = !isDaily ? (((parseCurrency(rental.tireTax || 0) || 0) / 7) * cycleDays) : 0;
     const lateFeeVal = parseFloat(lateFees[rental.id] || 0);
 
     // Find matching fines for this rental/driver
@@ -943,9 +948,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     if (rental.rentalType === 'daily') {
       const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
       const startDate = new Date(startStr + 'T12:00:00');
-      const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
-      const todayObj = new Date(todayStr + 'T12:00:00');
-      const diffTime = todayObj.getTime() - startDate.getTime();
+      const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+      const endStr = (isClosed && rental.endDate) ? rental.endDate.substring(0, 10) : new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+      const endObj = new Date(endStr + 'T12:00:00');
+      const diffTime = endObj.getTime() - startDate.getTime();
       const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
       const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
       const total = diffDays * dailyValue;
@@ -953,7 +959,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         total, 
         dueDate: startStr, 
         cycleStart: startStr, 
-        cycleEnd: todayStr,
+        cycleEnd: endStr,
         weeklyRate: dailyValue,
         tireTax: 0,
         lateFineValue: 0,
@@ -986,6 +992,63 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     return calc;
   };
 
+  const calculatePendingCycles = (rental) => {
+    const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+    const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date();
+    if (!isClosed) endLimit.setHours(12, 0, 0, 0);
+
+    const rentalCycles = getRentalCycles(rental, endLimit);
+    
+    const safeHistory = Array.isArray(transactions) ? transactions : [];
+    const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
+    const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rentalPlate) : [];
+    const allRepPlates = matchedRCs.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
+
+    const rHistory = safeHistory.filter(t => {
+      const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
+      const isMatch = tPlate === rentalPlate || allRepPlates.includes(tPlate);
+      const rentalStartDate = rental.startDate || rental.date;
+      if (rentalStartDate && t.date && t.date < rentalStartDate) return false;
+      return isMatch && t.type === 'in' && (t.cat || '').toLowerCase() === 'aluguel';
+    });
+
+    const specificPayments = rHistory.filter(t => (t.desc || '').includes('Ref:'));
+    let legacyPayments = rHistory.filter(t => {
+      const descLow = (t.desc || '').toLowerCase();
+      if (descLow.includes('ref:')) return false;
+      return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel' || descLow.includes('diária') || descLow.includes('diarias') || descLow.includes('diárias');
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let pendingCount = 0;
+
+    rentalCycles.forEach(cycleInfo => {
+      const calc = calculateBoletoForCycle(rental, cycleInfo.dueStr, true, cycleInfo.startStr, cycleInfo.endStr);
+      const labelRef = `Ref: ${calc.cycleStart.split('-').reverse().join('/')} a ${calc.cycleEnd.split('-').reverse().join('/')}`;
+      
+      let isPaid = false;
+      const specificMatches = specificPayments.filter(t => t.desc.includes(labelRef));
+      if (specificMatches.length > 0) {
+        isPaid = true;
+      } else {
+        const matchedLegacyIdx = legacyPayments.findIndex(t => {
+          if (!t.date) return false;
+          const tDate = t.date.substring(0, 10);
+          const endPlus7Obj = new Date(calc.cycleEnd + 'T12:00:00');
+          endPlus7Obj.setDate(endPlus7Obj.getDate() + 7);
+          const endPlus7 = endPlus7Obj.toISOString().split('T')[0];
+          return tDate >= calc.cycleStart && tDate <= endPlus7;
+        });
+        if (matchedLegacyIdx !== -1) {
+          isPaid = true;
+          legacyPayments.splice(matchedLegacyIdx, 1);
+        }
+      }
+      if (!isPaid) pendingCount++;
+    });
+
+    return pendingCount;
+  };
+
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
   const pendingStats = React.useMemo(() => {
@@ -997,36 +1060,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       if (r.status === 'Ativo') cicloAtivo++;
 
       const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
-      const startStr = (r.startDate || r.date).substring(0, 10);
-      const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
-      if (!isClosed) endLimit.setHours(12, 0, 0, 0);
-
-      const totalWeeks = getRentalCycles(r, endLimit).length;
-
-      const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
-      const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
-      const allRepPlates = matchedRCs.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
-
-      const rHistory = (transactions || []).filter(t => {
-        const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-        const isMatch = tPlate === rPlate || allRepPlates.includes(tPlate);
-        const rentalStartDate = r.startDate || r.date;
-        if (rentalStartDate && t.date && t.date < rentalStartDate) return false;
-        return isMatch && t.type === 'in' && (t.cat || '').toLowerCase() === 'aluguel';
-      });
-
-      const legacyCount = rHistory.filter(t => !(t.desc || '').includes('Ref:')).length;
-      
-      const specificRefs = new Set();
-      rHistory.forEach(t => {
-        const desc = t.desc || '';
-        const match = desc.match(/(Ref:\s*\d{2}\/\d{2}\/\d{4}\s*a\s*\d{2}\/\d{2}\/\d{4})/i);
-        if (match) specificRefs.add(match[1]);
-        else if (desc.includes('Ref:')) specificRefs.add(desc);
-      });
-      const specificCount = specificRefs.size;
-
-      const pendingWeeks = totalWeeks - (legacyCount + specificCount);
+      const pendingWeeks = calculatePendingCycles(r);
       
       if (pendingWeeks > 0) {
         if (isClosed) encPendente++;
@@ -1057,52 +1091,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
     const isPendingFilter = filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || filterMode === 'encerrados_completos' || filterMode.startsWith('pendentes_');
     if (isPendingFilter || isClosed) {
-      const startStr = (r.startDate || r.date).substring(0, 10);
-      const startObj = new Date(startStr + 'T12:00:00');
-      
-      const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
-      if (!isClosed) endLimit.setHours(12, 0, 0, 0);
-
-      const totalWeeks = getRentalCycles(r, endLimit).length;
-
-      const rPlate = (r.plate || r.vehiclePlate || '').trim().toLowerCase();
-      const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rPlate) : [];
-      const allRepPlates = matchedRCs.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
-
-      const rHistory = (transactions || []).filter(t => {
-        const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-        const isMatch = tPlate === rPlate || allRepPlates.includes(tPlate);
-        
-        // Excluir transações anteriores ao início da locação para não puxar histórico do veículo com outros motoristas
-        const rentalStartDate = r.startDate || r.date;
-        if (rentalStartDate && t.date && t.date < rentalStartDate) {
-          return false;
-        }
-
-        return isMatch && t.type === 'in' && (t.cat || '').toLowerCase() === 'aluguel';
-      });
-
-      const legacyCount = rHistory.filter(t => {
-        const descLow = (t.desc || '').toLowerCase();
-        if (descLow.includes('ref:')) return false;
-        return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel';
-      }).length;
-      
-      const specificRefs = new Set();
-      rHistory.forEach(t => {
-        const desc = t.desc || '';
-        const match = desc.match(/(Ref:\s*\d{2}\/\d{2}\/\d{4}\s*a\s*\d{2}\/\d{2}\/\d{4})/i);
-        if (match) {
-          specificRefs.add(match[1]);
-        } else if (desc.includes('Ref:')) {
-          specificRefs.add(desc); // fallback
-        }
-      });
-      const specificCount = specificRefs.size;
-
-      // Se total de semanas de vida é maior que a soma de transações, tem pendência
-      // Se não tem pendência e tá encerrado, some da tela! (exceto se for no filtro de completos)
-      const pendingWeeks = totalWeeks - (legacyCount + specificCount);
+      const pendingWeeks = calculatePendingCycles(r);
       
       if (filterMode === 'encerrados_completos') {
         if (pendingWeeks > 0) return false;
@@ -1343,29 +1332,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             // Compute pending weeks strictly for the visual badge
             let badgePendingWeeks = 0;
             if (rental.startDate || rental.date) {
-              const startStr = (rental.startDate || rental.date).substring(0, 10);
-              const startObj = new Date(startStr + 'T12:00:00');
-              const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
-              const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date();
-              if (!isClosed) endLimit.setHours(12, 0, 0, 0);
-
-              const totalWeeks = getRentalCycles(rental, endLimit).length;
-
-              const rentalTransactions = rawHistory.filter(t => (t.cat || '').toLowerCase() === 'aluguel');
-              const legacyCount = rentalTransactions.filter(t => {
-                const descLow = (t.desc || '').toLowerCase();
-                if (descLow.includes('ref:')) return false;
-                return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel';
-              }).length;
-              const specificRefs = new Set();
-              rentalTransactions.forEach(t => {
-                const desc = t.desc || '';
-                const match = desc.match(/(Ref:\s*\d{2}\/\d{2}\/\d{4}\s*a\s*\d{2}\/\d{2}\/\d{4})/i);
-                if (match) specificRefs.add(match[1]);
-                else if (desc.includes('Ref:')) specificRefs.add(desc);
-              });
-              
-              badgePendingWeeks = totalWeeks - (legacyCount + specificRefs.size);
+              badgePendingWeeks = calculatePendingCycles(rental);
             }
 
             return (
