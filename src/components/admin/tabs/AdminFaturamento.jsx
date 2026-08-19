@@ -193,6 +193,12 @@ const getRentalCycles = (rental, targetEndLimit = new Date()) => {
       cycleEndObj.setDate(cycleEndObj.getDate() + 6);
     }
     
+    // Se o contrato estiver encerrado e o ciclo passar da data de encerramento,
+    // limitamos o fim do ciclo à data de encerramento para calcular proporcional.
+    if (isClosed && cycleEndObj > endLimit) {
+      cycleEndObj = new Date(endLimit.getTime());
+    }
+    
     const cStartStr = cycleStartObj.toISOString().split('T')[0];
     const cEndStr = cycleEndObj.toISOString().split('T')[0];
     
