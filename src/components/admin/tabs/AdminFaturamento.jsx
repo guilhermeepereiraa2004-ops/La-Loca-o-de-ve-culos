@@ -945,7 +945,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         total, 
         dueDate: '', 
         cycleStart: startStr, 
-        cycleEnd: today.toISOString().split('T')[0],
+        cycleEnd: todayStr,
         weeklyRate: dailyValue,
         tireTax: 0,
         lateFineValue: 0,
