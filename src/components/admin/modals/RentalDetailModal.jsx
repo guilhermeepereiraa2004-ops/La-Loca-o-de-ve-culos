@@ -82,9 +82,9 @@ const RentalDetailModal = ({
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-      const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       
-      const elapsedDays = Math.max(0, Math.min(totalDays, Math.ceil((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))));
+      const elapsedDays = Math.max(0, Math.min(totalDays, Math.round((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24))));
       const progress = totalDays > 0 ? (elapsedDays / totalDays) * 100 : 0;
 
       const isClosed = rental.status === 'Encerrado';

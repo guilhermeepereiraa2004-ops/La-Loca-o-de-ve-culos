@@ -129,8 +129,11 @@ const AdminClientes = ({
             const expirationInfo = (() => {
               const dateVal = client.cnhExpiration || client.cnhValidity;
               if (!dateVal) return { label: 'Não informado', days: 0, isExpired: false };
-              const diff = new Date(dateVal).getTime() - new Date().getTime();
-              const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+              const d = new Date(dateVal.includes('T') ? dateVal : dateVal + 'T12:00:00');
+              const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+              const todayObj = new Date(todayStr + 'T12:00:00');
+              const diff = d.getTime() - todayObj.getTime();
+              const days = Math.round(diff / (1000 * 60 * 60 * 24));
               const formattedDate = dateVal && dateVal.includes('-') ? dateVal.substring(0, 10).split('-').reverse().join('/') : dateVal || '—';
               return {
                 label: `Validade: ${formattedDate}`,

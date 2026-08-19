@@ -158,16 +158,16 @@ export const getDynamicAlerts = (vehicles, maintenances, inspections, clients) =
   let inspectionPendingCount = 0;
   let cnhAlertCount = 0;
 
-  const todayForCnh = new Date();
-  todayForCnh.setHours(0, 0, 0, 0);
+  const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+  const todayForCnh = new Date(todayStr + 'T12:00:00');
 
   (clients || []).forEach(c => {
     const cnhDateStr = c.cnhExpiration || c.cnhValidity;
     if (!cnhDateStr) return;
-    const expDate = new Date(cnhDateStr);
+    const expDate = new Date(cnhDateStr.includes('T') ? cnhDateStr : cnhDateStr + 'T12:00:00');
     
     const diffTime = expDate.getTime() - todayForCnh.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
     
     // Conta CNHs vencidas ou vencendo nos próximos 30 dias (1 mês)
     if (diffDays <= 30) {

@@ -75,7 +75,7 @@ const AdminLocacoes = ({
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-      const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       const isActive = diffDays >= 0;
 
       if (rentalFilter === 'todas') return true;
@@ -113,7 +113,7 @@ const AdminLocacoes = ({
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-      const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      const diffDays = Math.round((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       return diffDays <= 3 && diffDays >= 0 && r.status === 'Ativo';
     } catch (e) { return false; }
   }).length, [safeRentals]);
@@ -312,7 +312,7 @@ const AdminLocacoes = ({
                         const now = new Date();
                         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
                         const endSimple = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-                        const diffDays = Math.ceil((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                        const diffDays = Math.round((endSimple.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
                         return { start: startDate, end: endDate, remaining: diffDays, isClosed: false };
                       } catch (e) {
                         return { start: new Date(), end: new Date(), remaining: 0, isClosed: false };
