@@ -933,11 +933,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
   const calculateBoleto = (rental) => {
     if (rental.rentalType === 'daily') {
-      const startStr = rental.startDate || rental.date;
-      const startDate = startStr ? new Date(startStr + 'T12:00:00') : new Date();
-      const today = new Date();
-      const diffTime = today.getTime() - startDate.getTime();
-      const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+      const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
+      const startDate = new Date(startStr + 'T12:00:00');
+      const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+      const todayObj = new Date(todayStr + 'T12:00:00');
+      const diffTime = todayObj.getTime() - startDate.getTime();
+      const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
       const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
       const total = diffDays * dailyValue;
       return { 

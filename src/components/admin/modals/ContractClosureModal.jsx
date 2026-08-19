@@ -59,10 +59,12 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       let proratedDaysUsed = 0;
 
       if (rental.rentalType === 'daily') {
-        const startDate = new Date((rental.startDate || rental.date) + 'T12:00:00');
-        const todayDate = new Date();
-        const diffTime = todayDate.getTime() - startDate.getTime();
-        const diffDays = Math.max(1, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
+        const startDate = new Date(startStr + 'T12:00:00');
+        const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+        const todayObj = new Date(todayStr + 'T12:00:00');
+        const diffTime = todayObj.getTime() - startDate.getTime();
+        const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
         const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
         unpaidRentals = diffDays * dailyValue;
       } else {
@@ -74,12 +76,13 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
           
           if (t.date) {
              const tDate = new Date(t.date + 'T12:00:00');
-             const today = new Date();
-             const diffTime = today.getTime() - tDate.getTime();
-             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+             const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+             const todayObj = new Date(todayStr + 'T12:00:00');
+             const diffTime = todayObj.getTime() - tDate.getTime();
+             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
              
-             if (diffDays >= 0 && diffDays < 7) {
-                const daysToCharge = Math.max(1, diffDays);
+             if (diffDays >= 1 && diffDays < 7) {
+                const daysToCharge = diffDays;
                 val = (val / 7) * daysToCharge;
                 hasProratedAdjust = true;
                 proratedDaysUsed = daysToCharge;
