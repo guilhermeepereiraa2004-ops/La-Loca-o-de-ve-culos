@@ -1082,7 +1082,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         return isMatch && t.type === 'in' && (t.cat || '').toLowerCase() === 'aluguel';
       });
 
-      const legacyCount = rHistory.filter(t => !(t.desc || '').includes('Ref:')).length;
+      const legacyCount = rHistory.filter(t => {
+        const descLow = (t.desc || '').toLowerCase();
+        if (descLow.includes('ref:')) return false;
+        return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel';
+      }).length;
       
       const specificRefs = new Set();
       rHistory.forEach(t => {
@@ -1348,7 +1352,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
               const totalWeeks = getRentalCycles(rental, endLimit).length;
 
               const rentalTransactions = rawHistory.filter(t => (t.cat || '').toLowerCase() === 'aluguel');
-              const legacyCount = rentalTransactions.filter(t => !(t.desc || '').includes('Ref:')).length;
+              const legacyCount = rentalTransactions.filter(t => {
+                const descLow = (t.desc || '').toLowerCase();
+                if (descLow.includes('ref:')) return false;
+                return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel';
+              }).length;
               const specificRefs = new Set();
               rentalTransactions.forEach(t => {
                 const desc = t.desc || '';
