@@ -165,7 +165,7 @@ const getRentalPaymentDay = (r) => {
 const getRentalCycles = (rental, targetEndLimit = new Date()) => {
   const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
   const startObj = new Date(startStr + 'T12:00:00');
-  const pDay = getRentalPaymentDay(rental);
+  const pDay = rental.rentalType === 'daily' ? -1 : getRentalPaymentDay(rental);
   
   const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
   const endLimit = (isClosed && rental.endDate) ? new Date(rental.endDate + 'T12:00:00') : new Date(targetEndLimit.getTime());
@@ -246,7 +246,13 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
 
     const safeHistory = Array.isArray(history) ? history : [];
     const specificPayments = safeHistory.filter(t => (t.desc || '').includes('Ref:'));
-    let legacyPayments = safeHistory.filter(t => !(t.desc || '').includes('Ref:')).sort((a, b) => new Date(a.date) - new Date(b.date));
+    let legacyPayments = safeHistory.filter(t => {
+      const descLow = (t.desc || '').toLowerCase();
+      if (descLow.includes('ref:')) return false;
+      // Para evitar auto-consumo indevido de transações avulsas (como "Diárias Pendentes" ou "Ajustes"),
+      // só consumimos legacy payments que sejam genericamente identificados como aluguel normal
+      return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel';
+    }).sort((a, b) => new Date(a.date) - new Date(b.date));
     const cycles = [];
     const rentalCycles = getRentalCycles(rental, endLimit);
     
@@ -735,8 +741,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
 
   const calculateBoletoForCycle = (rental, targetDueDateStr, isPastCycle = false, customCycleStartStr = null, customCycleEndStr = null) => {
-    const defaultWeeklyRate = parseCurrency(rental.value || 0) || 0;
-    const dailyRate = defaultWeeklyRate / 7;
+    const isDaily = rental.rentalType === 'daily';
+    const baseValue = parseCurrency(rental.value || 0) || 0;
+    const defaultWeeklyRate = isDaily ? baseValue * 7 : baseValue;
+    const dailyRate = isDaily ? baseValue : baseValue / 7;
 
     let dueDateStr = targetDueDateStr;
     if (!dueDateStr) {
@@ -943,7 +951,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const total = diffDays * dailyValue;
       return { 
         total, 
-        dueDate: '', 
+        dueDate: startStr, 
         cycleStart: startStr, 
         cycleEnd: todayStr,
         weeklyRate: dailyValue,
@@ -981,17 +989,15 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
   const pendingStats = React.useMemo(() => {
-    let pend1 = 0, pend2 = 0, pend3 = 0, encPendente = 0, cicloAtivo = 0;
+    let pend1 = 0, pend2 = 0, pend3 = 0, encPendente = 0, encCompleto = 0, cicloAtivo = 0;
     
     safeRentals.forEach(r => {
       if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return;
-      const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
-      
-      if (!isClosed) cicloAtivo++;
 
+      if (r.status === 'Ativo') cicloAtivo++;
+
+      const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
       const startStr = (r.startDate || r.date).substring(0, 10);
-      const startObj = new Date(startStr + 'T12:00:00');
-      
       const endLimit = (isClosed && r.endDate) ? new Date(r.endDate + 'T12:00:00') : new Date();
       if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
@@ -1027,10 +1033,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         else if (pendingWeeks === 1) pend1++;
         else if (pendingWeeks === 2) pend2++;
         else if (pendingWeeks >= 3) pend3++;
+      } else if (isClosed) {
+        encCompleto++;
       }
     });
     
-    return { pend1, pend2, pend3, encPendente, cicloAtivo };
+    return { pend1, pend2, pend3, encPendente, encCompleto, cicloAtivo };
   }, [safeRentals, transactions, replacementContracts]);
 
   let filtered = safeRentals.filter(r => {
@@ -1044,9 +1052,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     // Se for o novo filtro, só mostrar os encerrados
     const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
     if (filterMode === 'encerrados_pendentes' && !isClosed) return false;
+    if (filterMode === 'encerrados_completos' && !isClosed) return false;
 
     // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
-    const isPendingFilter = filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || filterMode.startsWith('pendentes_');
+    const isPendingFilter = filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || filterMode === 'encerrados_completos' || filterMode.startsWith('pendentes_');
     if (isPendingFilter || isClosed) {
       const startStr = (r.startDate || r.date).substring(0, 10);
       const startObj = new Date(startStr + 'T12:00:00');
@@ -1088,10 +1097,12 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const specificCount = specificRefs.size;
 
       // Se total de semanas de vida é maior que a soma de transações, tem pendência
-      // Se não tem pendência e tá encerrado, some da tela!
+      // Se não tem pendência e tá encerrado, some da tela! (exceto se for no filtro de completos)
       const pendingWeeks = totalWeeks - (legacyCount + specificCount);
       
-      if (isPendingFilter || isClosed) {
+      if (filterMode === 'encerrados_completos') {
+        if (pendingWeeks > 0) return false;
+      } else if (isPendingFilter || isClosed) {
         if (pendingWeeks <= 0) return false;
         
         if (filterMode === 'pendentes_1' && pendingWeeks !== 1) return false;
@@ -1162,7 +1173,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       </div>
 
       {/* Summary Cards acting as Filters */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4 mb-10">
         <div className="col-span-2 p-6 bg-neutral-900 rounded-2xl shadow-md relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-[#C5A059]/5 blur-xl -mr-10 -mt-10" />
           <p className="text-[9px] uppercase tracking-[0.2em] text-neutral-400 font-black mb-1">Previsão Semanal</p>
@@ -1206,11 +1217,19 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
           </div>
         </div>
 
-        <div onClick={() => setFilterMode('encerrados_pendentes')} className={`col-span-2 lg:col-span-3 xl:col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'encerrados_pendentes' ? 'bg-red-950 border-red-900 ring-2 ring-red-500/20' : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'}`}>
+        <div onClick={() => setFilterMode('encerrados_pendentes')} className={`col-span-1 lg:col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'encerrados_pendentes' ? 'bg-red-950 border-red-900 ring-2 ring-red-500/20' : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'}`}>
           <p className="text-[9px] uppercase tracking-[0.1em] text-red-500/70 font-black mb-1 leading-tight">Inadimplentes</p>
           <div>
             <h4 className="text-3xl font-black text-red-500 tracking-tight leading-none">{pendingStats.encPendente}</h4>
-            <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Contratos Encerrados</p>
+            <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Encerrados Pend.</p>
+          </div>
+        </div>
+        
+        <div onClick={() => setFilterMode('encerrados_completos')} className={`col-span-1 lg:col-span-1 p-5 rounded-2xl border shadow-sm cursor-pointer transition-all flex flex-col justify-between ${filterMode === 'encerrados_completos' ? 'bg-emerald-950 border-emerald-900 ring-2 ring-emerald-500/20' : 'bg-neutral-950 border-neutral-800 hover:bg-neutral-900'}`}>
+          <p className="text-[9px] uppercase tracking-[0.1em] text-emerald-500/70 font-black mb-1 leading-tight flex items-center gap-1"><CheckCircle2 size={10} /> Resolvidos</p>
+          <div>
+            <h4 className="text-3xl font-black text-emerald-500 tracking-tight leading-none">{pendingStats.encCompleto}</h4>
+            <p className="text-[8px] text-neutral-500 font-bold uppercase tracking-wider mt-1">Encerrados Pagos</p>
           </div>
         </div>
 
@@ -1363,22 +1382,28 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                           </div>
                           <div className="flex flex-wrap items-center gap-2 mt-1">
                             {rental.status !== 'Ativo' && (
-                              <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-100 animate-pulse">
-                                {rental.status === 'Encerrado' || rental.status === 'Finalizado' ? 'Encerrado com Pendência' : rental.status}
+                              <span className={`inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full border ${
+                                (rental.status === 'Encerrado' || rental.status === 'Finalizado') && badgePendingWeeks <= 0
+                                ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                                : 'bg-red-50 text-red-600 border-red-100 animate-pulse'
+                              }`}>
+                                {rental.status === 'Encerrado' || rental.status === 'Finalizado' 
+                                  ? (badgePendingWeeks > 0 ? 'Encerrado com Pendência' : 'Encerrado (Pago)')
+                                  : rental.status}
                               </span>
                             )}
                             
-                            {badgePendingWeeks === 1 && rental.status === 'Ativo' && (
+                            {badgePendingWeeks === 1 && rental.status === 'Ativo' && rental.rentalType !== 'daily' && (
                               <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
                                 1 Sem. Pendente
                               </span>
                             )}
-                            {badgePendingWeeks === 2 && rental.status === 'Ativo' && (
+                            {badgePendingWeeks === 2 && rental.status === 'Ativo' && rental.rentalType !== 'daily' && (
                               <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-amber-500 text-white border border-amber-600">
                                 2 Sem. Pendente
                               </span>
                             )}
-                            {badgePendingWeeks >= 3 && rental.status === 'Ativo' && (
+                            {badgePendingWeeks >= 3 && rental.status === 'Ativo' && rental.rentalType !== 'daily' && (
                               <span className="inline-block text-[9px] uppercase tracking-wider font-extrabold px-2.5 py-0.5 rounded-full bg-red-600 text-white border border-red-700 animate-pulse">
                                 3+ Sem. Pendente
                               </span>
@@ -1600,7 +1625,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
                     {/* Actions Panel */}
                     <div className="space-y-3">
-                      {rental.rentalType !== 'daily' && (
+                      {(rental.rentalType !== 'daily' || rental.status === 'Encerrado' || rental.status === 'Finalizado') && (
                         <button
                           onClick={() => setPaymentSelectionRental(rental.id)}
                           className={`w-full py-4 text-[10px] font-black uppercase tracking-[0.2em] rounded-xl transition-all shadow-md flex items-center justify-center gap-2 group ${

@@ -15,6 +15,13 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
     }
   }, [pendingInspection]);
 
+  // Scroll to top when returning to the list view
+  React.useEffect(() => {
+    if (!showForm) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [showForm]);
+
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
       {!showForm ? (

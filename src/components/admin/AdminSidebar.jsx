@@ -21,25 +21,48 @@ const AdminSidebar = ({
 
   const isExpanded = isDesktop ? isHovered : isSidebarOpen;
 
-  const menuItems = [
-    { id: 'bi',             label: 'Business Intelligence', icon: TrendingUp },
-    { id: 'faturamento',   label: 'Faturamento', icon: Receipt },
-    { id: 'frota',         label: 'Frota', icon: Car },
-    { id: 'leads',         label: 'Leads', icon: Mail },
-    { id: 'locacao',       label: 'Locação', icon: Key },
-    { id: 'clientes',      label: 'Clientes', icon: User },
-    { id: 'investidores',  label: 'Investidores', icon: Users },
-    { id: 'avisos',        label: 'Avisos', icon: Bell },
-    { id: 'financeiro',    label: 'Financeiro', icon: Wallet },
-    { id: 'caucao',        label: 'Caução', icon: Landmark },
-    { id: 'manutencaoAdmin', label: 'Manutenção', icon: Wrench },
-    { id: 'vistoria',      label: 'Vistoria', icon: ClipboardList },
-    { id: 'multas',        label: 'Multas', icon: ShieldAlert },
-    { id: 'oficina',       label: 'Oficina', icon: Wrench },
-    { id: 'logs',          label: 'Logs do Sistema',  icon: ClipboardList },
-    ...(isAdmin ? [
-      { id: 'usuarios', label: 'Usuários', icon: Users }
-    ] : []),
+  const menuGroups = [
+    {
+      groupLabel: 'Visão Geral & BI',
+      items: [
+        { id: 'bi', label: 'Business Intelligence', icon: TrendingUp },
+      ]
+    },
+    {
+      groupLabel: 'Operacional & Frota',
+      items: [
+        { id: 'frota', label: 'Frota', icon: Car },
+        { id: 'manutencaoAdmin', label: 'Manutenção', icon: Wrench },
+        { id: 'oficina', label: 'Oficina', icon: Wrench },
+        { id: 'vistoria', label: 'Vistoria', icon: ClipboardList },
+        { id: 'multas', label: 'Multas', icon: ShieldAlert },
+      ]
+    },
+    {
+      groupLabel: 'Comercial & Relacionamento',
+      items: [
+        { id: 'locacao', label: 'Locação', icon: Key },
+        { id: 'clientes', label: 'Clientes', icon: User },
+        { id: 'leads', label: 'Leads', icon: Mail },
+        { id: 'avisos', label: 'Avisos', icon: Bell },
+      ]
+    },
+    {
+      groupLabel: 'Financeiro & Receitas',
+      items: [
+        { id: 'faturamento', label: 'Faturamento', icon: Receipt },
+        { id: 'financeiro', label: 'Financeiro', icon: Wallet },
+        { id: 'caucao', label: 'Caução', icon: Landmark },
+        { id: 'investidores', label: 'Investidores', icon: Users },
+      ]
+    },
+    {
+      groupLabel: 'Configurações & Sistema',
+      items: [
+        ...(isAdmin ? [{ id: 'usuarios', label: 'Usuários', icon: Users }] : []),
+        { id: 'logs', label: 'Logs do Sistema', icon: ClipboardList },
+      ]
+    }
   ];
 
   return (
@@ -77,53 +100,60 @@ const AdminSidebar = ({
         <nav className={`flex-1 space-y-1 overflow-y-auto custom-scrollbar no-scrollbar transition-all duration-300 ${
           isExpanded ? 'p-4' : 'p-3 xl:px-2'
         }`} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-          {isExpanded && (
-            <div className="text-[10px] uppercase tracking-widest text-neutral-500 font-bold mb-3 px-1 animate-in fade-in duration-300">
-              Gerenciamento
-            </div>
-          )}
-
-          {menuItems.filter(item => canAccess(item.id) || item.id === 'usuarios').map((item) => {
-            const badgeCount = badges[item.id] || 0;
-            const isActive = activeTab === item.id;
+          {menuGroups.map((group, groupIdx) => {
+            const accessibleItems = group.items.filter(item => canAccess(item.id) || item.id === 'usuarios');
+            if (accessibleItems.length === 0) return null;
 
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  if (window.innerWidth < 1280) setIsSidebarOpen(false);
-                }}
-                className={`w-full flex items-center rounded-xl transition-all relative ${
-                  isExpanded ? 'p-2.5 gap-2.5' : 'p-2.5 justify-center'
-                } ${
-                  isActive ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm' : 'text-neutral-400 hover:text-white hover:bg-white/5'
-                }`}
-                title={item.label}
-              >
-                {/* Icon with collapsed-mode dot indicator */}
-                <div className="relative shrink-0 flex items-center justify-center">
-                  <item.icon size={16} />
-                  {/* Dot shown only when sidebar is collapsed and there's a badge */}
-                  {badgeCount > 0 && !isExpanded && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C5A059] animate-pulse" />
-                  )}
-                </div>
-
-                {/* Label */}
+              <div key={groupIdx} className="mb-4 last:mb-0">
                 {isExpanded && (
-                  <span className="flex-1 text-left truncate animate-in fade-in slide-in-from-left-2 duration-300">
-                    {item.label}
-                  </span>
+                  <div className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black mb-1.5 px-1 animate-in fade-in duration-300">
+                    {group.groupLabel}
+                  </div>
                 )}
+                
+                <div className="space-y-0.5">
+                  {accessibleItems.map((item) => {
+                    const badgeCount = badges[item.id] || 0;
+                    const isActive = activeTab === item.id;
 
-                {/* Badge pill — shown only when sidebar is expanded */}
-                {badgeCount > 0 && isExpanded && (
-                  <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#C5A059] text-neutral-950 text-[9px] font-black leading-none shadow-sm animate-in scale-in duration-300">
-                    {badgeCount > 99 ? '99+' : badgeCount}
-                  </span>
-                )}
-              </button>
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          if (window.innerWidth < 1280) setIsSidebarOpen(false);
+                        }}
+                        className={`w-full flex items-center rounded-xl transition-all relative text-[13px] ${
+                          isExpanded ? 'py-1.5 px-2 gap-2.5' : 'py-1.5 px-2 justify-center mb-0.5'
+                        } ${
+                          isActive ? 'text-[#C5A059] bg-[#C5A059]/10 shadow-sm font-semibold' : 'text-neutral-400 hover:text-white hover:bg-white/5 font-medium'
+                        }`}
+                        title={item.label}
+                      >
+                        <div className="relative shrink-0 flex items-center justify-center">
+                          <item.icon size={15} />
+                          {badgeCount > 0 && !isExpanded && (
+                            <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[#C5A059] animate-pulse" />
+                          )}
+                        </div>
+
+                        {isExpanded && (
+                          <span className="flex-1 text-left truncate animate-in fade-in slide-in-from-left-2 duration-300">
+                            {item.label}
+                          </span>
+                        )}
+
+                        {badgeCount > 0 && isExpanded && (
+                          <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[#C5A059] text-neutral-950 text-[9px] font-black leading-none shadow-sm animate-in scale-in duration-300">
+                            {badgeCount > 99 ? '99+' : badgeCount}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>

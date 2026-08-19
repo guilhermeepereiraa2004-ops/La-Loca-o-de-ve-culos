@@ -678,16 +678,18 @@ const RentalFormModal = ({
                                 <span className="text-white text-base font-black tracking-tight">R$ {tireVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
                               
-                              <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5 mt-6 mb-6">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="text-neutral-500 text-[9px] uppercase tracking-widest font-black">Comprometimento Total</span>
-                                  <span className="text-neutral-500 text-[8px] font-bold">{duration} semanas</span>
+                              {rentalForm.rentalType !== 'daily' && (
+                                <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5 mt-6 mb-6">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-neutral-500 text-[9px] uppercase tracking-widest font-black">Comprometimento Total</span>
+                                    <span className="text-neutral-500 text-[8px] font-bold">{duration} semanas</span>
+                                  </div>
+                                  <div className="flex justify-between items-baseline">
+                                    <span className="text-neutral-300 text-[10px] uppercase tracking-widest font-bold opacity-40 italic">Contrato Jurídico</span>
+                                    <span className="text-[#C5A059] text-xl font-black tracking-tighter">R$ {totalRentalContract.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </div>
                                 </div>
-                                <div className="flex justify-between items-baseline">
-                                  <span className="text-neutral-300 text-[10px] uppercase tracking-widest font-bold opacity-40 italic">Contrato Jurídico</span>
-                                  <span className="text-[#C5A059] text-xl font-black tracking-tighter">R$ {totalRentalContract.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                </div>
-                              </div>
+                              )}
                             </div>
 
                             <div className="pt-8 border-t border-neutral-800/50 space-y-4">

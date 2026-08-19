@@ -950,6 +950,8 @@ export const useAppState = () => {
         cep: rental.cep || null,
         cidadeUf: rental.cidadeUf || null,
         address: rental.address || null,
+        isReplacement: rental.isReplacement || false,
+        mainVehiclePlate: rental.mainVehiclePlate || null,
         payment_day: rental.paymentDay !== undefined && rental.paymentDay !== -1 ? rental.paymentDay : null
       };
 
@@ -2002,7 +2004,7 @@ export const useAppState = () => {
 
       await handleUpdateVehicle({ id: rental.vehicleId, status: 'Em preparação' });
 
-      // Garante que se houver um carro reserva ativo com esse motorista, ele também será devolvido
+      // Garante que se houver um carro reserva nativo ativo com esse motorista, ele também será devolvido
       const activeRCs = replacementContracts.filter(rc => 
         (rc.mainVehiclePlate === rental.plate || rc.mainVehiclePlate === rental.vehiclePlate) && 
         rc.status === 'Ativo'
@@ -2011,42 +2013,18 @@ export const useAppState = () => {
         await handleCloseReplacementContract(activeRC.id, todayStr);
       }
 
-      const transactionsToAdd = [];
-      const today = todayStr;
-
-
-      // 2. Registro do saldo final
-      if (closureData.type === 'return' && closureData.balance > 0) {
-        // Caução a devolver (Pendente)
-        transactionsToAdd.push({
-          date: today,
-          type: 'out',
-          val: closureData.balance,
-          desc: `Caução a Devolver (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`,
-          cat: 'Caução',
-          vehiclePlate: rental.plate,
-          status: 'Pendente',
-          responsible: 'Administradora'
-        });
-      } else if (closureData.type === 'debt' && closureData.balance > 0) {
-        // Saldo devedor final (Cobrança avulsa)
-        transactionsToAdd.push({
-          date: today,
-          type: 'in',
-          val: closureData.balance,
-          desc: `Cobrança Final (Rescisão) - ${rental.userName || rental.user || 'Condutor'}`,
-          cat: 'Aluguel',
-          vehiclePlate: rental.plate,
-          status: 'Pendente',
-          responsible: 'Administradora'
-        });
-      }
-
-      if (transactionsToAdd.length > 0) {
-        for (const trans of transactionsToAdd) {
-          await handleAddTransaction(trans);
+      // Se este contrato que está sendo fechado for um CARRO RESERVA AVULSO, libera o carro principal
+      if (rental.docs?.isReplacement && rental.docs?.mainVehiclePlate) {
+        const mainV = vehicles.find(v => v.plate === rental.docs.mainVehiclePlate);
+        if (mainV) {
+           const isMainRented = rentals.some(r => r.vehicleId === mainV.id && r.status === 'Ativo' && r.id !== rental.id);
+           await handleUpdateVehicle({ id: mainV.id, status: isMainRented ? 'Alugado' : 'Disponível' });
         }
       }
+
+      // Apenas registra o encerramento do contrato. As diárias pendentes devem
+      // permanecer visíveis no painel de Faturamento para que o Admin gere o boleto
+      // e realize o pagamento/split usando o fluxo do Faturamento.
       logActivity('Encerrar Contrato', 'Locação', rentalId, `Encerrou o contrato de locação de ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate}`);
       return { success: true };
     } catch (error) {
@@ -2784,13 +2762,18 @@ export const useAppState = () => {
     if (!error) {
       setServiceOrders(prev => prev.map(o => o.id === os.id ? { ...o, status: 'Concluída', closedAt: closeDateStr } : o));
       const activeRC = replacementContracts.find(rc => rc.mainVehiclePlate === os.plate && rc.status === 'Ativo');
+      const activeStandaloneRC = rentals.find(r => 
+        r.docs?.isReplacement === true && 
+        r.docs?.mainVehiclePlate === os.plate && 
+        r.status === 'Ativo'
+      );
       
-      if (activeRC) {
-        // Se ainda tem carro reserva ativo, o carro principal fica "Em Preparação" até a troca.
-        await handleUpdateVehicle({ id: os.vehicleId, status: 'Em Preparação' });
+      if (activeRC || activeStandaloneRC) {
+        // Se ainda tem carro reserva ativo, o carro principal fica "Em preparação" até a troca.
+        await handleUpdateVehicle({ id: os.vehicleId, status: 'Em preparação' });
       } else {
         const wasRented = rentals.some(r => r.vehicleId === os.vehicleId && r.status === 'Ativo');
-        await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Em Preparação' });
+        await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Em preparação' });
       }
       const maintenanceDate = customEndDate || os.date;
       await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: maintenanceDate, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
