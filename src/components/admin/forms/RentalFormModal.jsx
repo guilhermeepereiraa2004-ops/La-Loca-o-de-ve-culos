@@ -615,7 +615,7 @@ const RentalFormModal = ({
                         const installmentVal = balance > 0 ? balance / installments : 0;
                         
                         const baseVal = parseCurrency(rentalForm.value) || 0;
-                        const tireVal = parseFloat(rentalForm.tireTax) || 0;
+                        const tireVal = rentalForm.rentalType === 'daily' ? 0 : (parseFloat(rentalForm.tireTax) || 0);
                         const duration = parseInt(rentalForm.durationWeeks) || 1;
                         const totalRentalContract = baseVal * duration;
                         const weeklyTotal = baseVal + tireVal + installmentVal;
@@ -670,13 +670,15 @@ const RentalFormModal = ({
                                 </div>
                                 <span className="text-white text-base font-black tracking-tight">R$ {baseVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                               </div>
-                              <div className="flex justify-between items-center group py-2">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover:bg-[#C5A059] transition-colors" />
-                                  <span className="text-neutral-400 text-xs font-bold group-hover:text-white transition-colors uppercase tracking-widest">Taxa Operacional Pneus</span>
+                              {rentalForm.rentalType !== 'daily' && (
+                                <div className="flex justify-between items-center group py-2">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-neutral-600 group-hover:bg-[#C5A059] transition-colors" />
+                                    <span className="text-neutral-400 text-xs font-bold group-hover:text-white transition-colors uppercase tracking-widest">Taxa Operacional Pneus</span>
+                                  </div>
+                                  <span className="text-white text-base font-black tracking-tight">R$ {tireVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                 </div>
-                                <span className="text-white text-base font-black tracking-tight">R$ {tireVal.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                              </div>
+                              )}
                               
                               {rentalForm.rentalType !== 'daily' && (
                                 <div className="p-5 bg-white/5 rounded-[2rem] border border-white/5 mt-6 mb-6">
@@ -721,7 +723,7 @@ const RentalFormModal = ({
                                     <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
                                     <span className="text-neutral-500 text-[10px] uppercase tracking-[0.2em] font-black">Total Recorrente</span>
                                   </div>
-                                  <p className="text-[9px] text-neutral-600 font-medium leading-tight max-w-[140px] uppercase tracking-widest">Base + Pneus + Parcela</p>
+                                  <p className="text-[9px] text-neutral-600 font-medium leading-tight max-w-[140px] uppercase tracking-widest">Base {rentalForm.rentalType !== 'daily' ? '+ Pneus ' : ''}+ Parcela</p>
                                 </div>
                                 <div className="text-right">
                                   {isProRata && (

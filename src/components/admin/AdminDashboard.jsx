@@ -293,7 +293,7 @@ const AdminDashboard = ({
       value: cleanNumeric(rentalForm.value),
       depositTotal: cleanNumeric(rentalForm.depositTotal),
       depositPaid: cleanNumeric(rentalForm.depositPaid),
-      tireTax: cleanNumeric(rentalForm.tireTax),
+      tireTax: rentalForm.rentalType === 'daily' ? 0 : cleanNumeric(rentalForm.tireTax),
       vehicleId: selectedVehicle ? selectedVehicle.id : rentalForm.vehicleId,
       date: rentalForm.startDate,
       period: `${rentalForm.durationWeeks} semanas`,
