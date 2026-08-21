@@ -63,7 +63,7 @@ const AdminLeads = ({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `leads_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `leads_${new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })}.csv`);
     link.style.visibility = 'hidden';
     document.body.appendChild(link);
     link.click();

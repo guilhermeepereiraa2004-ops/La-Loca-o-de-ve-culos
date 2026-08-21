@@ -8,7 +8,7 @@ const OficinaTrocasOleo = ({ vehicles, oilChanges = [], onAddOilChange, onUpdate
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
     vehiclePlate: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     km: '',
     nextKm: '',
     value: '',
@@ -45,7 +45,7 @@ const OficinaTrocasOleo = ({ vehicles, oilChanges = [], onAddOilChange, onUpdate
       setEditingItem(null);
       setFormData({
         vehiclePlate: '',
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
         km: '',
         nextKm: '',
         value: '',

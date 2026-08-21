@@ -11,7 +11,7 @@ const OficinaAgendaModal = ({ isOpen, onClose, onSave, clients, vehicles }) => {
     clientPhone: '',
     vehiclePlate: '',
     vehicleModel: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     time: '09:00',
     duration: '1h',
     type: 'Serviço',

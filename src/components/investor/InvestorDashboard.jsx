@@ -323,7 +323,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
         vehicle: so.model || 'Veículo',
         plate: so.plate,
         type: `[O.S. #${String(so.id).split('-')[0]}] ${so.description || 'Serviço em andamento'}`,
-        date: so.date || (so.created_at ? so.created_at.split('T')[0] : new Date().toISOString().split('T')[0]),
+        date: so.date || (so.created_at ? so.created_at.split('T')[0] : new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })),
         cost: `R$ -${Math.abs(so.total || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
         status: 'Em Aberto',
         icon: <Wrench size={16} />,

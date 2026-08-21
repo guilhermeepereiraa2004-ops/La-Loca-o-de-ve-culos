@@ -7,7 +7,7 @@ import { saveDraft, getDraft, clearDraft } from '../../../../utils/indexedDbHelp
 const INITIAL_FORM = {
   type: 'Entrega',
   vehiclePlate: '',
-  date: new Date().toISOString().split('T')[0],
+  date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
   time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
   km: '',
   fuelLevel: 'Cheio',
@@ -72,7 +72,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
       setInspectionForm(prev => ({
         ...prev,
         ...pendingInspection,
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
         time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
       }));
       onClearPendingInspection();

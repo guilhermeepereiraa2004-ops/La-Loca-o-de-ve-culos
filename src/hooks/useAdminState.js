@@ -51,20 +51,20 @@ export const useAdminState = (currentUser) => {
     fipeValue: '', investor: '', investorId: '', adminTax: '20', investorTax: '80',
     hasProtection: false,
     protectionCompany: '',
-    protectionPaymentDate: new Date().toISOString().split('T')[0],
+    protectionPaymentDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     protectionValue: '',
     franchiseInsurance: false, 
     hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
     image: '', imageFile: null, imagePreview: null, weeklyRental: '', 
     investmentValue: '', preventiveMaintenance: true,
-    entryDate: new Date().toISOString().split('T')[0],
+    entryDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     crlv: '', crlvFile: null,
     crv: '', crvFile: null,
     contractUrl: '', contractUrlFile: null
   });
 
   const [financeForm, setFinanceForm] = useState({
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     type: 'in', val: '', desc: '', cat: 'Aluguel',
     vehiclePlate: '', responsible: 'Administradora',
     status: 'Concluído',
@@ -77,7 +77,7 @@ export const useAdminState = (currentUser) => {
     vehicle: '', plate: '', rentalType: 'weekly', 
     value: '', tireTax: '25', durationWeeks: '4', depositTotal: '', 
     depositPaid: '', depositInstallments: '1', 
-    startDate: new Date().toISOString().split('T')[0],
+    startDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     vehicleYear: '', vehicleRenavam: '',
     lateFine: '10', dailyInterest: '1', observations: '',
     docs: { cnh: null, residence: null, appPrints: [], signedContract: null }

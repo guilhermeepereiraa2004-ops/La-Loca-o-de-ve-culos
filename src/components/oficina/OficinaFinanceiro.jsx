@@ -9,7 +9,7 @@ const OficinaFinanceiro = ({ workshopFinancials = [], onAddWorkshopFinancial, on
 
   const defaultForm = {
     id: null,
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     description: '',
     type: 'Receita', // Receita ou Despesa
     category: 'servicos',

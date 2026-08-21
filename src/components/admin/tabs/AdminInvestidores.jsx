@@ -1100,7 +1100,7 @@ const AdminInvestidores = ({
                      val: val,
                      cat: 'Pagamento de Dívida',
                      desc: `Pagamento de débito manual - ${debtPaymentModal.investor.name}`,
-                     date: new Date().toISOString().split('T')[0],
+                     date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
                      responsible: `Investidor: ${debtPaymentModal.investor.name}`,
                      status: 'Concluído'
                    });

@@ -99,7 +99,7 @@ const AdminLocacoes = ({
 
   const proximasDevolucoes = React.useMemo(() => safeRentals.filter(r => {
     try {
-      const rawDate = r.startDate || r.date || new Date().toISOString().split('T')[0];
+      const rawDate = r.startDate || r.date || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
       const startDate = new Date(rawDate + 'T12:00:00');
       if (isNaN(startDate.getTime())) return false;
 
@@ -292,7 +292,7 @@ const AdminLocacoes = ({
                     
                     const dates = (() => {
                       try {
-                        const rawDate = rental.startDate || rental.date || new Date().toISOString().split('T')[0];
+                        const rawDate = rental.startDate || rental.date || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
                         const startDate = new Date(rawDate + 'T12:00:00');
                         if (isNaN(startDate.getTime())) throw new Error('Invalid Start');
                         

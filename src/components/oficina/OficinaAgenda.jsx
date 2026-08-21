@@ -51,7 +51,7 @@ const OficinaAgenda = ({ appointments, clients, vehicles, onAddAppointment, onUp
   const viewEndStr = viewMode === 'semana' ? displayedDays[6].toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '') : displayedDays[0].toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' }).replace('.', '');
 
   // Calculate notifications
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
   const pendingToday = appointments?.filter(a => a.date === todayStr && a.status === 'Agendado') || [];
 
   const handleSaveAppointment = async (form) => {

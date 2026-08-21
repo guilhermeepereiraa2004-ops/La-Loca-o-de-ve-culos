@@ -131,7 +131,7 @@ const AdminDashboard = ({
       hasSpareKey: false, lastBeltChangeKm: '', beltChangeIntervalKm: '50000', 
       image: '', imageFile: null, imagePreview: null, weeklyRental: '', 
       investmentValue: '', preventiveMaintenance: true,
-      entryDate: new Date().toISOString().split('T')[0],
+      entryDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
       crlv: '', crlvFile: null,
       crv: '', crvFile: null,
       contractUrl: '', contractUrlFile: null
@@ -245,7 +245,7 @@ const AdminDashboard = ({
     if (result && result.success) {
       setShowFinanceForm(false);
       setFinanceForm({
-        date: new Date().toISOString().split('T')[0],
+        date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
         type: 'in', val: '', desc: '', cat: 'Aluguel',
         vehiclePlate: '', responsible: 'Administradora',
         status: 'Concluído',
@@ -328,7 +328,7 @@ const AdminDashboard = ({
       user: '', clientPhone: '', email: '', cnhNumber: '', cnhRegisterNumber: '', birthDate: '', cnhValidity: '',
       vehicle: '', plate: '', vehicleId: '', rentalType: 'weekly', value: '', tireTax: '25',
       durationWeeks: '4', depositTotal: '', depositPaid: '', depositInstallments: '1',
-      startDate: new Date().toISOString().split('T')[0],
+      startDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
       lateFine: '10', dailyInterest: '1', observations: '',
       docs: { cnh: null, residence: null, appPrints: [], signedContract: null }
     });
@@ -450,7 +450,7 @@ const AdminDashboard = ({
                   user: '', clientPhone: '', email: '', cnhNumber: '', cnhValidity: '',
                   vehicle: '', plate: '', rentalType: 'weekly', value: '', tireTax: '25',
                   durationWeeks: '4', depositTotal: '', depositPaid: '', depositInstallments: '1',
-                  startDate: new Date().toISOString().split('T')[0],
+                  startDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
                   lateFine: '10', dailyInterest: '1', observations: '',
                   docs: { cnh: null, residence: null, appPrints: [], signedContract: null }
                 });
@@ -765,7 +765,7 @@ const AdminDashboard = ({
               setSelectedRental(prev => ({
                 ...prev,
                 status: 'Encerrado',
-                endDate: new Date().toISOString().split('T')[0],
+                endDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
                 docs: {
                   ...(prev.docs || {}),
                   closureSummary: finalClosureData,

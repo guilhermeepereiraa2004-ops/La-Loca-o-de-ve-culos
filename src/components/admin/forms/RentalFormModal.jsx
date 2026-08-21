@@ -142,7 +142,7 @@ const RentalFormModal = ({
         ...rentalForm,
         value: "650,00",
         tireTax: "50,00",
-        startDate: new Date().toISOString().split('T')[0],
+        startDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
         durationWeeks: "4",
         depositTotal: "1.500,00",
         depositPaid: "800,00",

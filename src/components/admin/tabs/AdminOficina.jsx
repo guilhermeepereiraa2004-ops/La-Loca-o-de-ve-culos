@@ -76,7 +76,7 @@ const AdminOficina = ({
   const [editingOS, setEditingOS] = useState(null);
   const [closingOS, setClosingOS] = useState(null);
   const [closingRC, setClosingRC] = useState(null);
-  const [closeDate, setCloseDate] = useState(new Date().toISOString().split('T')[0]);
+  const [closeDate, setCloseDate] = useState(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }));
 
   const [plateSearch, setPlateSearch] = useState('');
   const [showPlateDropdown, setShowPlateDropdown] = useState(false);
@@ -568,7 +568,7 @@ const AdminOficina = ({
                   <Printer size={14} /> Imprimir / PDF
                 </button>
                 {replacementContracts?.find(rc => rc.mainVehiclePlate === viewingOS.plate && rc.status === 'Ativo') && (
-                  <button onClick={() => { setClosingRC(replacementContracts.find(rc => rc.mainVehiclePlate === viewingOS.plate && rc.status === 'Ativo')); setCloseDate(new Date().toISOString().split('T')[0]); }} className="px-6 py-3 bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-200 transition-all flex items-center gap-2">
+                  <button onClick={() => { setClosingRC(replacementContracts.find(rc => rc.mainVehiclePlate === viewingOS.plate && rc.status === 'Ativo')); setCloseDate(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })); }} className="px-6 py-3 bg-amber-100 text-amber-700 text-[9px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-200 transition-all flex items-center gap-2">
                     <CheckCircle2 size={14} /> Finalizar Carro Reserva
                   </button>
                 )}
@@ -581,7 +581,7 @@ const AdminOficina = ({
                   <button onClick={() => handleEditOS(viewingOS)} className="px-8 py-4 bg-[#C5A059] text-neutral-950 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059]/80 transition-all flex items-center gap-2 shadow-xl active:scale-95">
                     <Pencil size={14} /> Editar O.S.
                   </button>
-                  <button onClick={() => { setClosingOS(viewingOS); setCloseDate(new Date().toISOString().split('T')[0]); }} className="px-8 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">
+                  <button onClick={() => { setClosingOS(viewingOS); setCloseDate(new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' })); }} className="px-8 py-4 bg-emerald-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-xl active:scale-95">
                     <Check size={16} /> Fechar e Concluir O.S.
                   </button>
                 </div>

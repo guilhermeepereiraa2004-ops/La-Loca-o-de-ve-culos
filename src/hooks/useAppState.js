@@ -1127,7 +1127,7 @@ export const useAppState = () => {
           const adminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
           const adminPart = weeklyRate * adminTaxPercent;
           
-          const transDate = newRental.startDate || new Date().toISOString().split('T')[0];
+          const transDate = newRental.startDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
           const autoTransactions = [];
           
           if (newRental.rentalType !== 'daily') {
@@ -1832,7 +1832,7 @@ export const useAppState = () => {
           val: -Math.abs(rawVal),
           cat: 'Manutenção',
           desc: `[Manutenção #${inserted.id}] ${maintenance.serviceType}`,
-          date: maintenance.date || new Date().toISOString().split('T')[0],
+          date: maintenance.date || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
           vehiclePlate: maintenance.vehiclePlate,
           responsible: responsibleStr,
           status: 'Concluído'
@@ -1923,7 +1923,7 @@ export const useAppState = () => {
           val: -Math.abs(rawVal),
           cat: 'Manutenção',
           desc: `${descSearch} ${updatedMaintenance.serviceType}`,
-          date: updatedMaintenance.date || new Date().toISOString().split('T')[0],
+          date: updatedMaintenance.date || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
           vehiclePlate: updatedMaintenance.vehiclePlate,
           responsible: responsibleStr,
           status: 'Concluído'
@@ -1984,7 +1984,7 @@ export const useAppState = () => {
         closureSummary: closureData
       };
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
       
       const { error: updateError } = await supabase.from('rentals').update({ 
         status: 'Encerrado', 
@@ -2539,7 +2539,7 @@ export const useAppState = () => {
 
     // A taxa do Asaas agora é lançada automaticamente via Webhook apenas quando o boleto/pix for pago.
 
-    const transactionDate = billingData.dueDate || new Date().toISOString().split('T')[0];
+    const transactionDate = billingData.dueDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
     const trans = [];
 
     const isRetido = billingData.destination === 'admin';
@@ -2854,7 +2854,7 @@ export const useAppState = () => {
           // Close old replacement contract
           if (activeRC) {
             await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: new Date().toISOString() }).eq('id', activeRC.id);
-            setReplacementContracts(prev => prev.map(rc => rc.id === activeRC.id ? { ...rc, status: 'Encerrado', endDate: new Date().toISOString().split('T')[0] } : rc));
+            setReplacementContracts(prev => prev.map(rc => rc.id === activeRC.id ? { ...rc, status: 'Encerrado', endDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) } : rc));
             const repV = vehicles.find(v => v.plate === oldReplacementPlate);
             if (repV) await handleUpdateVehicle({ id: repV.id, status: 'Disponível' });
           }
@@ -2871,7 +2871,7 @@ export const useAppState = () => {
                 const rv = parseFloat(rental.value);
                 if (!isNaN(rv) && rv > 0) calcDailyRate = rv / 7;
               }
-              const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toISOString().split('T')[0], dailyRate: calcDailyRate, status: 'Ativo' };
+              const rc = { mainVehiclePlate: os.plate, replacementVehiclePlate: replacementCarPlate, driverName: rental.userName || rental.user || 'Condutor', startDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }), dailyRate: calcDailyRate, status: 'Ativo' };
               const { data: rcData, error: rcError } = await supabase.from('replacement_contracts').insert([mapToSnake(rc)]).select();
               if (!rcError && rcData) {
                 setReplacementContracts(prev => [mapToCamel(rcData)[0], ...prev]);
@@ -2990,7 +2990,7 @@ export const useAppState = () => {
     if (!activeRC) return;
 
     const rcEndDateStr = customEndDate ? new Date(`${customEndDate}T12:00:00Z`).toISOString() : new Date().toISOString();
-    const rcEndDateShort = customEndDate ? customEndDate : new Date().toISOString().split('T')[0];
+    const rcEndDateShort = customEndDate ? customEndDate : new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
     
     const { error } = await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: rcEndDateStr }).eq('id', activeRC.id);
     
@@ -3034,7 +3034,7 @@ export const useAppState = () => {
         await supabase.from('replacement_contracts').update({ status: 'Encerrado', end_date: new Date().toISOString() }).eq('id', activeRC.id);
         setReplacementContracts(prev => prev.map(rc => 
           rc.id === activeRC.id 
-            ? { ...rc, status: 'Encerrado', endDate: new Date().toISOString().split('T')[0] } 
+            ? { ...rc, status: 'Encerrado', endDate: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }) } 
             : rc
         ));
         const repV = vehicles.find(v => v.plate === activeRC.replacementVehiclePlate);

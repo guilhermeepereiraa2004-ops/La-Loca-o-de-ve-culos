@@ -25,7 +25,7 @@ const AdminManutencao = ({
   const [maintenanceForm, setMaintenanceForm] = useState({
     vehiclePlate: '',
     vehicleModel: '',
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
     serviceType: '',
     value: '',
     provider: '',
@@ -134,7 +134,7 @@ const AdminManutencao = ({
               setMaintenanceForm({
                 vehiclePlate: '',
                 vehicleModel: '',
-                date: new Date().toISOString().split('T')[0],
+                date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
                 serviceType: '',
                 value: '',
                 provider: '',

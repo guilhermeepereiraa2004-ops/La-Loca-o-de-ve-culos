@@ -12,7 +12,7 @@ const OficinaDashboard = (props) => {
   const [activeTab, setActiveTab] = useState('agenda'); // 'agenda' or 'os'
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
   const pendingAppointments = props.appointments?.filter(a => a.date === todayStr && a.status === 'Agendado') || [];
 
   return (
