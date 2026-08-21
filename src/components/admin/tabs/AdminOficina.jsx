@@ -70,6 +70,7 @@ const AdminOficina = ({
 }) => {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState('');
+  const [filterMode, setFilterMode] = useState('all');
   const [form, setForm] = useState(EMPTY_FORM);
   const [viewingOS, setViewingOS] = useState(null);
   const [editingOS, setEditingOS] = useState(null);
@@ -153,6 +154,8 @@ const AdminOficina = ({
   };
 
   const filtered = serviceOrders.filter(os => {
+    if (filterMode !== 'all' && os.status !== filterMode) return false;
+    
     if (!search) return true;
     const term = search.toLowerCase();
     const cleanTerm = term.replace(/[^a-z0-9]/g, '');
@@ -182,12 +185,16 @@ const AdminOficina = ({
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
         {[
-          { label: 'Total de O.S.', value: serviceOrders.length, color: 'neutral' },
-          { label: 'Em Aberto', value: serviceOrders.filter(o => o.status === 'Aberta').length, color: 'amber' },
-          { label: 'Concluídas', value: serviceOrders.filter(o => o.status === 'Concluída').length, color: 'emerald' },
-          { label: 'Custo Total', value: serviceOrders.reduce((a, o) => a + (o.total || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: 'gold' },
+          { id: 'all', label: 'Total de O.S.', value: serviceOrders.length, color: 'neutral' },
+          { id: 'Aberta', label: 'Em Aberto', value: serviceOrders.filter(o => o.status === 'Aberta').length, color: 'amber' },
+          { id: 'Concluída', label: 'Concluídas', value: serviceOrders.filter(o => o.status === 'Concluída').length, color: 'emerald' },
+          { id: 'custo', label: 'Custo Total', value: serviceOrders.reduce((a, o) => a + (o.total || 0), 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }), color: 'gold' },
         ].map((card, i) => (
-          <div key={i} className="bg-white p-6 rounded-[2rem] border border-neutral-100 shadow-sm">
+          <div 
+            key={i} 
+            onClick={() => { if(card.id !== 'custo') setFilterMode(card.id); }}
+            className={`bg-white p-6 rounded-[2rem] border shadow-sm transition-all ${card.id !== 'custo' ? 'cursor-pointer hover:shadow-md hover:-translate-y-0.5' : ''} ${filterMode === card.id ? 'ring-2 ring-offset-2 ring-[#C5A059] border-[#C5A059]' : 'border-neutral-100'}`}
+          >
             <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-2">{card.label}</p>
             <p className={`text-2xl font-black ${card.color === 'amber' ? 'text-amber-600' : card.color === 'emerald' ? 'text-emerald-600' : card.color === 'gold' ? 'text-[#C5A059]' : 'text-neutral-900'}`}>{card.value}</p>
           </div>
