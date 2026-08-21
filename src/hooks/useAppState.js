@@ -622,11 +622,24 @@ export const useAppState = () => {
             for (const v of allVehicles) {
               if (!v.plate) continue;
 
+              let isAddedAfter9ThisMonth = false;
+              const vDateStr = v.entryDate || v.created_at;
+              if (vDateStr) {
+                try {
+                  const vDate = new Date(vDateStr + (vDateStr.includes('T') ? '' : 'T12:00:00'));
+                  if (vDate.getFullYear() === currentYear && vDate.getMonth() === currentMonth) {
+                    if (vDate.getDate() >= 10) {
+                      isAddedAfter9ThisMonth = true;
+                    }
+                  }
+                } catch(e) {}
+              }
+
               // 1. Proteção Veicular (Vence todo dia 10, entra como receita da empresa)
               const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
               const protVal = parseCurrency(v.protectionValue || 0) || 0;
               
-              if (hasProt && protVal > 0) {
+              if (hasProt && protVal > 0 && !isAddedAfter9ThisMonth) {
                 const paymentDayProt = 10; // Padrão dia 10 de cada mês
                 if (currentDay >= paymentDayProt) {
                   const alreadyExists = loadedTransactions.some(t => {
@@ -664,7 +677,7 @@ export const useAppState = () => {
               const hasFranchise = v.franchiseInsurance === true || String(v.franchiseInsurance) === 'true';
               const franchiseVal = 39.90; // Padrão R$ 39,90/mês
               
-              if (hasFranchise) {
+              if (hasFranchise && !isAddedAfter9ThisMonth) {
                 const paymentDayFranchise = 10; // Padrão dia 10 de cada mês
                 if (currentDay >= paymentDayFranchise) {
                   // Verifica se já existe no banco (transações já carregadas)
