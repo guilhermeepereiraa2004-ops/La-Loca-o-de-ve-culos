@@ -20,12 +20,27 @@ const formatDate = (dateStr) => {
 const formatDateTime = (dateStr) => {
   if (!dateStr) return '---';
   try {
-    const d = new Date(dateStr);
+    let rawStr = dateStr;
+    const lastMinus = rawStr.lastIndexOf('-');
+    const lastPlus = rawStr.lastIndexOf('+');
+    if (lastMinus > 10) {
+      rawStr = rawStr.substring(0, lastMinus) + 'Z';
+    } else if (lastPlus > 10) {
+      rawStr = rawStr.substring(0, lastPlus) + 'Z';
+    } else if (!rawStr.endsWith('Z')) {
+      rawStr = rawStr + 'Z';
+    }
+    const d = new Date(rawStr);
     if (isNaN(d.getTime())) return formatDate(dateStr);
-    return d.toLocaleString('pt-BR', { 
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit'
+    
+    const datePart = d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const timePart = d.toLocaleTimeString('pt-BR', { 
+      timeZone: 'America/Sao_Paulo', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      hour12: false 
     });
+    return `${datePart}, ${timePart}`;
   } catch (e) {
     return formatDate(dateStr);
   }

@@ -40,8 +40,12 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
   const formatLogDate = (dateStr) => {
     if (!dateStr) return '---';
     try {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString('pt-BR') + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      let rawStr = dateStr;
+      if (!rawStr.endsWith('Z') && rawStr.includes('T')) {
+        rawStr = rawStr + 'Z';
+      }
+      const d = new Date(rawStr);
+      return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' ' + d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' });
     } catch (e) {
       return dateStr;
     }

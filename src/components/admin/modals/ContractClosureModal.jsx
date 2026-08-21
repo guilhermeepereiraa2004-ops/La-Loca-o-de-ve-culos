@@ -4,6 +4,11 @@ import { parseCurrency } from '../../../utils/currencyUtils';
 
 const ContractClosureModal = ({ inspection, rental, rentals = [], transactions = [], fines = [], onClose, onConfirm }) => {
   const [selectedClosureType, setSelectedClosureType] = useState(null); // 'normal' | 'early'
+  const [manualDebts, setManualDebts] = useState([]);
+  const [isAddingManual, setIsAddingManual] = useState(false);
+  const [newManualName, setNewManualName] = useState('');
+  const [newManualValue, setNewManualValue] = useState('');
+
   const [closureData, setClosureData] = useState({
     inspectionDebts: 0,
     unpaidFines: 0,
@@ -12,13 +17,33 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
     totalDebts: 0,
     caucaoAvailable: 0,
     balance: 0,
-    type: 'return', // 'return' or 'debt'
+    type: 'return',
     earlyTerminationPenalty: 0,
     penaltyAmount: 0,
     scheduledEndDate: '',
     baseDebts: 0,
-    isEarlyTermination: false
+    isEarlyTermination: false,
+    unpaidFinesList: [],
+    unpaidCyclesList: [],
+    inspectionDetails: []
   });
+
+  const addManualDebt = () => {
+    if (newManualName && newManualValue) {
+      setManualDebts(prev => [...prev, {
+        id: Date.now().toString(),
+        description: newManualName,
+        value: parseFloat(newManualValue)
+      }]);
+      setNewManualName('');
+      setNewManualValue('');
+      setIsAddingManual(false);
+    }
+  };
+
+  const removeManualDebt = (id) => {
+    setManualDebts(prev => prev.filter(d => d.id !== id));
+  };
 
   useEffect(() => {
     if (inspection && rental) {
@@ -37,26 +62,27 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       };
 
       // 2. Unpaid fines (From fines array)
-      const unpaidFines = (fines || [])
-        .filter(f => {
-          const isSamePlate = matchPlate(f.vehiclePlate, rental.plate);
-          const isSameDriver = (f.driverName || '').toLowerCase().trim() === driverName;
-          const isSameRental = f.rentalId && f.rentalId === rental.id;
-          return isSamePlate && (isSameDriver || isSameRental) && ['pendente', 'em cobrança'].includes((f.status || '').toLowerCase());
-        })
-        .reduce((acc, curr) => {
-          const totalValue = parseFloat(curr.value) || 0;
-          if (curr.installments > 1 && curr.paidInstallments) {
-            const paidCount = curr.paidInstallments.length;
-            const remainingCount = curr.installments - paidCount;
-            return acc + (remainingCount * (parseFloat(curr.installmentValue) || (totalValue / curr.installments)));
-          }
-          return acc + totalValue;
-        }, 0);
+      const unpaidFinesList = (fines || []).filter(f => {
+        const isSamePlate = matchPlate(f.vehiclePlate, rental.plate);
+        const isSameDriver = (f.driverName || '').toLowerCase().trim() === driverName;
+        const isSameRental = f.rentalId && f.rentalId === rental.id;
+        return isSamePlate && (isSameDriver || isSameRental) && ['pendente', 'em cobrança'].includes((f.status || '').toLowerCase());
+      });
+
+      const unpaidFines = unpaidFinesList.reduce((acc, curr) => {
+        const totalValue = parseFloat(curr.value) || 0;
+        if (curr.installments > 1 && curr.paidInstallments) {
+          const paidCount = curr.paidInstallments.length;
+          const remainingCount = curr.installments - paidCount;
+          return acc + (remainingCount * (parseFloat(curr.installmentValue) || (totalValue / curr.installments)));
+        }
+        return acc + totalValue;
+      }, 0);
 
       let unpaidRentals = 0;
       let hasProratedAdjust = false;
       let proratedDaysUsed = 0;
+      let unpaidCyclesList = [];
 
       if (rental.rentalType === 'daily') {
         const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
@@ -67,29 +93,126 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1);
         const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
         unpaidRentals = diffDays * dailyValue;
+        unpaidCyclesList.push({ labelRef: 'Locação Diária', debtValue: unpaidRentals });
       } else {
-        const unpaidRentalTransactions = transactions
-          .filter(t => matchPlate(t.vehiclePlate, rental.plate) && matchDriverTrans(t) && (t.cat === 'Aluguel' || t.cat === 'Cobrança') && (t.status || '').toLowerCase() === 'pendente');
+        // --- Replica a lógica de ciclos do Faturamento ---
+        const baseValue = parseCurrency(rental.value || 0) || 0;
+        const dailyRate = baseValue / 7;
 
-        unpaidRentalTransactions.forEach(t => {
-          let val = parseFloat(t.val) || 0;
-          
-          if (t.date) {
-             const tDate = new Date(t.date + 'T12:00:00');
-             const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
-             const todayObj = new Date(todayStr + 'T12:00:00');
-             const diffTime = todayObj.getTime() - tDate.getTime();
-             const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-             
-             if (diffDays >= 1 && diffDays < 7) {
-                const daysToCharge = diffDays;
-                val = (val / 7) * daysToCharge;
-                hasProratedAdjust = true;
-                proratedDaysUsed = daysToCharge;
-             }
+        // getRentalPaymentDay
+        const parseDay = (val) => {
+          if (val === undefined || val === null || val === '') return -1;
+          const parsed = parseInt(val, 10);
+          if (isNaN(parsed) || parsed < 0 || parsed > 6) return -1;
+          return parsed;
+        };
+        let pDay = parseDay(rental.paymentDay);
+        if (pDay === -1) pDay = parseDay(rental.documentos?.payment_day);
+        if (pDay === -1) pDay = parseDay(rental.docs?.payment_day);
+
+        // getRentalCycles (até hoje)
+        const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
+        const startObj = new Date(startStr + 'T12:00:00');
+        const endLimit = new Date();
+        endLimit.setHours(12, 0, 0, 0);
+
+        const rentalCycles = [];
+        let iterDateObj = new Date(startObj.getTime());
+        let weekNumber = 1;
+        let safety = 300;
+
+        while (iterDateObj <= endLimit && safety > 0) {
+          let cycleStartObj = new Date(iterDateObj.getTime());
+          let cycleEndObj = new Date(iterDateObj.getTime());
+
+          if (weekNumber === 1 && pDay !== -1) {
+            const startDay = cycleStartObj.getDay();
+            if (startDay !== pDay) {
+              let proRataDays = pDay - startDay;
+              if (proRataDays <= 0) proRataDays += 7;
+              cycleEndObj.setDate(cycleEndObj.getDate() + proRataDays - 1);
+            } else {
+              cycleEndObj.setDate(cycleEndObj.getDate() + 6);
+            }
+          } else {
+            cycleEndObj.setDate(cycleEndObj.getDate() + 6);
           }
-          
-          unpaidRentals += val;
+
+          const cStartStr = cycleStartObj.toISOString().split('T')[0];
+          const cEndStr = cycleEndObj.toISOString().split('T')[0];
+
+          rentalCycles.push({
+            weekNumber,
+            startStr: cStartStr,
+            endStr: cEndStr,
+            dueStr: cStartStr
+          });
+
+          iterDateObj = new Date(cycleEndObj.getTime());
+          iterDateObj.setDate(iterDateObj.getDate() + 1);
+          weekNumber++;
+          safety--;
+        }
+
+        // Filtrar transações de aluguel desse motorista/placa
+        const rentalPlate = (rental.plate || rental.vehiclePlate || '').replace('-', '').toUpperCase();
+        const matchPlateNorm = (p) => (p || '').replace('-', '').toUpperCase();
+
+        const rentalAluguelTxs = (transactions || []).filter(t => {
+          const tPlate = matchPlateNorm(t.vehiclePlate);
+          if (tPlate !== rentalPlate) return false;
+          if (!matchDriverTrans(t)) return false;
+          const catLow = (t.cat || '').toLowerCase();
+          return catLow === 'aluguel' || catLow === 'cobrança';
+        });
+
+        const specificPayments = rentalAluguelTxs.filter(t => (t.desc || '').includes('Ref:'));
+        let legacyPayments = rentalAluguelTxs.filter(t => {
+          const descLow = (t.desc || '').toLowerCase();
+          if (descLow.includes('ref:')) return false;
+          return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow.includes('primeiro aluguel') || descLow === 'aluguel';
+        }).sort((a, b) => new Date(a.date) - new Date(b.date));
+
+        // Avaliar cada ciclo
+        rentalCycles.forEach(cycleInfo => {
+          const cycleDays = Math.round((new Date(cycleInfo.endStr + 'T12:00:00') - new Date(cycleInfo.startStr + 'T12:00:00')) / 86400000) + 1;
+          const cycleValue = dailyRate * cycleDays;
+          const labelRef = `Ref: ${cycleInfo.startStr.split('-').reverse().join('/')} a ${cycleInfo.endStr.split('-').reverse().join('/')}`;
+
+          let isPaid = false;
+
+          // 1. Procura pagamento específico por Ref:
+          const specificMatches = specificPayments.filter(t => (t.desc || '').includes(labelRef));
+          if (specificMatches.length > 0) {
+            isPaid = true;
+          } else {
+            // 2. Procura pagamento legado (genérico) dentro da janela do ciclo
+            const matchedLegacyIdx = legacyPayments.findIndex(t => {
+              if (!t.date) return false;
+              const tDate = t.date.substring(0, 10);
+              const endPlus7Obj = new Date(cycleInfo.endStr + 'T12:00:00');
+              endPlus7Obj.setDate(endPlus7Obj.getDate() + 7);
+              const endPlus7 = endPlus7Obj.toISOString().split('T')[0];
+              return tDate >= cycleInfo.startStr && tDate <= endPlus7;
+            });
+
+            if (matchedLegacyIdx !== -1) {
+              isPaid = true;
+              legacyPayments.splice(matchedLegacyIdx, 1);
+            }
+          }
+
+          if (!isPaid) {
+            if (cycleDays < 7) {
+              hasProratedAdjust = true;
+              proratedDaysUsed = cycleDays;
+            }
+            unpaidRentals += cycleValue;
+            unpaidCyclesList.push({
+              labelRef: `Semana ${cycleInfo.weekNumber} (${labelRef})`,
+              debtValue: cycleValue
+            });
+          }
         });
       }
 
@@ -141,7 +264,8 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         isEarlyTermination = scheduledEndStr && todayStr < scheduledEndStr;
       }
       
-      const baseDebts = inspectionDebts + unpaidFines + unpaidRentals;
+      const manualDebtsTotal = manualDebts.reduce((sum, d) => sum + d.value, 0);
+      const baseDebts = inspectionDebts + unpaidFines + unpaidRentals + manualDebtsTotal;
       const penaltyAmount = Math.max(0, paidCaucao - baseDebts);
 
       const totalDebts = baseDebts; // Will be updated on confirm if early termination is chosen
@@ -163,10 +287,14 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         earlyTerminationPenalty: 0,
         penaltyAmount,
         scheduledEndDate: scheduledEndStr,
-        isEarlyTermination: false
+        isEarlyTermination: false,
+        unpaidFinesList,
+        unpaidCyclesList,
+        inspectionDetails: inspection.deductions || [],
+        manualDebts
       });
     }
-  }, [inspection, rental, transactions]);
+  }, [inspection, rental, transactions, manualDebts]);
 
   const handleConfirm = () => {
     if (!selectedClosureType) return;
@@ -308,6 +436,21 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                       <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">R$ {closureData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     </tr>
 
+                    {manualDebts.map(debt => (
+                      <tr key={debt.id} className="bg-red-50/30">
+                        <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-neutral-900 uppercase">{debt.description}</td>
+                        <td className="px-6 md:px-8 py-4 text-[9px] md:text-[10px] font-bold text-neutral-400 uppercase tracking-tight">Débito Manual</td>
+                        <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-red-500 text-right">
+                          <div className="flex items-center justify-end gap-2 group">
+                            <span>R$ {debt.value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            <button onClick={() => removeManualDebt(debt.id)} className="text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <X size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+
                     {selectedClosureType === 'early' && closureData.penaltyAmount > 0 && (
                       <tr className="bg-amber-50/50 animate-in fade-in">
                         <td className="px-6 md:px-8 py-4 text-[10px] md:text-[11px] font-black text-amber-950 uppercase">Multa Rescisão Antecipada</td>
@@ -323,6 +466,40 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                   </tbody>
                 </table>
               </div>
+            </div>
+            
+            <div className="flex justify-end">
+              {!isAddingManual ? (
+                <button 
+                  onClick={() => setIsAddingManual(true)}
+                  className="flex items-center gap-2 text-[10px] font-black uppercase text-neutral-500 hover:text-neutral-900 transition-colors"
+                >
+                   Adicionar Débito Manual
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 bg-neutral-50 p-2 rounded-xl border border-neutral-200 animate-in fade-in">
+                  <input 
+                    type="text" 
+                    placeholder="Descrição do débito" 
+                    value={newManualName}
+                    onChange={e => setNewManualName(e.target.value)}
+                    className="w-48 px-3 py-1.5 text-[11px] font-bold border border-neutral-200 rounded text-neutral-900 outline-none focus:border-emerald-500"
+                  />
+                  <div className="relative">
+                    <span className="absolute left-2.5 top-1.5 text-neutral-400 font-bold text-[11px]">R$</span>
+                    <input 
+                      type="number" 
+                      placeholder="0.00" 
+                      value={newManualValue}
+                      onChange={e => setNewManualValue(e.target.value)}
+                      className="w-24 pl-7 pr-2 py-1.5 text-right text-[11px] font-black border border-neutral-200 rounded text-neutral-900 outline-none focus:border-emerald-500"
+                      onKeyDown={e => { if(e.key === 'Enter') addManualDebt(); }}
+                    />
+                  </div>
+                  <button onClick={addManualDebt} className="w-7 h-7 flex items-center justify-center bg-emerald-100 text-emerald-600 rounded hover:bg-emerald-200"><Check size={14}/></button>
+                  <button onClick={() => setIsAddingManual(false)} className="w-7 h-7 flex items-center justify-center bg-neutral-100 text-neutral-500 rounded hover:bg-neutral-200"><X size={14}/></button>
+                </div>
+              )}
             </div>
           </section>
 

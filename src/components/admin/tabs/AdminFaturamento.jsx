@@ -251,7 +251,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       if (descLow.includes('ref:')) return false;
       // Para evitar auto-consumo indevido de transações avulsas (como "Diárias Pendentes" ou "Ajustes"),
       // só consumimos legacy payments que sejam genericamente identificados como aluguel normal
-      return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel';
+      return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow.includes('primeiro aluguel') || descLow === 'aluguel';
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
     const cycles = [];
     const rentalCycles = getRentalCycles(rental, endLimit);
@@ -906,17 +906,57 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const finesDetails = [];
 
     driverFines.forEach(f => {
+      const totalInstallments = f.installments || 1;
       const paidCount = Array.isArray(f.paidInstallments) ? f.paidInstallments.length : 0;
-      if (paidCount < f.installments) {
-        const currentInstNum = paidCount + 1;
-        const instVal = f.installmentValue || 0;
+
+      if (paidCount >= totalInstallments) return; // multa totalmente paga
+
+      const instVal = parseFloat(f.installmentValue || 0);
+      if (!instVal) return;
+
+      const fineDateStr = f.date ? f.date.substring(0, 10) : null;
+
+      if (!isPastCycle) {
+        // Ciclo atual/próximo: sempre mostra a próxima parcela não paga
         finesTotal += instVal;
         finesDetails.push({
           id: f.id,
           infraction: f.infraction,
-          installment: `${currentInstNum}/${f.installments}`,
+          installment: `${paidCount + 1}/${totalInstallments}`,
           value: instVal
         });
+        return;
+      }
+
+      if (!fineDateStr || totalInstallments <= 1) {
+        // Parcela única ou sem data: inclui normalmente
+        finesTotal += instVal;
+        finesDetails.push({
+          id: f.id,
+          infraction: f.infraction,
+          installment: `${paidCount + 1}/${totalInstallments}`,
+          value: instVal
+        });
+        return;
+      }
+
+      // Ciclo passado (histórico): distribui uma parcela por ciclo de acordo com a data
+      // Parcela N (índice base 0): vence em fineDate + N * 7 dias
+      for (let i = paidCount; i < totalInstallments; i++) {
+        const instDueDateObj = new Date(fineDateStr + 'T12:00:00');
+        instDueDateObj.setDate(instDueDateObj.getDate() + i * 7);
+        const instDueDateStr = instDueDateObj.toISOString().split('T')[0];
+
+        if (instDueDateStr >= cycleStartStr && instDueDateStr <= cycleEndStr) {
+          finesTotal += instVal;
+          finesDetails.push({
+            id: f.id,
+            infraction: f.infraction,
+            installment: `${i + 1}/${totalInstallments}`,
+            value: instVal
+          });
+          break; // Máximo de uma parcela por ciclo
+        }
       }
     });
 
@@ -1016,7 +1056,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     let legacyPayments = rHistory.filter(t => {
       const descLow = (t.desc || '').toLowerCase();
       if (descLow.includes('ref:')) return false;
-      return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow === 'aluguel' || descLow.includes('diária') || descLow.includes('diarias') || descLow.includes('diárias');
+      return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow.includes('primeiro aluguel') || descLow === 'aluguel' || descLow.includes('diária') || descLow.includes('diarias') || descLow.includes('diárias');
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
 
     let pendingCount = 0;

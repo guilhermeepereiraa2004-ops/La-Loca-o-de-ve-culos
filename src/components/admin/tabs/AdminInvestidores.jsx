@@ -23,7 +23,7 @@ const AdminInvestidores = ({
   rentals = []
 }) => {
   const getInvestorShareForTransaction = (t, invVehicles = [], rentals = []) => {
-    if (!t || t.status !== 'Concluído') return { share: 0, explanation: 'Ignorado (Não concluído)' };
+    if (!t || (t.status || '').toLowerCase() !== 'concluído') return { share: 0, explanation: 'Ignorado (Não concluído)' };
     
     const val = parseFloat(t.val) || 0;
     const absVal = Math.abs(val);
@@ -127,8 +127,9 @@ const AdminInvestidores = ({
 
     if (invVehicles.length === 0) return { payout: 0, currentMonthNet: 0, prevMonthKey: null, currentMonthKey: null, carriedDebt: 0, vehicles: [], transactionsDetails: [], previewDetails: [], previewNet: 0, monthlySummaries: [] };
 
+    const normPlate = (p) => (p || '').replace(/[-\s]/g, '').toUpperCase();
     const investorTrans = (transactions || []).filter(t => {
-      if (invVehicles.some(v => v.plate === t.vehiclePlate)) return true;
+      if (invVehicles.some(v => normPlate(v.plate) === normPlate(t.vehiclePlate))) return true;
       
       if (t.responsible) {
         const respStr = String(t.responsible).toLowerCase().trim();

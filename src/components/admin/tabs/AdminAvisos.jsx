@@ -17,6 +17,20 @@ const getYoutubeEmbedUrl = (url) => {
   return videoId ? `https://www.youtube.com/embed/${videoId}` : null;
 };
 
+const formatNoticeDate = (dateStr) => {
+  if (!dateStr) return '---';
+  try {
+    let rawStr = dateStr;
+    if (!rawStr.endsWith('Z') && rawStr.includes('T')) {
+      rawStr = rawStr + 'Z';
+    }
+    const d = new Date(rawStr);
+    return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' às ' + d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 const AdminAvisos = ({ investors = [], notices = [], onAddNotice, onDeleteNotice }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [viewingNotice, setViewingNotice] = useState(null);
@@ -106,7 +120,7 @@ const AdminAvisos = ({ investors = [], notices = [], onAddNotice, onDeleteNotice
                     </div>
                     <p className="text-xs text-neutral-500 font-medium line-clamp-2 mb-3">{notice.message}</p>
                     <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
-                      <span>{new Date(notice.createdAt).toLocaleDateString('pt-BR')} às {new Date(notice.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                      <span>{formatNoticeDate(notice.createdAt)}</span>
                       <span className="text-neutral-200">•</span>
                       <span className="flex items-center gap-1">
                         <Users size={10} />

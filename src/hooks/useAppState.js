@@ -2022,10 +2022,214 @@ export const useAppState = () => {
         }
       }
 
-      // Apenas registra o encerramento do contrato. As diárias pendentes devem
-      // permanecer visíveis no painel de Faturamento para que o Admin gere o boleto
-      // e realize o pagamento/split usando o fluxo do Faturamento.
-      logActivity('Encerrar Contrato', 'Locação', rentalId, `Encerrou o contrato de locação de ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate}`);
+      // --- LÓGICA DE ABATIMENTO DA CAUÇÃO ---
+      let currentCaucao = closureData.caucaoAvailable || 0;
+      const newTransactions = [];
+      const updatedFines = [];
+
+      const createTrans = (cat, type, desc, value) => {
+        newTransactions.push({
+          date: todayStr,
+          desc,
+          value: String(value),
+          cat,
+          type,
+          vehicle_plate: rental.plate || rental.vehiclePlate || '',
+          responsible: rental.userName || rental.user || '',
+          rental_id: rentalId,
+          income_val: String(value),
+          expense_val: '0',
+          status: 'Efetuado'
+        });
+      };
+
+      // 1. Aluguéis (da mais antiga pra mais recente)
+      if (closureData.unpaidCyclesList && currentCaucao > 0) {
+        for (const cycle of closureData.unpaidCyclesList) {
+          if (currentCaucao <= 0) break;
+          const debt = cycle.debtValue || 0;
+          if (debt <= 0) continue;
+          
+          if (currentCaucao < debt) continue; // Só abate aluguel se tiver saldo pra parcela inteira
+
+          const toPay = debt;
+          createTrans('Aluguel', 'Receita', `${cycle.labelRef} (Abatimento Caução)`, toPay);
+          currentCaucao -= toPay;
+        }
+      }
+
+      // 2. Multas (da mais antiga pra mais recente)
+      if (closureData.unpaidFinesList && currentCaucao > 0) {
+        const sortedFines = [...closureData.unpaidFinesList].sort((a, b) => new Date(a.date || a.createdAt || 0) - new Date(b.date || b.createdAt || 0));
+        for (const fine of sortedFines) {
+          if (currentCaucao <= 0) break;
+          
+          const totalValue = parseFloat(fine.value) || 0;
+          let debt = totalValue;
+          if (fine.installments > 1 && fine.paidInstallments) {
+            const paidCount = fine.paidInstallments.length;
+            const remainingCount = fine.installments - paidCount;
+            debt = remainingCount * (parseFloat(fine.installmentValue) || (totalValue / fine.installments));
+          }
+          
+          if (debt <= 0) continue;
+          
+          let installmentValue = fine.installments > 1 ? (parseFloat(fine.installmentValue) || (totalValue / fine.installments)) : debt;
+          
+          // Só abate se der pra pagar pelo menos UMA parcela inteira
+          if (currentCaucao < installmentValue) {
+            continue;
+          }
+
+          // Abate o máximo possível até o valor da dívida
+          const toPay = Math.min(debt, currentCaucao);
+          createTrans('Multa', 'Receita', `Multa - ${fine.infraction || 'Diversas'} (Abatimento Caução)`, toPay);
+          currentCaucao -= toPay;
+          
+          if (toPay >= debt) {
+            updatedFines.push({ ...fine, status: 'Pago' });
+          }
+        }
+      }
+
+      // 3. Débitos Adicionados Manualmente
+      if (closureData.manualDebts && currentCaucao > 0) {
+        for (const debt of closureData.manualDebts) {
+          if (currentCaucao <= 0) break;
+          const val = parseFloat(debt.value) || 0;
+          if (val <= 0) continue;
+          const toPay = Math.min(val, currentCaucao);
+          createTrans('Outros', 'Receita', `${debt.description || 'Débito Manual'} (Abatimento Caução)`, toPay);
+          currentCaucao -= toPay;
+        }
+      }
+
+      // 4. Itens Vistoria (acessórios primeiro, avarias depois)
+      if (closureData.inspectionDetails && currentCaucao > 0) {
+        const accessories = [];
+        const damages = [];
+        closureData.inspectionDetails.forEach(d => {
+          const descLower = (d.item || d.desc || '').toLowerCase();
+          if (descLower.includes('acessório') || descLower.includes('chave') || descLower.includes('estepe') || descLower.includes('macaco') || descLower.includes('triângulo')) {
+            accessories.push(d);
+          } else {
+            damages.push(d);
+          }
+        });
+        
+        const processInspectionList = (list) => {
+          for (const item of list) {
+            if (currentCaucao <= 0) break;
+            const debt = parseFloat(item.value) || 0;
+            if (debt <= 0) continue;
+            const toPay = Math.min(debt, currentCaucao);
+            createTrans('Vistoria', 'Receita', `Vistoria: ${item.item || item.desc} (Abatimento Caução)`, toPay);
+            currentCaucao -= toPay;
+          }
+        };
+        
+        processInspectionList(accessories);
+        processInspectionList(damages);
+      }
+
+      // 5. Multa de Rescisão Antecipada
+      if (closureData.isEarlyTermination && closureData.earlyTerminationPenalty > 0 && currentCaucao > 0) {
+        const toPay = Math.min(closureData.earlyTerminationPenalty, currentCaucao);
+        createTrans('Multa', 'Receita', `Multa Quebra de Contrato (Abatimento Caução)`, toPay);
+        currentCaucao -= toPay;
+      }
+
+      // 6. SEGUNDO PASSE — Abatimento parcial do saldo restante
+      // Se ainda sobrou caução E ainda existem dívidas não cobertas integralmente,
+      // usamos o saldo para abater parcialmente (do maior pro menor) ao invés de devolver.
+      if (currentCaucao > 0) {
+        // Coleta todas as dívidas que foram puladas (não cobertas inteiramente)
+        const remainingDebts = [];
+
+        // Aluguéis que não foram cobertos
+        if (closureData.unpaidCyclesList) {
+          for (const cycle of closureData.unpaidCyclesList) {
+            const debt = cycle.debtValue || 0;
+            if (debt <= 0) continue;
+            // Verifica se já foi abatido no passe 1 (procura nas transações já criadas)
+            const alreadyPaid = newTransactions.some(t => t.cat === 'Aluguel' && t.desc.includes(cycle.labelRef));
+            if (!alreadyPaid) {
+              remainingDebts.push({ type: 'Aluguel', label: `${cycle.labelRef} (Abatimento Parcial Caução)`, value: debt });
+            }
+          }
+        }
+
+        // Multas que não foram cobertas
+        if (closureData.unpaidFinesList) {
+          const sortedFines = [...closureData.unpaidFinesList].sort((a, b) => new Date(a.date || a.createdAt || 0) - new Date(b.date || b.createdAt || 0));
+          for (const fine of sortedFines) {
+            const totalValue = parseFloat(fine.value) || 0;
+            let debt = totalValue;
+            if (fine.installments > 1 && fine.paidInstallments) {
+              const paidCount = fine.paidInstallments.length;
+              const remainingCount = fine.installments - paidCount;
+              debt = remainingCount * (parseFloat(fine.installmentValue) || (totalValue / fine.installments));
+            }
+            if (debt <= 0) continue;
+            const alreadyPaid = newTransactions.some(t => t.cat === 'Multa' && t.desc.includes(fine.infraction || 'Diversas'));
+            if (!alreadyPaid) {
+              remainingDebts.push({ type: 'Multa', label: `Multa - ${fine.infraction || 'Diversas'} (Abatimento Parcial Caução)`, value: debt, fineId: fine.id });
+            }
+          }
+        }
+
+        // Ordena do maior pro menor para maximizar o abatimento
+        remainingDebts.sort((a, b) => b.value - a.value);
+
+        for (const item of remainingDebts) {
+          if (currentCaucao <= 0) break;
+          const toPay = Math.min(item.value, currentCaucao);
+          createTrans(item.type, 'Receita', item.label, toPay);
+          currentCaucao -= toPay;
+        }
+      }
+
+      // Insere transações geradas
+      if (newTransactions.length > 0) {
+        // Usa mapToSnake para converter camelCase -> snake_case nas keys da transação
+        const payload = newTransactions.map(t => {
+          const snakeObj = {};
+          Object.keys(t).forEach(k => {
+            if (k === 'vehiclePlate') snakeObj.vehicle_plate = t[k];
+            else if (k === 'incomeVal') snakeObj.income_val = t[k];
+            else if (k === 'expenseVal') snakeObj.expense_val = t[k];
+            else snakeObj[k] = t[k];
+          });
+          return snakeObj;
+        });
+        const { data: insertedTxs, error: txError } = await supabase.from('transactions').insert(payload).select();
+        if (!txError && insertedTxs) {
+          const camelTxs = insertedTxs.map(t => {
+             const cObj = { ...t };
+             if (cObj.vehicle_plate) { cObj.vehiclePlate = cObj.vehicle_plate; delete cObj.vehicle_plate; }
+             if (cObj.income_val) { cObj.incomeVal = cObj.income_val; delete cObj.income_val; }
+             if (cObj.expense_val) { cObj.expenseVal = cObj.expense_val; delete cObj.expense_val; }
+             return cObj;
+          });
+          setTransactions(prev => [...camelTxs, ...prev]);
+        } else {
+          console.error("Erro ao inserir transações de abatimento:", txError);
+        }
+      }
+      
+      // Atualiza multas integralmente pagas
+      if (updatedFines.length > 0) {
+        for (const uf of updatedFines) {
+           await supabase.from('fines').update({ status: 'Pago' }).eq('id', uf.id);
+        }
+        setFines(prev => prev.map(f => {
+          const isUpdated = updatedFines.find(uf => uf.id === f.id);
+          return isUpdated ? { ...f, status: 'Pago' } : f;
+        }));
+      }
+      // ---------------------------------------------
+
+      logActivity('Encerrar Contrato', 'Locação', rentalId, `Encerrou o contrato de locação de ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate}. Abatimentos: ${newTransactions.length}`);
       return { success: true };
     } catch (error) {
       console.error("Erro ao encerrar contrato:", error);
