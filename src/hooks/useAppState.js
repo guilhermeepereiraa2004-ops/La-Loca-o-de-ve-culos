@@ -2035,29 +2035,52 @@ export const useAppState = () => {
         }
       }
 
-      // --- LÓGICA DE ABATIMENTO DA CAUÇÃO ---
+      // --- LÓGICA DE ABATIMENTO DA CAUÇÃO E BAIXA NA VISTORIA ---
       let currentCaucao = closureData.caucaoAvailable || 0;
       const newTransactions = [];
       const updatedFines = [];
 
-      const createTrans = (cat, type, desc, value) => {
+      const createTrans = (cat, type, desc, value, responsible = '') => {
+        const numVal = typeof value === 'number' ? value : (parseFloat(value) || 0);
+        if (numVal <= 0) return;
         newTransactions.push({
           date: todayStr,
           desc,
-          value: String(value),
+          val: numVal,
           cat,
-          type,
-          vehicle_plate: rental.plate || rental.vehiclePlate || '',
-          responsible: rental.userName || rental.user || '',
-          rental_id: rentalId,
-          income_val: String(value),
-          expense_val: '0',
-          status: 'Efetuado'
+          type: type === 'Receita' || type === 'in' ? 'in' : 'out',
+          vehiclePlate: rental.plate || rental.vehiclePlate || '',
+          responsible: responsible || (cat === 'Aluguel' ? '' : (rental.userName || rental.user || '')),
+          status: 'Concluído'
         });
       };
 
+      const vehicle = vehicles.find(v => v.id === rental.vehicleId || (rental.plate && v.plate === rental.plate));
+      const mainAdminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
+
+      // 0. Aluguéis Marcados como Pagos na Vistoria
+      if (closureData.unpaidRentalsMarkedAsPaid && closureData.unpaidCyclesList) {
+        for (const cycle of closureData.unpaidCyclesList) {
+          const debt = cycle.debtValue || 0;
+          if (debt <= 0) continue;
+
+          const hasTireTax = debt > 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
+          const tireTaxVal = hasTireTax ? 25 : 0;
+          const rentVal = Math.max(0, debt - tireTaxVal);
+          const adminTaxVal = rentVal * mainAdminTaxPercent;
+
+          createTrans('Aluguel', 'in', `Pagamento Aluguel (${cycle.labelRef}) - ${rental.userName || rental.user} (Baixa Manual na Vistoria)`, rentVal, '');
+          if (adminTaxVal > 0) {
+            createTrans('Taxa Adm', 'in', `Taxa Adm (${cycle.labelRef}) - ${rental.userName || rental.user}`, adminTaxVal, 'Administradora');
+          }
+          if (tireTaxVal > 0) {
+            createTrans('taxa de pneus', 'in', `Taxa de Pneus (${cycle.labelRef}) - ${rental.userName || rental.user}`, tireTaxVal, 'Administradora');
+          }
+        }
+      }
+
       // 1. Aluguéis (da mais antiga pra mais recente)
-      if (closureData.unpaidCyclesList && currentCaucao > 0) {
+      if (closureData.unpaidCyclesList && currentCaucao > 0 && !closureData.unpaidRentalsMarkedAsPaid) {
         for (const cycle of closureData.unpaidCyclesList) {
           if (currentCaucao <= 0) break;
           const debt = cycle.debtValue || 0;
@@ -2066,7 +2089,19 @@ export const useAppState = () => {
           if (currentCaucao < debt) continue; // Só abate aluguel se tiver saldo pra parcela inteira
 
           const toPay = debt;
-          createTrans('Aluguel', 'Receita', `${cycle.labelRef} (Abatimento Caução)`, toPay);
+          const hasTireTax = toPay > 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
+          const tireTaxVal = hasTireTax ? 25 : 0;
+          const rentVal = Math.max(0, toPay - tireTaxVal);
+          const adminTaxVal = rentVal * mainAdminTaxPercent;
+
+          createTrans('Aluguel', 'in', `Pagamento Aluguel (${cycle.labelRef}) - ${rental.userName || rental.user} (Abatimento Caução)`, rentVal, '');
+          if (adminTaxVal > 0) {
+            createTrans('Taxa Adm', 'in', `Taxa Adm (${cycle.labelRef}) - ${rental.userName || rental.user} (Abatimento Caução)`, adminTaxVal, 'Administradora');
+          }
+          if (tireTaxVal > 0) {
+            createTrans('taxa de pneus', 'in', `Taxa de Pneus (${cycle.labelRef}) - ${rental.userName || rental.user} (Abatimento Caução)`, tireTaxVal, 'Administradora');
+          }
+
           currentCaucao -= toPay;
         }
       }
@@ -2096,7 +2131,7 @@ export const useAppState = () => {
 
           // Abate o máximo possível até o valor da dívida
           const toPay = Math.min(debt, currentCaucao);
-          createTrans('Multa', 'Receita', `Multa - ${fine.infraction || 'Diversas'} (Abatimento Caução)`, toPay);
+          createTrans('multa', 'in', `Multa - ${fine.infraction || 'Diversas'} (Abatimento Caução)`, toPay, 'Administradora');
           currentCaucao -= toPay;
           
           if (toPay >= debt) {
@@ -2112,7 +2147,7 @@ export const useAppState = () => {
           const val = parseFloat(debt.value) || 0;
           if (val <= 0) continue;
           const toPay = Math.min(val, currentCaucao);
-          createTrans('Outros', 'Receita', `${debt.description || 'Débito Manual'} (Abatimento Caução)`, toPay);
+          createTrans('Outros', 'in', `${debt.description || 'Débito Manual'} (Abatimento Caução)`, toPay, 'Administradora');
           currentCaucao -= toPay;
         }
       }
@@ -2136,7 +2171,7 @@ export const useAppState = () => {
             const debt = parseFloat(item.value) || 0;
             if (debt <= 0) continue;
             const toPay = Math.min(debt, currentCaucao);
-            createTrans('Vistoria', 'Receita', `Vistoria: ${item.item || item.desc} (Abatimento Caução)`, toPay);
+            createTrans('Vistoria', 'in', `Vistoria: ${item.item || item.desc} (Abatimento Caução)`, toPay, 'Administradora');
             currentCaucao -= toPay;
           }
         };
@@ -2148,15 +2183,12 @@ export const useAppState = () => {
       // 5. Multa de Rescisão Antecipada
       if (closureData.isEarlyTermination && closureData.earlyTerminationPenalty > 0 && currentCaucao > 0) {
         const toPay = Math.min(closureData.earlyTerminationPenalty, currentCaucao);
-        createTrans('Multa', 'Receita', `Multa Quebra de Contrato (Abatimento Caução)`, toPay);
+        createTrans('multa', 'in', `Multa Quebra de Contrato (Abatimento Caução)`, toPay, 'Administradora');
         currentCaucao -= toPay;
       }
 
       // 6. SEGUNDO PASSE — Abatimento parcial do saldo restante
-      // Se ainda sobrou caução E ainda existem dívidas não cobertas integralmente,
-      // usamos o saldo para abater parcialmente (do maior pro menor) ao invés de devolver.
       if (currentCaucao > 0) {
-        // Coleta todas as dívidas que foram puladas (não cobertas inteiramente)
         const remainingDebts = [];
 
         // Aluguéis que não foram cobertos
@@ -2164,7 +2196,6 @@ export const useAppState = () => {
           for (const cycle of closureData.unpaidCyclesList) {
             const debt = cycle.debtValue || 0;
             if (debt <= 0) continue;
-            // Verifica se já foi abatido no passe 1 (procura nas transações já criadas)
             const alreadyPaid = newTransactions.some(t => t.cat === 'Aluguel' && t.desc.includes(cycle.labelRef));
             if (!alreadyPaid) {
               remainingDebts.push({ type: 'Aluguel', label: `${cycle.labelRef} (Abatimento Parcial Caução)`, value: debt });
@@ -2184,9 +2215,9 @@ export const useAppState = () => {
               debt = remainingCount * (parseFloat(fine.installmentValue) || (totalValue / fine.installments));
             }
             if (debt <= 0) continue;
-            const alreadyPaid = newTransactions.some(t => t.cat === 'Multa' && t.desc.includes(fine.infraction || 'Diversas'));
+            const alreadyPaid = newTransactions.some(t => t.cat === 'multa' && t.desc.includes(fine.infraction || 'Diversas'));
             if (!alreadyPaid) {
-              remainingDebts.push({ type: 'Multa', label: `Multa - ${fine.infraction || 'Diversas'} (Abatimento Parcial Caução)`, value: debt, fineId: fine.id });
+              remainingDebts.push({ type: 'multa', label: `Multa - ${fine.infraction || 'Diversas'} (Abatimento Parcial Caução)`, value: debt, fineId: fine.id });
             }
           }
         }
@@ -2197,34 +2228,25 @@ export const useAppState = () => {
         for (const item of remainingDebts) {
           if (currentCaucao <= 0) break;
           const toPay = Math.min(item.value, currentCaucao);
-          createTrans(item.type, 'Receita', item.label, toPay);
+          if (item.type === 'Aluguel') {
+            const adminTaxVal = toPay * mainAdminTaxPercent;
+            createTrans('Aluguel', 'in', item.label, toPay, '');
+            if (adminTaxVal > 0) {
+              createTrans('Taxa Adm', 'in', `Taxa Adm - ${item.label}`, adminTaxVal, 'Administradora');
+            }
+          } else {
+            createTrans(item.type, 'in', item.label, toPay, 'Administradora');
+          }
           currentCaucao -= toPay;
         }
       }
 
       // Insere transações geradas
       if (newTransactions.length > 0) {
-        // Usa mapToSnake para converter camelCase -> snake_case nas keys da transação
-        const payload = newTransactions.map(t => {
-          const snakeObj = {};
-          Object.keys(t).forEach(k => {
-            if (k === 'vehiclePlate') snakeObj.vehicle_plate = t[k];
-            else if (k === 'incomeVal') snakeObj.income_val = t[k];
-            else if (k === 'expenseVal') snakeObj.expense_val = t[k];
-            else snakeObj[k] = t[k];
-          });
-          return snakeObj;
-        });
+        const payload = newTransactions.map(t => mapToSnake(t, 'transactions'));
         const { data: insertedTxs, error: txError } = await supabase.from('transactions').insert(payload).select();
         if (!txError && insertedTxs) {
-          const camelTxs = insertedTxs.map(t => {
-             const cObj = { ...t };
-             if (cObj.vehicle_plate) { cObj.vehiclePlate = cObj.vehicle_plate; delete cObj.vehicle_plate; }
-             if (cObj.income_val) { cObj.incomeVal = cObj.income_val; delete cObj.income_val; }
-             if (cObj.expense_val) { cObj.expenseVal = cObj.expense_val; delete cObj.expense_val; }
-             return cObj;
-          });
-          setTransactions(prev => [...camelTxs, ...prev]);
+          setTransactions(prev => [...mapToCamel(insertedTxs, 'transactions'), ...prev]);
         } else {
           console.error("Erro ao inserir transações de abatimento:", txError);
         }

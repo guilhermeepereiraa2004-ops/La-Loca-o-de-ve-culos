@@ -136,7 +136,7 @@ const VehicleFormModal = ({
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
-                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
+                        {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Em preparação' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
                           <button type="button" onClick={handleUnlock} className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1" title="Clique para destravar com a senha mestre">
                             🔒 Trava de Segurança
                           </button>
@@ -150,20 +150,32 @@ const VehicleFormModal = ({
                       <select 
                         value={vehicleForm.status ?? 'Disponível'} 
                         onChange={e => setVehicleForm({...vehicleForm, status: e.target.value})} 
-                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked}
+                        disabled={isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Em preparação' || vehicleForm.status === 'Indisponível') && !isUnlocked}
                         className={`w-full bg-neutral-50 border border-neutral-100 p-4 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm ${
-                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked ? 'opacity-70 cursor-not-allowed' : ''
+                          isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Em preparação' || vehicleForm.status === 'Indisponível') && !isUnlocked ? 'opacity-70 cursor-not-allowed' : ''
                         }`}
                       >
+                        {/* Se o veículo estiver atualmente com status automático, exibe apenas informativo */}
+                        {(vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)') && (
+                          <option value={vehicleForm.status} disabled={!isUnlocked}>{vehicleForm.status} (Automático via Contrato)</option>
+                        )}
+                        {vehicleForm.status === 'Em preparação' && (
+                          <option value="Em preparação" disabled={!isUnlocked}>Em preparação (Automático via Sistema)</option>
+                        )}
+
+                        {/* Opções manuais permitidas */}
                         <option value="Disponível">Disponível</option>
-                        <option value="Alugado">Alugado</option>
-                        <option value="Alugado (Reserva)">Alugado (Reserva)</option>
                         <option value="Manutenção">Manutenção</option>
-                        <option value="Em preparação">Em preparação</option>
                         <option value="Indisponível">Indisponível</option>
                       </select>
-                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
-                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">Status bloqueado. {vehicleForm.status === 'Indisponível' ? 'Clique na trava para forçar a liberação do veículo.' : 'Encerre o contrato para liberar o veículo, ou clique na trava para forçar.'}</p>
+                      {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Em preparação' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
+                        <p className="text-[10px] text-neutral-400 font-medium ml-1 leading-tight">
+                          {vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)'
+                            ? 'Status gerenciado automaticamente por contrato de locação ativo. Encerre o contrato para liberar o veículo, ou use a trava com senha mestre.'
+                            : vehicleForm.status === 'Em preparação'
+                              ? 'Status gerenciado automaticamente pelo sistema (OS aberta ou encerramento de contrato).'
+                              : 'Veículo marcado como indisponível. Clique na trava para forçar a liberação.'}
+                        </p>
                       )}
                     </div>
                   </div>

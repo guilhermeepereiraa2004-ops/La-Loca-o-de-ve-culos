@@ -40,14 +40,15 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
   const formatLogDate = (dateStr) => {
     if (!dateStr) return '---';
     try {
-      let rawStr = dateStr;
-      if (!rawStr.endsWith('Z') && rawStr.includes('T')) {
+      let rawStr = String(dateStr);
+      if (!rawStr.endsWith('Z') && rawStr.includes('T') && !rawStr.match(/[+-]\d{2}:\d{2}$/)) {
         rawStr = rawStr + 'Z';
       }
       const d = new Date(rawStr);
+      if (isNaN(d.getTime())) return dateStr;
       return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' ' + d.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' });
     } catch (e) {
-      return dateStr;
+      return String(dateStr);
     }
   };
 

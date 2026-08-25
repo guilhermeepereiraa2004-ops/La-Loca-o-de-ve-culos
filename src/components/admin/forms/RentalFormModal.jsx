@@ -633,7 +633,7 @@ const RentalFormModal = ({
                           const start = new Date(rentalForm.startDate + 'T12:00:00');
                           const startDay = start.getDay();
                           
-                          if (rentalForm.paymentDay !== undefined && rentalForm.paymentDay !== -1 && rentalForm.paymentDay !== startDay) {
+                          if (rentalForm.rentalType !== 'daily' && rentalForm.paymentDay !== undefined && rentalForm.paymentDay !== -1 && rentalForm.paymentDay !== startDay) {
                              isProRata = true;
                              targetDayNumber = rentalForm.paymentDay;
                              const dayNames = ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'];
@@ -642,7 +642,7 @@ const RentalFormModal = ({
                              proRataDays = targetDayNumber - startDay;
                              if (proRataDays <= 0) proRataDays += 7;
                              firstPaymentBase = (baseVal / 7) * proRataDays;
-                             firstPaymentTire = (tireVal / 7) * proRataDays;
+                             firstPaymentTire = tireVal; // Fixed: tire tax is flat, not prorated
                           }
                         }
                         const firstPaymentTotal = firstPaymentBase + firstPaymentTire + installmentVal;

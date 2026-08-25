@@ -732,6 +732,8 @@ const AdminDashboard = ({
           rental={selectedRental}
           transactions={transactions}
           fines={fines}
+          serviceOrders={serviceOrders}
+          replacementContracts={replacementContracts}
           onClose={() => setShowClosureModal(false)}
           onConfirm={(data) => {
             setFinalClosureData(data);
