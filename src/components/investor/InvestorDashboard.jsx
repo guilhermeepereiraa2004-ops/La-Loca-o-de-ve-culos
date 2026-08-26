@@ -138,11 +138,12 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       const isSeguro = cat.includes('seguro') || cat.includes('franquia');
       const isProtecao = cat.includes('prote') || cat.includes('veicular');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+      const isImported = (t.desc || '').toLowerCase().includes('importado de planilha');
 
       if (isSeguro) {
-        if (!isBeforeJune2026) insuranceSum += val;
+        if (!isBeforeJune2026 || isImported) insuranceSum += val;
       } else if (isProtecao) {
-        if (!isBeforeJune2026) protectionSum += val;
+        if (!isBeforeJune2026 || isImported) protectionSum += val;
       } else if (t.type === 'in') {
         if (t.responsible === 'Administradora') return;
         if (cat === 'taxa adm') {
@@ -155,7 +156,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       } else if (t.type === 'out') {
         if (t.responsible === 'Administradora') return;
         if (cat.includes('manuten')) {
-          if (!isBeforeJune2026) maintenanceSum += val;
+          if (!isBeforeJune2026 || isImported) maintenanceSum += val;
         }
       }
     });
@@ -241,9 +242,21 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
     }
 
     if (t.responsible === 'Administradora') return false;
-    return myVehicles.some(v => v.plate === t.vehiclePlate) || 
-      (t.responsible?.toLowerCase().startsWith('investidor:') && t.responsible.split(':')[1]?.trim().toLowerCase() === investor.name?.toLowerCase().trim()) ||
-      (t.responsible?.toLowerCase().trim() === investor.name?.toLowerCase().trim());
+    if (myVehicles.some(v => v.plate === t.vehiclePlate)) return true;
+    
+    if (t.responsible) {
+      const respStr = String(t.responsible).toLowerCase().trim();
+      const invNameStr = (investor.name || '').toLowerCase().trim();
+      
+      if (respStr === `investidor: ${invNameStr}`) return true;
+      if (respStr.startsWith('investidor:')) {
+        const respName = respStr.replace('investidor:', '').trim();
+        if (respName && (invNameStr.includes(respName) || respName.includes(invNameStr))) {
+          return true;
+        }
+      }
+    }
+    return false;
   });
 
   const realInvestorRevenue = investorTransactions
@@ -259,7 +272,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       const cat = t.cat?.toLowerCase().trim() || '';
       const isSpecialAutoTrans = cat.includes('seguro') || cat.includes('franquia') || cat.includes('proteç') || cat.includes('protec');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
-      if (isBeforeJune2026) return false;
+      const isImported = (t.desc || '').toLowerCase().includes('importado de planilha');
+      if (isBeforeJune2026 && !isImported) return false;
       return t.type === 'out' || isSpecialAutoTrans;
     })
     .reduce((acc, t) => acc + Math.abs(t.val || 0), 0);
@@ -267,7 +281,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   // Maintenance history from transactions
   const maintenanceHistoryTransactions = transactions
     .filter(t => (t.cat?.toLowerCase().includes('manuten') || t.desc?.toLowerCase().includes('manuten')) && myVehicles.some(v => v.plate === t.vehiclePlate))
-    .filter(t => !(t.date && t.date < '2026-06-01'))
+    .filter(t => !(t.date && t.date < '2026-06-01' && !(t.desc || '').toLowerCase().includes('importado de planilha')))
     .filter(t => {
       if (t.responsible === 'Administradora' || t.responsible === 'Empresa') return false;
       const match = t.desc?.match(/\[Manutenção #([^\]]+)\]/i);
@@ -377,16 +391,17 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       const isSeguroFranquia = cat.includes('seguro') || cat.includes('franquia');
       const isProtecaoVeicular = cat.includes('proteç') || cat.includes('protec');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
+      const isImported = (t.desc || '').toLowerCase().includes('importado de planilha');
 
       if (isSeguroFranquia) {
-        if (!isBeforeJune2026) {
+        if (!isBeforeJune2026 || isImported) {
           monthlyPerformance[monthKey].insurance += val;
           monthlyPerformance[monthKey].net -= val;
           vPerf.insurance += val;
           vPerf.net -= val;
         }
       } else if (isProtecaoVeicular) {
-        if (!isBeforeJune2026) {
+        if (!isBeforeJune2026 || isImported) {
           monthlyPerformance[monthKey].protection += val;
           monthlyPerformance[monthKey].net -= val;
           vPerf.protection += val;
@@ -413,7 +428,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
           vPerf.net -= calculatedTax;
         }
       } else if (t.type === 'out') {
-        if (!isBeforeJune2026) {
+        if (!isBeforeJune2026 || isImported) {
           monthlyPerformance[monthKey].net -= val;
           vPerf.net -= val;
           if (cat.includes('manuten')) {
@@ -450,8 +465,20 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   // Gera o histórico dos últimos 6 meses para visualização
   const dividendHistory = [];
   const todayDate = new Date();
+  
+  // Find the earliest transaction date to know how far back to go
+  let earliestDate = new Date();
+  if (sortedMonthsKeys.length > 0) {
+    const earliestKey = sortedMonthsKeys[0];
+    const [year, month] = earliestKey.split('-');
+    earliestDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+  }
+  
+  let totalMonths = (todayDate.getFullYear() - earliestDate.getFullYear()) * 12 + (todayDate.getMonth() - earliestDate.getMonth()) + 1;
+  // Fallback to at least 6 months
+  if (totalMonths < 6) totalMonths = 6;
 
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < totalMonths; i++) {
     const targetDate = new Date(todayDate.getFullYear(), todayDate.getMonth() - i, 1);
     const monthLabel = getMonthYearLabel(targetDate);
     const targetMonth = targetDate.getMonth();
@@ -517,7 +544,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
   const currentMonthDividends = dividendHistory[0] ? dividendHistory[0].netValue : 0;
 
-  const yearDividends = dividendHistory.reduce((acc, d) => acc + d.netValue, 0);
+  const yearDividends = Object.values(monthlyPerformance).reduce((acc, p) => acc + (p.finalPayout !== undefined ? p.finalPayout : p.net || 0), 0);
 
   const avgYield = totalInvested > 0 ? ((currentMonthDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
   const totalRoiPerc = totalInvested > 0 ? ((yearDividends / totalInvested) * 100).toFixed(2) + '%' : '0.00%';
@@ -525,7 +552,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   // Generate graph bars dynamically based on reverse chronological history
   // Exclui o mês vigente do gráfico a menos que o pagamento/repasse já esteja registrado
   const currentMonthKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
-  const graphBars = [...dividendHistory]
+  const graphBars = [...dividendHistory].slice(0, 6)
     .filter(d => {
       const isCurrentMonth = d.refMonthStr === currentMonthKey;
       if (isCurrentMonth && !d.realPayout) {
