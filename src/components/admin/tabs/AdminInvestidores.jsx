@@ -299,15 +299,27 @@ const AdminInvestidores = ({
   }, [investorSearch]);
   const [visibleLimit, setVisibleLimit] = useState(12);
 
+  // Recarrega o histórico de UM investidor específico após um pagamento registrado
   const loadPayoutHistory = useCallback(async (investorId) => {
     const records = await getPayoutsForInvestor(investorId);
     setPayoutHistory(prev => ({ ...prev, [investorId]: records }));
   }, []);
 
+  // Carrega todos os históricos EM PARALELO e aplica UMA ÚNICA atualização de estado.
+  // Isso evita N re-renders em cadeia (um por investidor) que causavam os travamentos.
   useEffect(() => {
     if (!investors || investors.length === 0) return;
-    investors.forEach(inv => loadPayoutHistory(inv.id));
-  }, [investors, loadPayoutHistory]);
+    const loadAll = async () => {
+      const entries = await Promise.all(
+        investors.map(async (inv) => {
+          const records = await getPayoutsForInvestor(inv.id);
+          return [inv.id, records];
+        })
+      );
+      setPayoutHistory(Object.fromEntries(entries));
+    };
+    loadAll();
+  }, [investors]);
 
   // If we start editing from outside, we should show the form
   React.useEffect(() => {
@@ -335,32 +347,34 @@ const AdminInvestidores = ({
   }, [investorsWithPayoutData]);
 
   // Filter and sort investors: pending first, then positive payouts, then others
-  const filteredAndSortedInvestors = [...investorsWithPayoutData]
-    .filter(inv => {
-      const searchNormalized = (debouncedInvestorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
-      if (!searchNormalized) return true;
-      
-      const nameMatch = (inv.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(searchNormalized);
-      
-      const invVehs = (vehicles || []).filter(v => v.investorId === inv.id || v.investor === inv.name);
-      const plateMatch = invVehs.some(v => (v.plate || '').replace(/-/g, '').toLowerCase().includes(searchNormalized.replace(/-/g, '')));
-      
-      return nameMatch || plateMatch;
-    })
-    .sort((a, b) => {
-      const isPendingA = !a.payoutData.prevMonthPaid && a.payoutData.payout > 0;
-      const isPendingB = !b.payoutData.prevMonthPaid && b.payoutData.payout > 0;
+  const filteredAndSortedInvestors = React.useMemo(() => {
+    return [...investorsWithPayoutData]
+      .filter(inv => {
+        const searchNormalized = (debouncedInvestorSearch || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+        if (!searchNormalized) return true;
+        
+        const nameMatch = (inv.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase().includes(searchNormalized);
+        
+        const invVehs = inv.payoutData.vehicles || []; // Using pre-calculated vehicles
+        const plateMatch = invVehs.some(v => (v.plate || '').replace(/-/g, '').toLowerCase().includes(searchNormalized.replace(/-/g, '')));
+        
+        return nameMatch || plateMatch;
+      })
+      .sort((a, b) => {
+        const isPendingA = !a.payoutData.prevMonthPaid && a.payoutData.payout > 0;
+        const isPendingB = !b.payoutData.prevMonthPaid && b.payoutData.payout > 0;
 
-      if (isPendingA && !isPendingB) return -1;
-      if (!isPendingA && isPendingB) return 1;
+        if (isPendingA && !isPendingB) return -1;
+        if (!isPendingA && isPendingB) return 1;
 
-      const payoutA = a.payoutData.payout;
-      const payoutB = b.payoutData.payout;
-      
-      if (payoutA > 0 && payoutB <= 0) return -1;
-      if (payoutB > 0 && payoutA <= 0) return 1;
-      return payoutB - payoutA;
-    });
+        const payoutA = a.payoutData.payout;
+        const payoutB = b.payoutData.payout;
+        
+        if (payoutA > 0 && payoutB <= 0) return -1;
+        if (payoutB > 0 && payoutA <= 0) return 1;
+        return payoutB - payoutA;
+      });
+  }, [investorsWithPayoutData, debouncedInvestorSearch]);
 
   // Overall statistics for all investors (ignoring search text)
   const stats = React.useMemo(() => {
@@ -1261,12 +1275,7 @@ const AdminInvestidores = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-8">
             {filteredAndSortedInvestors.slice(0, visibleLimit).map((investor) => {
-              const { payout, currentMonthNet, carriedDebt, competenciaKey } = calculateInvestorPayout(investor);
-              const invVehs = (vehicles || []).filter(v => {
-                const invNameMatch = v.investor?.toLowerCase().trim() === investor.name?.toLowerCase().trim();
-                const invIdMatch = v.investorId === investor.id;
-                return invNameMatch || invIdMatch;
-              });
+              const { payout, currentMonthNet, carriedDebt, competenciaKey, vehicles: invVehs = [] } = investor.payoutData;
 
               return (
                 <div key={investor.id} className="bg-white rounded-3xl border border-neutral-100 p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover:border-neutral-200/80 transition-all duration-300 relative overflow-hidden group">

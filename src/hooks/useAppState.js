@@ -1808,13 +1808,14 @@ export const useAppState = () => {
     const cleanMaintenance = { 
       ...maintenance, 
       value: parseCurrency(maintenance.value) || 0,
-      currentKm: maintenance.currentKm ? parseInt(maintenance.currentKm.toString().replace(/\D/g, ''), 10) : null,
-      receiptUrl
+      currentKm: maintenance.currentKm ? parseInt(maintenance.currentKm.toString().replace(/\D/g, ''), 10) : null
     };
     delete cleanMaintenance.receiptFile;
     delete cleanMaintenance.receiptFiles;
     delete cleanMaintenance.clearReceipts;
     delete cleanMaintenance.vehicleDescription;
+    delete cleanMaintenance.receiptUrl; // prevent inserting receipt_url because column doesn't exist
+
     const { data, error } = await supabase.from('maintenances').insert([mapToSnake(cleanMaintenance)]).select();
     if (error) {
       console.error("Erro ao lançar manutenção:", error);
@@ -1897,13 +1898,13 @@ export const useAppState = () => {
     const cleanMaintenance = { 
       ...updatedMaintenance, 
       value: parseCurrency(updatedMaintenance.value) || 0,
-      currentKm: updatedMaintenance.currentKm ? parseInt(updatedMaintenance.currentKm.toString().replace(/\D/g, ''), 10) : null,
-      receiptUrl
+      currentKm: updatedMaintenance.currentKm ? parseInt(updatedMaintenance.currentKm.toString().replace(/\D/g, ''), 10) : null
     };
     delete cleanMaintenance.receiptFile;
     delete cleanMaintenance.receiptFiles;
     delete cleanMaintenance.clearReceipts;
     delete cleanMaintenance.vehicleDescription;
+    delete cleanMaintenance.receiptUrl; // prevent updating receipt_url because column doesn't exist
     const { error } = await supabase.from('maintenances').update(mapToSnake(cleanMaintenance)).eq('id', updatedMaintenance.id);
     if (error) {
       console.error("Erro ao atualizar manutenção:", error);
