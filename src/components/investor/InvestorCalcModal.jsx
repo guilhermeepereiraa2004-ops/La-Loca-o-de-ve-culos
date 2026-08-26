@@ -9,9 +9,10 @@ import { X, Landmark, Car, Calendar, Filter, History, AlertCircle, Info, Wallet,
     const category = (t.cat || '').toLowerCase().trim();
 
     if (t.type === 'out' || val < 0) {
-      const isRespInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
+      const isImported = (t.desc || '').toLowerCase().includes('importado de planilha');
+      const isRespInvestor = isImported || t.responsible?.toLowerCase().trim().startsWith('investidor');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
-      if (isRespInvestor && !isBeforeJune2026) {
+      if (isImported || (isRespInvestor && !isBeforeJune2026)) {
         return { 
           share: -absVal, 
           explanation: `Despesa cobrada do investidor: - R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
