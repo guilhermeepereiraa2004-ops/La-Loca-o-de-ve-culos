@@ -507,7 +507,7 @@ export const useAppState = () => {
           const pageSize = 1000;
           while (true) {
             let query = supabase.from(item.table).select('*').range(from, from + pageSize - 1);
-            if (item.table === 'rentals' || item.table === 'leads') query = query.order('created_at', { ascending: false });
+            query = query.order('created_at', { ascending: false });
             
             const { data, error: fetchError } = await query;
             if (fetchError || !data || data.length === 0) break;
