@@ -621,6 +621,7 @@ export const useAppState = () => {
             
             for (const v of allVehicles) {
               if (!v.plate) continue;
+              if (String(v.plate).toLowerCase().includes('(antigo)')) continue;
 
               let isAddedAfter9ThisMonth = false;
               const vDateStr = v.entryDate || v.created_at;
