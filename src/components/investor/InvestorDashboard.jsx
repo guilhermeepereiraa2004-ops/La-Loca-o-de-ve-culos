@@ -4,10 +4,11 @@ import {
   Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart, Activity,
   ChevronDown, Check, Filter, SlidersHorizontal, DollarSign, ArrowUpRight, ArrowDownRight, Bell, Youtube
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LabelList } from 'recharts';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import { getPayoutsForInvestor } from '../../utils/investorPayouts.js';
 import { parseCurrency } from '../../utils/currencyUtils';
+import { getInvestorShareForTransaction } from '../../utils/investorUtils.js';
 import InvestorCalcModal from './InvestorCalcModal';
 import InvestorAvisos from './InvestorAvisos';
 
@@ -122,46 +123,19 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
     // Sum all transactions for this vehicle plate
     const vehicleTrans = transactions.filter(t => t.vehiclePlate === v.plate);
-    let gross = 0;
-    let adminTaxSum = 0;
-    let maintenanceSum = 0;
-    let protectionSum = 0;
-    let insuranceSum = 0;
-
+    let currentYield = 0;
     const distinctMonths = new Set();
-
+    
     vehicleTrans.forEach(t => {
       if (t.date) distinctMonths.add(t.date.substring(0, 7));
-      const cat = t.cat?.toLowerCase().trim() || '';
-      const val = Math.abs(t.val || 0);
-
-      const isSeguro = cat.includes('seguro') || cat.includes('franquia');
-      const isProtecao = cat.includes('prote') || cat.includes('veicular');
-      const isBeforeJune2026 = t.date && t.date < '2026-06-01';
-      const isImported = (t.desc || '').toLowerCase().includes('importado de planilha');
-
-      if (isSeguro) {
-        if (!isBeforeJune2026 || isImported) insuranceSum += val;
-      } else if (isProtecao) {
-        if (!isBeforeJune2026 || isImported) protectionSum += val;
-      } else if (t.type === 'in') {
-        if (t.responsible === 'Administradora') return;
-        if (cat === 'taxa adm') {
-          adminTaxSum += val;
-        } else {
-          gross += val;
-          const taxRate = parseFloat(v?.adminTax || 20) / 100;
-          adminTaxSum += val * taxRate;
-        }
-      } else if (t.type === 'out') {
-        if (t.responsible === 'Administradora') return;
-        if (cat.includes('manuten')) {
-          if (!isBeforeJune2026 || isImported) maintenanceSum += val;
-        }
-      }
+      
+      // Filter out transactions explicitly marked as belonging to the Admin
+      if (t.responsible === 'Administradora') return;
+      
+      const shareData = getInvestorShareForTransaction(t, rawVehicles, rentals);
+      currentYield += shareData.share;
     });
 
-    const currentYield = gross - adminTaxSum - (maintenanceSum + protectionSum + insuranceSum);
     const yieldPerc = investValue > 0 ? ((currentYield / investValue) * 100).toFixed(2) + '%' : '0.00%';
 
     const activeMonthsCount = Math.max(1, distinctMonths.size);
@@ -392,45 +366,40 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
       const isProtecaoVeicular = cat.includes('proteç') || cat.includes('protec');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
       const isImported = (t.desc || '').toLowerCase().includes('importado de planilha');
-
+      
+      const shareData = getInvestorShareForTransaction(t, myVehicles, rentals);
+      monthlyPerformance[monthKey].net += shareData.share;
+      vPerf.net += shareData.share;
+      
+      // Compute detailed breakdown (for UI bars/visuals, although net is what drives the payout)
       if (isSeguroFranquia) {
         if (!isBeforeJune2026 || isImported) {
           monthlyPerformance[monthKey].insurance += val;
-          monthlyPerformance[monthKey].net -= val;
           vPerf.insurance += val;
-          vPerf.net -= val;
         }
       } else if (isProtecaoVeicular) {
         if (!isBeforeJune2026 || isImported) {
           monthlyPerformance[monthKey].protection += val;
-          monthlyPerformance[monthKey].net -= val;
           vPerf.protection += val;
-          vPerf.net -= val;
         }
-      } else if (t.type === 'in') {
-        if (cat === 'taxa adm') {
-          monthlyPerformance[monthKey].adminTax += val;
-          monthlyPerformance[monthKey].net -= val;
-          vPerf.adminTax += val;
-          vPerf.net -= val;
-        } else {
-          monthlyPerformance[monthKey].gross += val;
-          vPerf.gross += val;
-          const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
-          const taxRate = v ? (parseFloat(v.adminTax || 20) / 100) : 0;
-          const calculatedTax = val * taxRate;
-          monthlyPerformance[monthKey].adminTax += calculatedTax;
-          monthlyPerformance[monthKey].net += val;
-          monthlyPerformance[monthKey].net -= calculatedTax;
-          
-          vPerf.adminTax += calculatedTax;
-          vPerf.net += val;
-          vPerf.net -= calculatedTax;
-        }
+      } else if (t.type === 'in' && cat !== 'taxa adm') {
+        monthlyPerformance[monthKey].gross += val;
+        vPerf.gross += val;
+        const v = t.vehiclePlate ? myVehicles.find(veh => veh.plate === t.vehiclePlate) : null;
+        const taxRate = v ? (parseFloat(v.adminTax || 20) / 100) : 0;
+        
+        // Compute admin tax differently based on Asaas
+        const descLower = (t.desc || '').toLowerCase();
+        const isAsaas = descLower.includes('recebimento') || descLower.includes('asaas');
+        const rental = rentals.find(r => r.plate === t.vehiclePlate || r.vehiclePlate === t.vehiclePlate);
+        const tireTax = rental ? parseFloat(rental.tireTax || 25) : 25;
+        
+        const calculatedTax = isAsaas ? Math.max(0, val - tireTax) * taxRate : val * taxRate;
+        
+        monthlyPerformance[monthKey].adminTax += calculatedTax;
+        vPerf.adminTax += calculatedTax;
       } else if (t.type === 'out') {
         if (!isBeforeJune2026 || isImported) {
-          monthlyPerformance[monthKey].net -= val;
-          vPerf.net -= val;
           if (cat.includes('manuten')) {
             monthlyPerformance[monthKey].maintenance += val;
             vPerf.maintenance += val;
@@ -552,7 +521,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   // Generate graph bars dynamically based on reverse chronological history
   // Exclui o mês vigente do gráfico a menos que o pagamento/repasse já esteja registrado
   const currentMonthKey = `${todayDate.getFullYear()}-${String(todayDate.getMonth() + 1).padStart(2, '0')}`;
-  const graphBars = [...dividendHistory].slice(0, 6)
+  const graphBars = [...dividendHistory].slice(0, 12)
     .filter(d => {
       const isCurrentMonth = d.refMonthStr === currentMonthKey;
       if (isCurrentMonth && !d.realPayout) {
@@ -845,33 +814,35 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
               {/* Graphs Section */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
                 <div className="md:col-span-3 bg-neutral-900 p-10 rounded-3xl border border-neutral-800 shadow-sm">
-                  <div className="flex justify-between items-center mb-8">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 md:gap-0 mb-8">
                     <h3 className="text-xl font-bold uppercase tracking-tight text-white">Dividendos Mês a Mês</h3>
                     <EditorialLabel className="text-neutral-400">Rendimentos em R$</EditorialLabel>
                   </div>
-                  <div className="h-96 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={graphBars} margin={{ top: 50, right: 30, left: 30, bottom: 10 }}>
-                        <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#F5F5F5" />
-                        <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#a3a3a3', fontWeight: 700 }} dy={15} />
-                        <YAxis hide={true} domain={['dataMin - (dataMin * 0.1)', 'dataMax + (dataMax * 0.1)']} />
-                        <Tooltip 
-                          cursor={{ stroke: '#404040', strokeWidth: 1, strokeDasharray: '3 3' }} 
-                          contentStyle={{ backgroundColor: '#171717',  borderRadius: '12px', border: '1px solid #404040', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.5)', fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}
-                          formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Dividendo Líquido']}
-                          labelStyle={{ color: '#737373', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}
-                        />
-                        <Line type="monotone" dataKey="v" stroke="#D4AF37" strokeWidth={4} activeDot={{ r: 8, fill: '#ffffff', stroke: '#D4AF37', strokeWidth: 3 }} dot={{ r: 5, fill: '#D4AF37', strokeWidth: 0 }} animationDuration={1500}>
-                          <LabelList 
-                            dataKey="v" 
-                            position="top" 
-                            offset={15}
-                            formatter={(val) => `R$ ${val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                            style={{ fontSize: '11px', fill: '#ffffff', fontWeight: 'bold', fontFamily: 'monospace' }} 
+                  <div className="h-96 w-full overflow-x-auto overflow-y-hidden custom-scrollbar">
+                    <div className="min-w-[900px] h-full pr-4">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={graphBars.slice(0, 12)} margin={{ top: 50, right: 30, left: 30, bottom: 10 }}>
+                          <CartesianGrid strokeDasharray="4 4" vertical={false} stroke="#F5F5F5" />
+                          <XAxis dataKey="m" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#a3a3a3', fontWeight: 700 }} dy={15} />
+                          <YAxis hide={true} domain={[0, 'dataMax + (dataMax * 0.1)']} />
+                          <Tooltip 
+                            cursor={{ fill: 'rgba(255,255,255,0.05)' }} 
+                            contentStyle={{ backgroundColor: '#171717',  borderRadius: '12px', border: '1px solid #404040', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.5)', fontSize: '12px', fontWeight: 'bold', fontFamily: 'monospace' }}
+                            formatter={(value) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'Dividendo Líquido']}
+                            labelStyle={{ color: '#737373', fontWeight: 'bold', marginBottom: '4px', textTransform: 'uppercase', fontSize: '10px', letterSpacing: '0.05em' }}
                           />
-                        </Line>
-                      </LineChart>
-                    </ResponsiveContainer>
+                          <Bar dataKey="v" fill="#D4AF37" radius={[4, 4, 0, 0]} animationDuration={1500} maxBarSize={50}>
+                            <LabelList 
+                              dataKey="v" 
+                              position="top" 
+                              offset={10}
+                              formatter={(val) => `R$\u00A0${val.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                              style={{ fontSize: '10px', fill: '#d4d4d4', fontWeight: 'bold', fontFamily: 'monospace' }} 
+                            />
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
                   </div>
                 </div>
               </div>
