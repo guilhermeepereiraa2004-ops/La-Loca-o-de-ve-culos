@@ -75,6 +75,11 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                 </span>
               </div>
               <h4 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">Dossiê Técnico de Vistoria</h4>
+              {inspection.inspectorName && (
+                <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-1">
+                  Vistoriador: <span className="text-[#C5A059] font-black">{inspection.inspectorName}</span>
+                </p>
+              )}
             </div>
           </div>
           <button onClick={onClose} className="w-12 h-12 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900">
@@ -181,15 +186,15 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
               {[
-                { id: 'odometer', label: 'Hodômetro (KM)' },
-                { id: 'dashboard', label: 'Painel Ligado' },
                 { id: 'plate', label: 'Placa do Veículo' },
                 { id: 'front', label: 'Frente Completa' },
                 { id: 'sideRightFront', label: 'Lat. Dir. Dianteira' },
-                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
-                { id: 'rear', label: 'Traseira Completa' },
                 { id: 'sideRightRear', label: 'Lat. Dir. Traseira' },
+                { id: 'rear', label: 'Traseira Completa' },
                 { id: 'sideLeftRear', label: 'Lat. Esq. Traseira' },
+                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
+                { id: 'odometer', label: 'Hodômetro (KM)' },
+                { id: 'dashboard', label: 'Painel Ligado' },
                 { id: 'interior1', label: 'Interior 1' },
                 { id: 'interior2', label: 'Interior 2' },
                 { id: 'tools', label: 'Triang/Mac/Chave' },

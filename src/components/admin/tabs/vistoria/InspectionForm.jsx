@@ -30,6 +30,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
   const [isCompressing, setIsCompressing] = useState(false);
   const [uploadingSlots, setUploadingSlots] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
   const [savedDraft, setSavedDraft] = useState(null);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
@@ -130,7 +131,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
     setSavedDraft(null);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (isSaving) return;
 
@@ -139,7 +140,12 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
       return;
     }
 
+    setShowConfirmSubmit(true);
+  };
+
+  const confirmSubmit = async () => {
     try {
+      setShowConfirmSubmit(false);
       setIsSaving(true);
       const result = await onAddInspection({
         ...inspectionForm
@@ -545,15 +551,15 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Galeria Técnica (Fotos Obrigatórias)</label>
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
               {[
-                { id: 'odometer', label: 'Hodômetro (KM)' },
-                { id: 'dashboard', label: 'Painel Ligado' },
                 { id: 'plate', label: 'Placa do Veículo' },
                 { id: 'front', label: 'Frente Completa' },
                 { id: 'sideRightFront', label: 'Lat. Dir. Dianteira' },
-                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
-                { id: 'rear', label: 'Traseira Completa' },
                 { id: 'sideRightRear', label: 'Lat. Dir. Traseira' },
+                { id: 'rear', label: 'Traseira Completa' },
                 { id: 'sideLeftRear', label: 'Lat. Esq. Traseira' },
+                { id: 'sideLeftFront', label: 'Lat. Esq. Dianteira' },
+                { id: 'odometer', label: 'Hodômetro (KM)' },
+                { id: 'dashboard', label: 'Painel Ligado' },
                 { id: 'interior1', label: 'Interior 1' },
                 { id: 'interior2', label: 'Interior 2' },
                 { id: 'tools', label: 'Triang/Mac/Chave' },
@@ -974,6 +980,44 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
           </div>
         </form>
       </div>
+
+      {/* Confirm Submit Modal */}
+      {showConfirmSubmit && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-[2rem] p-8 w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex flex-col items-center text-center gap-4 mb-8">
+              <div className="w-16 h-16 bg-[#C5A059]/10 text-[#C5A059] rounded-2xl flex items-center justify-center shadow-lg shadow-[#C5A059]/20">
+                <ClipboardCheck size={32} />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Finalizar Vistoria</h3>
+                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">
+                  Tem certeza que deseja finalizar esta vistoria? Verifique se todas as fotos obrigatórias foram adicionadas.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                type="button"
+                onClick={() => setShowConfirmSubmit(false)}
+                disabled={isSaving}
+                className="flex-1 py-4 bg-neutral-100 text-neutral-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-neutral-200 hover:text-neutral-600 transition-all font-bold"
+              >
+                Voltar
+              </button>
+              <button 
+                type="button"
+                onClick={confirmSubmit}
+                disabled={isSaving}
+                className="flex-1 py-4 bg-neutral-900 text-[#C5A059] rounded-xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-neutral-800 transition-all shadow-lg font-bold flex items-center justify-center gap-2"
+              >
+                {isSaving ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Draft Recovery Modal */}
       {showDraftPrompt && (

@@ -588,14 +588,18 @@ export const useAppState = () => {
             
             if (item.table === 'inspections') {
               mappedData = mappedData.map(ins => {
-                const items = ins.items || {};
+                let itemsObj = ins.items || {};
+                if (typeof itemsObj === 'string') {
+                  try { itemsObj = JSON.parse(itemsObj); } catch (e) { itemsObj = {}; }
+                }
                 return {
                   ...ins,
-                  externalCleanliness: items.externalCleanliness || ins.externalCleanliness,
-                  internalCleanliness: items.internalCleanliness || ins.internalCleanliness,
-                  lastOilChangeDate: items.lastOilChangeDate || ins.lastOilChangeDate,
-                  lastOilChangeKm: items.lastOilChangeKm || ins.lastOilChangeKm,
-                  nextOilChangeKm: items.nextOilChangeKm || ins.nextOilChangeKm,
+                  externalCleanliness: itemsObj.externalCleanliness || ins.externalCleanliness,
+                  internalCleanliness: itemsObj.internalCleanliness || ins.internalCleanliness,
+                  lastOilChangeDate: itemsObj.lastOilChangeDate || ins.lastOilChangeDate,
+                  lastOilChangeKm: itemsObj.lastOilChangeKm || ins.lastOilChangeKm,
+                  nextOilChangeKm: itemsObj.nextOilChangeKm || ins.nextOilChangeKm,
+                  inspectorName: itemsObj.inspectorName || itemsObj.inspector_name || ins.inspectorName || ins.inspector_name || 'Sistema',
                 };
               });
             }
@@ -2824,6 +2828,7 @@ export const useAppState = () => {
           lastOilChangeDate: inspection.lastOilChangeDate,
           lastOilChangeKm: inspection.lastOilChangeKm,
           nextOilChangeKm: inspection.nextOilChangeKm,
+          inspectorName: currentUser?.name || currentUser?.email || 'Sistema',
         }
       };
       delete finalInspection.additionalPhotos;
@@ -2845,6 +2850,7 @@ export const useAppState = () => {
           lastOilChangeDate: newInsp.items?.lastOilChangeDate || newInsp.lastOilChangeDate,
           lastOilChangeKm: newInsp.items?.lastOilChangeKm || newInsp.lastOilChangeKm,
           nextOilChangeKm: newInsp.items?.nextOilChangeKm || newInsp.nextOilChangeKm,
+          inspectorName: newInsp.items?.inspectorName || newInsp.inspectorName || currentUser?.name || currentUser?.email || 'Sistema',
         };
         setInspections(prev => [unpackedInsp, ...prev]);
         logActivity('Criar', 'Vistoria', unpackedInsp.id, `Realizou vistoria de ${unpackedInsp.type} para o veículo ${unpackedInsp.vehiclePlate}`);

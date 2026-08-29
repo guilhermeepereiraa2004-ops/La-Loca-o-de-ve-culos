@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Search, Trash2, Eye, Calendar, Car, AlertTriangle, X, ShieldCheck, Camera, Activity } from 'lucide-react';
+import { Plus, Search, Trash2, Eye, Calendar, Car, AlertTriangle, X, ShieldCheck, Camera, Activity, UserCheck } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
 
 const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDeleteInspection, onViewDetail, onNewInspection }) => {
   const [inspectionSearch, setInspectionSearch] = useState('');
   const [filterType, setFilterType] = useState('Todos');
+  const [filterInspector, setFilterInspector] = useState('Todos');
   const [dateStart, setDateStart] = useState('');
   const [dateEnd, setDateEnd] = useState('');
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -54,6 +55,16 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
     return count;
   }, [inspections]);
 
+  const inspectorNames = useMemo(() => {
+    const names = new Set();
+    inspections.forEach(ins => {
+      if (ins.inspectorName && ins.inspectorName !== 'Sistema') {
+        names.add(ins.inspectorName);
+      }
+    });
+    return ['Todos', ...Array.from(names).sort()];
+  }, [inspections]);
+
   const filteredInspections = useMemo(() => {
     return inspections.filter(ins => {
       // Exclude Coleta inspections for exempt vehicles (current fleet)
@@ -76,6 +87,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
                            conductorName.includes(searchLower);
                            
       const matchesType = filterType === 'Todos' || ins.type === filterType;
+      const matchesInspector = filterInspector === 'Todos' || (ins.inspectorName || 'Sistema') === filterInspector;
       
       let matchesDate = true;
       if (dateStart || dateEnd) {
@@ -90,9 +102,9 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
         }
       }
       
-      return matchesSearch && matchesType && matchesDate;
+      return matchesSearch && matchesType && matchesDate && matchesInspector;
     });
-  }, [inspections, inspectionSearch, filterType, dateStart, dateEnd, vehicles, rentals]);
+  }, [inspections, inspectionSearch, filterType, filterInspector, dateStart, dateEnd, vehicles, rentals]);
 
   const sortedInspections = useMemo(() => {
     return [...filteredInspections].sort((a, b) => {
@@ -237,6 +249,16 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             <option value="Devolução">Devolução</option>
           </select>
 
+          <select 
+            value={filterInspector}
+            onChange={(e) => { setFilterInspector(e.target.value); setVisibleCount(ITEMS_PER_PAGE); }}
+            className="w-full sm:w-auto bg-white border border-neutral-100 px-4 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest focus:ring-2 focus:ring-[#C5A059]/20 outline-none"
+          >
+            {inspectorNames.map(name => (
+              <option key={name} value={name}>{name === 'Todos' ? 'Todos Vistoriadores' : name}</option>
+            ))}
+          </select>
+
           <div className="flex items-center justify-between sm:justify-start gap-2 bg-white border border-neutral-100 px-3 py-2 rounded-2xl w-full sm:w-auto overflow-x-auto">
             <Calendar size={14} className="text-neutral-400 shrink-0" />
             <input 
@@ -254,9 +276,9 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             />
           </div>
 
-          {(filterType !== 'Todos' || dateStart || dateEnd) && (
+          {(filterType !== 'Todos' || filterInspector !== 'Todos' || dateStart || dateEnd) && (
             <button 
-              onClick={() => { setFilterType('Todos'); setDateStart(''); setDateEnd(''); setVisibleCount(ITEMS_PER_PAGE); }}
+              onClick={() => { setFilterType('Todos'); setFilterInspector('Todos'); setDateStart(''); setDateEnd(''); setVisibleCount(ITEMS_PER_PAGE); }}
               className="p-3 text-red-500 hover:bg-red-50 rounded-xl transition-colors flex items-center justify-center self-end sm:self-auto"
               title="Limpar Filtros"
             >
@@ -305,6 +327,9 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
                   ) : null}
                 </div>
                 <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{ins.date} às {ins.time}</p>
+                {ins.inspectorName && (
+                  <p className="text-[9px] text-[#C5A059] font-black uppercase tracking-widest mt-0.5">Vistoriador: {ins.inspectorName}</p>
+                )}
               </div>
             </div>
 
