@@ -2077,8 +2077,9 @@ export const useAppState = () => {
           // Para carros reserva (daily) ou ciclos adicionados manualmente pelo admin,
           // o debtValue já é o valor final — não separar taxa de pneus (diárias não têm pneus)
           const isManualOrDaily = rental.rentalType === 'daily' || cycle.isManualAddition === true;
-          const hasTireTax = !isManualOrDaily && debt >= 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
-          const tireTaxVal = hasTireTax ? 25 : 0;
+          const customTireTax = parseFloat(rental.tireTax) || 25;
+          const hasTireTax = !isManualOrDaily && debt >= customTireTax && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
+          const tireTaxVal = hasTireTax ? customTireTax : 0;
           const rentVal = Math.max(0, debt - tireTaxVal);
           const adminTaxVal = rentVal * mainAdminTaxPercent;
 
@@ -2107,8 +2108,9 @@ export const useAppState = () => {
           // Para carros reserva (daily) ou ciclos adicionados manualmente pelo admin,
           // o debtValue já é o valor final — não separar taxa de pneus (diárias não têm pneus)
           const isManualOrDaily = rental.rentalType === 'daily' || cycle.isManualAddition === true;
-          const hasTireTax = !isManualOrDaily && toPay >= 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
-          const tireTaxVal = hasTireTax ? 25 : 0;
+          const customTireTax = parseFloat(rental.tireTax) || 25;
+          const hasTireTax = !isManualOrDaily && toPay >= customTireTax && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
+          const tireTaxVal = hasTireTax ? customTireTax : 0;
           const rentVal = Math.max(0, toPay - tireTaxVal);
           const adminTaxVal = rentVal * mainAdminTaxPercent;
 

@@ -242,7 +242,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         );
         if (matchingClosureCycle && matchingClosureCycle.debtValue !== undefined) {
           const includeTire = closureSummary.rentalCalculationBreakdown?.includeTireTax !== false;
-          const tireTaxVal = includeTire ? (calc.tireTax || 25) : 0;
+          const tireTaxVal = includeTire ? (calc.tireTax || (rental.tireTax ? parseFloat(rental.tireTax) : 25)) : 0;
           calc = {
             ...calc,
             total: matchingClosureCycle.debtValue,
@@ -339,7 +339,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         );
         if (!alreadyMatched) {
           const includeTire = closureSummary.rentalCalculationBreakdown?.includeTireTax !== false;
-          const tireTaxVal = includeTire ? 25 : 0;
+          const tireTaxVal = includeTire ? (rental.tireTax ? parseFloat(rental.tireTax) : 25) : 0;
           const totalVal = closureCycle.debtValue || 0;
           const weeklyRateVal = Math.max(0, totalVal - tireTaxVal);
 
@@ -979,7 +979,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const isTireTaxDisabled = isClosed && closureSummary?.rentalCalculationBreakdown && closureSummary.rentalCalculationBreakdown.includeTireTax === false;
 
     const abatimento = !isDaily ? (dailyRate * totalDaysInMaintenance) : 0;
-    const tireTax = (!isDaily && !isTireTaxDisabled) ? 25 : 0;
+    const tireTax = (!isDaily && !isTireTaxDisabled) ? (rental.tireTax ? parseFloat(rental.tireTax) : 25) : 0;
     const lateFeeVal = parseFloat(lateFees[rental.id] || 0);
 
     // Find matching fines for this rental/driver
@@ -1237,7 +1237,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         );
         if (matchingClosureCycle && matchingClosureCycle.debtValue !== undefined) {
           const includeTire = closureSummary.rentalCalculationBreakdown?.includeTireTax !== false;
-          const tireTaxVal = includeTire ? (calc.tireTax || 25) : 0;
+          const tireTaxVal = includeTire ? (calc.tireTax || (rental.tireTax ? parseFloat(rental.tireTax) : 25)) : 0;
           calc = {
             ...calc,
             total: matchingClosureCycle.debtValue,
