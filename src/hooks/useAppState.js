@@ -1136,7 +1136,8 @@ export const useAppState = () => {
               proRataDays = rental.paymentDay - startDay;
               if (proRataDays <= 0) proRataDays += 7;
               weeklyRate = (weeklyRate / 7) * proRataDays;
-              tireTax = (tireTax / 7) * proRataDays;
+              // Taxa de pneus é fixa por ciclo (R$25), NÃO deve ser proporcionalizada
+              // tireTax permanece inalterada independentemente dos dias proporcionais
             }
           }
 
