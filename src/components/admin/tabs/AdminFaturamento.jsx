@@ -1569,7 +1569,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                 return false;
               });
 
-            const hasPaidToday = calc.hasPaidToday;
+            let hasPaidToday = calc.hasPaidToday;
+            if (rental.rentalType === 'daily' && rental.startDate) {
+              const badgePendingWeeks = calculatePendingCycles(rental);
+              if (badgePendingWeeks <= 0) hasPaidToday = true;
+            }
 
             const grouped = [];
             const processedIds = new Set();
