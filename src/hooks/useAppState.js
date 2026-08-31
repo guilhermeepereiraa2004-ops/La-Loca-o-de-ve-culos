@@ -2005,10 +2005,13 @@ export const useAppState = () => {
       };
 
       const todayStr = new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
+      // Usa a data real de encerramento calculada no closureSummary (data da vistoria)
+      // para evitar divergência de ciclos entre end_date e closureSummary
+      const endDateStr = closureData.scheduledEndDate || todayStr;
       
       const { error: updateError } = await supabase.from('rentals').update({ 
         status: 'Encerrado', 
-        end_date: todayStr,
+        end_date: endDateStr,
         documentos: updatedDocs
       }).eq('id', rentalId);
       
@@ -2018,7 +2021,7 @@ export const useAppState = () => {
       setRentals(prev => prev.map(r => r.id === rentalId ? { 
         ...r, 
         status: 'Encerrado', 
-        endDate: todayStr,
+        endDate: endDateStr,
         docs: updatedDocs 
       } : r));
 
