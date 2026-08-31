@@ -632,10 +632,13 @@ export const useAppState = () => {
               if (vDateStr) {
                 try {
                   const vDate = new Date(vDateStr + (vDateStr.includes('T') ? '' : 'T12:00:00'));
-                  if (vDate.getFullYear() === currentYear && vDate.getMonth() === currentMonth) {
-                    if (vDate.getDate() >= 10) {
-                      isAddedAfter9ThisMonth = true;
-                    }
+                  // Se o veículo entra num mês futuro (ex: criado dia 31/08 mas entry_date é 01/09)
+                  if (vDate.getFullYear() > currentYear || (vDate.getFullYear() === currentYear && vDate.getMonth() > currentMonth)) {
+                    isAddedAfter9ThisMonth = true; // Força pular a geração no mês atual
+                  }
+                  // Se o veículo entrou no mês atual, mas depois do dia 9
+                  else if (vDate.getFullYear() === currentYear && vDate.getMonth() === currentMonth && vDate.getDate() >= 10) {
+                    isAddedAfter9ThisMonth = true;
                   }
                 } catch(e) {}
               }
