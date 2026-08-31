@@ -2070,7 +2070,10 @@ export const useAppState = () => {
           const debt = cycle.debtValue || 0;
           if (debt <= 0) continue;
 
-          const hasTireTax = debt > 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
+          // Para carros reserva (daily) ou ciclos adicionados manualmente pelo admin,
+          // o debtValue já é o valor final — não separar taxa de pneus (diárias não têm pneus)
+          const isManualOrDaily = rental.rentalType === 'daily' || cycle.isManualAddition === true;
+          const hasTireTax = !isManualOrDaily && debt > 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
           const tireTaxVal = hasTireTax ? 25 : 0;
           const rentVal = Math.max(0, debt - tireTaxVal);
           const adminTaxVal = rentVal * mainAdminTaxPercent;
@@ -2095,7 +2098,10 @@ export const useAppState = () => {
           if (currentCaucao < debt) continue; // Só abate aluguel se tiver saldo pra parcela inteira
 
           const toPay = debt;
-          const hasTireTax = toPay > 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
+          // Para carros reserva (daily) ou ciclos adicionados manualmente pelo admin,
+          // o debtValue já é o valor final — não separar taxa de pneus (diárias não têm pneus)
+          const isManualOrDaily = rental.rentalType === 'daily' || cycle.isManualAddition === true;
+          const hasTireTax = !isManualOrDaily && toPay > 25 && closureData.rentalCalculationBreakdown?.includeTireTax !== false;
           const tireTaxVal = hasTireTax ? 25 : 0;
           const rentVal = Math.max(0, toPay - tireTaxVal);
           const adminTaxVal = rentVal * mainAdminTaxPercent;
