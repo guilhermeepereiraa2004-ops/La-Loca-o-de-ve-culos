@@ -628,7 +628,7 @@ export const useAppState = () => {
               if (String(v.plate).toLowerCase().includes('(antigo)')) continue;
 
               let isAddedAfter9ThisMonth = false;
-              const vDateStr = v.entryDate || v.created_at;
+              const vDateStr = v.entryDate || v.createdAt || v.created_at;
               if (vDateStr) {
                 try {
                   const vDate = new Date(vDateStr + (vDateStr.includes('T') ? '' : 'T12:00:00'));
