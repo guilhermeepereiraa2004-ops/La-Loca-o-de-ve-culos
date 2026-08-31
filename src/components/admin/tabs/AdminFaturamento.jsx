@@ -1137,24 +1137,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const currentInfo = cyclesInfo[cyclesInfo.length - 1] || { startStr: '', endStr: '', dueStr: '' };
     let calc = calculateBoletoForCycle(rental, currentInfo.dueStr, false, currentInfo.startStr, currentInfo.endStr);
     
-    if (isClosed && closureSummary?.unpaidCyclesList) {
-      const labelRef = `Ref: ${calc.cycleStart.split('-').reverse().join('/')} a ${calc.cycleEnd.split('-').reverse().join('/')}`;
-      const matchingClosureCycle = closureSummary.unpaidCyclesList.find(c => 
-        (c.labelRef || '').includes(labelRef) || 
-        (c.labelRef || '').includes(`Semana ${currentInfo.weekNumber}`) ||
-        (c.labelRef || '').includes(currentInfo.startStr.split('-').reverse().join('/'))
-      );
-      if (matchingClosureCycle && matchingClosureCycle.debtValue !== undefined) {
-        const includeTire = closureSummary.rentalCalculationBreakdown?.includeTireTax !== false;
-        const tireTaxVal = includeTire ? (calc.tireTax || 25) : 0;
-        calc = {
-          ...calc,
-          total: matchingClosureCycle.debtValue,
-          tireTax: tireTaxVal,
-          weeklyRate: matchingClosureCycle.debtValue - tireTaxVal
-        };
-      }
-    }
+    // (Removido: Não sobrescreve os valores do ciclo com debtValue do closureSummary)
+    // Isso causava confusão, pois substituía o valor total do ciclo pelo saldo devedor restante no momento do encerramento,
+    // resultando em exibições como "Aluguel Base: R$ 0,00" quando só restava taxa de pneus a pagar.
     
     if (!isClosed && calc.hasPaidToday) {
        const nextWeekObj = new Date();
@@ -1899,7 +1884,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                               : 'bg-[#C5A059] text-neutral-900 hover:bg-neutral-950 hover:text-white'
                           }`}
                         >
-                          {hasPaidToday ? 'ABRIR CICLOS / PAGAMENTOS' : 'Confirmar Pagamento Manual'}
+                          {rental.status === 'Encerrado' || rental.status === 'Finalizado' 
+                            ? 'VER CICLOS E PAGAMENTOS'
+                            : (hasPaidToday ? 'ABRIR CICLOS / PAGAMENTOS' : 'Confirmar Pagamento Manual')}
                           <ArrowRight size={11} className="transition-transform group-hover:translate-x-1" />
                         </button>
                       )}
