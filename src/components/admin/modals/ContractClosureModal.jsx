@@ -382,6 +382,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         earlyTerminationPenalty: 0,
         penaltyAmount,
         scheduledEndDate: scheduledEndStr,
+        actualClosureDate: closureDateStr,
         isEarlyTermination: false,
         unpaidFinesList,
         unpaidCyclesList,
