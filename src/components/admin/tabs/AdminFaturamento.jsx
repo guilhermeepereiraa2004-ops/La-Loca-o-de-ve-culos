@@ -148,7 +148,7 @@ const CategorySelect = ({ value, onChange, options, placeholder, className }) =>
   );
 };
 
-const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, onClose, onConfirmPayment, calculateBoletoForCycle, availableCategories }) => {
+const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, replacementContracts = [], onClose, onConfirmPayment, calculateBoletoForCycle, availableCategories }) => {
   const [pastCycles, setPastCycles] = useState([]);
   const [editingCycle, setEditingCycle] = useState(null);
   const [customValue, setCustomValue] = useState('');
@@ -202,14 +202,13 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           processedIds.add(matchingTireTax.id);
           groupedHistory.push({
             ...current,
-            val: (parseFloat(current.val) || 0) + (parseFloat(matchingTireTax.val) || 0)
+            val: (parseFloat(current.val) || 0) + (parseFloat(matchingTireTax.val) || 0),
+            includedTireTax: parseFloat(matchingTireTax.val) || 0
           });
         } else {
           processedIds.add(current.id);
           groupedHistory.push(current);
         }
-      } else if (category === 'taxa de pneus') {
-        // Do nothing, let Aluguel process it
       } else {
         processedIds.add(current.id);
         groupedHistory.push(current);
@@ -225,6 +224,94 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       return descLow.includes('semana') || descLow.includes('pagamento aluguel') || descLow.includes('primeiro aluguel') || descLow === 'aluguel' || catLow === 'aluguel' || catLow === 'taxa de pneus' || descLow.includes('vistoria');
     }).sort((a, b) => new Date(a.date) - new Date(b.date));
     
+    if (rental.rentalType === 'daily') {
+      const cycles = [];
+      let isPaid = false;
+      if (isClosed && closureSummary?.unpaidRentalsMarkedAsPaid) {
+        isPaid = true;
+      }
+      
+      const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
+
+      if (isClosed && closureSummary?.unpaidCyclesList) {
+        closureSummary.unpaidCyclesList.forEach((c, idx) => {
+          let calc = {
+            total: c.debtValue,
+            weeklyRate: c.debtValue,
+            tireTax: 0,
+            lateFee: 0,
+            abatimento: 0,
+            replacementCharge: 0,
+            companyDiscount: 0,
+            additionalPaymentValue: 0,
+            cycleStart: (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10),
+            cycleEnd: (rental.endDate || new Date().toISOString()).substring(0, 10),
+          };
+          const labelRef = c.labelRef || `Locação Diária (${idx + 1})`;
+          
+          let actualTotal = null;
+          let isRetido = false;
+          let cycleAdjustments = [];
+          
+          const allMatches = safeHistory.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes('Locação Diária') || (t.desc || '').includes('Diária'));
+          if (allMatches.length > 0) {
+            actualTotal = allMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+            if (actualTotal >= (calc.total - 0.50)) {
+              isPaid = true;
+              isRetido = allMatches.some(t => t.responsible === 'Administradora');
+            }
+          }
+          
+          cycles.push({
+            weekNumber: idx + 1,
+            dueDate: calc.cycleEnd || new Date().toISOString().substring(0, 10),
+            label: labelRef,
+            calc,
+            isPaid,
+            actualTotal,
+            isRetido,
+            adjustments: cycleAdjustments,
+            labelRef
+          });
+        });
+      } else {
+        const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
+        const startDate = new Date(startStr + 'T12:00:00');
+        const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+        const todayObj = new Date(todayStr + 'T12:00:00');
+        const diffTime = todayObj.getTime() - startDate.getTime();
+        const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
+        const total = diffDays * dailyValue;
+        
+        let calc = {
+            total: total,
+            weeklyRate: total,
+            tireTax: 0,
+            lateFee: 0,
+            abatimento: 0,
+            replacementCharge: 0,
+            companyDiscount: 0,
+            additionalPaymentValue: 0,
+            cycleStart: startStr,
+            cycleEnd: todayStr,
+        };
+        
+        cycles.push({
+            weekNumber: 1,
+            dueDate: todayStr,
+            label: `Locação Diária (${diffDays} dias)`,
+            calc,
+            isPaid: false,
+            actualTotal: null,
+            isRetido: false,
+            adjustments: [],
+            labelRef: 'Locação Diária'
+        });
+      }
+      setPastCycles(cycles.reverse());
+      return;
+    }
+
     const cycles = [];
     const rentalCycles = getRentalCycles(rental, endLimit, isClosed);
     
@@ -269,7 +356,31 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       const specificMatches = specificPayments.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes(cycleInfo.startStr.split('-').reverse().join('/')));
       
       if (specificMatches.length > 0) {
+        // Verifica se há override de valor para a semana
+        const overrideTx = specificMatches.find(t => (t.desc || '').includes('[VALOR_ALTERADO:'));
+        if (overrideTx) {
+          const match = (overrideTx.desc || '').match(/\[VALOR_ALTERADO:\s*([\d.]+)\]/);
+          if (match) {
+            const newTotal = parseFloat(match[1]);
+            calc.total = newTotal;
+            const isDaily = rental.rentalType === 'daily';
+            const isTireTaxDisabled = isClosed && closureSummary?.rentalCalculationBreakdown && closureSummary.rentalCalculationBreakdown.includeTireTax === false;
+            const tireTaxVal = (!isDaily && !isTireTaxDisabled) ? (rental.tireTax ? parseFloat(rental.tireTax) : 25) : 0;
+            calc.weeklyRate = Math.max(0, newTotal - tireTaxVal);
+          }
+        }
+        
         actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+        let paidTireTax = 0;
+        let paidLateFee = 0;
+        specificMatches.forEach(t => {
+          const tCat = (t.cat || '').toLowerCase();
+          if (tCat === 'taxa de pneus') paidTireTax += parseFloat(t.val || t.income_val || t.value || 0);
+          if (t.includedTireTax) paidTireTax += t.includedTireTax;
+          if (tCat === 'multa') paidLateFee += parseFloat(t.val || t.income_val || t.value || 0);
+        });
+        calc.paidTireTax = paidTireTax;
+        calc.paidLateFee = paidLateFee;
         
         if (actualTotal >= (calc.total - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('baixa manual na vistoria') || (t.desc || '').toLowerCase().includes('abatimento'))) {
           isPaid = true;
@@ -304,7 +415,11 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           const tDate = t.date.substring(0, 10);
           if (tDate >= startMinus7 && tDate <= endPlus7) {
             matchingIndices.push(idx);
-            actualTotal = (actualTotal || 0) + parseFloat(t.val || t.income_val || t.value || 0);
+            const valAmt = parseFloat(t.val || t.income_val || t.value || 0);
+            actualTotal = (actualTotal || 0) + valAmt;
+            const tCat = (t.cat || '').toLowerCase();
+            if (tCat === 'taxa de pneus') calc.paidTireTax = (calc.paidTireTax || 0) + valAmt;
+            if (tCat === 'multa') calc.paidLateFee = (calc.paidLateFee || 0) + valAmt;
           }
         });
         
@@ -317,6 +432,41 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           }
         }
       }
+      let replacementCarOverlaps = [];
+      if (Array.isArray(replacementContracts)) {
+        const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
+        const rentalDriver = rental.user || rental.userName;
+        const matchedRCs = replacementContracts.filter(rc => {
+          if (rc.mainVehiclePlate && rentalPlate) {
+            return rc.mainVehiclePlate.toLowerCase() === rentalPlate;
+          }
+          return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase();
+        });
+        
+        matchedRCs.forEach(rc => {
+          const rcStart = rc.startDate || rc.start_date;
+          if (!rcStart) return;
+          
+          const rcEnd = rc.endDate || rc.end_date || '2100-01-01';
+          const cycleStart = cycleInfo.startStr;
+          const cycleEnd = cycleInfo.endStr;
+          
+          const overlapStart = rcStart > cycleStart ? rcStart : cycleStart;
+          const overlapEnd = rcEnd < cycleEnd ? rcEnd : cycleEnd;
+          
+          if (overlapStart <= overlapEnd) {
+            const startObj = new Date(overlapStart + 'T12:00:00');
+            const endObj = new Date(overlapEnd + 'T12:00:00');
+            const days = Math.round((endObj - startObj) / (1000 * 60 * 60 * 24)) + 1;
+            replacementCarOverlaps.push({
+              plate: rc.replacementVehiclePlate || rc.replacement_vehicle_plate || 'Reserva',
+              start: overlapStart.split('-').reverse().join('/'),
+              end: overlapEnd.split('-').reverse().join('/'),
+              days
+            });
+          }
+        });
+      }
       
       cycles.push({
         weekNumber: cycleInfo.weekNumber,
@@ -326,7 +476,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         isPaid,
         actualTotal,
         isRetido,
-        adjustments: cycleAdjustments
+        adjustments: cycleAdjustments,
+        replacementOverlaps: replacementCarOverlaps
       });
     });
 
@@ -442,11 +593,47 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           }
         }
       }
+
+      let currentReplacementCarOverlaps = [];
+      if (Array.isArray(replacementContracts)) {
+        const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
+        const rentalDriver = rental.user || rental.userName;
+        const matchedRCs = replacementContracts.filter(rc => {
+          if (rc.mainVehiclePlate && rentalPlate) {
+            return rc.mainVehiclePlate.toLowerCase() === rentalPlate;
+          }
+          return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase();
+        });
+        
+        matchedRCs.forEach(rc => {
+          const rcStart = rc.startDate || rc.start_date;
+          if (!rcStart) return;
+          
+          const rcEnd = rc.endDate || rc.end_date || '2100-01-01';
+          const cycleStart = currentCalc.cycleStart;
+          const cycleEnd = currentCalc.cycleEnd;
+          
+          const overlapStart = rcStart > cycleStart ? rcStart : cycleStart;
+          const overlapEnd = rcEnd < cycleEnd ? rcEnd : cycleEnd;
+          
+          if (overlapStart <= overlapEnd) {
+            const startObj = new Date(overlapStart + 'T12:00:00');
+            const endObj = new Date(overlapEnd + 'T12:00:00');
+            const days = Math.round((endObj - startObj) / (1000 * 60 * 60 * 24)) + 1;
+            currentReplacementCarOverlaps.push({
+              plate: rc.replacementVehiclePlate || rc.replacement_vehicle_plate || 'Reserva',
+              start: overlapStart.split('-').reverse().join('/'),
+              end: overlapEnd.split('-').reverse().join('/'),
+              days
+            });
+          }
+        });
+      }
       
       cycles.push({
         weekNumber: cycles.length + 1,
-        dueDate: currentCalc.dueDate,
-        calc: currentCalc,
+        dueDate: calc.dueDate || cycleInfo.dueStr,
+        calc: calc,
         label: labelRef,
         isPaid,
         actualTotal,
@@ -492,6 +679,18 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                 </div>
                 <div className="text-[11px] font-bold text-neutral-500">{cycle.label}</div>
                 <div className="text-[11px] text-neutral-500 mt-1">Vencimento: {cycle.dueDate.split('-').reverse().join('/')}</div>
+                {cycle.replacementOverlaps && cycle.replacementOverlaps.length > 0 && (
+                  <div className="mt-2 flex flex-col gap-1">
+                    {cycle.replacementOverlaps.map((overlap, idx) => (
+                      <div key={idx} className="flex items-center gap-1.5 text-[10px] bg-amber-50 border border-amber-200 text-amber-800 px-2 py-1 rounded">
+                        <AlertCircle size={10} className="flex-shrink-0 text-amber-600" />
+                        <span>
+                          <strong>Reserva ({overlap.plate}):</strong> {overlap.days} dia(s) ({overlap.start} a {overlap.end})
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               
               <div className="flex items-center justify-end gap-4 w-full md:w-auto min-w-[200px]">
@@ -684,19 +883,37 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           
                           // Calcula a proporção para manter a separação do carro reserva e principal correta para o investidor
                           const oldRentTotal = (cycle.calc.weeklyRate || 0) - (cycle.calc.abatimento || 0) + (cycle.calc.replacementCharge || 0);
-                          const tireTax = cycle.calc.tireTax || 0;
-                          const lateFee = cycle.calc.lateFee || 0;
                           
-                          let newWeeklyRate = (cycle.calc.weeklyRate || 0) - (cycle.calc.abatimento || 0);
-                          let newReplacementCharge = cycle.calc.replacementCharge || 0;
+                          const totalTireTax = cycle.calc.tireTax || 0;
+                          const paidTireTax = cycle.calc.paidTireTax || 0;
+                          const remainingTireTax = Math.max(0, totalTireTax - paidTireTax);
+                          
+                          const totalLateFee = cycle.calc.lateFee || 0;
+                          const paidLateFee = cycle.calc.paidLateFee || 0;
+                          const remainingLateFee = Math.max(0, totalLateFee - paidLateFee);
+                          
+                          let valToDistribute = finalTotal;
+                          
+                          // 1. Cobre multas pendentes
+                          const appliedLateFee = Math.min(valToDistribute, remainingLateFee);
+                          valToDistribute -= appliedLateFee;
+                          
+                          // 2. Cobre taxa de pneus pendente
+                          const appliedTireTax = Math.min(valToDistribute, remainingTireTax);
+                          valToDistribute -= appliedTireTax;
+                          
+                          // 3. O resto é aluguel
+                          const appliedRent = valToDistribute;
+                          
+                          let newWeeklyRate = 0;
+                          let newReplacementCharge = 0;
                           
                           if (oldRentTotal > 0) {
-                            const newRentTotal = valNum - tireTax - lateFee;
-                            const ratio = Math.max(0, newRentTotal) / oldRentTotal;
-                            newWeeklyRate = newWeeklyRate * ratio;
-                            newReplacementCharge = newReplacementCharge * ratio;
+                            const ratio = Math.max(0, appliedRent) / oldRentTotal;
+                            newWeeklyRate = (cycle.calc.weeklyRate || 0) * ratio;
+                            newReplacementCharge = (cycle.calc.replacementCharge || 0) * ratio;
                           } else {
-                            newWeeklyRate = valNum - tireTax - lateFee;
+                            newWeeklyRate = appliedRent;
                           }
                           
                           // Cria uma cópia do cálculo alterando os valores proporcionais para o backend processar
@@ -706,6 +923,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                             weeklyRate: Math.max(0, newWeeklyRate),
                             abatimento: 0,
                             replacementCharge: Math.max(0, newReplacementCharge),
+                            tireTax: appliedTireTax,
+                            lateFee: appliedLateFee,
                             manualAdjustment: true,
                             companyDiscount: discountVal,
                             companyDiscountCat: companyDiscountCat || 'Descontos',
@@ -717,8 +936,13 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName}`;
                           
                           const caucaoToPay = includeCaucao ? cycle.calc.caucaoInstallment : null;
+                          const payload = { rentalId: rental.id, modifiedCalc, desc, caucaoToPay, destination: paymentDestination };
                           
-                          setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay, destination: paymentDestination });
+                          const remaining = cycle.actualTotal > 0 ? Math.max(0, cycle.calc.total - cycle.actualTotal) : cycle.calc.total;
+                          if (Math.abs(valNum - remaining) > 0.01) {
+                            payload.desc = payload.desc + ` [VALOR_ALTERADO: ${(payload.modifiedCalc.total).toFixed(2)}]`;
+                          }
+                          setPendingConfirm(payload);
                         }}
                         className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-md transition-colors shadow-sm"
                       >
@@ -730,14 +954,17 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                   <>
                     <div className="flex flex-col items-end">
                       <div className={`text-lg font-black ${cycle.isPaid ? 'text-emerald-700' : 'text-[#C5A059]'}`}>
-                        R$ {(cycle.isPaid ? ((cycle.actualTotal !== null && cycle.actualTotal > 0) ? cycle.actualTotal : cycle.calc.total) : cycle.calc.total).toFixed(2).replace('.', ',')}
+                        {(() => {
+                          const valToShow = cycle.isPaid ? ((cycle.actualTotal !== null && cycle.actualTotal > 0) ? cycle.actualTotal : cycle.calc.total) : cycle.calc.total;
+                          return valToShow === 0 ? 'ISENTO' : `R$ ${valToShow.toFixed(2).replace('.', ',')}`;
+                        })()}
                       </div>
                       {!cycle.isPaid && cycle.actualTotal > 0 && (
                         <div className="mt-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-100 text-blue-700">
                           Já pago: R$ {cycle.actualTotal.toFixed(2).replace('.', ',')}
                         </div>
                       )}
-                      {cycle.isPaid && cycle.isRetido !== undefined && (
+                      {cycle.isPaid && cycle.isRetido !== undefined && ((cycle.actualTotal !== null && cycle.actualTotal > 0) ? cycle.actualTotal : cycle.calc.total) > 0 && (
                         <div className={`mt-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded ${cycle.isRetido ? 'bg-[#C5A059]/20 text-[#a38040]' : 'bg-emerald-100 text-emerald-700'}`}>
                           {cycle.isRetido ? 'Retido (Admin)' : 'Repasse (Investidor)'}
                         </div>
@@ -759,17 +986,38 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                     </div>
                     
                     {!cycle.isPaid && (
-                      <button 
-                        onClick={() => {
-                          setEditingCycle(cycle.weekNumber);
-                          const remaining = cycle.actualTotal > 0 ? Math.max(0, cycle.calc.total - cycle.actualTotal) : cycle.calc.total;
-                          setCustomValue(remaining.toFixed(2));
-                          setPaymentDestination('investor');
-                        }}
-                        className="flex-shrink-0 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md transition-colors mt-2"
-                      >
-                        Ajustar / Pagar
-                      </button>
+                      <div className="flex flex-col gap-2 justify-center">
+                        <button 
+                          onClick={() => {
+                            setEditingCycle(cycle.weekNumber);
+                            const remaining = cycle.actualTotal > 0 ? Math.max(0, cycle.calc.total - cycle.actualTotal) : cycle.calc.total;
+                            setCustomValue(remaining.toFixed(2));
+                            setPaymentDestination('investor');
+                          }}
+                          className="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-md transition-colors shadow-sm"
+                        >
+                          Ajustar / Pagar
+                        </button>
+                        <button 
+                          onClick={() => {
+                            const modifiedCalc = { 
+                              ...cycle.calc, 
+                              total: 0,
+                              weeklyRate: 0,
+                              abatimento: 0,
+                              replacementCharge: 0,
+                              tireTax: 0,
+                              lateFee: 0,
+                              manualAdjustment: true
+                            };
+                            const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName} [VALOR_ALTERADO: 0]`;
+                            setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay: null, destination: 'investor' });
+                          }}
+                          className="w-full px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-semibold rounded-md transition-colors shadow-sm border border-neutral-200"
+                        >
+                          Cortesia / Isentar
+                        </button>
+                      </div>
                     )}
                   </>
                 )}
@@ -782,7 +1030,9 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       {pendingConfirm && (
         <ConfirmDialog 
           title="Confirmar Ajuste"
-          message="Tem certeza que deseja confirmar este pagamento? A receita será enviada ao financeiro."
+          message={pendingConfirm.desc?.includes('[VALOR_ALTERADO: 0]') 
+            ? "Tem certeza que deseja isentar esta semana? O valor será zerado e nenhuma receita será gerada para o financeiro."
+            : "Tem certeza que deseja confirmar este pagamento? A receita será enviada ao financeiro."}
           confirmText="Sim, confirmar"
           cancelText="Não, cancelar"
           isLoading={isConfirming}
@@ -790,7 +1040,12 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
             if (isConfirming) return;
             setIsConfirming(true);
             try {
-              await onConfirmPayment(pendingConfirm.rentalId, pendingConfirm.modifiedCalc, pendingConfirm.desc, pendingConfirm.caucaoToPay, pendingConfirm.destination);
+              await onConfirmPayment(pendingConfirm.rentalId, {
+                ...pendingConfirm.modifiedCalc,
+                customDescription: pendingConfirm.desc,
+                caucaoToPay: pendingConfirm.caucaoToPay,
+                destination: pendingConfirm.destination
+              });
             } finally {
               setPendingConfirm(null);
               setEditingCycle(null);
@@ -802,6 +1057,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           onCancel={() => setPendingConfirm(null)}
         />
       )}
+      
+
       
       {showSuccess && (
         <div className="fixed top-4 right-4 z-[1000] bg-emerald-600 text-white px-6 py-3 rounded-xl shadow-lg flex items-center gap-3 animate-in slide-in-from-top-4 duration-300">
@@ -859,6 +1116,25 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const rentalDriver = rental.user || rental.userName;
 
     const todayStr = new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+
+    const matchedRentalsAsRCs = Array.isArray(rentals) ? rentals.filter(r => {
+      const docs = r.docs || r.documentos || {};
+      if (r.rentalType === 'daily' && docs.isReplacement) {
+        if (docs.mainVehiclePlate && rentalPlate) {
+          return docs.mainVehiclePlate.toLowerCase() === rentalPlate.toLowerCase();
+        }
+        return r.user && rentalDriver && r.user.toLowerCase() === rentalDriver.toLowerCase();
+      }
+      return false;
+    }).map(r => ({
+      id: r.id,
+      startDate: r.startDate,
+      endDate: r.endDate,
+      dailyRate: r.value || 80,
+      replacementVehiclePlate: r.plate || r.vehiclePlate,
+      status: r.status,
+      isAvulso: true
+    })) : [];
     
     const matchedRCs = Array.isArray(replacementContracts)
       ? replacementContracts.filter(rc => {
@@ -868,6 +1144,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
           return rc.driverName && rentalDriver && rc.driverName.toLowerCase() === rentalDriver.toLowerCase();
         })
       : [];
+    matchedRCs.push(...matchedRentalsAsRCs);
     const activeRC = matchedRCs.find(rc => rc.status === 'Ativo') || null;
     const replacementPlate = activeRC?.replacementVehiclePlate?.trim().toLowerCase();
 
@@ -961,14 +1238,17 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         
         if (rcOverlap > 0) {
           const rate = parseFloat(rc.dailyRate) || 80;
-          totalReplacementCharge += rate * rcOverlap;
+          if (!rc.isAvulso) {
+            totalReplacementCharge += rate * rcOverlap;
+          }
           
           rcsDetails.push({
             plate: rc.replacementVehiclePlate,
             days: rcOverlap,
             rate: rate.toFixed(2),
             total: rate * rcOverlap,
-            status: rc.status
+            status: rc.status,
+            isAvulso: rc.isAvulso || false
           });
         }
       });
@@ -1104,12 +1384,16 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
       const startDate = new Date(startStr + 'T12:00:00');
       const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+      const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
       const endStr = (isClosed && rental.endDate) ? rental.endDate.substring(0, 10) : new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
       const endObj = new Date(endStr + 'T12:00:00');
       const diffTime = endObj.getTime() - startDate.getTime();
       const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
       const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
-      const total = diffDays * dailyValue;
+      let total = diffDays * dailyValue;
+      if (isClosed && closureSummary?.unpaidCyclesList?.length > 0) {
+        total = closureSummary.unpaidCyclesList.reduce((sum, c) => sum + (c.debtValue || 0), 0);
+      }
       return { 
         total, 
         dueDate: startStr, 
@@ -1155,6 +1439,37 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
   };
 
   const calculatePendingCycles = (rental) => {
+    if (rental.rentalType === 'daily') {
+      const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
+      const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
+      let isPaid = false;
+      if (isClosed && closureSummary?.unpaidRentalsMarkedAsPaid) {
+        isPaid = true;
+      }
+      
+      const safeHistory = Array.isArray(transactions) ? transactions : [];
+      let pendingCount = 0;
+      
+      if (isClosed && closureSummary?.unpaidCyclesList) {
+        closureSummary.unpaidCyclesList.forEach((c, idx) => {
+          let calcTotal = c.debtValue;
+          const labelRef = c.labelRef || `Locação Diária (${idx + 1})`;
+          const allMatches = safeHistory.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes('Locação Diária') || (t.desc || '').includes('Diária'));
+          let isCyclePaid = isPaid;
+          if (allMatches.length > 0) {
+            const actualTotal = allMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+            if (actualTotal >= (calcTotal - 0.50)) {
+              isCyclePaid = true;
+            }
+          }
+          if (!isCyclePaid) pendingCount++;
+        });
+      } else {
+        pendingCount = 1;
+      }
+      return pendingCount;
+    }
+
     const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
     const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
     const closureDateStr = rental.endDate || closureSummary?.scheduledEndDate;
@@ -1354,6 +1669,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
     const matchesSearch = (r.userName || r.user || '').toLowerCase().includes(searchLower) || cleanPlate.includes(cleanSearch);
     if (!matchesSearch) return false;
+
+    // Se o usuário digitou uma busca, ignora os botões de filtro e mostra tudo que encontrou
+    if (cleanSearch.length > 0) return true;
 
     // Se for o novo filtro, só mostrar os encerrados
     const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
@@ -1626,7 +1944,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                             <h4 className="text-lg font-black text-neutral-900 uppercase tracking-tight">{rental.userName || rental.user}</h4>
                             {rental.rentalType === 'daily' && (
                               <span className="px-2 py-0.5 bg-neutral-900 text-[#C5A059] rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">
-                                Carro Reserva
+                                {rental.mainVehiclePlate ? 'Carro Reserva' : 'Locação Diária'}
                               </span>
                             )}
                           </div>
@@ -1743,16 +2061,20 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                       {rental.rentalType === 'daily' ? (
                         <div className="p-5 rounded-2xl border transition-all flex flex-col justify-center items-center text-center bg-[#C5A059]/5 border-[#C5A059]/20 shadow-sm">
                           <Car size={24} className="mb-2 text-[#C5A059] opacity-80" />
-                          <h6 className="text-[10px] uppercase font-black tracking-widest text-neutral-800 pb-1">Este é um Carro Reserva</h6>
-                          <p className="text-[7px] text-neutral-400/80 font-bold uppercase mt-1">
-                            Vinculado à placa {rental.mainVehiclePlate || 'Principal'}
-                          </p>
+                          <h6 className="text-[10px] uppercase font-black tracking-widest text-neutral-800 pb-1">
+                            {rental.mainVehiclePlate ? 'Este é um Carro Reserva' : 'Locação Diária (Avulsa)'}
+                          </h6>
+                          {rental.mainVehiclePlate && (
+                            <p className="text-[7px] text-neutral-400/80 font-bold uppercase mt-1">
+                              Vinculado à placa {rental.mainVehiclePlate}
+                            </p>
+                          )}
                         </div>
                       ) : (
-                        <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${calc.replacementCharge > 0 ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' : 'bg-neutral-50/30 border-neutral-100/70 opacity-60'}`}>
+                        <div className={`p-5 rounded-2xl border transition-all flex flex-col justify-between ${calc.rcsDetails.length > 0 ? 'bg-neutral-900 border-neutral-900 text-white shadow-sm' : 'bg-neutral-50/30 border-neutral-100/70 opacity-60'}`}>
                           <div className="w-full">
-                            <h6 className={`text-[10px] uppercase font-black tracking-widest border-b pb-2 ${calc.replacementCharge > 0 ? 'text-[#C5A059] border-neutral-800' : 'text-neutral-800 border-neutral-100'}`}>Carro Reserva</h6>
-                            {calc.replacementCharge > 0 ? (
+                            <h6 className={`text-[10px] uppercase font-black tracking-widest border-b pb-2 ${calc.rcsDetails.length > 0 ? 'text-[#C5A059] border-neutral-800' : 'text-neutral-800 border-neutral-100'}`}>Carro Reserva</h6>
+                            {calc.rcsDetails.length > 0 ? (
                               <div className="space-y-4 pt-3">
                                 {calc.rcsDetails.map((rc, idx) => (
                                   <div key={idx} className="flex items-center justify-between gap-2">
@@ -1765,7 +2087,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                                         </p>
                                       </div>
                                     </div>
-                                    <span className="text-[11px] font-bold text-neutral-355">+ R$ {rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    <span className="text-[11px] font-bold text-neutral-355">
+                                      {rc.isAvulso ? <span className="text-[#C5A059] text-[9px] uppercase">Cobrado Sep.</span> : `+ R$ ${rc.total.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    </span>
                                   </div>
                                 ))}
                               </div>
@@ -1901,13 +2225,18 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                     currentCalc={calc}
                     history={history}
                     allTransactions={transactions}
+                    replacementContracts={replacementContracts}
                     availableCategories={availableCategories}
                     onClose={() => setPaymentSelectionRental(null)}
-                    onConfirmPayment={async (rentalId, calcObj, customDesc, caucaoToPay, destination = 'investor') => {
-                      if (caucaoToPay && onPayCaucao) {
-                        await onPayCaucao(rentalId, caucaoToPay.number, caucaoToPay.value);
+                    onConfirmPayment={async (rentalId, billingData) => {
+                      if (billingData.caucaoToPay && onPayCaucao) {
+                        await onPayCaucao(rentalId, billingData.caucaoToPay.number, billingData.caucaoToPay.value);
                       }
-                      onConfirmPayment(rentalId, { ...calcObj, customDescription: customDesc, customRepDescription: customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva'), destination });
+                      const customDesc = billingData.customDescription || '';
+                      onConfirmPayment(rentalId, { 
+                        ...billingData, 
+                        customRepDescription: customDesc ? customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva') : ''
+                      });
                     }}
                     calculateBoletoForCycle={calculateBoletoForCycle}
                   />

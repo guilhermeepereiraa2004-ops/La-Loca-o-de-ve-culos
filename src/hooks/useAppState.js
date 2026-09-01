@@ -2606,7 +2606,7 @@ export const useAppState = () => {
     const retidoSuffix = isRetido ? ' [Retido Administradora]' : '';
 
     // 1a. Pagamento de Aluguel Carro Principal (Entrada - base do investidor principal)
-    if (mainRent > 0) {
+    if (mainRent > 0 || (mainRent === 0 && billingData.manualAdjustment)) {
       trans.push({
         date: transactionDate,
         type: 'in',
@@ -2639,7 +2639,7 @@ export const useAppState = () => {
         date: transactionDate,
         type: 'in',
         val: mainAdminRevenue,
-        desc: `Taxa Adm - ${rental.user}`,
+        desc: `Taxa Adm${refStr} - ${rental.user}`,
         cat: 'Taxa Adm',
         vehiclePlate: rental.plate,
         status: 'Concluído',
@@ -2667,7 +2667,7 @@ export const useAppState = () => {
         date: transactionDate,
         type: 'in',
         val: repAdminRevenue,
-        desc: `Taxa Adm Reserva - ${rental.user}`,
+        desc: `Taxa Adm Reserva${refStr} - ${rental.user}`,
         cat: 'Taxa Adm',
         vehiclePlate: replacementPlate,
         status: 'Concluído',
@@ -2681,7 +2681,7 @@ export const useAppState = () => {
         date: transactionDate,
         type: 'in',
         val: billingData.tireTax,
-        desc: `Taxa de Pneus - ${rental.user}`,
+        desc: `Taxa de Pneus${refStr} - ${rental.user}`,
         cat: 'taxa de pneus',
         vehiclePlate: rental.plate,
         status: 'Concluído',
@@ -2695,7 +2695,7 @@ export const useAppState = () => {
         date: transactionDate,
         type: 'in',
         val: billingData.lateFee,
-        desc: `Multa por atraso - ${rental.user}`,
+        desc: `Multa por atraso${refStr} - ${rental.user}`,
         cat: 'multa',
         vehiclePlate: rental.plate,
         status: 'Concluído',

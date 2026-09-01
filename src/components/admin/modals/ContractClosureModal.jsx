@@ -122,6 +122,24 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         const dailyValue = typeof rental.value === 'string' ? parseCurrency(rental.value) : (parseFloat(rental.value) || 0);
         unpaidRentals = diffDays * dailyValue;
         unpaidCyclesList.push({ labelRef: 'Locação Diária', debtValue: unpaidRentals });
+        
+        setAutoBreakdown({
+          fullWeeks: 0,
+          extraDays: diffDays,
+          tireTaxCycles: 0,
+          baseWeeklyRate: 0,
+          dailyRate: dailyValue,
+          tireTaxVal: 0,
+          autoTotal: unpaidRentals,
+          unpaidCyclesList
+        });
+
+        if (!isCustomizingRentals) {
+          setCustomWeeks(0);
+          setCustomDays(diffDays);
+          setCustomTireTaxCycles(0);
+          setIncludeTireTax(false);
+        }
       } else {
         // --- Replica EXATAMENTE a logica do AdminFaturamento/calculatePendingCycles ---
         const baseValue = parseCurrency(rental.value || 0) || 0;
@@ -409,44 +427,54 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
     const finalTotalDebts = displayTotalDebts;
     const finalBalanceRaw = displayBalanceRaw;
 
-    // Constrói a lista exata de ciclos para que as transações criadas no fechamento batam perfeitamente com a aba de faturamento
     let effectiveCyclesList = autoBreakdown.unpaidCyclesList || [];
     if (isCustomizingRentals) {
       const list = [];
-      const baseWVal = autoBreakdown.baseWeeklyRate || (parseCurrency(rental.value || 0) || 0);
-      const dVal = autoBreakdown.dailyRate || (baseWVal / 7);
-      const wCount = parseInt(customWeeks, 10) || 0;
-      const dCount = parseInt(customDays, 10) || 0;
-      const autoCycles = autoBreakdown.unpaidCyclesList || [];
-      let weekIdx = 0;
-
-      for (let i = 0; i < wCount; i++) {
-        const isExtraManualWeek = i >= (autoBreakdown.weeks || 0);
-        if (autoCycles[weekIdx] && !isExtraManualWeek) {
+      if (rental.rentalType === 'daily') {
+        const dCount = parseInt(customDays, 10) || 0;
+        const dVal = autoBreakdown.dailyRate;
+        const adj = parseFloat(customAdjustmentVal) || 0;
+        list.push({
+          labelRef: `Locação Diária (${dCount} dias)`,
+          debtValue: (dCount * dVal) + adj,
+          isManualAddition: true
+        });
+      } else {
+        const baseWVal = autoBreakdown.baseWeeklyRate || (parseCurrency(rental.value || 0) || 0);
+        const dVal = autoBreakdown.dailyRate || (baseWVal / 7);
+        const wCount = parseInt(customWeeks, 10) || 0;
+        const dCount = parseInt(customDays, 10) || 0;
+        const autoCycles = autoBreakdown.unpaidCyclesList || [];
+        let weekIdx = 0;
+  
+        for (let i = 0; i < wCount; i++) {
+          const isExtraManualWeek = i >= (autoBreakdown.weeks || 0);
+          if (autoCycles[weekIdx] && !isExtraManualWeek) {
+            list.push({
+              labelRef: autoCycles[weekIdx].labelRef,
+              debtValue: baseWVal + (includeTireTax ? 25 : 0),
+              isManualAddition: false
+            });
+          } else {
+            list.push({
+              labelRef: `Semana ${weekIdx + 1} (Ref: Adicional Manual no Encerramento)`,
+              debtValue: baseWVal + (includeTireTax ? 25 : 0),
+              isManualAddition: true
+            });
+          }
+          weekIdx++;
+        }
+  
+        if (dCount > 0) {
+          const partialCycle = autoCycles[weekIdx];
+          const isExtraManualDays = (autoBreakdown.days || 0) === 0;
+          const labelText = partialCycle && !isExtraManualDays ? partialCycle.labelRef : `Semana ${weekIdx + 1} (Ref: Proporcional de ${dCount} dias${isExtraManualDays ? ' - Adicional Manual' : ''})`;
           list.push({
-            labelRef: autoCycles[weekIdx].labelRef,
-            debtValue: baseWVal + (includeTireTax ? 25 : 0),
-            isManualAddition: false
-          });
-        } else {
-          list.push({
-            labelRef: `Semana ${weekIdx + 1} (Ref: Adicional Manual no Encerramento)`,
-            debtValue: baseWVal + (includeTireTax ? 25 : 0),
-            isManualAddition: true
+            labelRef: labelText,
+            debtValue: (dCount * dVal) + (includeTireTax ? 25 : 0),
+            isManualAddition: isExtraManualDays
           });
         }
-        weekIdx++;
-      }
-
-      if (dCount > 0) {
-        const partialCycle = autoCycles[weekIdx];
-        const isExtraManualDays = (autoBreakdown.days || 0) === 0;
-        const labelText = partialCycle && !isExtraManualDays ? partialCycle.labelRef : `Semana ${weekIdx + 1} (Ref: Proporcional de ${dCount} dias${isExtraManualDays ? ' - Adicional Manual' : ''})`;
-        list.push({
-          labelRef: labelText,
-          debtValue: (dCount * dVal) + (includeTireTax ? 25 : 0),
-          isManualAddition: isExtraManualDays
-        });
       }
       effectiveCyclesList = list;
     }
@@ -742,6 +770,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                   
                                   {/* Semanas Completas */}
+                                  {rental.rentalType !== 'daily' && (
                                   <div className="bg-neutral-950 p-3.5 rounded-xl border border-neutral-800 flex flex-col justify-between">
                                     <div>
                                       <span className="text-[9px] font-black uppercase tracking-widest text-[#C5A059] block mb-1">
@@ -778,15 +807,16 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                                       = R$ {((parseInt(customWeeks, 10) || 0) * autoBreakdown.baseWeeklyRate).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
+                                  )}
 
                                   {/* Dias Proporcionais */}
-                                  <div className="bg-neutral-950 p-3.5 rounded-xl border border-neutral-800 flex flex-col justify-between">
+                                  <div className={`bg-neutral-950 p-3.5 rounded-xl border border-neutral-800 flex flex-col justify-between ${rental.rentalType === 'daily' ? 'sm:col-span-3' : ''}`}>
                                     <div>
                                       <span className="text-[9px] font-black uppercase tracking-widest text-[#C5A059] block mb-1">
-                                        Dias Proporcionais
+                                        {rental.rentalType === 'daily' ? 'Dias Locados' : 'Dias Proporcionais'}
                                       </span>
                                       <p className="text-[8px] text-neutral-400 font-bold mb-3">
-                                        {customDays} dia(s) avulso(s) adicionais
+                                        {customDays} dia(s) {rental.rentalType === 'daily' ? '' : 'avulso(s) adicionais'}
                                       </p>
                                     </div>
                                     <div className="flex items-center gap-2">
@@ -818,6 +848,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                                   </div>
 
                                   {/* Taxa de Pneus */}
+                                  {rental.rentalType !== 'daily' && (
                                   <div className="bg-neutral-950 p-3.5 rounded-xl border border-neutral-800 flex flex-col justify-between">
                                     <div>
                                       <div className="flex items-center justify-between mb-1">
@@ -869,6 +900,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
                                       = R$ {(includeTireTax ? (parseInt(customTireTaxCycles, 10) || 0) * 25 : 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
                                   </div>
+                                  )}
 
                                 </div>
                               </div>

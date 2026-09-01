@@ -6,6 +6,78 @@ import { getPayoutsForInvestor, formatReferenceMonth } from '../../../utils/inve
 import { getInvestorShareForTransaction } from '../../../utils/investorUtils.js';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
+const SearchableVehicleSelect = ({ value, onChange, options }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = React.useRef(null);
+
+  React.useEffect(() => {
+    function handleClickOutside(event) {
+      if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const filteredOptions = options.filter(opt => 
+    opt.label.toLowerCase().includes(search.toLowerCase()) || 
+    opt.value.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const selectedOpt = options.find(o => o.value === value) || options[0];
+
+  return (
+    <div ref={wrapperRef} className="relative w-full min-w-[160px]">
+      <div 
+        className="flex items-center justify-between bg-transparent text-xs font-semibold text-neutral-600 outline-none border-none cursor-pointer focus:ring-0 w-full select-none"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <span className="truncate pr-2">{selectedOpt?.label}</span>
+        <ChevronDown size={14} className="text-neutral-400 shrink-0" />
+      </div>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 z-50 w-[280px] mt-2 bg-white border border-neutral-200 rounded-lg shadow-xl overflow-hidden">
+          <div className="p-2 border-b border-neutral-100 bg-neutral-50/50">
+            <div className="relative">
+              <Search size={12} className="absolute left-2.5 top-2.5 text-neutral-400" />
+              <input 
+                type="text"
+                autoFocus
+                className="w-full pl-7 pr-2 py-1.5 text-xs border border-neutral-200 rounded-md focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-shadow bg-white"
+                placeholder="Pesquisar placa ou modelo..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="max-h-60 overflow-y-auto py-1">
+            {filteredOptions.length > 0 ? (
+              filteredOptions.map(opt => (
+                <div 
+                  key={opt.value}
+                  className={`px-3 py-2 text-xs cursor-pointer transition-colors ${value === opt.value ? 'bg-emerald-50 text-emerald-700 font-bold' : 'text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900'}`}
+                  onClick={() => {
+                    onChange(opt.value);
+                    setIsOpen(false);
+                    setSearch('');
+                  }}
+                >
+                  {opt.label}
+                </div>
+              ))
+            ) : (
+              <div className="px-3 py-4 text-xs text-center text-neutral-400">Nenhum veículo encontrado</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const AdminInvestidores = ({
   investors,
   investorForm,
@@ -595,17 +667,15 @@ const AdminInvestidores = ({
                             <div className="flex items-center gap-2 bg-white border border-neutral-200 px-3 py-1.5 rounded-lg w-full sm:w-auto justify-between sm:justify-start hover:border-neutral-300 transition-colors">
                               <div className="flex items-center gap-2 w-full">
                                 <Filter size={12} className="text-neutral-400 shrink-0" />
-                                <select
+                                <SearchableVehicleSelect
                                   value={selectedPlateFilter}
-                                  onChange={(e) => setSelectedPlateFilter(e.target.value)}
-                                  className="bg-transparent text-xs font-semibold text-neutral-600 outline-none border-none cursor-pointer pr-4 focus:ring-0 w-full"
-                                >
-                                  <option value="all">Todos os Ativos</option>
-                                  <option value="none">Geral (Sem veículo)</option>
-                                  {invVehs.map(v => (
-                                    <option key={v.id} value={v.plate}>{v.model} ({v.plate})</option>
-                                  ))}
-                                </select>
+                                  onChange={setSelectedPlateFilter}
+                                  options={[
+                                    { value: 'all', label: 'Todos os Ativos' },
+                                    { value: 'none', label: 'Geral (Sem veículo)' },
+                                    ...invVehs.map(v => ({ value: v.plate, label: `${v.model} (${v.plate})` }))
+                                  ]}
+                                />
                               </div>
                             </div>
                             {selectedPlateFilter !== 'all' && (
