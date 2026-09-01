@@ -907,11 +907,13 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           
                           let newWeeklyRate = 0;
                           let newReplacementCharge = 0;
-                          
                           if (oldRentTotal > 0) {
                             const ratio = Math.max(0, appliedRent) / oldRentTotal;
-                            newWeeklyRate = (cycle.calc.weeklyRate || 0) * ratio;
-                            newReplacementCharge = (cycle.calc.replacementCharge || 0) * ratio;
+                            const oldNetMainRent = (cycle.calc.weeklyRate || 0) - (cycle.calc.abatimento || 0);
+                            const oldNetRepRent = cycle.calc.replacementCharge || 0;
+                            
+                            newWeeklyRate = oldNetMainRent * ratio;
+                            newReplacementCharge = oldNetRepRent * ratio;
                           } else {
                             newWeeklyRate = appliedRent;
                           }
