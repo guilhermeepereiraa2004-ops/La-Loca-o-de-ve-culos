@@ -29,6 +29,9 @@ export const getRentalCycles = (rental, targetEndLimit = new Date(), forcePropor
   let endLimit;
   if (isClosed && rental.endDate) {
     endLimit = new Date(rental.endDate + 'T12:00:00');
+    if (endLimit > startObj) {
+      endLimit.setDate(endLimit.getDate() - 1);
+    }
   } else {
     endLimit = new Date(targetEndLimit.getTime());
   }

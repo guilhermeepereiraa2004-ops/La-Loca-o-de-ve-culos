@@ -363,10 +363,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           if (match) {
             const newTotal = parseFloat(match[1]);
             calc.total = newTotal;
-            const isDaily = rental.rentalType === 'daily';
-            const isTireTaxDisabled = isClosed && closureSummary?.rentalCalculationBreakdown && closureSummary.rentalCalculationBreakdown.includeTireTax === false;
-            const tireTaxVal = (!isDaily && !isTireTaxDisabled) ? (rental.tireTax ? parseFloat(rental.tireTax) : 25) : 0;
-            calc.weeklyRate = Math.max(0, newTotal - tireTaxVal);
+            calc.weeklyRate = Math.max(0, newTotal - (calc.tireTax || 0));
           }
         }
         
@@ -892,18 +889,18 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           const paidLateFee = cycle.calc.paidLateFee || 0;
                           const remainingLateFee = Math.max(0, totalLateFee - paidLateFee);
                           
-                          let valToDistribute = finalTotal;
+                          const valToDistribute = valNum - discountVal;
                           
                           // 1. Cobre multas pendentes
                           const appliedLateFee = Math.min(valToDistribute, remainingLateFee);
-                          valToDistribute -= appliedLateFee;
+                          let remainingAfterLateFee = valToDistribute - appliedLateFee;
                           
                           // 2. Cobre taxa de pneus pendente
-                          const appliedTireTax = Math.min(valToDistribute, remainingTireTax);
-                          valToDistribute -= appliedTireTax;
+                          const appliedTireTax = Math.min(remainingAfterLateFee, remainingTireTax);
+                          let remainingAfterTireTax = remainingAfterLateFee - appliedTireTax;
                           
                           // 3. O resto é aluguel
-                          const appliedRent = valToDistribute;
+                          const appliedRent = remainingAfterTireTax;
                           
                           let newWeeklyRate = 0;
                           let newReplacementCharge = 0;
@@ -942,7 +939,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           
                           const remaining = cycle.actualTotal > 0 ? Math.max(0, cycle.calc.total - cycle.actualTotal) : cycle.calc.total;
                           if (Math.abs(valNum - remaining) > 0.01) {
-                            payload.desc = payload.desc + ` [VALOR_ALTERADO: ${(payload.modifiedCalc.total).toFixed(2)}]`;
+                            payload.desc = payload.desc + ` [VALOR_ALTERADO: ${valNum.toFixed(2)}]`;
                           }
                           setPendingConfirm(payload);
                         }}
@@ -973,6 +970,14 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                       )}
                       {cycle.isPaid && cycle.adjustments && cycle.adjustments.length > 0 && (
                         <div className="mt-1 space-y-0.5 w-full text-right">
+                          <div className="flex justify-end items-center gap-2 text-[9px] font-bold">
+                            <span className="text-neutral-500 uppercase">
+                              ALUGUEL
+                            </span>
+                            <span className="text-neutral-700">
+                              R$ {((cycle.actualTotal || 0) - cycle.adjustments.reduce((sum, adj) => sum + (adj.type === 'in' ? parseFloat(adj.val || 0) : -parseFloat(adj.val || 0)), 0)).toFixed(2).replace('.', ',')}
+                            </span>
+                          </div>
                           {cycle.adjustments.map((adj, idx) => (
                             <div key={idx} className="flex justify-end items-center gap-2 text-[9px] font-bold">
                               <span className={adj.type === 'out' ? 'text-amber-600/80 uppercase' : 'text-blue-600/80 uppercase'}>
@@ -1256,12 +1261,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       });
     }
 
-    const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
-    const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
-    const isTireTaxDisabled = isClosed && closureSummary?.rentalCalculationBreakdown && closureSummary.rentalCalculationBreakdown.includeTireTax === false;
-
     const abatimento = !isDaily ? (dailyRate * totalDaysInMaintenance) : 0;
-    const tireTax = (!isDaily && !isTireTaxDisabled) ? (rental.tireTax ? parseFloat(rental.tireTax) : 25) : 0;
+    const tireTax = !isDaily ? (rental.tireTax ? parseFloat(rental.tireTax) : 25) : 0;
     const lateFeeVal = parseFloat(lateFees[rental.id] || 0);
 
     // Find matching fines for this rental/driver
