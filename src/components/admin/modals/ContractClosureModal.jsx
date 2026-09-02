@@ -112,6 +112,8 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       let proratedDaysUsed = 0;
       let unpaidCyclesList = [];
 
+      const closureDateStr = (inspection?.date || inspection?.createdAt || rental.endDate || new Date().toISOString()).substring(0, 10);
+
       if (rental.rentalType === 'daily') {
         const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
         const startDate = new Date(startStr + 'T12:00:00');
@@ -145,7 +147,6 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         const baseValue = parseCurrency(rental.value || 0) || 0;
         const dailyRate = baseValue / 7;
 
-        const closureDateStr = (inspection?.date || inspection?.createdAt || rental.endDate || new Date().toISOString()).substring(0, 10);
         const endLimit = new Date(closureDateStr + 'T12:00:00');
 
         const rentalCycles = getRentalCycles(rental, endLimit, true);
