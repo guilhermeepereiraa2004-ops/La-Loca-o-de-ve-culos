@@ -1573,6 +1573,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
       const specificMatches = specificPayments.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes(cycleInfo.startStr.split('-').reverse().join('/')));
       if (specificMatches.length > 0) {
+        const overrideTx = specificMatches.find(t => (t.desc || '').includes('[VALOR_ALTERADO:'));
+        if (overrideTx) {
+          const match = (overrideTx.desc || '').match(/\[VALOR_ALTERADO:\s*([\d.]+)\]/);
+          if (match) {
+            calc.total = parseFloat(match[1]);
+          }
+        }
         const actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
         if (actualTotal >= (calc.total - 0.50) || actualTotal >= (calc.weeklyRate - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('baixa manual na vistoria') || (t.desc || '').toLowerCase().includes('abatimento'))) {
           isPaid = true;
@@ -1625,8 +1632,16 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             (closureCycle.labelRef.includes('Proporcional') && (t.desc || '').includes('Proporcional'))
           );
           if (specificMatches.length > 0) {
+            let cycleDebtValue = closureCycle.debtValue;
+            const overrideTx = specificMatches.find(t => (t.desc || '').includes('[VALOR_ALTERADO:'));
+            if (overrideTx) {
+              const match = (overrideTx.desc || '').match(/\[VALOR_ALTERADO:\s*([\d.]+)\]/);
+              if (match) {
+                cycleDebtValue = parseFloat(match[1]);
+              }
+            }
             const actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
-            if (actualTotal >= (closureCycle.debtValue - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('abatimento') || (t.desc || '').toLowerCase().includes('baixa manual'))) {
+            if (actualTotal >= (cycleDebtValue - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('abatimento') || (t.desc || '').toLowerCase().includes('baixa manual'))) {
               isPaid = true;
             }
           }
