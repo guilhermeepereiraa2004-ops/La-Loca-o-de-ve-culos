@@ -2578,8 +2578,13 @@ export const useAppState = () => {
     const repRent = billingData.replacementCharge || 0;
     
     // Extrai o (Ref: xx/xx a xx/xx) se existir para vincular os ajustes ao ciclo
-    const matchRef = billingData.customDescription?.match(/\(Ref: .*?\)/);
-    const refStr = matchRef ? ` ${matchRef[0]}` : '';
+    let refStr = '';
+    if (billingData.labelRef) {
+      refStr = ` (Ref: ${billingData.labelRef})`;
+    } else {
+      const matchRef = billingData.customDescription?.match(/\(Ref: .*?\)/);
+      refStr = matchRef ? ` ${matchRef[0]}` : '';
+    }
 
     const companyDiscount = billingData.companyDiscount || 0;
     const additionalPaymentValue = billingData.additionalPaymentValue || 0;

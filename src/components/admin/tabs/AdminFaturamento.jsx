@@ -367,7 +367,33 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           }
         }
         
-        actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+        if (allTransactions) {
+          const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
+          cycleAdjustments = allTransactions.filter(t => {
+            if (!t) return false;
+            const tPlate = (t.vehiclePlate || '').toLowerCase().trim();
+            const matchesPlate = tPlate === rentalPlate;
+            const matchesRef = (t.desc || '').includes(labelRef);
+            const isAdjustment = t.cat?.toLowerCase() !== 'aluguel' && t.cat?.toLowerCase() !== 'taxa adm' && t.cat?.toLowerCase() !== 'taxa de pneus';
+            
+            return matchesPlate && matchesRef && isAdjustment;
+          });
+        }
+
+        let paidAmt = 0;
+        let cycleDiscount = cycleAdjustments.filter(a => a.type === 'out').reduce((sum, a) => sum + parseFloat(a.val || a.income_val || a.value || 0), 0);
+        
+        specificMatches.forEach(t => {
+          const val = parseFloat(t.val || t.income_val || t.value || 0);
+          if (t.type !== 'out') {
+            paidAmt += val;
+          }
+        });
+        
+        actualTotal = paidAmt - cycleDiscount;
+        if (cycleDiscount > 0) {
+          calc.total = Math.max(0, calc.total - cycleDiscount);
+        }
         let paidTireTax = 0;
         let paidLateFee = 0;
         specificMatches.forEach(t => {
@@ -384,18 +410,6 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         }
 
         isRetido = specificMatches.some(t => (t.desc || '').toLowerCase().includes('[retido'));
-        if (allTransactions) {
-          const rentalPlate = (rental.plate || rental.vehiclePlate || '').toLowerCase().trim();
-          cycleAdjustments = allTransactions.filter(t => {
-            if (!t) return false;
-            const tPlate = (t.vehiclePlate || '').toLowerCase().trim();
-            const matchesPlate = tPlate === rentalPlate;
-            const matchesRef = (t.desc || '').includes(labelRef);
-            const isAdjustment = t.cat?.toLowerCase() !== 'aluguel' && t.cat?.toLowerCase() !== 'taxa adm' && t.cat?.toLowerCase() !== 'taxa de pneus';
-            
-            return matchesPlate && matchesRef && isAdjustment;
-          });
-        }
       } else if (!isPaid) {
         // 2. Se não tem específico, procura um pagamento genérico que tenha sido feito dentro da data do ciclo (ou até 7 dias depois)
         const startMinus7Obj = new Date(calc.cycleStart + 'T12:00:00');
@@ -889,7 +903,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           const paidLateFee = cycle.calc.paidLateFee || 0;
                           const remainingLateFee = Math.max(0, totalLateFee - paidLateFee);
                           
-                          const valToDistribute = valNum - discountVal;
+                          const valToDistribute = valNum;
                           
                           // 1. Cobre multas pendentes
                           const appliedLateFee = Math.min(valToDistribute, remainingLateFee);
@@ -930,7 +944,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                             companyDiscountDesc: companyDiscountDesc || '',
                             additionalPaymentValue: additionalVal,
                             additionalPaymentCat: additionalPaymentCat || 'Adicional',
-                            additionalPaymentDesc: additionalPaymentDesc || ''
+                            additionalPaymentDesc: additionalPaymentDesc || '',
+                            labelRef: cycle.labelRef
                           };
                           const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName}`;
                           
@@ -975,7 +990,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                               ALUGUEL
                             </span>
                             <span className="text-neutral-700">
-                              R$ {((cycle.actualTotal || 0) - cycle.adjustments.reduce((sum, adj) => sum + (adj.type === 'in' ? parseFloat(adj.val || 0) : -parseFloat(adj.val || 0)), 0)).toFixed(2).replace('.', ',')}
+                              R$ {((cycle.actualTotal || 0) + cycle.adjustments.filter(a => a.type === 'out').reduce((sum, adj) => sum + parseFloat(adj.val || 0), 0) - cycle.adjustments.filter(a => a.type === 'in').reduce((sum, adj) => sum + parseFloat(adj.val || 0), 0)).toFixed(2).replace('.', ',')}
                             </span>
                           </div>
                           {cycle.adjustments.map((adj, idx) => (
@@ -1015,7 +1030,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                               replacementCharge: 0,
                               tireTax: 0,
                               lateFee: 0,
-                              manualAdjustment: true
+                              manualAdjustment: true,
+                              labelRef: cycle.labelRef
                             };
                             const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName} [VALOR_ALTERADO: 0]`;
                             setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay: null, destination: 'investor' });
