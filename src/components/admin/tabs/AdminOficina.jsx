@@ -523,7 +523,8 @@ const AdminOficina = ({
                   ['Adicionado em', formatDateTime(viewingOS.createdAt || viewingOS.openedAt || viewingOS.date)], 
                   ['Conclusão', viewingOS.status === 'Concluída' && viewingOS.closedAt ? formatDate(viewingOS.closedAt) : (viewingOS.status === 'Concluída' ? formatDate(viewingOS.date) : '---')],
                   ['KM', `${viewingOS.km || '---'} km`], 
-                  ['Responsável', viewingOS.responsible]
+                  ['Responsável', viewingOS.responsible],
+                  ['Oficina / Prestador', viewingOS.provider || '---']
                 ].map(([label, val]) => (
                   <div key={label} className="bg-neutral-50 p-4 rounded-2xl">
                     <p className="text-[8px] uppercase text-neutral-400 font-black">{label}</p>
