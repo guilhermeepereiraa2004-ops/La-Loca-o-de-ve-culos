@@ -159,7 +159,7 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
         }
         
         driverInspections.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        const lastInsDateStr = (driverInspections[driverInspections.length - 1].date || '').split('T')[0];
+        const lastInsDateStr = (driverInspections[0].date || '').split('T')[0];
         const lastInsDateTime = new Date(`${lastInsDateStr}T00:00:00Z`).getTime();
         const daysSinceLastIns = (todayTime - lastInsDateTime) / (1000 * 60 * 60 * 24);
         
@@ -174,7 +174,10 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
         
         return null;
       })
-      .filter(alert => alert !== null);
+      .filter(alert => alert !== null)
+      .filter((alert, index, self) => 
+        index === self.findIndex(t => t.plate === alert.plate && t.driver === alert.driver)
+      );
   }, [rentals, inspections]);
 
   // Paginated view
