@@ -49,7 +49,7 @@ const formatDateTime = (dateStr) => {
 const EMPTY_FORM = {
   plate: '', model: '', km: '', date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
   description: '', parts: [{ name: '', qty: 1, unitValue: '' }],
-  laborValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta', vehicleId: ''
+  laborValue: '', discountValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta', vehicleId: ''
 };
 
 const AdminOficina = ({ 
@@ -109,7 +109,7 @@ const AdminOficina = ({
   const responsibleOptions = ['Administradora', ...(selectedVehicle?.investor ? [selectedVehicle.investor] : [])];
 
   const partsTotal = form.parts.reduce((acc, p) => acc + (parseBrValue(p.unitValue) * (parseInt(p.qty) || 0)), 0);
-  const totalOS = partsTotal + parseBrValue(form.laborValue);
+  const totalOS = Math.max(0, partsTotal + parseBrValue(form.laborValue) - parseBrValue(form.discountValue || '0'));
 
   const addPart = () => setForm(prev => ({ ...prev, parts: [...prev.parts, { name: '', qty: 1, unitValue: '' }] }));
   const removePart = (i) => setForm(prev => ({ ...prev, parts: prev.parts.filter((_, idx) => idx !== i) }));
@@ -242,8 +242,15 @@ const AdminOficina = ({
                       <td className="py-4 px-6 text-sm font-medium text-neutral-500">
                         #{String(os.id).slice(-5)}
                       </td>
-                      <td className="py-4 px-6 text-sm font-bold text-neutral-800">
-                        {clientName}
+                      <td className="py-4 px-6">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-neutral-800">{os.responsible || '---'}</span>
+                          {activeRental && (
+                            <span className="text-[10px] uppercase font-black text-neutral-400 mt-0.5">
+                              Condutor: {activeRental.user || activeRental.nome}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="py-4 px-6 text-sm font-medium text-neutral-600">
                         {os.plate} {os.model}
@@ -440,7 +447,7 @@ const AdminOficina = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-2">
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Mão de Obra (R$)</label>
                     <input 
@@ -448,8 +455,24 @@ const AdminOficina = ({
                       value={form.laborValue} 
                       onChange={e => {
                         let v = e.target.value.replace(/\D/g, '');
+                        if (!v) { setForm({ ...form, laborValue: '' }); return; }
                         v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
                         setForm({ ...form, laborValue: v });
+                      }} 
+                      placeholder="0,00" 
+                      className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Desconto (R$)</label>
+                    <input 
+                      type="text" 
+                      value={form.discountValue || ''} 
+                      onChange={e => {
+                        let v = e.target.value.replace(/\D/g, '');
+                        if (!v) { setForm({ ...form, discountValue: '' }); return; }
+                        v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                        setForm({ ...form, discountValue: v });
                       }} 
                       placeholder="0,00" 
                       className="w-full bg-neutral-50 p-4 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 font-bold text-sm" 
@@ -555,6 +578,9 @@ const AdminOficina = ({
                 <div className="space-y-1">
                   <p className="text-[9px] text-neutral-500 uppercase font-black">Mão de Obra: <span className="text-white">R$ {parseBrValue(viewingOS.laborValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                   <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {(viewingOS.parts || []).reduce((a, p) => a + ((p.qty || 0) * parseBrValue(p.unitValue)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                  {viewingOS.discountValue && parseBrValue(viewingOS.discountValue) > 0 && (
+                    <p className="text-[9px] text-amber-500 uppercase font-black">Desconto: <span className="text-amber-400">- R$ {parseBrValue(viewingOS.discountValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-[9px] text-neutral-400 uppercase font-black">Total da O.S.</p>
