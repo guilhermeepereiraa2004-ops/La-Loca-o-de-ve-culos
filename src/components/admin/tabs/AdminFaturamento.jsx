@@ -385,12 +385,13 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
         
         specificMatches.forEach(t => {
           const val = parseFloat(t.val || t.income_val || t.value || 0);
-          if (t.type !== 'out') {
+          const cat = (t.cat || '').toLowerCase().trim();
+          if (cat === 'aluguel' || cat === 'taxa de pneus') {
             paidAmt += val;
           }
         });
         
-        actualTotal = paidAmt - cycleDiscount;
+        actualTotal = paidAmt;
         if (cycleDiscount > 0) {
           calc.total = Math.max(0, calc.total - cycleDiscount);
         }
@@ -529,7 +530,10 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           );
 
           if (specificMatches.length > 0) {
-            actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+            actualTotal = specificMatches.reduce((sum, t) => {
+              const cat = (t.cat || '').toLowerCase().trim();
+              return sum + (cat === 'aluguel' || cat === 'taxa de pneus' ? parseFloat(t.val || t.income_val || t.value || 0) : 0);
+            }, 0);
             if (actualTotal >= (totalVal - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('abatimento') || (t.desc || '').toLowerCase().includes('baixa manual'))) {
               isPaid = true;
             }
@@ -560,7 +564,10 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       
       const specificMatches = specificPayments.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes(currentCalc.cycleStart.split('-').reverse().join('/')));
       if (specificMatches.length > 0) {
-        actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+        actualTotal = specificMatches.reduce((sum, t) => {
+          const cat = (t.cat || '').toLowerCase().trim();
+          return sum + (cat === 'aluguel' || cat === 'taxa de pneus' ? parseFloat(t.val || t.income_val || t.value || 0) : 0);
+        }, 0);
         isPaid = actualTotal >= (currentCalc.total - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('baixa manual na vistoria') || (t.desc || '').toLowerCase().includes('abatimento'));
         isRetido = specificMatches.some(t => (t.desc || '').toLowerCase().includes('[retido'));
         
@@ -709,7 +716,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                   <div className="flex flex-col items-end gap-2 w-full animate-in fade-in zoom-in-95 duration-200">
                     <div className="flex flex-col gap-3 w-full bg-neutral-100/50 p-3 rounded-xl border border-neutral-200/60 mt-2">
                       <div className="flex items-center gap-2 justify-between">
-                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Total Base:</span>
+                        <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Valor Base do Aluguel:<br/><span className="text-[8px] text-neutral-400 font-normal lowercase">(não abata o desconto aqui)</span></span>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-bold text-sm">R$</span>
                           <input 
@@ -819,7 +826,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                       )}
 
                       <div className="flex items-center justify-between pt-2 border-t border-neutral-300">
-                        <span className="text-[10px] font-black text-neutral-800 uppercase tracking-wider">Total a Pagar:</span>
+                        <span className="text-[10px] font-black text-neutral-800 uppercase tracking-wider">Total a Cobrar do Motorista:</span>
                         <span className="text-sm font-black text-emerald-700">
                           R$ {((parseFloat(customValue) || 0) - (parseFloat(companyDiscount) || 0) + (parseFloat(additionalPaymentValue) || 0) + (includeCaucao && cycle.calc.caucaoInstallment ? cycle.calc.caucaoInstallment.value : 0)).toFixed(2).replace('.', ',')}
                         </span>
@@ -990,7 +997,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                               ALUGUEL
                             </span>
                             <span className="text-neutral-700">
-                              R$ {((cycle.actualTotal || 0) + cycle.adjustments.filter(a => a.type === 'out').reduce((sum, adj) => sum + parseFloat(adj.val || 0), 0) - cycle.adjustments.filter(a => a.type === 'in').reduce((sum, adj) => sum + parseFloat(adj.val || 0), 0)).toFixed(2).replace('.', ',')}
+                              R$ {((cycle.actualTotal || 0)).toFixed(2).replace('.', ',')}
                             </span>
                           </div>
                           {cycle.adjustments.map((adj, idx) => (
@@ -1597,7 +1604,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             calc.total = parseFloat(match[1]);
           }
         }
-        const actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+        const actualTotal = specificMatches.reduce((sum, t) => {
+          const cat = (t.cat || '').toLowerCase().trim();
+          return sum + (cat === 'aluguel' || cat === 'taxa de pneus' ? parseFloat(t.val || t.income_val || t.value || 0) : 0);
+        }, 0);
         if (actualTotal >= (calc.total - 0.50) || actualTotal >= (calc.weeklyRate - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('baixa manual na vistoria') || (t.desc || '').toLowerCase().includes('abatimento'))) {
           isPaid = true;
         }
@@ -1657,7 +1667,10 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                 cycleDebtValue = parseFloat(match[1]);
               }
             }
-            const actualTotal = specificMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
+            const actualTotal = specificMatches.reduce((sum, t) => {
+              const cat = (t.cat || '').toLowerCase().trim();
+              return sum + (cat === 'aluguel' || cat === 'taxa de pneus' ? parseFloat(t.val || t.income_val || t.value || 0) : 0);
+            }, 0);
             if (actualTotal >= (cycleDebtValue - 0.50) || specificMatches.some(t => (t.desc || '').toLowerCase().includes('abatimento') || (t.desc || '').toLowerCase().includes('baixa manual'))) {
               isPaid = true;
             }

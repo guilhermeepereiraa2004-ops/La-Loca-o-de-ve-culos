@@ -11,6 +11,7 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
   const getActionBadgeColor = (action) => {
     const act = String(action).toLowerCase();
     if (act.includes('criar') || act.includes('adicionar')) return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    if (act.includes('pagamento')) return 'bg-green-50 text-green-700 border-green-100';
     if (act.includes('atualizar') || act.includes('editar')) return 'bg-amber-50 text-amber-700 border-amber-100';
     if (act.includes('apagar') || act.includes('deletar') || act.includes('excluir')) return 'bg-red-50 text-red-700 border-red-100';
     if (act.includes('login')) return 'bg-blue-50 text-blue-700 border-blue-100';
@@ -310,12 +311,45 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dados Brutos (JSON)</label>
-                <div className="bg-neutral-950 rounded-3xl p-6 overflow-x-auto text-neutral-300 font-mono text-[10px] leading-relaxed max-h-80 custom-scrollbar border border-white/5">
-                  <pre>{JSON.stringify(selectedLog.details, null, 2)}</pre>
+              {selectedLog.action === 'Pagamento' && typeof selectedLog.details === 'string' ? (
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Detalhamento do Pagamento</label>
+                  <div className="space-y-2">
+                    {selectedLog.details.split(' | ').map((item, i) => {
+                      const isDesconto = item.toLowerCase().startsWith('desconto');
+                      const isAdicional = item.toLowerCase().startsWith('adicional');
+                      const isTotal = item.toLowerCase().startsWith('total');
+                      const isRetido = item.toLowerCase().includes('retido');
+                      return (
+                        <div key={i} className={`flex justify-between items-center px-4 py-3 rounded-xl text-[11px] font-bold border ${
+                          isTotal ? 'bg-neutral-900 text-white border-neutral-800' :
+                          isDesconto ? 'bg-red-50 text-red-700 border-red-100' :
+                          isAdicional ? 'bg-green-50 text-green-700 border-green-100' :
+                          isRetido ? 'bg-amber-50 text-amber-700 border-amber-100' :
+                          'bg-neutral-50 text-neutral-700 border-neutral-100'
+                        }`}>
+                          {(() => {
+                            const parts = item.split(': ');
+                            const label = parts[0];
+                            const value = parts.slice(1).join(': ');
+                            return (<>
+                              <span className="uppercase tracking-wider text-[9px] font-black opacity-70">{label}</span>
+                              <span className="font-black">{value}</span>
+                            </>);
+                          })()}
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Dados Brutos (JSON)</label>
+                  <div className="bg-neutral-950 rounded-3xl p-6 overflow-x-auto text-neutral-300 font-mono text-[10px] leading-relaxed max-h-80 custom-scrollbar border border-white/5">
+                    <pre>{JSON.stringify(selectedLog.details, null, 2)}</pre>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer */}

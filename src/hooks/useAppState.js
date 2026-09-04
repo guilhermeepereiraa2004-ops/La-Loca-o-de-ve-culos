@@ -2762,6 +2762,53 @@ export const useAppState = () => {
         }
       }
     }
+
+    // 7. Log detalhado do pagamento confirmado em Faturamento
+    try {
+      const logParts = [];
+      const conductor = rental.user || rental.userName || 'Condutor';
+      const logPlate = rental.plate || rental.vehiclePlate || '';
+      const cycleRef = refStr
+        ? refStr.replace(/^\s*\(Ref:\s*/, '').replace(/\)\s*$/, '').trim()
+        : transactionDate;
+
+      logParts.push(`Condutor: ${conductor}`);
+      logParts.push(`Veículo: ${logPlate}`);
+      logParts.push(`Ciclo: ${cycleRef}`);
+      logParts.push(`Aluguel: R$ ${mainRent.toFixed(2).replace('.', ',')}`);
+      if ((billingData.tireTax || 0) > 0)
+        logParts.push(`Taxa de Pneus: R$ ${(billingData.tireTax).toFixed(2).replace('.', ',')}`);
+      if (mainAdminRevenue > 0)
+        logParts.push(`Taxa Adm: R$ ${mainAdminRevenue.toFixed(2).replace('.', ',')}`);
+      if ((billingData.lateFee || 0) > 0)
+        logParts.push(`Multa/Juros: R$ ${(billingData.lateFee).toFixed(2).replace('.', ',')}`);
+      if (companyDiscount > 0)
+        logParts.push(`Desconto: -R$ ${companyDiscount.toFixed(2).replace('.', ',')} (${billingData.companyDiscountDesc || billingData.companyDiscountCat || 'Desconto'})`);
+      if (additionalPaymentValue > 0)
+        logParts.push(`Adicional: +R$ ${additionalPaymentValue.toFixed(2).replace('.', ',')} (${billingData.additionalPaymentDesc || billingData.additionalPaymentCat || 'Adicional'})`);
+      if (repRent > 0)
+        logParts.push(`Carro Reserva: R$ ${repRent.toFixed(2).replace('.', ',')} (${replacementPlate || ''})`);
+      if (billingData.destination === 'admin')
+        logParts.push(`Retido pela Administradora`);
+
+      const totalPago = mainRent + repRent
+        + (billingData.tireTax || 0)
+        + mainAdminRevenue + repAdminRevenue
+        + (billingData.lateFee || 0)
+        + additionalPaymentValue
+        - companyDiscount;
+      logParts.push(`Total lançado: R$ ${totalPago.toFixed(2).replace('.', ',')}`);
+
+      await logActivity(
+        'Pagamento',
+        'Faturamento',
+        rentalId,
+        `Pagamento confirmado — ${conductor} | ${logPlate} | Ciclo: ${cycleRef} | Total: R$ ${totalPago.toFixed(2).replace('.', ',')}`,
+        logParts.join(' | ')
+      );
+    } catch (logErr) {
+      console.warn('Aviso: não foi possível registrar log de pagamento:', logErr.message);
+    }
   };
 
   const handleAddInspection = async (inspection) => {
