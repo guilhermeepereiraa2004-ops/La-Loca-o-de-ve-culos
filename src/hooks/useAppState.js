@@ -604,6 +604,19 @@ export const useAppState = () => {
               });
             }
             
+            if (item.table === 'service_orders') {
+              mappedData = mappedData.map(os => {
+                let discountValue = os.discountValue;
+                if (!discountValue && os.items && typeof os.items === 'object') {
+                  discountValue = os.items.discountValue;
+                }
+                return {
+                  ...os,
+                  discountValue
+                };
+              });
+            }
+            
             item.setter(mappedData);
           }
         }
@@ -2954,6 +2967,11 @@ export const useAppState = () => {
     // Clean up fields that do not exist in the database table
     delete cleanOs.vehicleDescription;
     
+    if (cleanOs.discountValue !== undefined) {
+      cleanOs.items = { ...(cleanOs.items || {}), discountValue: cleanOs.discountValue };
+    }
+    delete cleanOs.discountValue;
+    
     const { error } = await supabase.from('service_orders').update(mapToSnake(cleanOs)).eq('id', os.id);
     if (!error) {
       setServiceOrders(prev => prev.map(o => o.id === os.id ? os : o));
@@ -3020,6 +3038,11 @@ export const useAppState = () => {
       
       // Clean up fields that do not exist in the database table
       delete cleanOs.vehicleDescription;
+      
+      if (cleanOs.discountValue !== undefined) {
+        cleanOs.items = { ...(cleanOs.items || {}), discountValue: cleanOs.discountValue };
+      }
+      delete cleanOs.discountValue;
       
       if (cleanOs.laborValue !== undefined) cleanOs.laborValue = parseCurrency(cleanOs.laborValue) || 0;
       if (cleanOs.parts) {

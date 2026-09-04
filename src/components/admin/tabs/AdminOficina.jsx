@@ -48,7 +48,7 @@ const formatDateTime = (dateStr) => {
 
 const EMPTY_FORM = {
   plate: '', model: '', km: '', date: new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
-  description: '', parts: [{ name: '', qty: 1, unitValue: '' }],
+  description: '', parts: [{ name: '', qty: 1, unitValue: '', discount: '' }],
   laborValue: '', discountValue: '', responsible: 'Administradora', provider: '', observations: '', status: 'Aberta', vehicleId: ''
 };
 
@@ -108,10 +108,10 @@ const AdminOficina = ({
   const selectedVehicle = vehicles.find(v => v.plate === form.plate);
   const responsibleOptions = ['Administradora', ...(selectedVehicle?.investor ? [selectedVehicle.investor] : [])];
 
-  const partsTotal = form.parts.reduce((acc, p) => acc + (parseBrValue(p.unitValue) * (parseInt(p.qty) || 0)), 0);
+  const partsTotal = form.parts.reduce((acc, p) => acc + (Math.max(0, (parseBrValue(p.unitValue) * (parseInt(p.qty) || 0)) - parseBrValue(p.discount || '0'))), 0);
   const totalOS = Math.max(0, partsTotal + parseBrValue(form.laborValue) - parseBrValue(form.discountValue || '0'));
 
-  const addPart = () => setForm(prev => ({ ...prev, parts: [...prev.parts, { name: '', qty: 1, unitValue: '' }] }));
+  const addPart = () => setForm(prev => ({ ...prev, parts: [...prev.parts, { name: '', qty: 1, unitValue: '', discount: '' }] }));
   const removePart = (i) => setForm(prev => ({ ...prev, parts: prev.parts.filter((_, idx) => idx !== i) }));
   const updatePart = (i, field, val) => setForm(prev => {
     const parts = [...prev.parts];
@@ -123,7 +123,7 @@ const AdminOficina = ({
     setEditingOS(os);
     setForm({
       ...os,
-      parts: os.parts && os.parts.length > 0 ? os.parts : [{ name: '', qty: 1, unitValue: '' }]
+      parts: os.parts && os.parts.length > 0 ? os.parts : [{ name: '', qty: 1, unitValue: '', discount: '' }]
     });
     setViewingOS(null);
     setShowForm(true);
@@ -368,11 +368,17 @@ const AdminOficina = ({
                       />
                       <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-300 pointer-events-none z-10" />
                       
-                      {showPlateDropdown && !editingOS && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
-                          {vehicles
-                            .filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase()))
-                            .map(v => (
+                      {showPlateDropdown && !editingOS && (() => {
+                        const cleanPlateSearch = plateSearch.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                        const rawSearch = plateSearch.toUpperCase();
+                        const filteredVehicles = vehicles.filter(v => {
+                          const cleanVPlate = (v.plate || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                          return cleanVPlate.includes(cleanPlateSearch) || (v.model || '').toUpperCase().includes(rawSearch);
+                        });
+
+                        return (
+                          <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-neutral-100 rounded-2xl shadow-xl z-50 max-h-60 overflow-y-auto">
+                            {filteredVehicles.map(v => (
                               <div
                                 key={v.id}
                                 className="p-4 hover:bg-neutral-50 cursor-pointer text-sm font-bold border-b border-neutral-50 last:border-0 transition-colors"
@@ -384,12 +390,13 @@ const AdminOficina = ({
                               >
                                 {v.plate} - <span className="font-medium text-neutral-500">{v.model}</span>
                               </div>
-                          ))}
-                          {vehicles.filter(v => (v.plate || '').toUpperCase().includes(plateSearch.toUpperCase()) || (v.model || '').toUpperCase().includes(plateSearch.toUpperCase())).length === 0 && (
-                            <div className="p-4 text-sm text-neutral-400 text-center">Nenhum veículo encontrado</div>
-                          )}
-                        </div>
-                      )}
+                            ))}
+                            {filteredVehicles.length === 0 && (
+                              <div className="p-4 text-sm text-neutral-400 text-center">Nenhum veículo encontrado</div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -428,8 +435,8 @@ const AdminOficina = ({
                   <div className="space-y-3">
                     {form.parts.map((part, i) => (
                       <div key={i} className="grid grid-cols-12 gap-3 items-center bg-neutral-50 p-4 rounded-xl">
-                        <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-12 sm:col-span-6 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
-                        <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-4 sm:col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100 text-center" />
+                        <input type="text" value={part.name} onChange={e => updatePart(i, 'name', e.target.value)} placeholder="Nome da peça" className="col-span-12 sm:col-span-4 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" />
+                        <input type="number" value={part.qty} onChange={e => updatePart(i, 'qty', e.target.value)} placeholder="Qtd" min={1} className="col-span-3 sm:col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100 text-center" />
                         <input 
                           type="text" 
                           value={part.unitValue} 
@@ -439,7 +446,19 @@ const AdminOficina = ({
                             updatePart(i, 'unitValue', v);
                           }} 
                           placeholder="Valor unit." 
-                          className="col-span-6 sm:col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
+                          className="col-span-4 sm:col-span-3 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
+                        />
+                        <input 
+                          type="text" 
+                          value={part.discount || ''} 
+                          onChange={e => {
+                            let v = e.target.value.replace(/\D/g, '');
+                            if (!v) { updatePart(i, 'discount', ''); return; }
+                            v = (Number(v) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+                            updatePart(i, 'discount', v);
+                          }} 
+                          placeholder="Desc. (R$)" 
+                          className="col-span-3 sm:col-span-2 bg-white p-3 rounded-lg outline-none text-xs font-bold border border-neutral-100" 
                         />
                         <button type="button" onClick={() => removePart(i)} className="col-span-2 sm:col-span-1 text-neutral-300 hover:text-red-500 transition-colors flex justify-center items-center h-10 sm:h-auto"><X size={14} /></button>
                       </div>
@@ -464,7 +483,7 @@ const AdminOficina = ({
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Desconto (R$)</label>
+                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Desconto Mão de Obra (R$)</label>
                     <input 
                       type="text" 
                       value={form.discountValue || ''} 
@@ -564,10 +583,10 @@ const AdminOficina = ({
                   <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-black mb-3">Peças Utilizadas</p>
                   <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs min-w-[500px]">
-                      <thead><tr className="border-b border-neutral-100"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
+                      <thead><tr className="border-b border-neutral-100"><th className="py-2 font-black text-neutral-400 uppercase text-[9px]">Peça</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-center">Qtd</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Valor Unit.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Desc.</th><th className="py-2 font-black text-neutral-400 uppercase text-[9px] text-right">Subtotal</th></tr></thead>
                       <tbody className="divide-y divide-neutral-50">
                         {viewingOS.parts.map((p, i) => (
-                          <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseBrValue(p.unitValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td className="py-3 text-right font-black">R$ {(p.qty * parseBrValue(p.unitValue || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
+                          <tr key={i}><td className="py-3 font-bold">{p.name}</td><td className="py-3 text-center">{p.qty}</td><td className="py-3 text-right">R$ {parseBrValue(p.unitValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td><td className="py-3 text-right text-amber-500 font-bold">{parseBrValue(p.discount) > 0 ? `- R$ ${parseBrValue(p.discount).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '---'}</td><td className="py-3 text-right font-black">R$ {Math.max(0, (p.qty * parseBrValue(p.unitValue || 0)) - parseBrValue(p.discount || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td></tr>
                         ))}
                       </tbody>
                     </table>
@@ -577,9 +596,9 @@ const AdminOficina = ({
               <div className="bg-neutral-900 p-8 rounded-[2rem] flex justify-between items-end">
                 <div className="space-y-1">
                   <p className="text-[9px] text-neutral-500 uppercase font-black">Mão de Obra: <span className="text-white">R$ {parseBrValue(viewingOS.laborValue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
-                  <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {(viewingOS.parts || []).reduce((a, p) => a + ((p.qty || 0) * parseBrValue(p.unitValue)), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                  <p className="text-[9px] text-neutral-500 uppercase font-black">Peças: <span className="text-white">R$ {(viewingOS.parts || []).reduce((a, p) => a + Math.max(0, ((p.qty || 0) * parseBrValue(p.unitValue)) - parseBrValue(p.discount || '0')), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                   {viewingOS.discountValue && parseBrValue(viewingOS.discountValue) > 0 && (
-                    <p className="text-[9px] text-amber-500 uppercase font-black">Desconto: <span className="text-amber-400">- R$ {parseBrValue(viewingOS.discountValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
+                    <p className="text-[9px] text-amber-500 uppercase font-black">Desc. Mão de Obra: <span className="text-amber-400">- R$ {parseBrValue(viewingOS.discountValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></p>
                   )}
                 </div>
                 <div className="text-right">
