@@ -564,6 +564,17 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       
       const specificMatches = specificPayments.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes(currentCalc.cycleStart.split('-').reverse().join('/')));
       if (specificMatches.length > 0) {
+        // Verifica se há override de valor para a semana atual
+        const overrideTx = specificMatches.find(t => (t.desc || '').includes('[VALOR_ALTERADO:'));
+        if (overrideTx) {
+          const match = (overrideTx.desc || '').match(/\[VALOR_ALTERADO:\s*([\d.]+)\]/);
+          if (match) {
+            const newTotal = parseFloat(match[1]);
+            currentCalc.total = newTotal;
+            currentCalc.weeklyRate = Math.max(0, newTotal - (currentCalc.tireTax || 0));
+          }
+        }
+        
         actualTotal = specificMatches.reduce((sum, t) => {
           const cat = (t.cat || '').toLowerCase().trim();
           return sum + (cat === 'aluguel' || cat === 'taxa de pneus' ? parseFloat(t.val || t.income_val || t.value || 0) : 0);
@@ -982,7 +993,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                       </div>
                       {!cycle.isPaid && cycle.actualTotal > 0 && (
                         <div className="mt-1 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                          Já pago: R$ {cycle.actualTotal.toFixed(2).replace('.', ',')}
+                          Pago parcialmente: R$ {cycle.actualTotal.toFixed(2).replace('.', ',')}
                         </div>
                       )}
                       {cycle.isPaid && cycle.isRetido !== undefined && ((cycle.actualTotal !== null && cycle.actualTotal > 0) ? cycle.actualTotal : cycle.calc.total) > 0 && (
