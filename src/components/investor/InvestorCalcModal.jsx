@@ -22,8 +22,15 @@ import { getInvestorShareForTransaction } from '../../utils/investorUtils.js';
         
         if (respStr.startsWith('investidor:')) {
           const respName = respStr.replace('investidor:', '').trim();
-          if (respName && (invNameStr.includes(respName) || respName.includes(invNameStr))) {
-            return true;
+          if (respName) {
+            if (respName === invNameStr) return true;
+            if (invNameStr.includes(respName) || respName.includes(invNameStr)) {
+              const num1Match = invNameStr.match(/\d+$/);
+              const num2Match = respName.match(/\d+$/);
+              if ((num1Match ? num1Match[0] : null) === (num2Match ? num2Match[0] : null)) {
+                return true;
+              }
+            }
           }
         }
       }
