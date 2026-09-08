@@ -46,7 +46,7 @@ export const calculateBIStats = (transactions, vehicles, rentals, investors, lea
 
   // Exclude vehicle protection transactions before June 2026
   const filteredTx = (transactions || []).filter(t => {
-    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+    const isProtection = t.cat?.toLowerCase().includes('prote');
     const isBeforeJune2026 = t.date && t.date < '2026-06-01';
     return !(isProtection && isBeforeJune2026);
   });

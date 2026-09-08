@@ -251,7 +251,7 @@ const InvestorCalcModal = ({ investor, vehicles = [], transactions = [], rentals
           if (cat.includes('seguro') || cat.includes('franquia')) {
             return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-amber-50 text-amber-600 border border-amber-100">Seguro</span>;
           }
-          if (cat.includes('prote') || cat.includes('veicular')) {
+          if (cat.includes('prote')) {
             return <span className="px-2 py-0.5 rounded text-[8.5px] uppercase font-black bg-indigo-50 text-indigo-600 border border-indigo-100">Proteção</span>;
           }
           if (cat.includes('dívida') || cat.includes('divida')) {

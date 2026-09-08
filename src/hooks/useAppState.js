@@ -665,7 +665,7 @@ export const useAppState = () => {
                 if (currentDay >= paymentDayProt) {
                   const alreadyExists = loadedTransactions.some(t => {
                     if (t.vehiclePlate !== v.plate) return false;
-                    const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+                    const isProtection = t.cat?.toLowerCase().includes('prote');
                     if (!isProtection) return false;
                     
                     try {

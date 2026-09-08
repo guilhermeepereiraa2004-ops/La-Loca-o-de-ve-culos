@@ -116,7 +116,7 @@ const AdminFinanceiro = ({
   // Exclude vehicle protection transactions before June 2026
   const filteredRawTransactions = React.useMemo(() => {
     return (transactions || []).filter(t => {
-      const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+      const isProtection = t.cat?.toLowerCase().includes('prote');
       const isBeforeJune2026 = t.date && t.date < '2026-06-01';
       return !(isProtection && isBeforeJune2026);
     });
@@ -159,7 +159,7 @@ const AdminFinanceiro = ({
     return filteredRawTransactions.filter(t => {
       const matchesMonth = selectedMonth === 'Todos' || (t.date && t.date.substring(0, 7) === selectedMonth);
       const isInvestor = t.responsible?.toLowerCase().trim().startsWith('investidor');
-      const isProtection = t.cat?.toLowerCase().includes('prote') || t.cat?.toLowerCase().includes('veicular');
+      const isProtection = t.cat?.toLowerCase().includes('prote');
       const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
       
       // Hide manual rent transactions (gross rent) from the company cash flow totals, EXCEPT [Retido]
