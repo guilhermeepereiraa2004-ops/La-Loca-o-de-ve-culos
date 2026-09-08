@@ -1135,6 +1135,19 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     return Array.from(categoriesSet).sort();
   }, [transactions]);
 
+  // --- CACHE DE PERFORMANCE ---
+  // Pré-agrupa transações por placa, evitando varrer O(N) nas +10.000 transações milhares de vezes
+  const transactionsByPlate = React.useMemo(() => {
+    const map = new Map();
+    (transactions || []).forEach(t => {
+      if (!t || !t.vehiclePlate) return;
+      const plate = t.vehiclePlate.trim().toLowerCase();
+      if (!map.has(plate)) map.set(plate, []);
+      map.get(plate).push(t);
+    });
+    return map;
+  }, [transactions]);
+
   const handleConfirm = (rentalId, calc) => {
     const lateFee = parseFloat(lateFees[rentalId] || 0);
     onConfirmPayment(rentalId, { ...calc, lateFee });
@@ -1192,14 +1205,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     let hasPaidToday = false;
     
     if (!isPastCycle) {
-      hasPaidToday = (transactions || []).some(t => {
-        if (!t) return false;
-        const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-        const isMatchingPlate = tPlate && (tPlate === rentalPlate?.toLowerCase() || (replacementPlate && tPlate === replacementPlate));
-        if (!isMatchingPlate) return false;
+      const rentalTxs = transactionsByPlate.get(rentalPlate?.toLowerCase().trim()) || [];
+      const repTxs = replacementPlate ? (transactionsByPlate.get(replacementPlate) || []) : [];
+      const combinedTxs = [...rentalTxs, ...repTxs];
+      
+      hasPaidToday = combinedTxs.some(t => {
         return t.type === 'in' && t.cat?.toLowerCase() === 'aluguel' && t.date === todayStr;
       });
-
     }
 
     const dueDateObj = new Date(dueDateStr + 'T12:00:00');
@@ -1488,10 +1500,13 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       let pendingCount = 0;
       
       if (isClosed && closureSummary?.unpaidCyclesList) {
+        const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
+        const rentalTxs = transactionsByPlate.get(rentalPlate) || [];
+        
         closureSummary.unpaidCyclesList.forEach((c, idx) => {
           let calcTotal = c.debtValue;
           const labelRef = c.labelRef || `Locação Diária (${idx + 1})`;
-          const allMatches = safeHistory.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes('Locação Diária') || (t.desc || '').includes('Diária'));
+          const allMatches = rentalTxs.filter(t => (t.desc || '').includes(labelRef) || (t.desc || '').includes('Locação Diária') || (t.desc || '').includes('Diária'));
           let isCyclePaid = isPaid;
           if (allMatches.length > 0) {
             const actualTotal = allMatches.reduce((sum, t) => sum + parseFloat(t.val || t.income_val || t.value || 0), 0);
@@ -1520,12 +1535,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const matchedRCs = Array.isArray(replacementContracts) ? replacementContracts.filter(rc => rc.mainVehiclePlate?.toLowerCase() === rentalPlate) : [];
     const allRepPlates = matchedRCs.map(rc => rc.replacementVehiclePlate?.trim().toLowerCase()).filter(Boolean);
 
-    const vehicleTxs = safeHistory.filter(t => {
-      if (!t) return false;
-      const tPlate = (t.vehiclePlate || '').trim().toLowerCase();
-      const isMatch = tPlate === rentalPlate || allRepPlates.includes(tPlate);
-      return isMatch && (t.type === 'in' || t.type === 'Receita');
-    });
+    const rentalTxs = transactionsByPlate.get(rentalPlate) || [];
+    const repTxs = allRepPlates.flatMap(p => transactionsByPlate.get(p) || []);
+    const combinedTxs = [...rentalTxs, ...repTxs];
+
+    const vehicleTxs = combinedTxs.filter(t => t.type === 'in' || t.type === 'Receita');
 
     const grouped = [];
     const processedIds = new Set();
