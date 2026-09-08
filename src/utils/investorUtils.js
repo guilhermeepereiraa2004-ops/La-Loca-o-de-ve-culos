@@ -71,7 +71,9 @@ export const getInvestorShareForTransaction = (t, invVehicles = [], rentals = []
     }
 
     const normPlate = (p) => (p || '').replace(/[-\s]/g, '').toUpperCase();
-    const vehicle = invVehicles.find(v => normPlate(v.plate) === normPlate(t.vehiclePlate));
+    const tPlateNorm = normPlate(t.vehiclePlate);
+    
+    const vehicle = invVehicles.find(v => normPlate(v.plate) === tPlateNorm);
     const adminTaxPercent = parseFloat(vehicle?.adminTax || 20);
     const investorSharePercent = 100 - adminTaxPercent;
 
@@ -82,7 +84,10 @@ export const getInvestorShareForTransaction = (t, invVehicles = [], rentals = []
         explanation: `Aluguel manual: R$ ${absVal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} bruto - ${adminTaxPercent}% (Taxa Adm) = + R$ ${investorPart.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
       };
     } else {
-      const rental = rentals.find(r => normPlate(r.plate) === normPlate(t.vehiclePlate) || normPlate(r.vehiclePlate) === normPlate(t.vehiclePlate));
+      const rental = rentals instanceof Map 
+        ? rentals.get(tPlateNorm) 
+        : rentals.find(r => normPlate(r.plate) === tPlateNorm || normPlate(r.vehiclePlate) === tPlateNorm);
+        
       const tireTax = rental ? parseFloat(rental.tireTax || 25) : 25;
 
       const rentValue = Math.max(0, absVal - tireTax);

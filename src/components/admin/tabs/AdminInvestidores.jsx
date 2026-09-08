@@ -95,7 +95,7 @@ const AdminInvestidores = ({
   onAddTransaction,
   rentals = []
 }) => {
-  const calculateInvestorPayout = (inv) => {
+  const calculateInvestorPayout = (inv, customTransactions, rentalsMap) => {
     const invVehicles = (vehicles || []).filter(v => {
       const invNameMatch = v.investor?.toLowerCase().trim() === inv.name?.toLowerCase().trim();
       const invIdMatch = v.investorId === inv.id;
@@ -105,13 +105,20 @@ const AdminInvestidores = ({
     if (invVehicles.length === 0) return { payout: 0, currentMonthNet: 0, prevMonthKey: null, currentMonthKey: null, carriedDebt: 0, vehicles: [], transactionsDetails: [], previewDetails: [], previewNet: 0, monthlySummaries: [] };
 
     const normPlate = (p) => (p || '').replace(/[-\s]/g, '').toUpperCase();
-    const investorTrans = (transactions || []).filter(t => {
-      if (invVehicles.some(v => normPlate(v.plate) === normPlate(t.vehiclePlate))) return true;
+    const activeTransactions = customTransactions || transactions || [];
+    
+    // Create a Set of normalized vehicle plates for fast O(1) lookup
+    const invVehiclesNormPlates = new Set(invVehicles.map(v => normPlate(v.plate)));
+    const invNameStr = (inv.name || '').toLowerCase().trim();
+
+    const investorTrans = activeTransactions.filter(t => {
+      // If transactions are pre-normalized, use _normVehiclePlate, otherwise normalize on the fly
+      const tPlateNorm = t._normVehiclePlate || normPlate(t.vehiclePlate);
       
-      if (t.responsible) {
-        const respStr = String(t.responsible).toLowerCase().trim();
-        const invNameStr = (inv.name || '').toLowerCase().trim();
-        
+      if (invVehiclesNormPlates.has(tPlateNorm)) return true;
+      
+      const respStr = t._normResponsible || (t.responsible ? String(t.responsible).toLowerCase().trim() : '');
+      if (respStr) {
         if (respStr === `investidor: ${invNameStr}`) return true;
         
         if (respStr.startsWith('investidor:')) {
@@ -137,7 +144,7 @@ const AdminInvestidores = ({
         const tDate = new Date(t.date + 'T12:00:00');
         const monthKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
         if (!monthlyNet[monthKey]) monthlyNet[monthKey] = 0;
-        const detail = getInvestorShareForTransaction(t, invVehicles, rentals);
+        const detail = getInvestorShareForTransaction(t, invVehicles, rentalsMap || rentals);
         monthlyNet[monthKey] += detail.share;
       } catch (e) { console.error(e); }
     });
@@ -192,7 +199,7 @@ const AdminInvestidores = ({
       try {
         const tDate = new Date(t.date + 'T12:00:00');
         const monthKey = `${tDate.getFullYear()}-${String(tDate.getMonth() + 1).padStart(2, '0')}`;
-        const detail = getInvestorShareForTransaction(t, invVehicles, rentals);
+        const detail = getInvestorShareForTransaction(t, invVehicles, rentalsMap || rentals);
         
         const detailObj = {
           id: t.id || Math.random().toString(),
@@ -308,9 +315,27 @@ const AdminInvestidores = ({
   // --- CACHE DE PERFORMANCE ---
   // Calcula a matemática pesada (transações, veículos, locações) uma ÚNICA vez por investidor
   const investorsWithPayoutData = React.useMemo(() => {
+    const normPlate = (p) => (p || '').replace(/[-\s]/g, '').toUpperCase();
+    
+    // Pre-build a Map of rentals by normalized plate for O(1) lookups
+    const rentalsMap = new Map();
+    (rentals || []).forEach(r => {
+      const p1 = normPlate(r.plate);
+      const p2 = normPlate(r.vehiclePlate);
+      if (p1) rentalsMap.set(p1, r);
+      if (p2) rentalsMap.set(p2, r);
+    });
+
+    // Pre-normalize transactions strings to avoid running regex O(T * I) times
+    const normalizedTransactions = (transactions || []).map(t => ({
+      ...t,
+      _normVehiclePlate: normPlate(t.vehiclePlate),
+      _normResponsible: t.responsible ? String(t.responsible).toLowerCase().trim() : ''
+    }));
+
     return (investors || []).map(inv => ({
       ...inv,
-      payoutData: calculateInvestorPayout(inv)
+      payoutData: calculateInvestorPayout(inv, normalizedTransactions, rentalsMap)
     }));
   }, [investors, vehicles, transactions, rentals, payoutHistory]);
 
