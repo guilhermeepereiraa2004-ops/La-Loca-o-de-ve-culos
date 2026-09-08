@@ -1696,6 +1696,18 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
   const safeRentals = Array.isArray(rentals) ? rentals : [];
 
+  // ─── CACHE DE PERFORMANCE: pendingCycles por locação ──────────────────────
+  // Calcula calculatePendingCycles UMA ÚNICA VEZ para cada locação e reutiliza
+  // em pendingStats, filtro, e badges — eliminando recálculos N² que travavam.
+  const pendingCyclesMap = React.useMemo(() => {
+    const map = new Map();
+    safeRentals.forEach(r => {
+      if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return;
+      map.set(r.id, calculatePendingCycles(r));
+    });
+    return map;
+  }, [safeRentals, transactions, replacementContracts, serviceOrders, fines]);
+
   const pendingStats = React.useMemo(() => {
     let pend1 = 0, pend2 = 0, pend3 = 0, encPendente = 0, encCompleto = 0, cicloAtivo = 0;
     
@@ -1705,7 +1717,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       if (r.status === 'Ativo') cicloAtivo++;
 
       const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
-      const pendingWeeks = calculatePendingCycles(r);
+      const pendingWeeks = pendingCyclesMap.get(r.id) || 0;
       
       if (pendingWeeks > 0) {
         if (isClosed) encPendente++;
@@ -1718,56 +1730,73 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     });
     
     return { pend1, pend2, pend3, encPendente, encCompleto, cicloAtivo };
-  }, [safeRentals, transactions, replacementContracts]);
+  }, [safeRentals, pendingCyclesMap]);
 
-  let filtered = safeRentals.filter(r => {
-    if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return false;
-    const searchLower = debouncedSearch.toLowerCase();
-    const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
-    const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
-    const matchesSearch = (r.userName || r.user || '').toLowerCase().includes(searchLower) || cleanPlate.includes(cleanSearch);
-    if (!matchesSearch) return false;
+  // ─── CACHE DE PERFORMANCE: boleto por locação ─────────────────────────────
+  // Calcula calculateBoleto UMA ÚNICA VEZ por locação e reutiliza nos cards e totalPrevisao.
+  const boletoMap = React.useMemo(() => {
+    const map = new Map();
+    safeRentals.forEach(r => {
+      if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return;
+      map.set(r.id, calculateBoleto(r));
+    });
+    return map;
+  }, [safeRentals, transactions, replacementContracts, serviceOrders, fines, lateFees]);
 
-    // Se o usuário digitou uma busca, ignora os botões de filtro e mostra tudo que encontrou
-    if (cleanSearch.length > 0) return true;
+  const filtered = React.useMemo(() => {
+    const result = safeRentals.filter(r => {
+      if (r.status !== 'Ativo' && r.status !== 'Encerrado' && r.status !== 'Finalizado') return false;
+      const searchLower = debouncedSearch.toLowerCase();
+      const cleanSearch = searchLower.replace(/[^a-z0-9]/g, '');
+      const cleanPlate = (r.plate || r.vehiclePlate || '').replace(/[^a-z0-9]/gi, '').toLowerCase();
+      const matchesSearch = (r.userName || r.user || '').toLowerCase().includes(searchLower) || cleanPlate.includes(cleanSearch);
+      if (!matchesSearch) return false;
 
-    // Se for o novo filtro, só mostrar os encerrados
-    const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
-    if (filterMode === 'encerrados_pendentes' && !isClosed) return false;
-    if (filterMode === 'encerrados_completos' && !isClosed) return false;
+      // Se o usuário digitou uma busca, ignora os botões de filtro e mostra tudo que encontrou
+      if (cleanSearch.length > 0) return true;
 
-    // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
-    const isPendingFilter = filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || filterMode === 'encerrados_completos' || filterMode.startsWith('pendentes_');
-    if (isPendingFilter || isClosed) {
-      const pendingWeeks = calculatePendingCycles(r);
-      
-      if (filterMode === 'encerrados_completos') {
-        if (pendingWeeks > 0) return false;
-      } else if (isPendingFilter || isClosed) {
-        if (pendingWeeks <= 0) return false;
+      // Se for o novo filtro, só mostrar os encerrados
+      const isClosed = r.status === 'Encerrado' || r.status === 'Finalizado';
+      if (filterMode === 'encerrados_pendentes' && !isClosed) return false;
+      if (filterMode === 'encerrados_completos' && !isClosed) return false;
+
+      // Se for 'pendentes' OU se estiver Encerrado (para só mostrar encerrados que devem), checamos se há pendência
+      const isPendingFilter = filterMode === 'pendentes' || filterMode === 'encerrados_pendentes' || filterMode === 'encerrados_completos' || filterMode.startsWith('pendentes_');
+      if (isPendingFilter || isClosed) {
+        const pendingWeeks = pendingCyclesMap.get(r.id) || 0;
         
-        if (filterMode === 'pendentes_1' && pendingWeeks !== 1) return false;
-        if (filterMode === 'pendentes_2' && pendingWeeks !== 2) return false;
-        if (filterMode === 'pendentes_3' && pendingWeeks < 3) return false;
+        if (filterMode === 'encerrados_completos') {
+          if (pendingWeeks > 0) return false;
+        } else if (isPendingFilter || isClosed) {
+          if (pendingWeeks <= 0) return false;
+          
+          if (filterMode === 'pendentes_1' && pendingWeeks !== 1) return false;
+          if (filterMode === 'pendentes_2' && pendingWeeks !== 2) return false;
+          if (filterMode === 'pendentes_3' && pendingWeeks < 3) return false;
+        }
       }
-    }
-    
-    return true;
-  });
+      
+      return true;
+    });
 
-  // Ordenação
-  filtered.sort((a, b) => {
-    const da = new Date(a.startDate || a.date);
-    const db = new Date(b.startDate || b.date);
-    if (filterMode === 'antigos') {
-      return da - db;
-    } else {
-      // Recentes ou pendentes usam do mais novo para o mais velho (padrão)
-      return db - da;
-    }
-  });
+    // Ordenação
+    result.sort((a, b) => {
+      const da = new Date(a.startDate || a.date);
+      const db = new Date(b.startDate || b.date);
+      if (filterMode === 'antigos') {
+        return da - db;
+      } else {
+        // Recentes ou pendentes usam do mais novo para o mais velho (padrão)
+        return db - da;
+      }
+    });
 
-  const totalPrevisao = filtered.reduce((acc, r) => acc + calculateBoleto(r).total, 0);
+    return result;
+  }, [safeRentals, debouncedSearch, filterMode, pendingCyclesMap]);
+
+  const totalPrevisao = React.useMemo(() => {
+    return filtered.reduce((acc, r) => acc + (boletoMap.get(r.id)?.total || 0), 0);
+  }, [filtered, boletoMap]);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-1000">
@@ -1881,7 +1910,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
         {filtered.length > 0 ? (
           <>
             {filtered.slice(0, visibleLimit).map(rental => {
-              const calc = calculateBoleto(rental);
+              const calc = boletoMap.get(rental.id) || calculateBoleto(rental);
 
             // Filter transactions for this rental contract matching the plate of main vehicle or any replacement vehicle ever used
             const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
@@ -1932,7 +1961,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
             let hasPaidToday = calc.hasPaidToday;
             if (rental.rentalType === 'daily' && rental.startDate) {
-              const badgePendingWeeks = calculatePendingCycles(rental);
+              const badgePendingWeeks = pendingCyclesMap.get(rental.id) || 0;
               if (badgePendingWeeks <= 0) hasPaidToday = true;
             }
 
@@ -1980,11 +2009,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             const history = grouped.sort((a, b) => new Date(b.date) - new Date(a.date));
             const paidWeeksCount = history.filter(t => (t.cat || '').toLowerCase() === 'aluguel').length;
 
-            // Compute pending weeks strictly for the visual badge
-            let badgePendingWeeks = 0;
-            if (rental.startDate || rental.date) {
-              badgePendingWeeks = calculatePendingCycles(rental);
-            }
+            // Usa o cache do pendingCyclesMap ao invés de recalcular
+            const badgePendingWeeks = pendingCyclesMap.get(rental.id) || 0;
 
             return (
               <div key={rental.id} className="bg-white rounded-3xl border border-neutral-150 shadow-sm overflow-hidden transition-all duration-300 hover:shadow-lg hover:border-neutral-200">

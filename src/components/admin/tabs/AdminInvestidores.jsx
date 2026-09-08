@@ -396,7 +396,9 @@ const AdminInvestidores = ({
 
       {/* Modal de Memória de Cálculo */}
       {selectedInvForCalc && (() => {
-        const { payout, currentMonthNet, competenciaKey, prevMonthKey, currentMonthKey, prevMonthPaid, autoAdvance, carriedDebt, transactionsDetails, previewDetails, previewNet, monthlySummaries, vehicles: invVehs, transactionsByMonth } = calculateInvestorPayout(selectedInvForCalc);
+        // ─── CACHE DE PERFORMANCE: usa dados pré-calculados ao invés de recalcular ───
+        const cachedInv = investorsWithPayoutData.find(inv => inv.id === selectedInvForCalc.id);
+        const { payout, currentMonthNet, competenciaKey, prevMonthKey, currentMonthKey, prevMonthPaid, autoAdvance, carriedDebt, transactionsDetails, previewDetails, previewNet, monthlySummaries, vehicles: invVehs, transactionsByMonth } = cachedInv ? cachedInv.payoutData : calculateInvestorPayout(selectedInvForCalc);
         const monthLabelsLong = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
         // Label da competência vigente (mês que serve de base para o próximo pagamento)
         const competenciaLabel = competenciaKey

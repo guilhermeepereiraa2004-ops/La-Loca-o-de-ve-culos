@@ -237,6 +237,18 @@ const AdminFinanceiro = ({
     return filteredTransactions.slice(0, visibleLimit);
   }, [filteredTransactions, visibleLimit]);
 
+  // ─── CACHE DE PERFORMANCE: totais dos cards de filtro ──────────────────────
+  // Calcula entradas/saídas UMA VEZ ao invés de 6x inline no JSX.
+  const filterTotalIn = React.useMemo(() => 
+    filteredTransactions.filter(t => t.type === 'in').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0)
+  , [filteredTransactions, vehicles, rentals]);
+
+  const filterTotalOut = React.useMemo(() => 
+    Math.abs(filteredTransactions.filter(t => t.type === 'out').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0))
+  , [filteredTransactions, vehicles, rentals]);
+
+  const filterNetBalance = filterTotalIn - filterTotalOut;
+
   return (
     <div className="space-y-16 animate-in fade-in slide-in-from-right-4 duration-700">
       {/* Page Header */}
@@ -419,27 +431,19 @@ const AdminFinanceiro = ({
           <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
             <p className="text-[9px] uppercase tracking-widest text-emerald-600 font-black mb-1">Entradas no Filtro</p>
             <p className="text-xl font-black text-emerald-600">
-              R$ {filteredTransactions.filter(t => t.type === 'in').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              R$ {filterTotalIn.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
             <p className="text-[9px] uppercase tracking-widest text-red-500 font-black mb-1">Saídas no Filtro</p>
             <p className="text-xl font-black text-red-500">
-              R$ {Math.abs(filteredTransactions.filter(t => t.type === 'out').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              R$ {filterTotalOut.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
           <div className="bg-white p-5 rounded-2xl border border-neutral-100 shadow-sm flex flex-col justify-center">
             <p className="text-[9px] uppercase tracking-widest text-[#C5A059] font-black mb-1">Saldo Líquido (Filtro)</p>
-            <p className={`text-xl font-black ${
-              (filteredTransactions.filter(t => t.type === 'in').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0) - 
-               Math.abs(filteredTransactions.filter(t => t.type === 'out').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0))) >= 0 
-                ? 'text-[#C5A059]' 
-                : 'text-red-600'
-            }`}>
-              R$ {(
-                filteredTransactions.filter(t => t.type === 'in').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0) - 
-                Math.abs(filteredTransactions.filter(t => t.type === 'out').reduce((acc, t) => acc + getCompanyShareForTransaction(t, vehicles, rentals), 0))
-              ).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className={`text-xl font-black ${filterNetBalance >= 0 ? 'text-[#C5A059]' : 'text-red-600'}`}>
+              R$ {filterNetBalance.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         </div>

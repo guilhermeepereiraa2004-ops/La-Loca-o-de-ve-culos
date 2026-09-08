@@ -19,7 +19,7 @@ export const useAdminState = (currentUser) => {
   const [showDeleteAuthModal, setShowDeleteAuthModal] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [deleteType, setDeleteType] = useState(null);
-  const [deletePassword, setDeletePassword] = useState('');
+
   const [showRentalDetailModal, setShowRentalDetailModal] = useState(false);
   const [selectedRental, setSelectedRental] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -118,7 +118,7 @@ export const useAdminState = (currentUser) => {
     showAddForm, setShowAddForm, isEditing, setIsEditing,
     isEditingRental, setIsEditingRental, showFinanceForm, setShowFinanceForm,
     showDeleteAuthModal, setShowDeleteAuthModal, itemToDelete, setItemToDelete,
-    deleteType, setDeleteType, deletePassword, setDeletePassword,
+    deleteType, setDeleteType,
     showRentalDetailModal, setShowRentalDetailModal, selectedRental, setSelectedRental,
     selectedVehicle, setSelectedVehicle, showInspectionDetailModal, setShowInspectionDetailModal,
     selectedInspection, setSelectedInspection, showVehicleDetailModal, setShowVehicleDetailModal,

@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 // Lazy-loaded Tabs — only the active tab's code is downloaded
 const AdminLeads = React.lazy(() => import('./tabs/AdminLeads'));
@@ -37,6 +37,7 @@ import TerminationTermModal from './modals/TerminationTermModal';
 import VehicleDetailModal from './modals/VehicleDetailModal';
 import AdminSuccessModal from './modals/AdminSuccessModal';
 import ImageViewer from '../ui/ImageViewer';
+import DeleteAuthModal from './modals/DeleteAuthModal';
 
 // Forms
 import VehicleFormModal from './forms/VehicleFormModal';
@@ -82,7 +83,7 @@ const AdminDashboard = ({
     showAddForm, setShowAddForm, isEditing, setIsEditing,
     isEditingRental, setIsEditingRental, showFinanceForm, setShowFinanceForm,
     showDeleteAuthModal, setShowDeleteAuthModal, itemToDelete, setItemToDelete,
-    deleteType, setDeleteType, deletePassword, setDeletePassword,
+    deleteType, setDeleteType,
     showRentalDetailModal, setShowRentalDetailModal, selectedRental, setSelectedRental,
     selectedVehicle, setSelectedVehicle, showInspectionDetailModal, setShowInspectionDetailModal,
     selectedInspection, setSelectedInspection, showVehicleDetailModal, setShowVehicleDetailModal,
@@ -334,9 +335,9 @@ const AdminDashboard = ({
     });
   };
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = async (password) => {
     console.log("ADMIN_DASHBOARD: Confirmação de exclusão acionada. Tipo:", deleteType, "Item:", itemToDelete);
-    if (deletePassword === 'Lareferencia') {
+    if (password === 'Lareferencia') {
       console.log("ADMIN_DASHBOARD: Senha master correta. Executando exclusão...");
       let success = false;
       if (deleteType === 'rental') success = await onDeleteRental(itemToDelete.id);
@@ -353,7 +354,6 @@ const AdminDashboard = ({
         setShowDeleteAuthModal(false);
         setItemToDelete(null);
         setDeleteType(null);
-        setDeletePassword('');
         
         setShowAdminSuccess({
           show: true,
@@ -652,28 +652,10 @@ const AdminDashboard = ({
 
       {/* Delete Auth Modal */}
       {showDeleteAuthModal && (
-        <div className="fixed inset-0 flex items-center justify-center px-6" style={{ zIndex: 9999 }}>
-          <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" onClick={() => setShowDeleteAuthModal(false)} />
-          <div className="relative bg-white w-full max-w-sm rounded-[2.5rem] p-10 text-center shadow-2xl">
-            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
-              <AlertTriangle size={32} />
-            </div>
-            <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 mb-2">Ação Restrita</h3>
-            <p className="text-neutral-500 text-xs font-light mb-8">Esta operação requer a Senha Master para confirmar a exclusão permanente.</p>
-            <input 
-              type="password" 
-              autoFocus
-              value={deletePassword}
-              onChange={e => setDeletePassword(e.target.value)}
-              className="w-full bg-neutral-50 border-none p-4 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-bold text-center mb-6"
-              placeholder="••••••••"
-            />
-            <div className="flex gap-3">
-              <button onClick={() => setShowDeleteAuthModal(false)} className="flex-1 py-4 text-[10px] uppercase tracking-widest font-black text-neutral-400 hover:text-neutral-600 transition-colors">Cancelar</button>
-              <button onClick={handleConfirmDelete} className="flex-1 py-4 bg-red-500 text-white text-[10px] uppercase tracking-widest font-black rounded-2xl hover:bg-red-600 transition-all shadow-lg shadow-red-500/20">Confirmar</button>
-            </div>
-          </div>
-        </div>
+        <DeleteAuthModal
+          onConfirm={handleConfirmDelete}
+          onClose={() => setShowDeleteAuthModal(false)}
+        />
       )}
 
       {/* Modals */}
