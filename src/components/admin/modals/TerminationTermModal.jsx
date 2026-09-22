@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, CheckCircle, FileText, Upload, Loader2, Check, AlertCircle, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Printer, CheckCircle, FileText, Upload, Loader2, Check, AlertCircle, ArrowRight, ArrowLeft, Edit2, Plus, Trash2 } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
 
 /* VERSION V04 - CLEANED AND VERIFIED */
@@ -8,6 +8,15 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
   const [attachment, setAttachment] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [step, setStep] = useState(1);
+  const [isEditingPdf, setIsEditingPdf] = useState(false);
+  const [pdfData, setPdfData] = useState(() => ({
+    unpaidRentals: closureData.unpaidRentals || 0,
+    unpaidCyclesList: closureData.unpaidCyclesList ? JSON.parse(JSON.stringify(closureData.unpaidCyclesList)) : [],
+    unpaidFines: closureData.unpaidFines || 0,
+    inspectionDebts: closureData.inspectionDebts || 0,
+    manualDebts: closureData.manualDebts ? JSON.parse(JSON.stringify(closureData.manualDebts)) : [],
+    earlyTerminationPenalty: closureData.earlyTerminationPenalty || 0,
+  }));
 
   if (!inspection || !rental || !closureData) return null;
 
@@ -29,7 +38,18 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
 
   const deductions = inspection.deductions || [];
   const deductionsTotal = deductions.reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
-  const amountChargedFromDeposit = Math.min(closureData.totalDebts, closureData.caucaoAvailable);
+  
+  const activeData = pdfData;
+  const activeTotalDebts = (
+    (pdfData.unpaidCyclesList?.reduce((sum, c) => sum + (parseFloat(c.debtValue) || 0), 0) || parseFloat(pdfData.unpaidRentals) || 0) +
+    (parseFloat(pdfData.unpaidFines) || 0) +
+    (parseFloat(pdfData.inspectionDebts) || 0) +
+    (pdfData.manualDebts?.reduce((sum, c) => sum + (parseFloat(c.value) || 0), 0) || 0) +
+    (parseFloat(pdfData.earlyTerminationPenalty) || 0)
+  );
+  
+  const amountChargedFromDeposit = Math.min(activeTotalDebts, closureData.caucaoAvailable);
+  const activeBalance = activeTotalDebts - amountChargedFromDeposit;
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -120,6 +140,15 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
 
             <div className="space-y-4">
               <button 
+                onClick={() => setIsEditingPdf(!isEditingPdf)}
+                className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${isEditingPdf ? 'bg-amber-500 text-neutral-900 border-amber-600 shadow-lg shadow-amber-500/20' : 'bg-white text-neutral-600 hover:bg-neutral-50'}`}
+              >
+                <div className="flex items-center gap-3">
+                  {isEditingPdf ? <CheckCircle size={18} /> : <Edit2 size={18} />}
+                  <span className="text-[10px] font-black uppercase tracking-widest">{isEditingPdf ? 'Salvar Edição' : 'Personalizar PDF'}</span>
+                </div>
+              </button>
+              <button 
                 onClick={handlePrint}
                 className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all border ${step === 1 ? 'bg-neutral-900 text-white shadow-xl' : 'bg-white text-neutral-400'}`}
               >
@@ -142,7 +171,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                   <label className={`w-full flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl cursor-pointer transition-all ${step >= 1 ? 'border-neutral-200 hover:border-[#C5A059] hover:bg-[#C5A059]/5' : 'border-neutral-100 opacity-50'}`}>
                     <Upload size={24} className="text-neutral-300 mb-2" />
                     <span className="text-[8px] font-black uppercase text-neutral-400">Selecionar</span>
-                    <input type="file" className="hidden" onChange={handleFileSelect} accept="image/*,application/pdf" disabled={step < 1} />
+                    <input type="file" className="hidden" onChange={handleFileSelect} accept=".pdf,application/pdf,image/jpeg,image/png,.jpg,.jpeg,.png" disabled={step < 1} />
                   </label>
                 ) : (
                   <div className="space-y-3">
@@ -250,13 +279,209 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                   )}
                 </section>
 
-                {/* 3. CONSOLIDAÇÃO FINANCEIRA */}
+                {/* 3. DETALHAMENTO DE DÉBITOS */}
                 <section className="space-y-3">
-                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans">III. CONSOLIDAÇÃO FINANCEIRA E LIQUIDAÇÃO</p>
-                  <div className="bg-neutral-50 p-5 rounded-2xl border border-neutral-100 space-y-2 text-[11px]">
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans flex justify-between items-center">
+                    <span>III. DETALHAMENTO DE DÉBITOS</span>
+                    {isEditingPdf && <span className="text-amber-600 animate-pulse bg-amber-100 px-2 py-0.5 rounded-full text-[8px]">Modo de Edição</span>}
+                  </p>
+                  
+                  <div className={`bg-neutral-50 p-4 rounded-2xl border ${isEditingPdf ? 'border-amber-300 ring-2 ring-amber-100' : 'border-neutral-100'} text-[10px] space-y-4 font-sans transition-all`}>
+                    
+                    {/* Aluguéis Vencidos */}
+                    {(activeData.unpaidRentals > 0 || activeData.unpaidCyclesList?.length > 0 || isEditingPdf) && (
+                      <div className="space-y-1">
+                        <div className="flex justify-between items-center border-b border-neutral-200/50 pb-1 mb-2">
+                          <p className="font-black text-neutral-800 uppercase tracking-widest text-[9px]">Aluguéis Vencidos e Cobranças de Uso</p>
+                          {isEditingPdf && (
+                            <button 
+                              onClick={() => {
+                                const newCycles = [...(pdfData.unpaidCyclesList || [])];
+                                newCycles.push({ labelRef: 'Nova Semana', debtValue: 0 });
+                                setPdfData({...pdfData, unpaidCyclesList: newCycles});
+                              }}
+                              className="text-amber-600 hover:text-amber-800 flex items-center gap-1"
+                            >
+                              <Plus size={10} /> <span className="text-[8px]">Adicionar</span>
+                            </button>
+                          )}
+                        </div>
+                        
+                        {activeData.unpaidCyclesList && activeData.unpaidCyclesList.length > 0 ? (
+                          <div className="space-y-1 pl-2">
+                            {activeData.unpaidCyclesList.map((cycle, idx) => (
+                              <div key={idx} className="flex justify-between items-center text-neutral-600 gap-2">
+                                {isEditingPdf ? (
+                                  <>
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <button 
+                                        onClick={() => {
+                                          const newCycles = [...pdfData.unpaidCyclesList];
+                                          newCycles.splice(idx, 1);
+                                          setPdfData({...pdfData, unpaidCyclesList: newCycles});
+                                        }}
+                                        className="text-red-400 hover:text-red-600 shrink-0"
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                      <span className="shrink-0">- </span>
+                                      <input 
+                                        type="text" 
+                                        value={cycle.labelRef} 
+                                        onChange={(e) => {
+                                          const newCycles = [...pdfData.unpaidCyclesList];
+                                          newCycles[idx].labelRef = e.target.value;
+                                          setPdfData({...pdfData, unpaidCyclesList: newCycles});
+                                        }}
+                                        className="w-full bg-white border border-amber-200 rounded px-1 py-0.5 outline-none focus:border-amber-400"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-1 shrink-0">
+                                      <span>R$</span>
+                                      <input 
+                                        type="number" 
+                                        value={cycle.debtValue} 
+                                        onChange={(e) => {
+                                          const newCycles = [...pdfData.unpaidCyclesList];
+                                          newCycles[idx].debtValue = parseFloat(e.target.value) || 0;
+                                          setPdfData({...pdfData, unpaidCyclesList: newCycles});
+                                        }}
+                                        className="w-20 bg-white border border-amber-200 rounded px-1 py-0.5 outline-none focus:border-amber-400 text-right font-mono"
+                                      />
+                                    </div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>- {cycle.labelRef}</span>
+                                    <span className="font-mono">R$ {cycle.debtValue?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                  </>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-center text-neutral-600 pl-2">
+                            <span>- Total de aluguéis em aberto</span>
+                            {isEditingPdf ? (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <span>R$</span>
+                                <input 
+                                  type="number" 
+                                  value={pdfData.unpaidRentals} 
+                                  onChange={(e) => setPdfData({...pdfData, unpaidRentals: parseFloat(e.target.value) || 0})}
+                                  className="w-24 bg-white border border-amber-200 rounded px-1 py-0.5 outline-none focus:border-amber-400 text-right font-mono"
+                                />
+                              </div>
+                            ) : (
+                              <span className="font-mono">R$ {activeData.unpaidRentals.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Multas de Trânsito */}
+                    {(activeData.unpaidFines > 0 || isEditingPdf) && (
+                      <div className="space-y-1">
+                        <p className="font-black text-neutral-800 uppercase tracking-widest border-b border-neutral-200/50 pb-1 mb-2 mt-2 text-[9px]">Multas de Trânsito</p>
+                        <div className="flex justify-between items-center text-neutral-600 pl-2">
+                          <span>- Total de multas pendentes vinculadas</span>
+                          {isEditingPdf ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span>R$</span>
+                              <input 
+                                type="number" 
+                                value={pdfData.unpaidFines} 
+                                onChange={(e) => setPdfData({...pdfData, unpaidFines: parseFloat(e.target.value) || 0})}
+                                className="w-24 bg-white border border-amber-200 rounded px-1 py-0.5 outline-none focus:border-amber-400 text-right font-mono text-red-600"
+                              />
+                            </div>
+                          ) : (
+                            <span className="font-mono text-red-600">R$ {activeData.unpaidFines.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Vistoria */}
+                    {(activeData.inspectionDebts > 0 || isEditingPdf) && (
+                      <div className="space-y-1">
+                        <p className="font-black text-neutral-800 uppercase tracking-widest border-b border-neutral-200/50 pb-1 mb-2 mt-2 text-[9px]">Avarias da Vistoria (Devolução)</p>
+                        <div className="flex justify-between items-center text-neutral-600 pl-2">
+                          <span>- Total apurado no laudo de devolução</span>
+                          {isEditingPdf ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span>R$</span>
+                              <input 
+                                type="number" 
+                                value={pdfData.inspectionDebts} 
+                                onChange={(e) => setPdfData({...pdfData, inspectionDebts: parseFloat(e.target.value) || 0})}
+                                className="w-24 bg-white border border-amber-200 rounded px-1 py-0.5 outline-none focus:border-amber-400 text-right font-mono text-red-600"
+                              />
+                            </div>
+                          ) : (
+                            <span className="font-mono text-red-600">R$ {activeData.inspectionDebts.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Débitos Manuais */}
+                    {(activeData.manualDebts && activeData.manualDebts.length > 0) && (
+                      <div className="space-y-1">
+                        <p className="font-black text-neutral-800 uppercase tracking-widest border-b border-neutral-200/50 pb-1 mb-2 mt-2 text-[9px]">Outros Débitos (Adicionados Manualmente)</p>
+                        <div className="space-y-1 pl-2">
+                          {activeData.manualDebts.map((debt, idx) => (
+                            <div key={idx} className="flex justify-between items-center text-neutral-600">
+                              <span>- {debt.description}</span>
+                              <span className="font-mono">R$ {debt.value?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Multa Rescisória */}
+                    {(activeData.earlyTerminationPenalty > 0 || isEditingPdf) && (
+                      <div className="space-y-1">
+                        <p className="font-black text-amber-700 uppercase tracking-widest border-b border-amber-200/50 pb-1 mb-2 mt-2 text-[9px]">Rescisão (Quebra de Contrato)</p>
+                        <div className="flex justify-between items-center text-amber-700 pl-2">
+                          <span>- Multa rescisória por devolução antecipada</span>
+                          {isEditingPdf ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              <span>R$</span>
+                              <input 
+                                type="number" 
+                                value={pdfData.earlyTerminationPenalty} 
+                                onChange={(e) => setPdfData({...pdfData, earlyTerminationPenalty: parseFloat(e.target.value) || 0})}
+                                className="w-24 bg-white border border-amber-200 rounded px-1 py-0.5 outline-none focus:border-amber-400 text-right font-mono font-bold"
+                              />
+                            </div>
+                          ) : (
+                            <span className="font-mono font-bold">R$ {activeData.earlyTerminationPenalty.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Total dos Débitos Detalhados */}
+                    <div className="flex justify-between text-neutral-900 font-black border-t border-neutral-900/10 pt-3 mt-4 text-[11px]">
+                      <span>TOTAL GERAL DE DÉBITOS:</span>
+                      <span className="font-mono">R$ {activeTotalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+
+                  </div>
+                </section>
+
+                {/* 4. CONSOLIDAÇÃO FINANCEIRA E LIQUIDAÇÃO */}
+                <section className="space-y-3">
+                  <p className="font-black uppercase tracking-widest text-[9px] text-[#C5A059] border-b border-neutral-100 pb-1 font-sans flex justify-between">
+                    <span>IV. CONSOLIDAÇÃO FINANCEIRA E LIQUIDAÇÃO</span>
+                  </p>
+                  <div className={`bg-neutral-50 p-5 rounded-2xl border ${isEditingPdf ? 'border-amber-300 ring-2 ring-amber-100' : 'border-neutral-100'} space-y-2 text-[11px] transition-all`}>
                     <div className="flex justify-between text-neutral-600">
-                      <span>Total de Débitos Consolidados (Vistoria, Multas, Aluguéis, Rescisão):</span>
-                      <span className="font-mono text-neutral-950 font-bold">R$ {closureData.totalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      <span>Total de Débitos Consolidados:</span>
+                      <span className="font-mono text-neutral-950 font-bold">R$ {activeTotalDebts?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between text-neutral-600">
                       <span>Caução Total Pago/Disponível:</span>
@@ -270,12 +495,12 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                     {closureData.type === 'return' ? (
                       <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
                         <span>VALOR A DEVOLVER AO MOTORISTA:</span>
-                        <span className="font-mono text-emerald-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-emerald-600">R$ {activeBalance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     ) : (
                       <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
                         <span>VALOR TOTAL AINDA DEVIDO (Boleto Avulso):</span>
-                        <span className="font-mono text-red-600">R$ {closureData.balance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span className="font-mono text-red-600">R$ {activeBalance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                       </div>
                     )}
                   </div>
