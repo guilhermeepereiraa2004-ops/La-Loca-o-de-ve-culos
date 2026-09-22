@@ -249,20 +249,18 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
               cyclePaidVal += parseCurrency(t.val || t.value) || 0;
             });
           } else {
-            // 2. Pagamento legado dentro da janela do ciclo (+/- 7 dias) - soma todos os pagamentos correspondentes
-            const startMinus7Obj = new Date(cycleInfo.startStr + 'T12:00:00');
-            startMinus7Obj.setDate(startMinus7Obj.getDate() - 7);
-            const startMinus7 = startMinus7Obj.toISOString().split('T')[0];
-
-            const endPlus7Obj = new Date(cycleInfo.endStr + 'T12:00:00');
-            endPlus7Obj.setDate(endPlus7Obj.getDate() + 7);
-            const endPlus7 = endPlus7Obj.toISOString().split('T')[0];
+            // 2. Pagamento legado: usa o intervalo EXATO do ciclo (sem margem extra).
+            // A janela de ±7 dias causava sobreposição entre ciclos consecutivos —
+            // o pagamento do ciclo anterior era "consumido" para cobrir o próximo,
+            // fazendo semanas pendentes parecerem pagas erroneamente.
+            const cycleStartStr = cycleInfo.startStr;
+            const cycleEndStr = cycleInfo.endStr;
 
             const matchingIndices = [];
             legacyPayments.forEach((t, idx) => {
               if (!t || !t.date) return;
               const tDate = t.date.substring(0, 10);
-              if (tDate >= startMinus7 && tDate <= endPlus7) {
+              if (tDate >= cycleStartStr && tDate <= cycleEndStr) {
                 matchingIndices.push(idx);
                 cyclePaidVal += parseCurrency(t.val || t.value) || 0;
               }
@@ -450,7 +448,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
         let weekIdx = 0;
   
         for (let i = 0; i < wCount; i++) {
-          const isExtraManualWeek = i >= (autoBreakdown.weeks || 0);
+          const isExtraManualWeek = i >= (autoBreakdown.fullWeeks || 0);
           if (autoCycles[weekIdx] && !isExtraManualWeek) {
             list.push({
               labelRef: autoCycles[weekIdx].labelRef,
@@ -469,7 +467,7 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
   
         if (dCount > 0) {
           const partialCycle = autoCycles[weekIdx];
-          const isExtraManualDays = (autoBreakdown.days || 0) === 0;
+          const isExtraManualDays = (autoBreakdown.extraDays || 0) === 0;
           const labelText = partialCycle && !isExtraManualDays ? partialCycle.labelRef : `Semana ${weekIdx + 1} (Ref: Proporcional de ${dCount} dias${isExtraManualDays ? ' - Adicional Manual' : ''})`;
           list.push({
             labelRef: labelText,

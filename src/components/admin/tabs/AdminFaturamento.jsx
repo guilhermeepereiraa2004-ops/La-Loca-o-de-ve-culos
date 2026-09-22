@@ -661,8 +661,8 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       
       cycles.push({
         weekNumber: cycles.length + 1,
-        dueDate: calc.dueDate || cycleInfo.dueStr,
-        calc: calc,
+        dueDate: currentCalc.dueDate || currentCalc.cycleEnd,
+        calc: currentCalc,
         label: labelRef,
         isPaid,
         actualTotal,
