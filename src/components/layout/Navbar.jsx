@@ -21,7 +21,8 @@ const Navbar = ({ onSetView }) => {
     } else {
       onSetView('home');
       setTimeout(() => {
-        document.getElementById(item.toLowerCase())?.scrollIntoView({ behavior: 'smooth' });
+        const targetId = item.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, "");
+        document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth' });
       }, 100);
     }
   };
