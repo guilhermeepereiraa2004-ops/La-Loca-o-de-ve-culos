@@ -246,7 +246,9 @@ const mapToSnake = (obj, tableName) => {
   return newObj;
 };
 
-let isGeneratingTransactions = false;
+const SESSION_GEN_KEY = 'la_auto_gen_done';
+const getIsGenerating = () => sessionStorage.getItem(SESSION_GEN_KEY) === 'true';
+const setIsGenerating = (val) => val ? sessionStorage.setItem(SESSION_GEN_KEY, 'true') : sessionStorage.removeItem(SESSION_GEN_KEY);
 
 export const useAppState = () => {
   const [view, setView] = useState(() => {
@@ -633,8 +635,8 @@ export const useAppState = () => {
           
           let newTransactionsToInsert = [];
           
-          if (startAccounting && !isGeneratingTransactions) {
-            isGeneratingTransactions = true;
+          if (startAccounting && !getIsGenerating()) {
+            setIsGenerating(true);
             
             for (const v of allVehicles) {
               if (!v.plate) continue;
@@ -663,6 +665,9 @@ export const useAppState = () => {
               if (hasProt && protVal > 0 && !isAddedAfter9ThisMonth) {
                 const paymentDayProt = 10; // Padrão dia 10 de cada mês
                 if (currentDay >= paymentDayProt) {
+                  const dateStrProt = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
+                  
+                  // Verifica se já existe no banco (transações já carregadas)
                   const alreadyExists = loadedTransactions.some(t => {
                     if (t.vehiclePlate !== v.plate) return false;
                     const isProtection = t.cat?.toLowerCase().includes('prote');
@@ -675,17 +680,23 @@ export const useAppState = () => {
                       return false;
                     }
                   });
+
+                  // Verifica se já foi adicionado no batch atual (evita duplicata no mesmo ciclo)
+                  const alreadyQueued = newTransactionsToInsert.some(t =>
+                    t.vehicle_plate === v.plate &&
+                    t.cat === 'Proteção Veicular' &&
+                    t.date === dateStrProt
+                  );
                   
-                  if (!alreadyExists) {
+                  if (!alreadyExists && !alreadyQueued) {
                     const isInternal = !v.investor || v.investor.toLowerCase().trim() === 'interno' || v.investor.toLowerCase().trim() === 'nenhum';
                     const respStr = isInternal ? 'Administradora' : `Investidor: ${v.investor}`;
-                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
                     newTransactionsToInsert.push({
                       type: 'in', // Receita para a empresa
                       val: protVal, // Valor positivo para entrada
                       cat: 'Proteção Veicular',
                       desc: `Proteção Veicular - ${v.model} (${v.plate})`,
-                      date: dateStr,
+                      date: dateStrProt,
                       vehicle_plate: v.plate,
                       responsible: respStr,
                       status: 'Concluído' // Já entra como pago por padrão
@@ -755,12 +766,11 @@ export const useAppState = () => {
                 console.error("Erro ao inserir transações automáticas:", insertError);
               }
             }
-            // Reseta o flag para permitir reexecução legítima em novas sessões
-            isGeneratingTransactions = false;
+            // NÃO reseta o flag — o sessionStorage garante que só roda 1x por sessão do navegador
           }
         } catch (autoErr) {
-          // Garante reset do flag mesmo em caso de erro
-          isGeneratingTransactions = false;
+          // Em caso de erro, remove o flag para permitir nova tentativa
+          setIsGenerating(false);
           console.error("Erro no processo de auto-geração de transações:", autoErr);
         }
       } catch (err) {
