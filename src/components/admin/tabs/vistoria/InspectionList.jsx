@@ -367,11 +367,9 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
               <div>
                 <div className="flex items-center gap-3 mb-1">
                   <h4 className="text-xl font-black text-neutral-900 uppercase tracking-tighter">{ins.vehiclePlate}</h4>
-                  {ins.type === 'Entrega' || ins.type === 'Devolução' ? (
-                    <span className="px-2 py-0.5 bg-neutral-900 text-white text-[7px] font-black uppercase tracking-widest rounded">
-                      {getDriverForInspection(ins)}
-                    </span>
-                  ) : null}
+                  <span className="px-2 py-0.5 bg-neutral-900 text-white text-[7px] font-black uppercase tracking-widest rounded">
+                    {getDriverForInspection(ins)}
+                  </span>
                 </div>
                 <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest">{ins.date} às {ins.time}</p>
                 {ins.inspectorName && (
