@@ -246,10 +246,6 @@ const mapToSnake = (obj, tableName) => {
   return newObj;
 };
 
-const SESSION_GEN_KEY = 'la_auto_gen_done';
-const getIsGenerating = () => sessionStorage.getItem(SESSION_GEN_KEY) === 'true';
-const setIsGenerating = (val) => val ? sessionStorage.setItem(SESSION_GEN_KEY, 'true') : sessionStorage.removeItem(SESSION_GEN_KEY);
-
 export const useAppState = () => {
   const [view, setView] = useState(() => {
     const savedView = localStorage.getItem('la_current_view');
@@ -509,7 +505,9 @@ export const useAppState = () => {
           const pageSize = 1000;
           while (true) {
             let query = supabase.from(item.table).select('*').range(from, from + pageSize - 1);
-            query = query.order('created_at', { ascending: false });
+            query = query
+              .order('created_at', { ascending: false })
+              .order('id', { ascending: false });
             
             const { data, error: fetchError } = await query;
             if (fetchError || !data || data.length === 0) break;
@@ -623,177 +621,6 @@ export const useAppState = () => {
           }
         }
 
-        // --- AUTO-GERAÇÃO DE COBRANÇAS (PROTEÇÃO E SEGURO FRANQUIA) ---
-        try {
-          const now = new Date();
-          const currentYear = now.getFullYear();
-          const currentMonth = now.getMonth(); // 0-indexed (4 = Maio, 5 = Junho)
-          const currentDay = now.getDate();
-          
-          // Regra de negócio: Contabilizar apenas a partir de Junho de 2026 em diante (mês que vem)
-          const startAccounting = currentYear > 2026 || (currentYear === 2026 && currentMonth >= 5); // >= 5 é Junho em diante
-          
-          let newTransactionsToInsert = [];
-          
-          if (startAccounting && !getIsGenerating()) {
-            setIsGenerating(true);
-            
-            for (const v of allVehicles) {
-              if (!v.plate) continue;
-              if (String(v.plate).toLowerCase().includes('(antigo)')) continue;
-
-              let isAddedAfter9ThisMonth = false;
-              const vDateStr = v.entryDate || v.createdAt || v.created_at;
-              if (vDateStr) {
-                try {
-                  const vDate = new Date(vDateStr + (vDateStr.includes('T') ? '' : 'T12:00:00'));
-                  // Se o veículo entra num mês futuro (ex: criado dia 31/08 mas entry_date é 01/09)
-                  if (vDate.getFullYear() > currentYear || (vDate.getFullYear() === currentYear && vDate.getMonth() > currentMonth)) {
-                    isAddedAfter9ThisMonth = true; // Força pular a geração no mês atual
-                  }
-                  // Se o veículo entrou no mês atual, mas depois do dia 9
-                  else if (vDate.getFullYear() === currentYear && vDate.getMonth() === currentMonth && vDate.getDate() >= 10) {
-                    isAddedAfter9ThisMonth = true;
-                  }
-                } catch(e) {}
-              }
-
-              // 1. Proteção Veicular (Vence todo dia 10, entra como receita da empresa)
-              const hasProt = v.hasProtection === true || String(v.hasProtection) === 'true';
-              const protVal = parseCurrency(v.protectionValue || 0) || 0;
-              
-              if (hasProt && protVal > 0 && !isAddedAfter9ThisMonth) {
-                const paymentDayProt = 10; // Padrão dia 10 de cada mês
-                if (currentDay >= paymentDayProt) {
-                  const dateStrProt = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-                  
-                  // Verifica se já existe no banco (transações já carregadas)
-                  const alreadyExists = loadedTransactions.some(t => {
-                    if (t.vehiclePlate !== v.plate) return false;
-                    const isProtection = t.cat?.toLowerCase().includes('prote');
-                    if (!isProtection) return false;
-                    
-                    try {
-                      const tDate = new Date(t.date + 'T12:00:00');
-                      return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
-                    } catch (e) {
-                      return false;
-                    }
-                  });
-
-                  // Verifica se já foi adicionado no batch atual (evita duplicata no mesmo ciclo)
-                  const alreadyQueued = newTransactionsToInsert.some(t =>
-                    t.vehicle_plate === v.plate &&
-                    t.cat === 'Proteção Veicular' &&
-                    t.date === dateStrProt
-                  );
-                  
-                  if (!alreadyExists && !alreadyQueued) {
-                    const isInternal = !v.investor || v.investor.toLowerCase().trim() === 'interno' || v.investor.toLowerCase().trim() === 'nenhum';
-                    const respStr = isInternal ? 'Administradora' : `Investidor: ${v.investor}`;
-                    newTransactionsToInsert.push({
-                      type: 'in', // Receita para a empresa
-                      val: protVal, // Valor positivo para entrada
-                      cat: 'Proteção Veicular',
-                      desc: `Proteção Veicular - ${v.model} (${v.plate})`,
-                      date: dateStrProt,
-                      vehicle_plate: v.plate,
-                      responsible: respStr,
-                      status: 'Concluído' // Já entra como pago por padrão
-                    });
-                  }
-                }
-              }
-
-              // 2. Seguro Franquia (Vence todo dia 10, entra como receita da empresa)
-              const hasFranchise = v.franchiseInsurance === true || String(v.franchiseInsurance) === 'true';
-              const franchiseVal = 39.90; // Padrão R$ 39,90/mês
-              
-              if (hasFranchise && !isAddedAfter9ThisMonth) {
-                const paymentDayFranchise = 10; // Padrão dia 10 de cada mês
-                if (currentDay >= paymentDayFranchise) {
-                  // Verifica se já existe no banco (transações já carregadas)
-                  const alreadyExists = loadedTransactions.some(t => {
-                    if (t.vehiclePlate !== v.plate) return false;
-                    const isInsurance = t.cat?.toLowerCase().includes('seguro') || t.cat?.toLowerCase().includes('franquia');
-                    if (!isInsurance) return false;
-                    
-                    try {
-                      const tDate = new Date(t.date + 'T12:00:00');
-                      return tDate.getFullYear() === currentYear && tDate.getMonth() === currentMonth;
-                    } catch (e) {
-                      return false;
-                    }
-                  });
-
-                  // Verifica se já foi adicionado no batch atual (evita duplicata no mesmo ciclo)
-                  const alreadyQueued = newTransactionsToInsert.some(t =>
-                    t.vehicle_plate === v.plate &&
-                    t.cat === 'Seguro Franquia' &&
-                    t.date === `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`
-                  );
-                  
-                  if (!alreadyExists && !alreadyQueued) {
-                    const isInternal = !v.investor || v.investor.toLowerCase().trim() === 'interno' || v.investor.toLowerCase().trim() === 'nenhum';
-                    const respStr = isInternal ? 'Administradora' : `Investidor: ${v.investor}`;
-                    const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-10`;
-                    newTransactionsToInsert.push({
-                      type: 'in', // Receita para a empresa
-                      val: franchiseVal, // Valor positivo
-                      cat: 'Seguro Franquia',
-                      desc: `Seguro Franquia - ${v.model} (${v.plate})`,
-                      date: dateStr,
-                      vehicle_plate: v.plate,
-                      responsible: respStr,
-                      status: 'Concluído' // Já entra como pago por padrão
-                    });
-                  }
-                }
-              }
-            }
-            
-            if (newTransactionsToInsert.length > 0) {
-              // Extra database check right before inserting to prevent race conditions
-              const datePrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
-              const { data: existingTxs, error: chkErr } = await supabase
-                .from('transactions')
-                .select('cat, vehicle_plate, date')
-                .gte('date', `${datePrefix}01`)
-                .lte('date', `${datePrefix}31`)
-                .or('cat.ilike.%Proteção%,cat.ilike.%Seguro%,cat.ilike.%Franquia%');
-
-              if (!chkErr && existingTxs && existingTxs.length > 0) {
-                newTransactionsToInsert = newTransactionsToInsert.filter(newTx => {
-                  return !existingTxs.some(exTx => 
-                    exTx.vehicle_plate === newTx.vehicle_plate && 
-                    exTx.cat === newTx.cat &&
-                    exTx.date.slice(0, 7) === newTx.date.slice(0, 7)
-                  );
-                });
-              }
-
-              if (newTransactionsToInsert.length > 0) {
-                const { data: insertedData, error: insertError } = await supabase
-                  .from('transactions')
-                  .insert(newTransactionsToInsert)
-                  .select();
-                  
-                if (!insertError && insertedData) {
-                  const mappedInserted = mapToCamel(insertedData, 'transactions');
-                  const finalTransactions = [...mappedInserted, ...loadedTransactions];
-                  setTransactions(finalTransactions);
-                } else if (insertError) {
-                  console.error("Erro ao inserir transações automáticas:", insertError);
-                }
-              }
-            }
-            // NÃO reseta o flag — o sessionStorage garante que só roda 1x por sessão do navegador
-          }
-        } catch (autoErr) {
-          // Em caso de erro, remove o flag para permitir nova tentativa
-          setIsGenerating(false);
-          console.error("Erro no processo de auto-geração de transações:", autoErr);
-        }
       } catch (err) {
         console.error("Erro ao carregar dados:", err);
       }
