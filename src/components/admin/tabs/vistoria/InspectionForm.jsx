@@ -135,6 +135,12 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
     e.preventDefault();
     if (isSaving) return;
 
+    const hasActiveUploads = Object.values(uploadingSlots).some(isUploading => isUploading) || isCompressing;
+    if (hasActiveUploads) {
+      alert('Aguarde o carregamento de todas as fotos antes de salvar a vistoria.');
+      return;
+    }
+
     if (!inspectionForm.vehiclePlate) {
       alert('Por favor, selecione um veículo na lista para prosseguir.');
       return;
@@ -265,6 +271,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
   };
 
   const totalDeductions = inspectionForm.deductions.reduce((acc, curr) => acc + (parseFloat(curr.value) || 0), 0);
+  const isUploadingAny = Object.values(uploadingSlots).some(isUploading => isUploading) || isCompressing;
 
   return (
     <>
@@ -965,13 +972,18 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             </button>
             <button
               type="submit"
-              disabled={isSaving}
-              className={`w-full sm:w-auto px-12 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center justify-center gap-3 ${isSaving ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#C5A059]'}`}
+              disabled={isSaving || isUploadingAny}
+              className={`w-full sm:w-auto px-12 py-4 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl transition-all shadow-2xl shadow-neutral-900/10 flex items-center justify-center gap-3 ${(isSaving || isUploadingAny) ? 'opacity-70 cursor-not-allowed' : 'hover:bg-[#C5A059]'}`}
             >
               {isSaving ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
                   Salvando Dossiê...
+                </>
+              ) : isUploadingAny ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Carregando Fotos...
                 </>
               ) : (
                 'Salvar Vistoria'

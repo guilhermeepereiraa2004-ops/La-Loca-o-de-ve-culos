@@ -2,6 +2,8 @@ import React, { useState, Suspense } from 'react';
 import { Loader2 } from 'lucide-react';
 import InspectionList from './vistoria/InspectionList';
 
+import { getDraft } from '../../../utils/indexedDbHelper';
+
 // Lazy-load the heavy form component — only downloaded when user clicks "Nova Vistoria"
 const InspectionForm = React.lazy(() => import('./vistoria/InspectionForm'));
 
@@ -14,6 +16,17 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
       setShowForm(true);
     }
   }, [pendingInspection]);
+
+  // Auto-open form if there's a draft pending (e.g. after camera OS reload)
+  React.useEffect(() => {
+    if (!pendingInspection) {
+      getDraft().then(draft => {
+        if (draft) {
+          setShowForm(true);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   // Scroll to top when returning to the list view
   React.useEffect(() => {
