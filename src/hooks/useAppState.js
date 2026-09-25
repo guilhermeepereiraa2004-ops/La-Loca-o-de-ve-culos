@@ -753,17 +753,38 @@ export const useAppState = () => {
             }
             
             if (newTransactionsToInsert.length > 0) {
-              const { data: insertedData, error: insertError } = await supabase
+              // Extra database check right before inserting to prevent race conditions
+              const datePrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-`;
+              const { data: existingTxs, error: chkErr } = await supabase
                 .from('transactions')
-                .insert(newTransactionsToInsert)
-                .select();
-                
-              if (!insertError && insertedData) {
-                const mappedInserted = mapToCamel(insertedData, 'transactions');
-                const finalTransactions = [...mappedInserted, ...loadedTransactions];
-                setTransactions(finalTransactions);
-              } else if (insertError) {
-                console.error("Erro ao inserir transações automáticas:", insertError);
+                .select('cat, vehicle_plate, date')
+                .gte('date', `${datePrefix}01`)
+                .lte('date', `${datePrefix}31`)
+                .or('cat.ilike.%Proteção%,cat.ilike.%Seguro%,cat.ilike.%Franquia%');
+
+              if (!chkErr && existingTxs && existingTxs.length > 0) {
+                newTransactionsToInsert = newTransactionsToInsert.filter(newTx => {
+                  return !existingTxs.some(exTx => 
+                    exTx.vehicle_plate === newTx.vehicle_plate && 
+                    exTx.cat === newTx.cat &&
+                    exTx.date.slice(0, 7) === newTx.date.slice(0, 7)
+                  );
+                });
+              }
+
+              if (newTransactionsToInsert.length > 0) {
+                const { data: insertedData, error: insertError } = await supabase
+                  .from('transactions')
+                  .insert(newTransactionsToInsert)
+                  .select();
+                  
+                if (!insertError && insertedData) {
+                  const mappedInserted = mapToCamel(insertedData, 'transactions');
+                  const finalTransactions = [...mappedInserted, ...loadedTransactions];
+                  setTransactions(finalTransactions);
+                } else if (insertError) {
+                  console.error("Erro ao inserir transações automáticas:", insertError);
+                }
               }
             }
             // NÃO reseta o flag — o sessionStorage garante que só roda 1x por sessão do navegador
