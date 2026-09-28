@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Printer, CheckCircle, FileText, Upload, Loader2, Check, AlertCircle, ArrowRight, ArrowLeft, Edit2, Plus, Trash2 } from 'lucide-react';
 import { compressImage } from '../../../utils/imageCompression';
+import { calculateDepositSettlement } from '../../../utils/depositSettlement';
 
 /* VERSION V04 - CLEANED AND VERIFIED */
 
@@ -48,8 +49,11 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
     (parseFloat(pdfData.earlyTerminationPenalty) || 0)
   );
   
-  const amountChargedFromDeposit = Math.min(activeTotalDebts, closureData.caucaoAvailable);
-  const activeBalance = activeTotalDebts - amountChargedFromDeposit;
+  const {
+    amountChargedFromDeposit,
+    balance: activeBalance,
+    type: activeType
+  } = calculateDepositSettlement(closureData.caucaoAvailable, activeTotalDebts);
 
   const handleFileSelect = async (e) => {
     const file = e.target.files[0];
@@ -492,7 +496,7 @@ const TerminationTermModal = ({ inspection, rental, clients = [], closureData, o
                       <span className="font-mono text-red-500 font-bold">R$ {amountChargedFromDeposit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                     </div>
                     
-                    {closureData.type === 'return' ? (
+                    {activeType === 'return' ? (
                       <div className="flex justify-between font-black text-neutral-900 border-t border-neutral-900/10 pt-2 text-[11px] font-sans">
                         <span>VALOR A DEVOLVER AO MOTORISTA:</span>
                         <span className="font-mono text-emerald-600">R$ {activeBalance?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
