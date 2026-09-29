@@ -1163,7 +1163,30 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
     let dueDateStr = targetDueDateStr;
     if (!dueDateStr) {
-      return { weeklyRate: defaultWeeklyRate, dailyRate, daysInMaintenance: 0, abatimento: 0, replacementCharge: 0, replacementDays: 0, replacementDailyRate: 0, tireTax: 0, total: defaultWeeklyRate, activeRC: null, rcsDetails: [], hasPaidToday: false, dueDate: '' };
+      const fallbackStart = (customCycleStartStr || rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
+      const fallbackEndObj = new Date(fallbackStart + 'T12:00:00');
+      fallbackEndObj.setDate(fallbackEndObj.getDate() + 6);
+      const fallbackEnd = customCycleEndStr || fallbackEndObj.toISOString().split('T')[0];
+
+      return {
+        weeklyRate: defaultWeeklyRate,
+        dailyRate,
+        daysInMaintenance: 0,
+        abatimento: 0,
+        replacementCharge: 0,
+        replacementDays: 0,
+        replacementDailyRate: 0,
+        tireTax: 0,
+        total: defaultWeeklyRate,
+        activeRC: null,
+        rcsDetails: [],
+        finesDetails: [],
+        caucaoInstallment: null,
+        hasPaidToday: false,
+        cycleStart: fallbackStart,
+        cycleEnd: fallbackEnd,
+        dueDate: fallbackStart
+      };
     }
 
     const rentalPlate = rental.plate || rental.vehiclePlate;
@@ -1464,7 +1487,15 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
     const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
     const closureDateStr = rental.endDate || closureSummary?.scheduledEndDate;
-    const endLimit = (isClosed && closureDateStr) ? new Date(closureDateStr + 'T12:00:00') : new Date();
+    let endLimit = (isClosed && closureDateStr) ? new Date(closureDateStr + 'T12:00:00') : new Date();
+
+    // Contratos podem ser cadastrados como ativos antes da data de início. Nesse caso,
+    // gera o primeiro ciclo futuro em vez de retornar um cálculo sem datas.
+    const rentalStartStr = (rental.startDate || rental.date || '').substring(0, 10);
+    const rentalStartObj = rentalStartStr ? new Date(rentalStartStr + 'T12:00:00') : null;
+    if (!isClosed && rentalStartObj && !isNaN(rentalStartObj.getTime()) && rentalStartObj > endLimit) {
+      endLimit = rentalStartObj;
+    }
 
     const cyclesInfo = getRentalCycles(rental, endLimit, isClosed);
     const currentInfo = cyclesInfo[cyclesInfo.length - 1] || { startStr: '', endStr: '', dueStr: '' };
