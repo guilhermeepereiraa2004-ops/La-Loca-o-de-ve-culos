@@ -329,9 +329,11 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
       // Se o contrato foi encerrado e teve customização ou fechamento, aplica o valor e detalhamento exato definido pelo admin no encerramento
       if (isClosed && closureSummary?.unpaidCyclesList) {
         const matchingClosureCycle = closureSummary.unpaidCyclesList.find(c => 
-          (c.labelRef || '').includes(labelRef) || 
-          (c.labelRef || '').includes(`Semana ${cycleInfo.weekNumber}`) ||
-          (c.labelRef || '').includes(cycleInfo.startStr.split('-').reverse().join('/'))
+          !c.isManualAddition && (
+            (c.labelRef || '').includes(labelRef) ||
+            (c.labelRef || '').includes(`Semana ${cycleInfo.weekNumber}`) ||
+            (c.labelRef || '').includes(cycleInfo.startStr.split('-').reverse().join('/'))
+          )
         );
         if (matchingClosureCycle && matchingClosureCycle.debtValue !== undefined) {
           const includeTire = closureSummary.rentalCalculationBreakdown?.includeTireTax !== false;
@@ -550,7 +552,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           }
 
           cycles.push({
-            weekNumber: cycles.length + 1,
+            weekNumber: closureCycle.displayWeekNumber || cycles.length + 1,
             dueDate: rental.endDate || todayStrFmt,
             calc: extraCalc,
             label: labelRef,
@@ -1706,9 +1708,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       
       if (isClosed && closureSummary?.unpaidCyclesList) {
         const matchingClosureCycle = closureSummary.unpaidCyclesList.find(c => 
-          (c.labelRef || '').includes(labelRef) || 
-          (c.labelRef || '').includes(`Semana ${cycleInfo.weekNumber}`) ||
-          (c.labelRef || '').includes(cycleInfo.startStr.split('-').reverse().join('/'))
+          !c.isManualAddition && (
+            (c.labelRef || '').includes(labelRef) ||
+            (c.labelRef || '').includes(`Semana ${cycleInfo.weekNumber}`) ||
+            (c.labelRef || '').includes(cycleInfo.startStr.split('-').reverse().join('/'))
+          )
         );
         if (matchingClosureCycle && matchingClosureCycle.debtValue !== undefined) {
           const includeTire = closureSummary.rentalCalculationBreakdown?.includeTireTax !== false;
@@ -1781,7 +1785,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       closureSummary.unpaidCyclesList.forEach((closureCycle) => {
         if (isReturnDayClosureCycle(rental, closureCycle)) return;
 
-        const alreadyMatched = rentalCycles.some(cycleInfo => {
+        const alreadyMatched = !closureCycle.isManualAddition && rentalCycles.some(cycleInfo => {
           const calc = calculateBoletoForCycle(rental, cycleInfo.dueStr, true, cycleInfo.startStr, cycleInfo.endStr);
           const labelRef = `Ref: ${calc.cycleStart.split('-').reverse().join('/')} a ${calc.cycleEnd.split('-').reverse().join('/')}`;
           return (labelRef || '').includes(closureCycle.labelRef) || (closureCycle.labelRef || '').includes(labelRef) || (closureCycle.labelRef || '').includes(`Semana ${cycleInfo.weekNumber}`);
