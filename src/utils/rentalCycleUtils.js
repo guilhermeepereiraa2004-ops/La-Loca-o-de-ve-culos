@@ -26,6 +26,20 @@ export const getRentalClosureDate = (rental) => {
   return closureDate ? closureDate.substring(0, 10) : null;
 };
 
+export const isReturnDayClosureCycle = (rental, closureCycle) => {
+  if (rental.rentalType === 'daily') return false;
+
+  const closureDate = getRentalClosureDate(rental);
+  const match = (closureCycle?.labelRef || '').match(
+    /Ref:\s*(\d{2})\/(\d{2})\/(\d{4})\s+a\s+(\d{2})\/(\d{2})\/(\d{4})/i
+  );
+  if (!closureDate || !match) return false;
+
+  const startDate = `${match[3]}-${match[2]}-${match[1]}`;
+  const endDate = `${match[6]}-${match[5]}-${match[4]}`;
+  return startDate === closureDate && endDate === closureDate;
+};
+
 export const getRecordedCyclePayment = (transactions, rental, cycleStart, cycleEnd) => {
   const normalize = (value) => (value || '')
     .normalize('NFD')
@@ -84,14 +98,10 @@ export const getRentalCycles = (rental, targetEndLimit = new Date(), forcePropor
     // Durante o encerramento o endDate ainda é a data prevista do contrato.
     // O limite informado pelo modal é a data real da devolução.
     endLimit = new Date(targetEndLimit.getTime());
-    if (endLimit > startObj) {
-      endLimit.setDate(endLimit.getDate() - 1);
-    }
+    endLimit.setDate(endLimit.getDate() - 1);
   } else if (isClosed && closureDate) {
     endLimit = new Date(closureDate + 'T12:00:00');
-    if (endLimit > startObj) {
-      endLimit.setDate(endLimit.getDate() - 1);
-    }
+    endLimit.setDate(endLimit.getDate() - 1);
   } else {
     endLimit = new Date(targetEndLimit.getTime());
   }

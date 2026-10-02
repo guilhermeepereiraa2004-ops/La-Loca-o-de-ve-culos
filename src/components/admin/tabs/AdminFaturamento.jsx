@@ -7,7 +7,7 @@ import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getNextDueDate } from '../../../utils/asaas.js';
 import { parseCurrency } from '../../../utils/currencyUtils';
-import { getRecordedCyclePayment, getRentalClosureDate, getRentalCycles, getRentalPaymentDay } from '../../../utils/rentalCycleUtils';
+import { getRecordedCyclePayment, getRentalClosureDate, getRentalCycles, getRentalPaymentDay, isReturnDayClosureCycle } from '../../../utils/rentalCycleUtils';
 
 const createPaymentAttemptId = () => {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -502,6 +502,10 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
     // Se o contrato foi encerrado e possui ciclos customizados extras no closureSummary não contemplados pelo calendário padrão
     if (isClosed && closureSummary?.unpaidCyclesList) {
       closureSummary.unpaidCyclesList.forEach((closureCycle) => {
+        // A data de devolução é exclusiva: nunca constitui uma nova diária
+        // em contratos semanais, mesmo quando um encerramento antigo a persistiu.
+        if (isReturnDayClosureCycle(rental, closureCycle)) return;
+
         const alreadyMatched = cycles.some(c => 
           (c.label || '').includes(closureCycle.labelRef) || 
           (closureCycle.labelRef || '').includes(c.label)
@@ -1775,6 +1779,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
     if (isClosed && closureSummary?.unpaidCyclesList) {
       closureSummary.unpaidCyclesList.forEach((closureCycle) => {
+        if (isReturnDayClosureCycle(rental, closureCycle)) return;
+
         const alreadyMatched = rentalCycles.some(cycleInfo => {
           const calc = calculateBoletoForCycle(rental, cycleInfo.dueStr, true, cycleInfo.startStr, cycleInfo.endStr);
           const labelRef = `Ref: ${calc.cycleStart.split('-').reverse().join('/')} a ${calc.cycleEnd.split('-').reverse().join('/')}`;
