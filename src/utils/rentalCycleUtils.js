@@ -26,6 +26,51 @@ export const getRentalClosureDate = (rental) => {
   return closureDate ? closureDate.substring(0, 10) : null;
 };
 
+export const getRecordedCyclePayment = (transactions, rental, cycleStart, cycleEnd) => {
+  const normalize = (value) => (value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase();
+
+  const driver = normalize(rental.user || rental.userName);
+  const plate = normalize(rental.plate || rental.vehiclePlate).replace(/[^a-z0-9]/g, '');
+  if (!driver || !plate || !cycleStart || !cycleEnd) return null;
+
+  const closureDate = getRentalClosureDate(rental);
+  const matchingPayments = (transactions || []).filter((transaction) => {
+    if (transaction.type !== 'in' && transaction.type !== 'Receita') return false;
+
+    const transactionPlate = normalize(transaction.vehiclePlate || transaction.vehicle_plate).replace(/[^a-z0-9]/g, '');
+    if (transactionPlate !== plate) return false;
+
+    const transactionDate = (transaction.date || '').substring(0, 10);
+    if (!transactionDate || transactionDate < cycleStart || transactionDate > cycleEnd) return false;
+    if (closureDate && transactionDate >= closureDate) return false;
+
+    const description = normalize(transaction.desc || transaction.description);
+    if (!description.includes(driver)) return false;
+
+    const category = normalize(transaction.cat || transaction.category);
+    return category === 'aluguel' || category === 'taxa de pneus';
+  });
+
+  const rentalAmount = matchingPayments
+    .filter(transaction => normalize(transaction.cat || transaction.category) === 'aluguel')
+    .reduce((sum, transaction) => sum + parseFloat(transaction.val || transaction.income_val || transaction.value || 0), 0);
+  if (rentalAmount <= 0) return null;
+
+  const tireAmount = matchingPayments
+    .filter(transaction => normalize(transaction.cat || transaction.category) === 'taxa de pneus')
+    .reduce((sum, transaction) => sum + parseFloat(transaction.val || transaction.income_val || transaction.value || 0), 0);
+
+  return {
+    rentalAmount,
+    tireAmount,
+    total: rentalAmount + tireAmount
+  };
+};
+
 export const getRentalCycles = (rental, targetEndLimit = new Date(), forceProportionalClosure = false) => {
   const startStr = (rental.startDate || rental.date || new Date().toISOString()).substring(0, 10);
   const startObj = new Date(startStr + 'T12:00:00');

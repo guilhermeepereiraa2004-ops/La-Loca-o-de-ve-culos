@@ -7,7 +7,7 @@ import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getNextDueDate } from '../../../utils/asaas.js';
 import { parseCurrency } from '../../../utils/currencyUtils';
-import { getRentalClosureDate, getRentalCycles, getRentalPaymentDay } from '../../../utils/rentalCycleUtils';
+import { getRecordedCyclePayment, getRentalClosureDate, getRentalCycles, getRentalPaymentDay } from '../../../utils/rentalCycleUtils';
 
 const createPaymentAttemptId = () => {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -1527,6 +1527,30 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const cyclesInfo = getRentalCycles(rental, endLimit, isClosed);
     const currentInfo = cyclesInfo[cyclesInfo.length - 1] || { startStr: '', endStr: '', dueStr: '' };
     let calc = calculateBoletoForCycle(rental, currentInfo.dueStr, false, currentInfo.startStr, currentInfo.endStr);
+
+    // Um contrato encerrado no meio da primeira semana pode ter recebido a
+    // semanalidade integral antes da devolução. Nesse caso, o cartão deve
+    // exibir o valor efetivamente pago, e não recalcular um valor proporcional.
+    if (isClosed && currentInfo.startStr && currentInfo.endStr) {
+      const recordedPayment = getRecordedCyclePayment(
+        transactions,
+        rental,
+        currentInfo.startStr,
+        currentInfo.endStr
+      );
+      const contractedWeeklyRate = parseCurrency(rental.value || 0) || 0;
+
+      if (recordedPayment && recordedPayment.rentalAmount >= (contractedWeeklyRate - 0.50)) {
+        calc = {
+          ...calc,
+          weeklyRate: recordedPayment.rentalAmount,
+          tireTax: recordedPayment.tireAmount,
+          total: recordedPayment.total,
+          hasPaidToday: true,
+          hasFullPaymentToday: true
+        };
+      }
+    }
     
     // (Removido: Não sobrescreve os valores do ciclo com debtValue do closureSummary)
     // Isso causava confusão, pois substituía o valor total do ciclo pelo saldo devedor restante no momento do encerramento,
