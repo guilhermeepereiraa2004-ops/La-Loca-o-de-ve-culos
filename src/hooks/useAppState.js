@@ -2161,7 +2161,22 @@ export const useAppState = () => {
       }
       // ---------------------------------------------
 
-      logActivity('Encerrar Contrato', 'Locação', rentalId, `Encerrou o contrato de locação de ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate}. Abatimentos: ${newTransactions.length}`);
+      const manualAdditions = (closureData.unpaidCyclesList || []).filter(cycle => cycle.isManualAddition === true);
+      const closureLogDetails = [
+        `Cálculo personalizado: ${closureData.rentalCalculationBreakdown?.isCustomized ? 'sim' : 'não'}`,
+        `Semanas: ${closureData.rentalCalculationBreakdown?.weeks || 0}`,
+        `Dias: ${closureData.rentalCalculationBreakdown?.days || 0}`,
+        `Taxas de pneus: ${closureData.rentalCalculationBreakdown?.tireTaxCycles || 0}`,
+        `Adições manuais: ${manualAdditions.length}`,
+        ...manualAdditions.map(cycle => `${cycle.labelRef}: R$ ${(parseFloat(cycle.debtValue) || 0).toFixed(2)}`)
+      ].join(' | ');
+      logActivity(
+        'Encerrar Contrato',
+        'Locação',
+        rentalId,
+        `Encerrou o contrato de locação de ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate}. Abatimentos: ${newTransactions.length}`,
+        closureLogDetails
+      );
       return { success: true };
     } catch (error) {
       console.error("Erro ao encerrar contrato:", error);

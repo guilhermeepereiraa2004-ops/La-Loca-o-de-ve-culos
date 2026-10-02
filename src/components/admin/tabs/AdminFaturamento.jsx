@@ -553,6 +553,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
 
           cycles.push({
             weekNumber: closureCycle.displayWeekNumber || cycles.length + 1,
+            isManualAddition: closureCycle.isManualAddition === true,
             dueDate: rental.endDate || todayStrFmt,
             calc: extraCalc,
             label: labelRef,
@@ -708,7 +709,9 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
               
               <div className="pl-2">
                 <div className="flex items-center gap-2 mb-1">
-                  <span className="text-sm font-black text-neutral-800 uppercase tracking-tight">Semana {cycle.weekNumber}</span>
+                  <span className="text-sm font-black text-neutral-800 uppercase tracking-tight">
+                    {cycle.isManualAddition ? 'Adição Manual' : `Semana ${cycle.weekNumber}`}
+                  </span>
                   {cycle.isPaid ? (
                     <span className="text-[9px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full">Pago</span>
                   ) : (

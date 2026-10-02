@@ -479,6 +479,17 @@ const ContractClosureModal = ({ inspection, rental, rentals = [], transactions =
       effectiveCyclesList = list;
     }
 
+    const manualAdditions = effectiveCyclesList.filter(cycle => cycle.isManualAddition === true);
+    if (rental.rentalType !== 'daily' && manualAdditions.length > 0) {
+      const additionsSummary = manualAdditions
+        .map(cycle => `${cycle.labelRef}: R$ ${(parseFloat(cycle.debtValue) || 0).toFixed(2).replace('.', ',')}`)
+        .join('\n');
+      const confirmed = window.confirm(
+        `ATENÇÃO: este fechamento inclui ${manualAdditions.length} cobrança(s) manual(is) além do cálculo automático:\n\n${additionsSummary}\n\nConfirma a inclusão dessas cobranças?`
+      );
+      if (!confirmed) return;
+    }
+
     onConfirm({
       ...closureData,
       unpaidRentals: finalUnpaidRentals,
