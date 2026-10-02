@@ -118,6 +118,7 @@ const TABLE_MAPPINGS = {
     vehiclePlate: 'vehicle_plate',
     responsible: 'responsible',
     status: 'status',
+    operationKey: 'operation_key',
     createdAt: 'created_at'
   },
   fines: {
@@ -2435,7 +2436,11 @@ export const useAppState = () => {
 
   const handleConfirmPayment = async (rentalId, billingData) => {
     const rental = rentals.find(r => r.id === rentalId);
-    if (!rental) return;
+    if (!rental) throw new Error('Locação não encontrada para confirmar o pagamento.');
+
+    const paymentAttemptId = billingData.paymentAttemptId
+      || globalThis.crypto?.randomUUID?.()
+      || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const vehicle = vehicles.find(v => v.id === rental.vehicleId);
     const mainAdminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
@@ -2595,9 +2600,22 @@ export const useAppState = () => {
 
     // A taxa do gateway agora é lançada no webhook quando paga.
 
+    let insertedPaymentRows = [];
     if (trans.length > 0) {
-      const { data, error } = await supabase.from('transactions').insert(trans.map(t => mapToSnake(t, 'transactions'))).select();
-      if (!error && data) setTransactions(prev => [...mapToCamel(data, 'transactions'), ...prev]);
+      const transactionRows = trans.map((transaction, index) => mapToSnake({
+        ...transaction,
+        operationKey: `rental-payment:${paymentAttemptId}:line:${index}`
+      }, 'transactions'));
+      const { data, error } = await supabase
+        .from('transactions')
+        .upsert(transactionRows, { onConflict: 'operation_key', ignoreDuplicates: true })
+        .select();
+
+      if (error) throw error;
+      insertedPaymentRows = data || [];
+      if (insertedPaymentRows.length > 0) {
+        setTransactions(prev => [...mapToCamel(insertedPaymentRows, 'transactions'), ...prev]);
+      }
     }
 
     // 6. Atualizar as multas do motorista incluídas neste pagamento
@@ -2606,7 +2624,7 @@ export const useAppState = () => {
         const fine = fines.find(f => f.id === fd.id);
         if (fine) {
           const nextInstNum = parseInt(fd.installment.split('/')[0]);
-          const paidInstallments = [...(fine.paidInstallments || []), nextInstNum];
+          const paidInstallments = Array.from(new Set([...(fine.paidInstallments || []), nextInstNum]));
           const isPaid = paidInstallments.length >= fine.installments;
           const updatedFine = {
             ...fine,
@@ -2626,8 +2644,16 @@ export const useAppState = () => {
             status: 'Concluído',
             responsible: 'Administradora'
           };
-          const { data: tfData, error: tfError } = await supabase.from('transactions').insert([mapToSnake(newFineTrans, 'transactions')]).select();
-          if (!tfError && tfData) {
+          const fineTransaction = mapToSnake({
+            ...newFineTrans,
+            operationKey: `rental-payment:${paymentAttemptId}:fine:${fine.id}:${nextInstNum}`
+          }, 'transactions');
+          const { data: tfData, error: tfError } = await supabase
+            .from('transactions')
+            .upsert([fineTransaction], { onConflict: 'operation_key', ignoreDuplicates: true })
+            .select();
+          if (tfError) throw tfError;
+          if (tfData?.length) {
             setTransactions(prev => [mapToCamel(tfData, 'transactions')[0], ...prev]);
           }
         }
@@ -2670,16 +2696,23 @@ export const useAppState = () => {
         - companyDiscount;
       logParts.push(`Total lançado: R$ ${totalPago.toFixed(2).replace('.', ',')}`);
 
-      await logActivity(
-        'Pagamento',
-        'Faturamento',
-        rentalId,
-        `Pagamento confirmado — ${conductor} | ${logPlate} | Ciclo: ${cycleRef} | Total: R$ ${totalPago.toFixed(2).replace('.', ',')}`,
-        logParts.join(' | ')
-      );
+      if (insertedPaymentRows.length > 0 || trans.length === 0) {
+        await logActivity(
+          'Pagamento',
+          'Faturamento',
+          rentalId,
+          `Pagamento confirmado — ${conductor} | ${logPlate} | Ciclo: ${cycleRef} | Total: R$ ${totalPago.toFixed(2).replace('.', ',')}`,
+          logParts.join(' | ')
+        );
+      }
     } catch (logErr) {
       console.warn('Aviso: não foi possível registrar log de pagamento:', logErr.message);
     }
+
+    return {
+      success: true,
+      duplicate: trans.length > 0 && insertedPaymentRows.length === 0
+    };
   };
 
   const handleAddInspection = async (inspection) => {

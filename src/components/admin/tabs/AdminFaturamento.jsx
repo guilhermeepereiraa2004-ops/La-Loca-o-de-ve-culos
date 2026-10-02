@@ -9,6 +9,11 @@ import { getNextDueDate } from '../../../utils/asaas.js';
 import { parseCurrency } from '../../../utils/currencyUtils';
 import { getRentalCycles, getRentalPaymentDay } from '../../../utils/rentalCycleUtils';
 
+const createPaymentAttemptId = () => {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+};
+
 // ─── Formatter de data/hora do pagamento ──────────────────────────────────────────
 const formatTransactionDateTime = (t) => {
   if (t.createdAt) {
@@ -155,6 +160,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   const [pendingConfirm, setPendingConfirm] = useState(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
+  const isConfirmingRef = React.useRef(false);
   const [includeCaucao, setIncludeCaucao] = useState(true);
   
   // Novos campos para desconto da empresa e pagamento adicional
@@ -968,7 +974,14 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                           const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName}`;
                           
                           const caucaoToPay = includeCaucao ? cycle.calc.caucaoInstallment : null;
-                          const payload = { rentalId: rental.id, modifiedCalc, desc, caucaoToPay, destination: paymentDestination };
+                          const payload = {
+                            rentalId: rental.id,
+                            modifiedCalc,
+                            desc,
+                            caucaoToPay,
+                            destination: paymentDestination,
+                            paymentAttemptId: createPaymentAttemptId()
+                          };
                           
                           const remaining = cycle.actualTotal > 0 ? Math.max(0, cycle.calc.total - cycle.actualTotal) : cycle.calc.total;
                           if (Math.abs(valNum - remaining) > 0.01) {
@@ -1052,7 +1065,14 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
                               labelRef: cycle.labelRef
                             };
                             const desc = `Pagamento Aluguel (${cycle.label}) - ${rental.user || rental.userName} [VALOR_ALTERADO: 0]`;
-                            setPendingConfirm({ rentalId: rental.id, modifiedCalc, desc, caucaoToPay: null, destination: 'investor' });
+                            setPendingConfirm({
+                              rentalId: rental.id,
+                              modifiedCalc,
+                              desc,
+                              caucaoToPay: null,
+                              destination: 'investor',
+                              paymentAttemptId: createPaymentAttemptId()
+                            });
                           }}
                           className="w-full px-3 py-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 text-xs font-semibold rounded-md transition-colors shadow-sm border border-neutral-200"
                         >
@@ -1078,20 +1098,26 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
           cancelText="Não, cancelar"
           isLoading={isConfirming}
           onConfirm={async () => {
-            if (isConfirming) return;
+            if (isConfirmingRef.current) return;
+            isConfirmingRef.current = true;
             setIsConfirming(true);
             try {
               await onConfirmPayment(pendingConfirm.rentalId, {
                 ...pendingConfirm.modifiedCalc,
                 customDescription: pendingConfirm.desc,
                 caucaoToPay: pendingConfirm.caucaoToPay,
-                destination: pendingConfirm.destination
+                destination: pendingConfirm.destination,
+                paymentAttemptId: pendingConfirm.paymentAttemptId
               });
-            } finally {
               setPendingConfirm(null);
               setEditingCycle(null);
               setShowSuccess(true);
               setTimeout(() => setShowSuccess(false), 3000);
+            } catch (error) {
+              console.error('Erro ao confirmar pagamento:', error);
+              alert(`Não foi possível confirmar o pagamento: ${error?.message || 'erro desconhecido'}`);
+            } finally {
+              isConfirmingRef.current = false;
               setIsConfirming(false);
             }
           }}
@@ -2362,7 +2388,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                         await onPayCaucao(rentalId, billingData.caucaoToPay.number, billingData.caucaoToPay.value);
                       }
                       const customDesc = billingData.customDescription || '';
-                      onConfirmPayment(rentalId, { 
+                      return await onConfirmPayment(rentalId, {
                         ...billingData, 
                         customRepDescription: customDesc ? customDesc.replace('Pagamento Aluguel', 'Pagamento Aluguel Reserva') : ''
                       });
