@@ -7,7 +7,7 @@ import { getDayOfWeek } from '../../../utils/adminUtils.jsx';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { getNextDueDate } from '../../../utils/asaas.js';
 import { parseCurrency } from '../../../utils/currencyUtils';
-import { getRentalCycles, getRentalPaymentDay } from '../../../utils/rentalCycleUtils';
+import { getRentalClosureDate, getRentalCycles, getRentalPaymentDay } from '../../../utils/rentalCycleUtils';
 
 const createPaymentAttemptId = () => {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
@@ -176,7 +176,7 @@ const PaymentSelectionModal = ({ rental, currentCalc, history, allTransactions, 
   React.useEffect(() => {
     const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
     const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
-    const closureDateStr = rental.endDate || closureSummary?.scheduledEndDate;
+    const closureDateStr = getRentalClosureDate(rental);
     const endLimit = (isClosed && closureDateStr) ? new Date(closureDateStr + 'T12:00:00') : new Date();
     if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
@@ -1483,7 +1483,8 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
       const startDate = new Date(startStr + 'T12:00:00');
       const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
       const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
-      const endStr = (isClosed && rental.endDate) ? rental.endDate.substring(0, 10) : new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
+      const closureDateStr = getRentalClosureDate(rental);
+      const endStr = (isClosed && closureDateStr) ? closureDateStr : new Date().toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' }).split('/').reverse().join('-');
       const endObj = new Date(endStr + 'T12:00:00');
       const diffTime = endObj.getTime() - startDate.getTime();
       const diffDays = Math.max(1, Math.round(diffTime / (1000 * 60 * 60 * 24)));
@@ -1512,7 +1513,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
     const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
     const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
-    const closureDateStr = rental.endDate || closureSummary?.scheduledEndDate;
+    const closureDateStr = getRentalClosureDate(rental);
     let endLimit = (isClosed && closureDateStr) ? new Date(closureDateStr + 'T12:00:00') : new Date();
 
     // Contratos podem ser cadastrados como ativos antes da data de início. Nesse caso,
@@ -1581,7 +1582,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
 
     const isClosed = rental.status === 'Encerrado' || rental.status === 'Finalizado';
     const closureSummary = rental.docs?.closureSummary || rental.documentos?.closureSummary;
-    const closureDateStr = rental.endDate || closureSummary?.scheduledEndDate;
+    const closureDateStr = getRentalClosureDate(rental);
     const endLimit = (isClosed && closureDateStr) ? new Date(closureDateStr + 'T12:00:00') : new Date();
     if (!isClosed) endLimit.setHours(12, 0, 0, 0);
 
@@ -1596,7 +1597,30 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
     const repTxs = allRepPlates.flatMap(p => transactionsByPlate.get(p) || []);
     const combinedTxs = [...rentalTxs, ...repTxs];
 
-    const vehicleTxs = combinedTxs.filter(t => t.type === 'in' || t.type === 'Receita');
+    const rentalStartDate = (rental.startDate || rental.date || '').substring(0, 10);
+    const rentalEndDate = getRentalClosureDate(rental);
+    const driverNorm = (rental.user || rental.userName || '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+      .toLowerCase();
+
+    const vehicleTxs = combinedTxs.filter(t => {
+      if (t.type !== 'in' && t.type !== 'Receita') return false;
+
+      const transactionDate = (t.date || '').substring(0, 10);
+      if (rentalStartDate && transactionDate && transactionDate < rentalStartDate) return false;
+      if (isClosed && rentalEndDate && transactionDate && transactionDate >= rentalEndDate) return false;
+
+      const descNorm = (t.desc || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+      const isNamedSystemPayment = descNorm.includes('primeiro aluguel') || descNorm.includes('pagamento aluguel');
+      if (isNamedSystemPayment && driverNorm && !descNorm.includes(driverNorm)) return false;
+
+      return true;
+    });
 
     const grouped = [];
     const processedIds = new Set();
@@ -1986,6 +2010,7 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
             // Filter transactions for this rental contract matching the plate of main vehicle or any replacement vehicle ever used
             const rentalPlate = (rental.plate || rental.vehiclePlate || '').trim().toLowerCase();
             const rentalDriver = (rental.user || rental.userName || '').trim().toLowerCase();
+            const rentalEndDate = getRentalClosureDate(rental);
             const matchedRCsForHistory = Array.isArray(replacementContracts)
               ? replacementContracts.filter(rc => {
                   if (rc.mainVehiclePlate && rentalPlate) return rc.mainVehiclePlate.toLowerCase() === rentalPlate;
@@ -2005,6 +2030,9 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                 if (rentalStartDate && t.date && t.date < rentalStartDate) {
                   return false;
                 }
+                if ((rental.status === 'Encerrado' || rental.status === 'Finalizado') && rentalEndDate && t.date && t.date.substring(0, 10) >= rentalEndDate) {
+                  return false;
+                }
 
                 // Show rental, fine, tire tax and additional payments from the client (type 'in' of category 'Aluguel', 'multa', 'taxa de pneus' or 'adicional')
                 const category = (t.cat || '').toLowerCase();
@@ -2015,12 +2043,11 @@ const AdminFaturamento = ({ rentals = [], replacementContracts = [], serviceOrde
                   const normalizeString = (str) => (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
                   const descNorm = normalizeString(t.desc);
                   const driverNorm = normalizeString(rentalDriver);
-                  const firstName = driverNorm.split(' ')[0];
                   
                   if (descNorm.includes('aluguel')) {
                     // Verifica se é uma descrição padrão do sistema que contém o nome
                     if (descNorm.includes('primeiro aluguel') || descNorm.includes('pagamento aluguel')) {
-                      if (firstName && !descNorm.includes(firstName)) {
+                      if (driverNorm && !descNorm.includes(driverNorm)) {
                         return false;
                       }
                     }
