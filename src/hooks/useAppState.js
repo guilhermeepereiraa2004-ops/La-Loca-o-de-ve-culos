@@ -285,6 +285,8 @@ export const useAppState = () => {
   const [inventory, setInventory] = useState([]);
   const [workshopFinancials, setWorkshopFinancials] = useState([]);
   const [systemUsers, setSystemUsers] = useState([]);
+  const [systemUsersLoading, setSystemUsersLoading] = useState(true);
+  const [systemUsersError, setSystemUsersError] = useState(null);
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
   const [currentUser, setCurrentUser] = useState(() => {
@@ -397,6 +399,33 @@ export const useAppState = () => {
     }
   };
 
+  // Carrega os usuários de acesso de forma independente e prioritária.
+  // O login não deve depender do carregamento sequencial das demais tabelas.
+  const loadSystemUsers = async () => {
+    setSystemUsersLoading(true);
+    setSystemUsersError(null);
+
+    try {
+      const { data, error } = await supabase
+        .from('system_users')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: false });
+
+      if (error) throw error;
+
+      setSystemUsers(mapToCamel(data || [], 'system_users'));
+      return { success: true };
+    } catch (err) {
+      console.error('Erro ao carregar usuários de acesso:', err);
+      setSystemUsers([]);
+      setSystemUsersError('Não foi possível carregar os usuários de acesso. Verifique sua conexão e tente novamente.');
+      return { success: false, error: err };
+    } finally {
+      setSystemUsersLoading(false);
+    }
+  };
+
   const logActivity = async (action, targetType, targetId, description, details = null) => {
     const today = new Date().toISOString();
     const uName = currentUser?.name || currentUser?.nome || (currentUser?.role === 'administrador' ? 'Admin Master' : 'Sistema');
@@ -465,6 +494,9 @@ export const useAppState = () => {
 
   // Load Data from Supabase
   useEffect(() => {
+    // Inicia a consulta de autenticação imediatamente, sem aguardar as outras tabelas.
+    loadSystemUsers();
+
     const loadData = async () => {
       try {
         // Primeiro carregamos os veículos para estarem disponíveis para enriquecer as locações
@@ -487,7 +519,6 @@ export const useAppState = () => {
           { table: 'workshop_quotes', setter: setQuotes },
           { table: 'workshop_inventory', setter: setInventory },
           { table: 'workshop_financials', setter: setWorkshopFinancials },
-          { table: 'system_users', setter: setSystemUsers },
           { table: 'clients', setter: setClients },
           { table: 'replacement_contracts', setter: setReplacementContracts },
           { table: 'oil_changes', setter: setOilChanges },
@@ -3442,7 +3473,8 @@ export const useAppState = () => {
 
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
-    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices, systemUsers, clients, replacementContracts,
+    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices,
+    systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     fines, isFinesDbConnected,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,

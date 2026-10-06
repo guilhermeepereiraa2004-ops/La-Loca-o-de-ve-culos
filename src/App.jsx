@@ -28,7 +28,7 @@ const App = ({ isOficinaDomain = false }) => {
   const {
     view, setView,
     leads, rentals, investors, vehicles, transactions, maintenances,
-    inspections, serviceOrders, systemUsers, clients, replacementContracts,
+    inspections, serviceOrders, systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     quotes, appointments, inventory, workshopFinancials,
     currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     fines, isFinesDbConnected,
@@ -274,6 +274,9 @@ const App = ({ isOficinaDomain = false }) => {
       <AdminLogin
         onBack={() => setView('home')}
         systemUsers={systemUsers}
+        systemUsersLoading={systemUsersLoading}
+        systemUsersError={systemUsersError}
+        onRetrySystemUsers={loadSystemUsers}
         onLoginSuccess={(user) => {
           const adminUser = user || { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
           localStorage.setItem('la_admin_auth', 'true');

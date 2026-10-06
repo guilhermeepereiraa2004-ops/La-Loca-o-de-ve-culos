@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Mail, Star, ShieldAlert, Clock } from 'lucide-react';
+import { ChevronRight, Mail, Star, ShieldAlert, Clock, LoaderCircle, RefreshCw } from 'lucide-react';
 import { EditorialLabel } from '../ui/EditorialLabel';
 import * as rateLimiter from '../../lib/rateLimiter';
 
 const ACTION = 'admin_login';
 
-const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
+const AdminLogin = ({
+  onBack,
+  onLoginSuccess,
+  systemUsers = [],
+  systemUsersLoading = false,
+  systemUsersError = null,
+  onRetrySystemUsers
+}) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -43,6 +50,17 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
+
+    // Nunca tratar uma lista ainda não carregada como credencial inválida.
+    if (systemUsersLoading) {
+      setError('Aguarde o carregamento dos usuários de acesso.');
+      return;
+    }
+
+    if (systemUsersError) {
+      setError('Não foi possível validar o acesso. Recarregue os usuários e tente novamente.');
+      return;
+    }
 
     // ── Rate Limit: verificar antes de processar ──────────────────────────────
     const limitCheck = rateLimiter.check(ACTION);
@@ -133,6 +151,42 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {systemUsersLoading && !isBlocked && (
+              <div className="bg-blue-50 border-l-4 border-blue-500 p-4 flex items-center gap-3" role="status">
+                <LoaderCircle size={18} className="text-blue-500 shrink-0 animate-spin" />
+                <div>
+                  <p className="text-blue-800 text-[10px] uppercase tracking-widest font-black mb-1">
+                    Preparando acesso
+                  </p>
+                  <p className="text-blue-600 text-xs font-light">
+                    Carregando os usuários do sistema. Aguarde um instante.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {systemUsersError && !systemUsersLoading && !isBlocked && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 flex items-start gap-3" role="alert">
+                <ShieldAlert size={18} className="text-red-500 mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <p className="text-red-800 text-[10px] uppercase tracking-widest font-black mb-1">
+                    Falha ao preparar o acesso
+                  </p>
+                  <p className="text-red-600 text-xs font-light mb-3">{systemUsersError}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setError('');
+                      onRetrySystemUsers?.();
+                    }}
+                    className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest font-black text-red-700 hover:text-red-900"
+                  >
+                    <RefreshCw size={12} /> Tentar novamente
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Mensagem de bloqueio */}
             {isBlocked && (
               <div className="bg-orange-50 border-l-4 border-orange-500 p-4 flex items-start gap-3">
@@ -155,7 +209,7 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
             )}
 
             {/* Mensagem de erro (sem bloqueio) */}
-            {error && !isBlocked && (
+            {error && !isBlocked && !systemUsersLoading && !systemUsersError && (
               <div className="bg-red-50 border-l-2 border-red-500 p-4 text-red-600 text-[10px] uppercase tracking-widest font-bold">
                 {error}
               </div>
@@ -195,10 +249,17 @@ const AdminLogin = ({ onBack, onLoginSuccess, systemUsers = [] }) => {
 
             <button
               type="submit"
-              disabled={isBlocked}
+              disabled={isBlocked || systemUsersLoading || Boolean(systemUsersError)}
+              aria-busy={systemUsersLoading}
               className="w-full py-6 bg-neutral-900 text-white font-black uppercase tracking-[0.5em] text-[10px] hover:bg-[#C5A059] transition-all shadow-2xl hover:shadow-[#C5A059]/20 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neutral-900"
             >
-              {isBlocked ? `Bloqueado — ${formatTime(retryAfterSeconds)}` : 'Entrar no Sistema'}
+              {isBlocked
+                ? `Bloqueado — ${formatTime(retryAfterSeconds)}`
+                : systemUsersLoading
+                  ? 'Carregando Acesso...'
+                  : systemUsersError
+                    ? 'Acesso Indisponível'
+                    : 'Entrar no Sistema'}
             </button>
           </form>
 
