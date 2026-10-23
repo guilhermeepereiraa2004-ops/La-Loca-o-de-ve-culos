@@ -69,7 +69,7 @@ export function createPasswordRecoveryController({ client, getProfile, clock = D
           const profile = await getProfile();
           if (!profile || profile.authUserId !== verified.userId) throw new Error('Este acesso ainda não está liberado. Entre em contato com a administração.');
           grant = { ...verified, otpVerified, verifiedAt: clock() };
-          return { method: grant.method, requiresMfa: Boolean(profile.mfaRequired) };
+          return { method: grant.method };
         } catch (error) {
           grant = null;
           await client.auth.signOut({ scope: 'local' }).catch(() => {});
@@ -90,7 +90,6 @@ export function createPasswordRecoveryController({ client, getProfile, clock = D
         if (current.userId !== grant.userId || current.sessionId !== grant.sessionId) throw new Error(INVALID_LINK);
         const profile = await getProfile();
         if (!profile || profile.authUserId !== grant.userId) throw new Error(INVALID_LINK);
-        if (profile.mfaRequired) throw Object.assign(new Error('Confirme o autenticador antes de definir a senha.'), { code: 'MFA_REQUIRED' });
         const { error } = await client.auth.updateUser({ password });
         if (error) throw new Error('Não foi possível definir a senha. Escolha uma senha forte diferente das anteriores ou solicite um novo link.');
         grant = null;

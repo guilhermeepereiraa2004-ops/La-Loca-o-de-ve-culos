@@ -294,10 +294,9 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       if (event === 'SIGNED_IN') authRevision.current++;
       if (event === 'SIGNED_OUT') { authRevision.current++; clearStorageUrlCache(); setCurrentUser(null); setView('home'); }
       // Keep async Supabase calls outside the auth callback lock.
-      else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'MFA_CHALLENGE_VERIFIED') setTimeout(validate, 0);
+      else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') setTimeout(validate, 0);
     });
-    window.addEventListener('la:mfa-state-changed', validate);
-    return () => { active = false; clearInterval(identityTimer); subscription.unsubscribe(); window.removeEventListener('la:mfa-state-changed', validate); };
+    return () => { active = false; clearInterval(identityTimer); subscription.unsubscribe(); };
   }, []);
   const logout = async () => {
     authRevision.current++;
@@ -385,7 +384,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   };
 
   // Session changes clear private state. Refresh failures retain the last authorized snapshot.
-  const dataSessionKey = [currentUser?.authUserId, currentUser?.role, currentUser?.status, currentUser?.modules?.join(','), currentUser?.mfaRequired, currentUser?.mfaLevel].join('|');
+  const dataSessionKey = [currentUser?.authUserId, currentUser?.role, currentUser?.status, currentUser?.modules?.join(',')].join('|');
   const lastDataSessionKey = useRef(null);
   useEffect(() => {
     let cancelled = false;
@@ -407,10 +406,6 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       lastDataSessionKey.current = dataSessionKey;
     }
     setDataLoadErrors({});
-    if (currentUser?.mfaRequired) {
-      setDataLoading(false); setSystemUsersLoading(false);
-      return () => { cancelled = true; controller.abort(); };
-    }
     if (!currentUser) {
       setDataLoading(false); setSystemUsersLoading(false);
       supabase.rpc('get_public_fleet').then(({ data, error }) => {

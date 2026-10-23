@@ -7,7 +7,7 @@ globalThis.__securityTestAuthSdk = sdk;
 // Load the actual application helper, replacing only the external Supabase transport.
 const hook = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (specifier === './supabase' && /\/src\/lib\/(auth|mfa)\.js$/.test(context.parentURL || '')) return { url: 'security-test:supabase', shortCircuit: true };
+    if (specifier === './supabase' && context.parentURL?.endsWith('/src/lib/auth.js')) return { url: 'security-test:supabase', shortCircuit: true };
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
@@ -60,6 +60,19 @@ test('an investor identity cannot enter the administrative portal', async () => 
   sdk.from = table => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: table === 'investors' ? { id: 'investor-profile', status: 'Ativo' } : null }) }) }) });
   await assert.rejects(auth.signIn('investor@example.invalid','test-password-unused','admin'));
   assert.equal(signedOut,true);
+});
+test('authorized staff enters with email and password without authenticator enrollment or challenge', async () => {
+  const calls=[];
+  sdk.auth.signInWithPassword=async credentials=>{calls.push(credentials);return {error:null};};
+  sdk.auth.getUser=async()=>({data:{user:{id:'auth-test-user'}}});
+  sdk.auth.getClaims=()=>{throw new Error('Login must not require an authenticator');};
+  sdk.auth.mfa=new Proxy({}, {get(){throw new Error('Login must not access MFA enrollment or challenge');}});
+  sdk.from=table=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:table==='system_users'?{id:'profile-test-user',name:'Test User',role:'administrador'}:null})})})});
+  const profile=await auth.signIn(' TEST@EXAMPLE.INVALID ','test-password-unused','admin');
+  assert.equal(profile.authUserId,'auth-test-user');
+  assert.equal(profile.role,'administrador');
+  assert.equal('mfaRequired' in profile,false);
+  assert.deepEqual(calls,[{email:'test@example.invalid',password:'test-password-unused'}]);
 });
 test('password change cannot reach Auth update when current password is invalid', async () => {
   let updates=0;

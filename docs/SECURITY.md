@@ -17,8 +17,8 @@ como alternativa ao Auth. Nenhuma credencial de serviço pode usar prefixo `VITE
 - Turnstile opcional: configurar as duas variáveis `VITE_TURNSTILE_SITE_KEY` e
   `TURNSTILE_SECRET_KEY`, ou manter ambas ausentes. Sem chaves não há CAPTCHA;
   continuam a validação, honeypot e limite por IP no servidor.
-- Auth: desabilitar cadastro público, exigir senha forte, configurar limites,
-  recuperação e MFA administrativo. Exigir senha atual no provedor para trocas;
+- Auth: desabilitar cadastro público, exigir senha forte, configurar limites e
+  recuperação. Exigir senha atual no provedor para trocas;
   o cliente envia `current_password`, mas a configuração servidor é obrigatória.
 
 ## Migração de acesso
@@ -65,9 +65,12 @@ tela. A senha já configurada pelo titular permanece; a troca pessoal usa o flux
 de senha atual. Não reutilizar senhas antigas expostas. As contas e senhas de
 investidores ficam fora da revisão de acessos adiada pelo proprietário.
 
-O controle administrativo por aplicativo autenticador está descrito em
-[MFA.md](MFA.md). A segunda etapa só passa a ser exigida quando o titular
-confirma um fator; começar e cancelar um cadastro não bloqueia a conta.
+O acesso da aplicação usa email e senha. Conforme a escolha do proprietário,
+não há cadastro, botão ou desafio de aplicativo autenticador na interface.
+A retirada dessa opção não altera a senha já definida pelo titular.
+As verificações condicionais do servidor permanecem como defesa para fatores
+eventualmente cadastrados fora da aplicação no provedor; não devem ser
+cadastrados externamente sem preparar antes o fluxo de acesso correspondente.
 
 O callback remove o token da URL antes de consultar o Auth, valida o token de
 recuperação com `verifyOtp` e confere identidade, sessão e perfil. O AMR de
@@ -79,8 +82,7 @@ A recuperação por email fica desligada por padrão. Habilite
 `VITE_AUTH_EMAIL_RECOVERY_ENABLED=true` somente depois de configurar e testar
 SMTP, remetente/DNS e o template que usa callback com `token_hash` e tipo
 `recovery`. Os templates padrão com fragmentos genéricos `otp` não autorizam
-a primeira senha nesta implementação. MFA administrativo continua sendo uma
-etapa operacional a configurar e validar antes de exigir seu uso.
+a primeira senha nesta implementação.
 
 ## Verificação
 
