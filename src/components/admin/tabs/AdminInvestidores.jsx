@@ -87,6 +87,8 @@ const AdminInvestidores = ({
   setIsEditing,
   onAddInvestor,
   onUpdateInvestor,
+  canManageAccess = false,
+  canEdit = false,
   setItemToDelete,
   setDeleteType,
   setShowDeleteAuthModal,
@@ -791,7 +793,7 @@ const AdminInvestidores = ({
                                           }`}>
                                             {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
                                           </span>
-                                          <button
+                                          {canManageAccess && <button
                                             onClick={(e) => {
                                               e.stopPropagation();
                                               setItemToDelete(td);
@@ -802,7 +804,7 @@ const AdminInvestidores = ({
                                             title="Apagar transação"
                                           >
                                             <Trash2 size={13} />
-                                          </button>
+                                          </button>}
                                         </div>
                                       </td>
                                     </tr>
@@ -870,7 +872,7 @@ const AdminInvestidores = ({
                                         {td.share > 0 ? '+' : ''}{formatCurrency(td.share)}
                                       </span>
                                     </div>
-                                    <button
+                                    {canManageAccess && <button
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setItemToDelete(td);
@@ -881,7 +883,7 @@ const AdminInvestidores = ({
                                       title="Apagar transação"
                                     >
                                       <Trash2 size={14} />
-                                    </button>
+                                    </button>}
                                   </div>
                                 </div>
                               </div>
@@ -1193,7 +1195,7 @@ const AdminInvestidores = ({
                 </div>
               </div>
 
-              <button
+              {canEdit && <button
                 onClick={() => {
                   setInvestorForm({
                     name: '', email: '', phone: '', cpf: '', address: '',
@@ -1206,7 +1208,7 @@ const AdminInvestidores = ({
               >
                 <Plus size={16} className="group-hover:rotate-90 transition-transform duration-300" />
                 Novo Investidor
-              </button>
+              </button>}
             </div>
           </div>
 
@@ -1310,7 +1312,7 @@ const AdminInvestidores = ({
                       </div>
                       
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
+                        {canEdit && <button
                           onClick={() => {
                             setInvestorForm({ ...investor, password: '' });
                             setIsEditing(true);
@@ -1320,10 +1322,9 @@ const AdminInvestidores = ({
                           title="Editar"
                         >
                           <Pencil size={12} />
-                        </button>
-                        <button
+                        </button>}
+                        {canManageAccess && <button
                           onClick={() => {
-                            console.log("ADMIN_INVESTIDORES: Clique no botão de excluir investidor:", investor);
                             setItemToDelete(investor);
                             setDeleteType('investor');
                             setShowDeleteAuthModal(true);
@@ -1332,7 +1333,7 @@ const AdminInvestidores = ({
                           title="Excluir"
                         >
                           <Trash2 size={12} />
-                        </button>
+                        </button>}
                       </div>
                     </div>
 
@@ -1485,7 +1486,8 @@ const AdminInvestidores = ({
                   <div className="space-y-4">
                     {payout > 0 ? (
                       <button
-                        onClick={() => setPayoutModal({ investor, amount: payout, referenceMonth: competenciaKey })}
+                        disabled={!onAddTransaction}
+                        onClick={() => { if (onAddTransaction) setPayoutModal({ investor, amount: payout, referenceMonth: competenciaKey }); }}
                         className="w-full py-3.5 bg-neutral-950 text-white text-[9px] font-black uppercase tracking-[0.2em] rounded-xl hover:bg-[#C5A059] transition-all flex items-center justify-center gap-2 group shadow-sm active:scale-95 duration-200"
                       >
                         <SendHorizonal size={12} className="group-hover:translate-x-0.5 transition-transform" />
@@ -1626,6 +1628,7 @@ const AdminInvestidores = ({
                       <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-300 group-focus-within:text-[#C5A059] transition-colors" />
                       <input 
                         type="email" 
+                        disabled={!canManageAccess && Boolean(investorForm.authUserId || investorForm.auth_user_id)}
                         value={investorForm.email || ''} 
                         onChange={e => setInvestorForm({ ...investorForm, email: e.target.value })} 
                         className="w-full bg-neutral-50 border border-neutral-100 py-4 pl-12 pr-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner" 
@@ -1670,12 +1673,13 @@ const AdminInvestidores = ({
                 {/* Seção 2: Acesso ao Portal */}
                 <div className="space-y-6 bg-neutral-50/50 p-6 rounded-3xl border border-neutral-100">
                   <h5 className="text-[11px] uppercase tracking-[0.4em] text-neutral-900 font-black flex items-center gap-2 pb-2 border-b border-neutral-100">
-                    <Key size={14} className="text-[#C5A059]" /> Acesso ao Portal
+                    <Key size={14} className="text-[#C5A059]" /> {canManageAccess ? 'Acesso ao Portal' : 'Situação do cadastro'}
                   </h5>
                   
                   <div className="space-y-4">
-                    {investorForm.id && <AccountActivationLink kind="investor" profileId={investorForm.id} />}
-                    <div className="space-y-2 relative">
+                    {!canManageAccess && Boolean(investorForm.authUserId || investorForm.auth_user_id) && <p className="text-xs text-neutral-500">Alterações no acesso são feitas pela administração.</p>}
+                    {canManageAccess && investorForm.id && <AccountActivationLink kind="investor" profileId={investorForm.id} />}
+                    {canManageAccess && <div className="space-y-2 relative">
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Nova senha do portal</label>
                       <input type="password" autoComplete="new-password" minLength={12} maxLength={128}
                         value={investorForm.password || ''}
@@ -1683,11 +1687,12 @@ const AdminInvestidores = ({
                         className="w-full bg-white border py-4 px-6 rounded-2xl text-xs font-bold outline-none"
                         placeholder={investorForm.id ? 'Deixe em branco para manter' : 'Pelo menos 12 caracteres'} />
                       <p className="text-xs text-neutral-500">A senha atual não pode ser consultada. Preencha somente para redefinir.</p>
-                    </div>
+                    </div>}
 
                     <div className="space-y-2">
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status da Conta</label>
                       <select 
+                        disabled={!canManageAccess && Boolean(investorForm.authUserId || investorForm.auth_user_id)}
                         value={investorForm.status || 'Ativo'} 
                         onChange={e => setInvestorForm({ ...investorForm, status: e.target.value })} 
                         className="w-full bg-white border border-neutral-100 py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 focus:ring-[#C5A059]/10 focus:border-[#C5A059] focus:bg-white transition-all shadow-inner"
@@ -1753,9 +1758,11 @@ const AdminInvestidores = ({
                   type="submit"
                   onClick={async (e) => {
                     e.preventDefault();
+                    if (!canEdit) return;
+                    const profile = canManageAccess ? investorForm : Object.fromEntries(Object.entries(investorForm).filter(([key]) => key !== 'password'));
                     if (isEditing) {
-                      const res = await onUpdateInvestor(investorForm);
-                      if (res && !res.success) return;
+                      const res = await onUpdateInvestor(profile);
+                      if (res?.success !== true) return;
                       setIsEditing(false);
                       setShowAdminSuccess({
                         show: true,
@@ -1763,8 +1770,8 @@ const AdminInvestidores = ({
                         message: 'Os dados do parceiro foram atualizados com sucesso no sistema.'
                       });
                     } else {
-                      const res = await onAddInvestor(investorForm);
-                      if (res && !res.success) return;
+                      const res = await onAddInvestor(profile);
+                      if (res?.success !== true) return;
                       setShowAdminSuccess({
                         show: true,
                         title: 'Investidor Cadastrado',

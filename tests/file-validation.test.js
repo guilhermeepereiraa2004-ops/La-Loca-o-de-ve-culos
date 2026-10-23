@@ -8,6 +8,7 @@ import { deflateRawSync } from 'node:zlib';
 import { Document, Packer, Paragraph } from 'docx';
 import { MAX_UPLOAD_BYTES, validateUploadBytes } from '../supabase/functions/_shared/fileValidation.js';
 import { requireVerifiedMfa } from '../supabase/functions/_shared/requireMfa.js';
+import { canUploadToFolder } from '../supabase/functions/_shared/canOperate.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const PNG = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6K6kAAAAASUVORK5CYII=', 'base64'));
@@ -166,7 +167,7 @@ function edgeHarness(overrides = {}) {
   const source = fs.readFileSync(new URL('../supabase/functions/secure-upload/index.ts', import.meta.url), 'utf8').replace(/^import[^;]+;\s*/gm, '');
   vm.runInNewContext(stripTypeScriptTypes(source), {
     Deno: { serve(callback) { handler = callback; }, env: { get(name) { return name === 'SUPABASE_URL' ? 'https://test-project.invalid' : 'server-test-key'; } } },
-    createClient: () => client, MAX_UPLOAD_BYTES, validateUploadBytes, requireVerifiedMfa,
+    createClient: () => client, MAX_UPLOAD_BYTES, validateUploadBytes, requireVerifiedMfa, canUploadToFolder,
     Request, Response, Headers, Uint8Array, Error, crypto: webcrypto,
   });
   const request = (headers = {}, body = PNG, method = 'POST') => handler(new Request('https://test-project.invalid/secure-upload', {
@@ -216,13 +217,47 @@ test('Edge: nega visitante, sessão inválida e usuário sem módulo', async () 
   }
 });
 
-test('Edge: funcionário e gerente de leitura não gravam arquivos mesmo com todos os módulos', async () => {
+test('Edge: funcionário e gerente enviam somente nas pastas dos módulos atribuídos', async () => {
   for (const role of ['funcionario', 'gerente']) {
-    const harness = edgeHarness({ profile: { role, modules: ['frota','clientes','locacao','investidores','vistoria','oficina','faturamento'] } });
-    assert.equal((await harness.request()).status, 403);
-    assert.equal(harness.rateCalls.length, 0);
-    assert.equal(harness.writes.length, 0);
+    for (const [module, folder] of [
+      ['frota','veiculos'], ['clientes','condutores/test'], ['locacao','condutores/test/contratos'],
+      ['vistoria','vistorias/TEST123'], ['manutencaoAdmin','manutencoes/test'], ['oficina','manutencoes'],
+      ['locacao','contratos'], ['faturamento','contratos/test'],
+    ]) {
+      const harness = edgeHarness({ profile: { role, modules: [module] } });
+      assert.equal((await harness.request({ 'x-upload-folder': folder })).status, 201, role + ':' + module + ':' + folder);
+      assert.equal(harness.writes.length, 1);
+      assert.equal(harness.rateCalls.length, 1);
+    }
   }
+});
+
+test('Edge: módulos relacionados de leitura, papel forjado e pastas desconhecidas nunca ampliam escrita', async () => {
+  for (const [profile, folder, isPublic] of [
+    [{ role: 'funcionario', modules: ['investidores'] }, 'veiculos', false],
+    [{ role: 'funcionario', modules: ['investidores'] }, 'veiculos', true],
+    [{ role: 'funcionario', modules: ['multas'] }, 'condutores', false],
+    [{ role: 'gerente', modules: ['faturamento'] }, 'condutores', false],
+    [{ role: 'gerente', modules: ['locacao'] }, 'veiculos', true],
+    [{ role: 'funcionario', modules: [] }, 'vistorias', false],
+    [{ role: 'investidor', modules: ['frota'] }, 'veiculos', false],
+    [{ role: 'admin', modules: ['frota'] }, 'veiculos', false],
+    [{ role: 'administrador', modules: [] }, 'constructor', false],
+  ]) {
+    const harness = edgeHarness({ profile });
+    assert.equal((await harness.request({ 'x-upload-folder': folder, 'x-upload-public': String(isPublic), 'x-claimed-role': 'administrador' })).status, 403);
+    assert.equal(harness.rateCalls.length, 0); assert.equal(harness.writes.length, 0);
+  }
+});
+
+test('Edge: foto pública exige frota e revogação do módulo vale no próximo request', async () => {
+  const profile = { role: 'funcionario', modules: ['frota'] };
+  const harness = edgeHarness({ profile });
+  assert.equal((await harness.request({ 'x-upload-public': 'true' })).status, 201);
+  assert.equal(harness.writes[0].bucket, 'vehicle-public-images');
+  profile.modules = ['investidores'];
+  assert.equal((await harness.request({ 'x-upload-public': 'true' })).status, 403);
+  assert.equal(harness.writes.length, 1); assert.equal(harness.rateCalls.length, 1);
 });
 
 test('Edge: nega origem/pasta inválida, upload vazio e tipo trocado sem gravar', async () => {

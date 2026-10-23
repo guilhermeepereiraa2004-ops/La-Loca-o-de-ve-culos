@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   X, ClipboardList, Clock, User, CreditCard, Camera, 
   Download, Car, Calendar, Landmark, AlertTriangle, 
@@ -24,7 +24,49 @@ const RentalDetailModal = ({
 }) => {
   const [localSelectedImage, setLocalSelectedImage] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const [pendingContract, setPendingContract] = useState(null);
+  const uploadPending = useRef(false);
+  const contractOperation = useRef(null);
+  const uploadErrorRef = useRef(null);
   const setSelectedImage = setGlobalSelectedImage || setLocalSelectedImage;
+
+  useEffect(() => {
+    if (!uploadError) return;
+    const frame = requestAnimationFrame(() => uploadErrorRef.current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, [uploadError]);
+
+  const closeModal = () => { if (!uploadPending.current) onClose(); };
+  const saveContract = async (file) => {
+    if (uploadPending.current || !onUpdate) return;
+    if (file) {
+      contractOperation.current = {
+        ...rental,
+        requestId: crypto.randomUUID(),
+        docs: { ...(rental.docs || {}), signedContract: file },
+      };
+      setPendingContract(file);
+    }
+    if (!contractOperation.current) return;
+    uploadPending.current = true;
+    setIsUploading(true);
+    setUploadError('');
+    try {
+      const result = await onUpdate(contractOperation.current);
+      if (result?.success !== true) {
+        setUploadError('Não foi possível salvar o contrato. O arquivo continua selecionado para tentar novamente.');
+        return;
+      }
+      contractOperation.current = null;
+      setPendingContract(null);
+    } catch {
+      setUploadError('Não foi possível confirmar o envio. O arquivo continua selecionado para tentar novamente.');
+    } finally {
+      uploadPending.current = false;
+      setIsUploading(false);
+    }
+  };
 
   const getFileUrl = (file) => getPublicUrl(file);
 
@@ -142,8 +184,8 @@ const RentalDetailModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
-      <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-2xl" onClick={onClose} />
+    <div role="dialog" aria-modal="true" aria-label="Detalhes da locação" aria-busy={isUploading} className="fixed inset-0 z-[500] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
+      <div className="absolute inset-0 bg-neutral-950/98 backdrop-blur-2xl" onClick={closeModal} />
       
       <div className="bg-[#f8f9fa] w-full max-w-[1400px] h-full md:h-auto md:max-h-[95vh] md:rounded-[3.5rem] shadow-2xl relative z-10 overflow-hidden flex flex-col animate-in zoom-in-95 duration-500 border border-white/20">
         
@@ -186,7 +228,7 @@ const RentalDetailModal = ({
             >
               <FileDown size={18} className="group-hover:-translate-y-0.5 transition-transform" /> {rental.docs?.signedContract ? 'Modelo .DOCX' : 'Contrato .DOCX'}
             </button>
-            <button onClick={onClose} className="w-14 h-14 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100">
+            <button onClick={closeModal} disabled={isUploading} aria-label="Fechar detalhes da locação" className="w-14 h-14 bg-neutral-50 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-all text-neutral-400 hover:text-neutral-900 border border-neutral-100 disabled:opacity-50">
               <X size={24} />
             </button>
           </div>
@@ -500,11 +542,11 @@ const RentalDetailModal = ({
               
               {/* STATUS & ACTIONS CARD */}
               <div className="bg-white p-8 rounded-[3rem] border border-neutral-100 shadow-sm space-y-8">
-                <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Ações do Administrador</h5>
+                <h5 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">Ações da Locação</h5>
                 
                 <div className="space-y-4">
                   {/* Upload Label */}
-                  <label className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all cursor-pointer group border-2 border-dashed ${
+                  {onUpdate && <label className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all cursor-pointer group border-2 border-dashed ${
                     isUploading
                       ? 'bg-amber-50/50 border-amber-300 text-amber-700 animate-pulse pointer-events-none'
                       : rental.docs?.signedContract 
@@ -540,33 +582,24 @@ const RentalDetailModal = ({
                     </div>
                     <input 
                       type="file" 
+                      aria-label="Contrato assinado"
                       className="hidden" 
                       accept=".pdf,.docx,.doc,.jpg,.jpeg,.png"
                       disabled={isUploading}
-                      onChange={async (e) => {
-                        const file = e.target.files[0];
-                        if (file && onUpdate) {
-                          try {
-                            setIsUploading(true);
-                            await onUpdate({ 
-                              ...rental, 
-                              docs: { ...(rental.docs || {}), signedContract: file } 
-                            });
-                          } catch (err) {
-                            console.error("Erro ao subir contrato:", err);
-                            alert("Erro ao enviar o arquivo. Por favor, tente novamente.");
-                          } finally {
-                            setIsUploading(false);
-                          }
-                        }
-                      }}
+                      onChange={(e) => { const file = e.target.files[0]; if (file) void saveContract(file); }}
                     />
-                  </label>
+                  </label>}
+                  {pendingContract && <p role="status" className="text-xs font-medium text-neutral-600 break-all">Arquivo selecionado: {pendingContract.name}</p>}
+                  {uploadError && <div ref={uploadErrorRef} role="alert" className="p-4 rounded-2xl bg-red-50 text-red-700 text-sm space-y-3">
+                    <p>{uploadError}</p>
+                    <button type="button" disabled={isUploading} onClick={() => void saveContract()} className="font-bold underline disabled:opacity-50">Tentar novamente</button>
+                  </div>}
 
                   {/* Vistoria Button (Dynamic) */}
                   {onGoToVistorias && !inspections.some(ins => ins.vehiclePlate === (rental.vehiclePlate || rental.plate) && ins.type === 'Entrega') && (
                     <button 
-                      onClick={() => onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' })}
+                      disabled={isUploading}
+                      onClick={() => { if (!uploadPending.current) onGoToVistorias({ vehiclePlate: rental.plate || rental.vehiclePlate, type: 'Entrega' }); }}
                       className="w-full flex items-center gap-4 p-5 bg-[#C5A059] text-white rounded-[2rem] hover:bg-neutral-950 transition-all shadow-xl shadow-[#C5A059]/20"
                     >
                       <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
@@ -581,7 +614,8 @@ const RentalDetailModal = ({
 
                   {rental.status === 'Ativo' && onRenewContract && (
                     <button 
-                      onClick={() => onRenewContract(rental)}
+                      disabled={isUploading}
+                      onClick={() => { if (!uploadPending.current) onRenewContract(rental); }}
                       className="w-full flex items-center gap-4 p-5 bg-neutral-900 text-[#C5A059] rounded-[2rem] hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-neutral-900/10"
                     >
                       <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">

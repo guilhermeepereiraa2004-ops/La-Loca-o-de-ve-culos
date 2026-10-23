@@ -297,7 +297,7 @@ const AdminOficina = ({
                               <Pencil size={16} />
                             </button>
                           )}
-                          <button 
+                          {onDeleteServiceOrder && <button
                             onClick={(e) => {
                               e.stopPropagation();
                               if (setItemToDelete && setDeleteType && setShowDeleteAuthModal) {
@@ -314,7 +314,7 @@ const AdminOficina = ({
                             title="Excluir O.S."
                           >
                             <Trash2 size={16} />
-                          </button>
+                          </button>}
                         </div>
                       </td>
                     </tr>

@@ -22,10 +22,14 @@ function text(value, max, required = false) {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim()) || /[\u0000-\u0008]/.test(value)) reject(400, 'Dados inválidos.');
   return value.trim();
 }
-export function validateAccountInput(body) {
+export function validateAccountInput(body, { investorBusinessOnly = false } = {}) {
   if (!plainObject(body) || Object.keys(body).some(key => !['kind','action','profile','currentPassword'].includes(key))) reject(400, 'Dados inválidos.');
   const { kind, action, profile, currentPassword } = body;
   if (!['system','investor'].includes(kind) || !['create','update','delete','activation-link'].includes(action) || !plainObject(profile)) reject(400, 'Dados inválidos.');
+  // This option is derived from the actor's protected DB profile by the handler,
+  // never from a request property or browser role/module flags.
+  if (investorBusinessOnly && (kind !== 'investor' || !['create', 'update'].includes(action))) reject(403, 'Somente administradores podem gerenciar contas e acessos.');
+  if (investorBusinessOnly && profile.password !== undefined && profile.password !== null && profile.password !== '') reject(403, 'Somente administradores podem definir senhas de acesso.');
   if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > 128) reject(400, 'Confirme sua senha atual.');
   const allowed = kind === 'system' ? ['id','name','email','password','role','modules'] : ['id','name','email','password','phone','cpf','address','status','bank','pix'];
   if (Object.keys(profile).some(key => !allowed.includes(key))) reject(400, 'Campo não permitido.');
@@ -41,7 +45,7 @@ export function validateAccountInput(body) {
     if (typeof profile.password !== 'string' || profile.password.length < 12 || profile.password.length > 128) reject(400, 'A nova senha deve ter de 12 a 128 caracteres.');
     output.password = profile.password;
   }
-  if (action === 'create' && !output.password) reject(400, 'Defina uma senha nova de pelo menos 12 caracteres.');
+  if (action === 'create' && !output.password && !investorBusinessOnly) reject(400, 'Defina uma senha nova de pelo menos 12 caracteres.');
   if (kind === 'system') {
     if (!['administrador','gerente','funcionario'].includes(profile.role)) reject(400, 'Papel inválido.');
     if (!Array.isArray(profile.modules) || profile.modules.length > MODULES.size || profile.modules.some(value => !MODULES.has(value))) reject(400, 'Permissões inválidas.');
@@ -87,12 +91,14 @@ export function createSecurityUsersHandler({ clientFactory = createClient, envir
       const { user } = verified;
       if (!user.email) reject(401, 'Sessão inválida.');
       const admin = clientFactory(url, serviceKey, config);
-      const { data: actor, error: actorError } = await admin.from('system_users').select('id,role,auth_user_id').eq('auth_user_id', user.id).maybeSingle();
-      if (actorError || actor?.role !== 'administrador') reject(403, 'Acesso não autorizado.');
+      const { data: actor, error: actorError } = await admin.from('system_users').select('id,role,modules,auth_user_id').eq('auth_user_id', user.id).maybeSingle();
+      const isAdmin = actor?.role === 'administrador';
+      const canEditInvestorBusiness = ['funcionario', 'gerente'].includes(actor?.role) && Array.isArray(actor.modules) && actor.modules.includes('investidores');
+      if (actorError || (!isAdmin && !canEditInvestorBusiness)) reject(403, 'Acesso não autorizado.');
       const { data: actorInvestor, error: actorIdentityError } = await admin.from('investors').select('id').eq('auth_user_id', user.id).maybeSingle();
       if (actorIdentityError || actorInvestor) reject(409, 'Identidade com vínculos conflitantes. Revise os perfis.');
       const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      const input = validateAccountInput(body);
+      const input = validateAccountInput(body, { investorBusinessOnly: !isAdmin });
       const { data: allowed, error: rateError } = await admin.rpc('consume_security_rate_limit', {
         p_key: 'manage-account:' + user.id, p_limit: 10, p_window_seconds: 60,
       });
@@ -117,6 +123,30 @@ export function createSecurityUsersHandler({ clientFactory = createClient, envir
           const { data: conflictingProfile, error: identityError } = await admin.from(otherTable).select('id').eq('auth_user_id', existing.auth_user_id).maybeSingle();
           if (identityError || conflictingProfile) reject(409, 'Identidade com vínculos conflitantes. Revise os perfis.');
         }
+      }
+      if (!isAdmin) {
+        // Staff can maintain commercial records only. Never create, change,
+        // activate or delete an Auth identity from this path.
+        const businessPayload = { ...safeProfile };
+        if (existing?.auth_user_id) {
+          if (safeProfile.email !== existing.email?.trim().toLowerCase()) reject(409, 'Este investidor já possui acesso. Solicite a um administrador a alteração do e-mail.');
+          if (safeProfile.status !== existing.status) reject(409, 'Este investidor já possui acesso. Solicite a um administrador a alteração do status.');
+          delete businessPayload.email;
+          delete businessPayload.status;
+        }
+        let businessQuery;
+        if (input.action === 'create') {
+          businessQuery = admin.from('investors').insert({ ...businessPayload, auth_user_id: null });
+        } else {
+          businessQuery = admin.from('investors').update(businessPayload).eq('id', id);
+          // A concurrent administrator may bind or change access while this
+          // request runs. Do not overwrite that new binding/email/status.
+          businessQuery = existing.auth_user_id ? businessQuery.eq('auth_user_id', existing.auth_user_id) : businessQuery.is('auth_user_id', null);
+          for (const field of ['email', 'status']) businessQuery = existing[field] == null ? businessQuery.is(field, null) : businessQuery.eq(field, existing[field]);
+        }
+        const { data: savedBusiness, error: businessError } = await businessQuery.select(INVESTOR_FIELDS).single();
+        if (businessError || !savedBusiness) reject(409, 'Não foi possível salvar o cadastro comercial. Ele pode ter sido alterado; atualize a lista e tente novamente.');
+        return res.status(200).json({ success: true, profile: savedBusiness });
       }
       if (input.action === 'activation-link') {
         let redirect;

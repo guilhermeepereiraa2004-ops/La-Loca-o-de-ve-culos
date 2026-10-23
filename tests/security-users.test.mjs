@@ -62,6 +62,14 @@ test('rejects arbitrary fields, role escalation payloads, weak passwords and inv
     assert.throws(() => validateAccountInput(input));
   }
 });
+
+test('password-free investor creation is accepted only under a verified server business-only context', () => {
+  const input={kind:'investor',action:'create',currentPassword:'synthetic-own-password',profile:{name:'Business investor',email:'business@example.invalid',status:'Ativo'}};
+  assert.throws(()=>validateAccountInput(input),/senha nova/);
+  assert.equal(validateAccountInput(input,{investorBusinessOnly:true}).profile.password,undefined);
+  assert.throws(()=>validateAccountInput({...input,investorBusinessOnly:true}),/Dados inválidos/);
+  assert.throws(()=>validateAccountInput({...input,profile:{...input.profile,password:'synthetic-forbidden-password'}},{investorBusinessOnly:true}),/administradores/);
+});
 test('denies anonymous request before privileged profile lookup', async () => {
   const f = fixture({ unauthenticated: true }); const res = f.response();
   await f.handler(f.request(), res);

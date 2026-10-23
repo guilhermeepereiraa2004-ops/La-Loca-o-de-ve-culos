@@ -124,7 +124,7 @@ const OficinaEstoque = ({ inventory = [], onAddInventoryItem, onUpdateInventoryI
                }
             }} />
           </label>
-          <button onClick={async () => {
+          {onDeleteAllInventoryItems && <button onClick={async () => {
             if(window.confirm('Tem certeza que deseja excluir TODOS os produtos? Esta ação não pode ser desfeita.')) {
               if (onDeleteAllInventoryItems) {
                 await onDeleteAllInventoryItems();
@@ -133,7 +133,7 @@ const OficinaEstoque = ({ inventory = [], onAddInventoryItem, onUpdateInventoryI
             }
           }} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-xl border border-red-100 text-sm font-bold flex items-center gap-2 transition-all shadow-sm">
             <Trash2 size={16} /> Excluir Todos
-          </button>
+          </button>}
           <button onClick={() => {setForm(defaultForm); setShowModal(true);}} className="bg-[#f97316] hover:bg-[#ea580c] text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-sm">
             <Plus size={16} /> Novo Produto
           </button>
@@ -230,9 +230,9 @@ const OficinaEstoque = ({ inventory = [], onAddInventoryItem, onUpdateInventoryI
                       <button onClick={() => handleAdjustQuantity(i, 1)} className="p-2 text-neutral-400 hover:text-green-500 hover:bg-green-50 rounded-lg transition-colors" title="+1 Estoque">
                         <Plus size={16} />
                       </button>
-                      <button onClick={() => { if(window.confirm('Excluir produto?')) onDeleteInventoryItem(i.id); }} className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                      {onDeleteInventoryItem && <button onClick={() => { if(window.confirm('Excluir produto?')) onDeleteInventoryItem(i.id); }} className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
                         <Trash2 size={16} />
-                      </button>
+                      </button>}
                     </div>
                   </td>
                 </tr>

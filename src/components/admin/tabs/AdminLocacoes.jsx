@@ -5,6 +5,7 @@ import { getPublicUrl } from '../../../utils/supabaseStorage';
 import { parseCurrency } from '../../../utils/currencyUtils';
 
 const AdminLocacoes = ({
+  canDelete = false,
   rentals,
   inspections = [],
   rentalFilter,
@@ -482,7 +483,7 @@ const AdminLocacoes = ({
                             <Pencil size={13} />
                           </button>
                           
-                          <button
+                          {canDelete && <button
                             onClick={() => {
                               setItemToDelete(rental);
                               setDeleteType('rental');
@@ -492,7 +493,7 @@ const AdminLocacoes = ({
                             title="Excluir"
                           >
                             <Trash2 size={13} />
-                          </button>
+                          </button>}
                         </div>
                       </div>
                     );

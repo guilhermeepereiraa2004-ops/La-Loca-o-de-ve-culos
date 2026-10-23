@@ -2,7 +2,8 @@ import React from 'react';
 import { Download, Search, Mail, Phone, X, Trash2 } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
-const AdminLeads = ({ 
+const AdminLeads = ({
+  canDelete = false,
   leads, 
   leadSearch, 
   setLeadSearch, 
@@ -183,7 +184,7 @@ const AdminLeads = ({
                       >
                         <Phone size={12} /> Whats
                       </a>
-                      <button
+                      {canDelete && <button
                         onClick={() => {
                           setItemToDelete(lead);
                           setDeleteType('lead');
@@ -193,7 +194,7 @@ const AdminLeads = ({
                         title="Excluir Lead"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </button>}
                     </div>
                   </div>
 

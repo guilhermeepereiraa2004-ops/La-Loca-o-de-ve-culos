@@ -403,7 +403,7 @@ const InspectionDetailModal = ({ inspection: sourceInspection, onClose, onCloseC
         </div>
 
         {/* Footer */}
-        {inspection.type === 'Devolução' && hasActiveRental && (
+        {inspection.type === 'Devolução' && hasActiveRental && onCloseContract && (
           <div className="p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end shrink-0">
             <button 
               onClick={() => onCloseContract(inspection)}

@@ -59,6 +59,22 @@ test('overlapping tables share in-flight signatures and cached paths across URL 
   assert.equal(f.calls.flatMap(call => call.paths).length, paths.length);
 });
 
+test('comma-joined maintenance receipts batch individually while a comma in one filename stays intact', async () => {
+  const f = fixture();
+  const input = {
+    receiptUrl: reference('manutencoes/first.pdf') + ',' + oldUrl('manutencoes/second.pdf'),
+    singleFilename: oldUrl('manutencoes/nota,pecas.pdf'),
+  };
+  const output = await f.resolver.hydrate(input);
+  assert.equal(output.receiptUrl, signedUrl('manutencoes/first.pdf') + ',' + signedUrl('manutencoes/second.pdf'));
+  assert.equal(output.singleFilename, signedUrl('manutencoes/nota,pecas.pdf'));
+  assert.equal(f.calls.length, 1);
+  assert.deepEqual(f.calls[0].paths, ['manutencoes/first.pdf', 'manutencoes/second.pdf', 'manutencoes/nota,pecas.pdf']);
+  assert.equal(input.receiptUrl, reference('manutencoes/first.pdf') + ',' + oldUrl('manutencoes/second.pdf'));
+  await f.resolver.hydrate(output);
+  assert.equal(f.calls.length, 1);
+});
+
 test('network rejection, missing file and denied signature preserve stable references on save round-trip', async () => {
   const f = fixture(async paths => ({ data: paths.map(path => path.includes('denied') ? { path, error: 'denied', signedUrl: null } : { path, signedUrl: signedUrl(path), error: null }), error: null }));
   const output = await f.resolver.hydrate({ denied: oldUrl('vistorias/denied.png'), valid: oldUrl('vistorias/valid.png') });

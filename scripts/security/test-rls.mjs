@@ -493,7 +493,371 @@ try {
     });
   });
   await equal(`select km from public.vehicles where id='${ids.vehicleA}'`,[{km:null}]);
-  console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; containment + full/MFA/read-only migrations; anonymous, investor A/B, inactive, unlinked, employee/manager read-only, admin CRUD, service_role.`);
+
+  // The owner subsequently authorized create/edit by assigned owning module.
+  // Apply that change only after exercising the historical read-only cutover.
+  const moduleOperationsMigration=await readFile('supabase/migrations/20261023195959_staff_module_writes_atomic_rentals.sql','utf8');
+  await db.exec(moduleOperationsMigration);
+  // A review/recovery replay must not duplicate triggers or broaden privileges.
+  await db.exec(moduleOperationsMigration);
+  await equal(unchangedPoliciesSql,policiesBefore);
+  await equal(profileGrantsSql,profileGrantsBefore);
+  const callCreate=async(requestId,rental,client,paymentDay=null)=>(await db.query(
+    'select public.create_rental_atomic($1,$2::jsonb,$3::jsonb,$4) as result',
+    [requestId,JSON.stringify(rental),JSON.stringify(client),paymentDay])).rows[0].result;
+  const callUpdate=async(requestId,rentalId,rental,client)=>(await db.query(
+    'select public.update_rental_atomic($1,$2,$3::jsonb,$4::jsonb) as result',
+    [requestId,rentalId,JSON.stringify(rental),JSON.stringify(client)])).rows[0].result;
+  const callDeposit=async(requestId,rentalId,installment,value)=>(await db.query(
+    'select public.pay_rental_deposit($1,$2,$3,$4) as result',[requestId,rentalId,installment,value])).rows[0].result;
+  const callMaintenance=async(requestId,maintenanceId,maintenance)=>(await db.query(
+    'select public.save_maintenance_atomic($1,$2,$3::jsonb) as result',[requestId,maintenanceId,JSON.stringify(maintenance)])).rows[0].result;
+  const callStatus=async(vehicleId,status)=>(await db.query(
+    'select public.set_operational_vehicle_status($1,$2) as result',[vehicleId,status])).rows[0].result;
+  const rejectsAtomic=async(run,codes)=>{
+    await db.exec('savepoint atomic_denial');
+    try{await assert.rejects(run,error=>codes.includes(error.code));pass();}
+    finally{await db.exec('rollback to savepoint atomic_denial');}
+  };
+  const rentalSnapshot=async()=>(await db.query(`select jsonb_build_object(
+    'rentals',(select jsonb_agg(to_jsonb(r) order by id) from public.rentals r),
+    'clients',(select jsonb_agg(to_jsonb(c) order by id) from public.clients c),
+    'transactions',(select jsonb_agg(to_jsonb(t) order by id) from public.transactions t),
+    'vehicles',(select jsonb_agg(to_jsonb(v) order by id) from public.vehicles v),
+    'maintenances',(select jsonb_agg(to_jsonb(m) order by id) from public.maintenances m),
+    'requests',(select count(*) from private_security.rental_requests)) as snapshot`)).rows[0].snapshot;
+  const newVehicle='50000000-0000-4000-8000-000000000001';
+  const nextVehicle='50000000-0000-4000-8000-000000000002';
+  const requestId='60000000-0000-4000-8000-000000000001';
+  const signed='storage://La-locacao/condutores/fixture/signed.pdf';
+  const baseRental={id_veiculo:newVehicle,start_date:'2026-10-19',value:700,user_name:'Synthetic atomic driver',tipo:'weekly',
+    imposto_de_pneus:25,deposit_installments:3,'total do depósito':300,'caução_paga':0,
+    documentos:{cnh:'storage://La-locacao/condutores/fixture/cnh.pdf',customMeta:{retained:true}},contrato_assinado:signed};
+  const baseClient={nome:'Synthetic atomic driver',cpf:'synthetic-atomic-cpf',cnh_number:'synthetic-atomic-cnh',
+    documentos:{residence:'storage://La-locacao/condutores/fixture/residence.pdf'}};
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status,admin_tax) values
+      ('${newVehicle}','Atomic vehicle','ATOM001','Disponível',20),('${nextVehicle}','Atomic next','ATOM002','Disponível',0)`);
+    await db.exec(`update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    let created;
+    await as('authenticated',ids.employee,async()=>{
+      await deniedInTransaction("insert into public.transactions(type,val,date) values('in',1,'2026-10-23')");
+      await deniedInTransaction("insert into public.clients(nome) values('RPC dependency bypass')");
+      await equal(`update public.vehicles set model='Dependency bypass' where id='${newVehicle}' returning id`,[]);
+      await deniedInTransaction(`insert into public.rentals(id_veiculo,start_date,value) values('${newVehicle}','2026-10-19',1)`);
+      created=await callCreate(requestId,baseRental,baseClient,5);
+      assert.ok(created.rental.id&&created.client.id);pass();
+      assert.equal(created.rental.id_cliente,created.client.id);pass();
+      assert.equal(created.vehicle.status,'Alugado');pass();
+      assert.equal(created.rental.contrato_assinado,signed);pass();
+      assert.deepEqual(created.transactions.map(row=>[row.cat,row.val]).sort(),[['Aluguel',400],['Taxa Adm',80],['taxa de pneus',25]].sort());pass();
+      await count('select * from public.transactions',0);
+      const replay=await callCreate(requestId,baseRental,baseClient,5);
+      assert.equal(replay.rental.id,created.rental.id);pass();
+      assert.deepEqual(replay.transactions.map(row=>row.id),created.transactions.map(row=>row.id));pass();
+      await rejectsAtomic(()=>callCreate(requestId,{...baseRental,value:701},baseClient,5),['22023']);
+      await rejectsAtomic(()=>callCreate('60000000-0000-4000-8000-000000000002',{...baseRental,role:'administrador'},baseClient),['22023']);
+      await rejectsAtomic(()=>callCreate('60000000-0000-4000-8000-000000000003',{...baseRental,value:-1},baseClient),['22023']);
+      await rejectsAtomic(()=>callCreate('60000000-0000-4000-8000-000000000004',{...baseRental,documentos:{signedContract:'https://attacker.invalid/doc.pdf'}},baseClient),['22023']);
+      await rejectsAtomic(()=>callCreate('60000000-0000-4000-8000-000000000005',{...baseRental,start_date:'2026-02-31'},baseClient),['22007','22008']);
+      await rejectsAtomic(()=>callCreate('60000000-0000-4000-8000-000000000006',baseRental,baseClient),['23505']);
+      await equal(`delete from public.rentals where id='${created.rental.id}' returning id`,[]);
+      const changed=await callUpdate('60000000-0000-4000-8000-000000000007',created.rental.id,
+        {id_veiculo:nextVehicle,value:800,documentos:{extraNote:'preserved extras',signedContract:signed}},
+        {nome:baseClient.nome,documentos:{extraClient:'preserved client'}});
+      assert.equal(changed.rental.id,created.rental.id);pass();
+      assert.equal(changed.client.id,created.client.id);pass();
+      assert.equal(changed.rental.documentos.cnh,baseRental.documentos.cnh);pass();
+      assert.deepEqual(changed.rental.documentos.customMeta,{retained:true});pass();
+      assert.equal(changed.client.documentos.residence,baseClient.documentos.residence);pass();
+      assert.equal(changed.transactions.length,0);pass();
+      assert.equal(changed.previous_vehicle.id,newVehicle);pass();
+      assert.equal(changed.previous_vehicle.status,'Disponível');pass();
+      const editReplay=await callUpdate('60000000-0000-4000-8000-000000000007',created.rental.id,
+        {id_veiculo:nextVehicle,value:800,documentos:{extraNote:'preserved extras',signedContract:signed}},
+        {nome:baseClient.nome,documentos:{extraClient:'preserved client'}});
+      assert.equal(editReplay.previous_vehicle.id,newVehicle);pass();
+      await rejectsAtomic(()=>callUpdate('60000000-0000-4000-8000-000000000020',created.rental.id,{'caução_paga':301},{}),['22023']);
+      await count(`select * from public.rentals where id='${created.rental.id}'`,1);
+    });
+    await equal(`select status from public.vehicles where id='${newVehicle}'`,[{status:'Disponível'}]);
+    await equal(`select status from public.vehicles where id='${nextVehicle}'`,[{status:'Alugado'}]);
+    await equal(`select count(*)::integer as count from public.transactions`,[{count:6}]);
+    await db.exec(`update public.system_users set modules='{faturamento}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await equal(`update public.rentals set value=999 where id='${created.rental.id}' returning id`,[]);
+      await rejectsAtomic(()=>callCreate('60000000-0000-4000-8000-000000000008',baseRental,baseClient),['42501']);
+      const paid=await callDeposit('60000000-0000-4000-8000-000000000009',created.rental.id,1,100);
+      assert.equal(paid.rental['caução_paga'],100);pass();
+      assert.deepEqual(paid.rental.documentos.paidInstallments,[1]);pass();
+      assert.equal(paid.rental.documentos.cnh,baseRental.documentos.cnh);pass();
+      const repeated=await callDeposit('60000000-0000-4000-8000-000000000009',created.rental.id,1,100);
+      assert.equal(repeated.rental['caução_paga'],100);pass();
+      const extraRequest=await callDeposit('60000000-0000-4000-8000-000000000010',created.rental.id,1,100);
+      assert.equal(extraRequest.rental['caução_paga'],100);pass();
+      await rejectsAtomic(()=>callDeposit('60000000-0000-4000-8000-000000000009',created.rental.id,2,100),['22023']);
+      await rejectsAtomic(()=>callDeposit('60000000-0000-4000-8000-000000000011',created.rental.id,4,100),['22023']);
+      await rejectsAtomic(()=>callDeposit('60000000-0000-4000-8000-000000000012',created.rental.id,2,201),['22023']);
+    });
+    await as('authenticated',ids.investorA,async()=>{
+      await rejectsAtomic(()=>callCreate(requestId,baseRental,baseClient,5),['42501']);
+      await rejectsAtomic(()=>callUpdate(requestId,created.rental.id,{},{}),['42501']);
+      await rejectsAtomic(()=>callDeposit(requestId,created.rental.id,1,100),['42501']);
+      await deniedInTransaction('select * from private_security.rental_requests');
+    });
+  });
+
+  // A failure after rental/client INSERT must roll back every business side effect.
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status) values('${newVehicle}','Rollback vehicle','ROLL001','Disponível');
+      update public.system_users set modules='{locacao}' where id='${ids.employee}';
+      create function private_security.test_transaction_failure() returns trigger language plpgsql as $$begin raise exception using errcode='23514',message='Synthetic transaction failure';end$$;
+      create trigger synthetic_transaction_failure before insert on public.transactions for each row execute function private_security.test_transaction_failure();`);
+    const before=await rentalSnapshot();
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callCreate(requestId,baseRental,baseClient,5),['23514']));
+    assert.deepEqual(await rentalSnapshot(),before);pass();
+  });
+
+  // Owning write modules are narrower than reading dependencies; delete stays admin.
+  for(const role of ['funcionario','gerente'])await isolated(async()=>{
+    await db.exec(`update public.system_users set role='${role}',modules='{frota}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await equal(`insert into public.vehicles(id,model,plate) values('${newVehicle}','Owned write','OWNED01') returning id`,[{id:newVehicle}]);
+      await equal(`update public.vehicles set km=321 where id='${newVehicle}' returning id`,[{id:newVehicle}]);
+      await equal(`select km from public.vehicles where id='${newVehicle}'`,[{km:'321'}]);
+      await equal(`delete from public.vehicles where id='${newVehicle}' returning id`,[]);
+      await deniedInTransaction("insert into public.clients(nome) values('Wrong owning module')");
+      await deniedInTransaction("insert into public.transactions(type,val,date) values('in',1,'2026-10-23')");
+      await rejectsAtomic(()=>callCreate(requestId,baseRental,baseClient),['42501']);
+      await deniedInTransaction('select password from public.system_users');
+      await deniedInTransaction("update public.system_users set modules='{locacao}'");
+    });
+    await db.exec(`update public.system_users set modules='{vistoria}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await count('select * from public.vehicles',3);
+      await equal(`update public.vehicles set model='Read dependency is not owner' returning id`,[]);
+      await deniedInTransaction("insert into public.vehicles(model,plate) values('Read dependency','READ004')");
+    });
+  });
+
+  // Billing owns financial writes, but may change only a fine's settled status.
+  await isolated(async()=>{
+    await db.exec(`insert into public.system_fines(id,value,status,vehicle_plate) values('atomic-fine',100,'Pendente','AAA0001');
+      update public.system_users set modules='{faturamento}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await equal("insert into public.transactions(type,val,date,cat) values('in',10,'2026-10-23','Aluguel') returning cat",[{cat:'Aluguel'}]);
+      await equal("update public.system_fines set status='Pago' where id='atomic-fine' returning status",[{status:'Pago'}]);
+      await deniedInTransaction("update public.system_fines set status='Pago',value=1 where id='atomic-fine'");
+      await deniedInTransaction("update public.system_fines set status='Pendente' where id='atomic-fine'");
+      await deniedInTransaction("insert into public.system_fines(id,value) values('forged-billing-fine',1)");
+      await equal("delete from public.system_fines where id='atomic-fine' returning id",[]);
+      await equal('update public.rentals set value=1 returning id',[]);
+    });
+    await db.exec(`update public.system_users set modules='{multas}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,()=>equal("update public.system_fines set value=90,status='Pendente' where id='atomic-fine' returning status",[{status:'Pendente'}]));
+  });
+  await isolated(async()=>{
+    await db.exec(`insert into public.system_fines(id,value,status,vehicle_plate,installments,paid_installments)
+      values('installment-fine',300,'Pendente','AAA0001',3,'[]');
+      update public.system_users set modules='{faturamento}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await deniedInTransaction(`update public.system_fines set status='Pago' where id='installment-fine'`);
+      await deniedInTransaction(`update public.system_fines set status='Em Cobrança',paid_installments='[1,2]' where id='installment-fine'`);
+      await equal(`update public.system_fines set status='Em Cobrança',paid_installments='[1]' where id='installment-fine' returning paid_installments`,[{paid_installments:[1]}]);
+      await deniedInTransaction(`update public.system_fines set paid_installments='[]' where id='installment-fine'`);
+      await deniedInTransaction(`update public.system_fines set paid_installments='[1,1]' where id='installment-fine'`);
+      await deniedInTransaction(`update public.system_fines set paid_installments='[1,4]' where id='installment-fine'`);
+      await deniedInTransaction(`update public.system_fines set paid_installments='[1,"__proto__"]' where id='installment-fine'`);
+      await equal(`update public.system_fines set paid_installments='[1,2]' where id='installment-fine' returning status`,[{status:'Em Cobrança'}]);
+      await deniedInTransaction(`update public.system_fines set paid_installments='[1,2,3]' where id='installment-fine'`);
+      await equal(`update public.system_fines set status='Pago',paid_installments='[1,2,3]' where id='installment-fine' returning status`,[{status:'Pago'}]);
+    });
+  });
+
+  // Status-only cross-module writes require an actual associated operation and
+  // cannot mark a rented/workshop vehicle as available or edit its other fields.
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status) values('${newVehicle}','Unassociated','STATE01','Disponível');
+      update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await rejectsAtomic(()=>callStatus(newVehicle,'Manutenção'),['42501']);
+      const rental=await callStatus(ids.vehicleA,'Disponível');
+      assert.equal(rental.vehicle.id,ids.vehicleA);pass();
+      assert.equal(rental.vehicle.status,'Alugado');pass();
+      await rejectsAtomic(()=>callStatus(ids.vehicleA,'forged-status'),['22023']);
+      await rejectsAtomic(()=>callStatus(ids.vehicleA,'Manutenção'),['22023']);
+      await equal(`update public.vehicles set model='Unexpected full write' where id='${ids.vehicleA}' returning id`,[]);
+    });
+    await db.exec(`insert into public.service_orders(vehicle_id,date,plate,status) values('${ids.vehicleA}','2026-10-23','AAA0001','Aberta');
+      update public.system_users set modules='{oficina}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      assert.equal((await callStatus(ids.vehicleA,'Disponível')).vehicle.status,'Manutenção');pass();
+      await rejectsAtomic(()=>callStatus(newVehicle,'Disponível'),['42501']);
+    });
+    await db.exec(`update public.service_orders set status='Concluída';update public.system_users set modules='{vistoria}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callStatus(ids.vehicleA,'Disponível'),['42501']));
+    for(const uid of [ids.investorA,ids.unknown])await as('authenticated',uid,()=>rejectsAtomic(()=>callStatus(ids.vehicleA,'Disponível'),['42501']));
+    await db.exec(`update public.system_users set modules='{oficina}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{assert.equal((await callStatus(ids.vehicleA,'Disponível')).vehicle.status,'Alugado');pass();});
+    await as('authenticated',ids.admin,async()=>{assert.equal((await callStatus(newVehicle,'Em preparação')).vehicle.status,'Em preparação');pass();});
+  });
+
+  // Identical request UUIDs from different actors never replay another actor's result.
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status,admin_tax) values
+      ('${newVehicle}','Scope one','SCOPE01','Disponível',20),('${nextVehicle}','Scope two','SCOPE02','Disponível',0);
+      update public.system_users set modules='{locacao}' where id in ('${ids.employee}','${ids.logsOnly}')`);
+    let first,second;
+    await as('authenticated',ids.employee,async()=>{first=await callCreate(requestId,baseRental,baseClient);});
+    await as('authenticated',ids.logsOnly,async()=>{
+      await rejectsAtomic(()=>callCreate(requestId,baseRental,baseClient),['23505']);
+      second=await callCreate(requestId,{...baseRental,id_veiculo:nextVehicle,tipo:'daily'}, {...baseClient,cpf:'synthetic-scope-two',cnh_number:'synthetic-scope-two-cnh'});
+      assert.notEqual(second.rental.id,first.rental.id);pass();
+      assert.equal(second.transactions.length,0);pass();
+    });
+    await equal(`select count(*)::integer as count from private_security.rental_requests where request_id='${requestId}'`,[{count:2}]);
+    await db.exec(`update public.system_users set modules='{}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callCreate(requestId,baseRental,baseClient),['42501']));
+  });
+
+  // Explicit zero admin tax is respected; fixed tire tax is never prorated away.
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status,admin_tax) values('${newVehicle}','Zero tax','ZERO001','Disponível',0);
+      update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      const result=await callCreate(requestId,baseRental,baseClient,5);
+      assert.deepEqual(result.transactions.map(row=>[row.cat,row.val]).sort(),[['Aluguel',400],['taxa de pneus',25]].sort());pass();
+    });
+  });
+
+  // Identity fallback, duplicate identity refusal and immutable historical references.
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status) values('${newVehicle}','Client matching','MATCH01','Disponível');
+      insert into public.clients(id,nome,cnh_number,documentos) values('${nextVehicle}','Known CNH','synthetic-atomic-cnh','{"original":"kept"}');
+      update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      const result=await callCreate(requestId,baseRental,baseClient);
+      assert.equal(result.client.id,nextVehicle);pass();
+      assert.equal(result.client.documentos.original,'kept');pass();
+    });
+  });
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status) values('${newVehicle}','Duplicate identity','DUPL001','Disponível');
+      insert into public.clients(nome,cnh_number) values('Duplicate one','synthetic-atomic-cnh'),('Duplicate two','synthetic-atomic-cnh');
+      update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    const before=await rentalSnapshot();
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callCreate(requestId,baseRental,baseClient),['23505']));
+    assert.deepEqual(await rentalSnapshot(),before);pass();
+  });
+
+  // The edit path also rolls back client/rental/old+new vehicle changes together.
+  await isolated(async()=>{
+    await db.exec(`insert into public.vehicles(id,model,plate,status) values
+      ('${newVehicle}','Update rollback old','UPDT001','Disponível'),('${nextVehicle}','Update rollback next','UPDT002','Disponível');
+      update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    let created;
+    await as('authenticated',ids.employee,async()=>{created=await callCreate(requestId,baseRental,baseClient);});
+    await db.exec(`create function private_security.test_vehicle_failure() returns trigger language plpgsql as $$begin
+      if new.id='${nextVehicle}'::uuid then raise exception using errcode='23514',message='Synthetic final vehicle failure';end if;return new;end$$;
+      create trigger synthetic_final_vehicle_failure before update on public.vehicles for each row execute function private_security.test_vehicle_failure();`);
+    const before=await rentalSnapshot();
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callUpdate('60000000-0000-4000-8000-000000000013',created.rental.id,
+      {id_veiculo:nextVehicle,value:900},{nome:'Changed before later failure'}),['23514']));
+    assert.deepEqual(await rentalSnapshot(),before);pass();
+  });
+  await as('anon',null,async()=>{
+    await denied(`select public.create_rental_atomic('${requestId}','{}','{}',null)`);
+    await denied(`select public.update_rental_atomic('${requestId}','${newVehicle}','{}','{}')`);
+    await denied(`select public.pay_rental_deposit('${requestId}','${newVehicle}',1,1)`);
+    await denied(`select public.save_maintenance_atomic('${requestId}',null,'{}')`);
+    await denied(`select public.set_operational_vehicle_status('${newVehicle}','Disponível')`);
+  });
+  await as('service_role',null,async()=>{
+    await denied(`select public.create_rental_atomic('${requestId}','{}','{}',null)`);
+    await denied(`select public.save_maintenance_atomic('${requestId}',null,'{}')`);
+    await denied(`select public.set_operational_vehicle_status('${newVehicle}','Disponível')`);
+  });
+  const receipt='storage://La-locacao/manutencoes/fixture/receipt.pdf';
+  const maintenancePayload={vehicle_plate:'AAA0001',vehicle_model:'Synthetic vehicle',date:'2026-10-23',
+    service_type:'Synthetic oil service',value:125,current_km:10000,responsible:'Synthetic workshop',receipt_url:receipt};
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{manutencaoAdmin}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await deniedInTransaction("insert into public.transactions(type,val,date) values('out',-1,'2026-10-23')");
+      await deniedInTransaction("insert into public.maintenances(vehicle_plate,date,service_type,value) values('AAA0001','2026-10-23','Direct bypass',1)");
+      const created=await callMaintenance(requestId,null,maintenancePayload);
+      assert.ok(created.maintenance.id);pass();
+      assert.equal(created.maintenance.receipt_url,receipt);pass();
+      assert.equal(created.transaction.type,'out');pass();
+      assert.equal(created.transaction.val,-125);pass();
+      assert.equal(created.transaction.cat,'Manutenção');pass();
+      assert.equal(created.transaction.operation_key,'maintenance:'+created.maintenance.id);pass();
+      assert.equal(created.transaction.desc,'[Manutenção #'+created.maintenance.id+'] Synthetic oil service');pass();
+      await count('select * from public.transactions',0);
+      const replay=await callMaintenance(requestId,null,maintenancePayload);
+      assert.equal(replay.maintenance.id,created.maintenance.id);pass();
+      assert.equal(replay.transaction.id,created.transaction.id);pass();
+      const changed=await callMaintenance('60000000-0000-4000-8000-000000000014',created.maintenance.id,{value:150,service_type:'Synthetic updated service'});
+      assert.equal(changed.maintenance.id,created.maintenance.id);pass();
+      assert.equal(changed.maintenance.receipt_url,receipt);pass();
+      assert.equal(changed.transaction.id,created.transaction.id);pass();
+      assert.equal(changed.transaction.val,-150);pass();
+      await equal(`update public.maintenances set value=1 where id='${created.maintenance.id}' returning id`,[]);
+      await rejectsAtomic(()=>callMaintenance(requestId,null,{...maintenancePayload,value:126}),['22023']);
+      await rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000015',null,{...maintenancePayload,operation_key:'forged'}),['22023']);
+      await rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000016',null,{...maintenancePayload,receipt_url:'https://attacker.invalid/receipt'}),['22023']);
+      await rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000017',null,{...maintenancePayload,value:'NaN'}),['22023']);
+      await rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000019',null,{...maintenancePayload,value:-1}),['22023']);
+      await equal(`delete from public.maintenances where id='${created.maintenance.id}' returning id`,[]);
+    });
+    await equal("select count(*)::integer as count from public.transactions where cat='Manutenção'",[{count:1}]);
+  });
+  // Legacy expenses are adopted only on a unique exact maintenance marker.
+  await isolated(async()=>{
+    await db.exec(`insert into public.maintenances(id,vehicle_plate,date,service_type,value,receipt_url)
+      values('${newVehicle}','AAA0001','2026-10-23','Legacy service',10,'${receipt}');
+      insert into public.transactions(id,type,val,cat,date,"desc") values('${nextVehicle}','out',-10,'Manutenção','2026-10-23','[Manutenção #${newVehicle}] Legacy service');
+      update public.system_users set modules='{oficina}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      const changed=await callMaintenance(requestId,newVehicle,{value:20});
+      assert.equal(changed.transaction.id,nextVehicle);pass();
+      assert.equal(changed.transaction.operation_key,'maintenance:'+newVehicle);pass();
+      assert.equal(changed.maintenance.receipt_url,receipt);pass();
+    });
+    await db.exec(`insert into public.transactions(type,val,cat,date,"desc") values('out',-9,'Manutenção','2026-10-23','[Manutenção #${newVehicle}] Duplicate legacy service')`);
+    const before=await rentalSnapshot();
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000018',newVehicle,{value:30}),['23505']));
+    assert.deepEqual(await rentalSnapshot(),before);pass();
+  });
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{oficina}' where id='${ids.employee}';
+      create function private_security.test_maintenance_failure() returns trigger language plpgsql as $$begin
+      raise exception using errcode='23514',message='Synthetic maintenance expense failure';end$$;
+      create trigger synthetic_maintenance_expense_failure before insert on public.transactions for each row execute function private_security.test_maintenance_failure();`);
+    const before=await rentalSnapshot();
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callMaintenance(requestId,null,maintenancePayload),['23514']));
+    assert.deepEqual(await rentalSnapshot(),before);pass();
+  });
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    for(const uid of [ids.employee,ids.investorA,ids.unknown])await as('authenticated',uid,()=>rejectsAtomic(()=>callMaintenance(requestId,null,maintenancePayload),['42501']));
+  });
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{oficina}' where id='${ids.employee}'`);
+    let created;
+    await as('authenticated',ids.employee,async()=>{
+      created=await callMaintenance(requestId,null,{...maintenancePayload,responsible:'Investidor'});
+      assert.equal(created.maintenance.responsible,'Investidor');pass();
+      assert.equal(created.transaction.responsible,'Investidor: A');pass();
+    });
+    await db.exec(`create function private_security.test_expense_update_failure() returns trigger language plpgsql as $$begin
+      raise exception using errcode='23514',message='Synthetic expense update failure';end$$;
+      create trigger synthetic_expense_update_failure before update on public.transactions for each row execute function private_security.test_expense_update_failure();`);
+    const before=await rentalSnapshot();
+    await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000021',created.maintenance.id,{value:999,receipt_url:null}),['23514']));
+    assert.deepEqual(await rentalSnapshot(),before);pass();
+  });
+  console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; historical containment/read-only + final owning-module writes, atomic rental/create/update/deposit/maintenance and constrained fine/status writes; anonymous, investor A/B, inactive, unlinked, staff/admin, service_role.`);
 } catch(error) {
   console.error('FAIL:',error.code || error.name,error.message);
   process.exitCode=1;

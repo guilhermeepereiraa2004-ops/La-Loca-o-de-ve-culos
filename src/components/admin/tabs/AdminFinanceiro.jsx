@@ -88,6 +88,7 @@ const getCompanyShareForTransaction = (t, vehicles = [], rentals = []) => {
 };
 
 const AdminFinanceiro = ({
+  canDelete = false,
   transactions,
   financeFilter,
   setFinanceFilter,
@@ -545,7 +546,7 @@ const AdminFinanceiro = ({
                             >
                               <Edit size={14} />
                             </button>
-                            <button
+                            {canDelete && <button
                               onClick={() => {
                                 setItemToDelete(t);
                                 setDeleteType('transaction');
@@ -555,7 +556,7 @@ const AdminFinanceiro = ({
                               title="Excluir Transação"
                             >
                               <Trash2 size={14} />
-                            </button>
+                            </button>}
                           </div>
                         </div>
                       </td>
@@ -648,7 +649,7 @@ const AdminFinanceiro = ({
                       >
                         <Edit size={14} />
                       </button>
-                      <button
+                      {canDelete && <button
                         onClick={() => {
                           setItemToDelete(t);
                           setDeleteType('transaction');
@@ -658,7 +659,7 @@ const AdminFinanceiro = ({
                         title="Excluir Transação"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 </div>

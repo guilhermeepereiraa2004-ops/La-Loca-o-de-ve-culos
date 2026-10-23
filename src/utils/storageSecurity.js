@@ -111,8 +111,20 @@ export function createStorageUrlResolver({ client, projectUrl, batchSize = 100, 
   };
   const hydrate = async (value, { timeoutMs = 4000, totalTimeoutMs = 8000 } = {}) => {
     const paths = new Set();
+    // Maintenance stores several receipts in one legacy comma-separated field.
+    // Split only when every segment is a complete storage reference; a comma
+    // inside a single file name remains part of that file's path.
+    const referenceList = item => {
+      if (typeof item !== 'string' || !item.includes(',')) return null;
+      const parts = item.split(',');
+      return parts.every(part => reference(part)) ? parts : null;
+    };
     const collect = item => {
-      if (typeof item === 'string') { const ref = reference(item); if (ref?.bucket === PRIVATE_BUCKET && !cached(ref.bucket + '/' + ref.path)) paths.add(ref.path); }
+      if (typeof item === 'string') {
+        const parts = referenceList(item);
+        if (parts) { parts.forEach(collect); return; }
+        const ref = reference(item); if (ref?.bucket === PRIVATE_BUCKET && !cached(ref.bucket + '/' + ref.path)) paths.add(ref.path);
+      }
       else if (Array.isArray(item)) item.forEach(collect);
       else if (item && Object.getPrototypeOf(item) === Object.prototype) Object.values(item).forEach(collect);
     };
@@ -127,6 +139,8 @@ export function createStorageUrlResolver({ client, projectUrl, batchSize = 100, 
     }));
     const replace = item => {
       if (typeof item === 'string') {
+        const parts = referenceList(item);
+        if (parts) return parts.map(replace).join(',');
         const ref = reference(item);
         // Missing files, denied rows, timeouts and late replies must NEVER erase
         // attachments when a user later saves a form containing this record.

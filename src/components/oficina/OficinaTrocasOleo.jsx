@@ -148,7 +148,7 @@ const OficinaTrocasOleo = ({ vehicles, oilChanges = [], onAddOilChange, onUpdate
                         >
                           <Edit2 size={14} />
                         </button>
-                        <button 
+                        {onDeleteOilChange && <button
                           onClick={() => {
                             if (window.confirm('Deseja realmente excluir este registro?')) {
                               onDeleteOilChange(item.id);
@@ -158,7 +158,7 @@ const OficinaTrocasOleo = ({ vehicles, oilChanges = [], onAddOilChange, onUpdate
                           title="Excluir"
                         >
                           <Trash2 size={14} />
-                        </button>
+                        </button>}
                       </div>
                     </td>
                   </tr>

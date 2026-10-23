@@ -100,24 +100,24 @@ const Application = ({ isOficinaDomain = false }) => {
           onCloseServiceOrder={handleCloseServiceOrder}
           onAddServiceOrder={handleAddMaintenance} // Using existing logic if applicable
           onUpdateServiceOrder={handleUpdateServiceOrder}
-          onDeleteServiceOrder={handleDeleteServiceOrder}
+          onDeleteServiceOrder={currentUser.role === 'administrador' ? handleDeleteServiceOrder : undefined}
           onCloseReplacementContract={handleCloseReplacementContract}
           onAddQuote={handleAddQuote}
           onUpdateQuote={handleUpdateQuote}
-          onDeleteQuote={handleDeleteQuote}
+          onDeleteQuote={currentUser.role === 'administrador' ? handleDeleteQuote : undefined}
           onAddAppointment={handleAddAppointment}
           onUpdateAppointment={handleUpdateAppointment}
-          onDeleteAppointment={handleDeleteAppointment}
+          onDeleteAppointment={currentUser.role === 'administrador' ? handleDeleteAppointment : undefined}
           onAddInventoryItem={handleAddInventoryItem}
           onUpdateInventoryItem={handleUpdateInventoryItem}
-          onDeleteInventoryItem={handleDeleteInventoryItem}
-          onDeleteAllInventoryItems={handleDeleteAllInventoryItems}
+          onDeleteInventoryItem={currentUser.role === 'administrador' ? handleDeleteInventoryItem : undefined}
+          onDeleteAllInventoryItems={currentUser.role === 'administrador' ? handleDeleteAllInventoryItems : undefined}
           onAddWorkshopFinancial={handleAddWorkshopFinancial}
           onUpdateWorkshopFinancial={handleUpdateWorkshopFinancial}
-          onDeleteWorkshopFinancial={handleDeleteWorkshopFinancial}
+          onDeleteWorkshopFinancial={currentUser.role === 'administrador' ? handleDeleteWorkshopFinancial : undefined}
           onAddOilChange={handleAddOilChange}
           onUpdateOilChange={handleUpdateOilChange}
-          onDeleteOilChange={handleDeleteOilChange}
+          onDeleteOilChange={currentUser.role === 'administrador' ? handleDeleteOilChange : undefined}
           onLogout={logout}
         />
       </>

@@ -17,6 +17,14 @@ const RentalFormModal = ({
   const [vehicleSearch, setVehicleSearch] = React.useState('');
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [clientSearch, setClientSearch] = React.useState('');
+  const submissionPending = React.useRef(false);
+  const [submitError, setSubmitError] = React.useState('');
+  const errorRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!submitError) return;
+    const frame = requestAnimationFrame(() => errorRef.current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, [submitError]);
 
   const handleSelectClient = React.useCallback((client) => {
     setRentalForm({
@@ -60,17 +68,28 @@ const RentalFormModal = ({
   React.useEffect(() => {
     if (!isOpen) {
       setIsSubmitting(false);
+      setSubmitError('');
+      submissionPending.current = false;
     }
   }, [isOpen]);
 
   const handleSubmit = async (e) => {
-    if (isSubmitting) return;
+    if (submissionPending.current || isProcessingFiles) return;
+    submissionPending.current = true;
     try {
-      setIsSubmitting(true);
-      await onSubmit(e);
-    } catch (err) {
-      console.error("Erro ao finalizar locação:", err);
+      setIsSubmitting(true); setSubmitError('');
+      const result = await onSubmit(e);
+      if (result?.success !== true) {
+        const error = result?.error;
+        const denied = ['42501','401','403'].includes(String(error?.code || error?.status || '')) || /row.level security|permission denied/i.test(error?.message || '');
+        const validation = error?.message?.startsWith('Preencha ');
+        setSubmitError((denied ? 'Seu acesso não permite salvar esta locação. Solicite a revisão das permissões ao administrador.'
+          : validation ? error.message : 'Não foi possível salvar a locação. Verifique sua conexão e tente novamente.') + ' Os dados e anexos continuam neste formulário.');
+      }
+    } catch {
+      setSubmitError('Não foi possível salvar a locação. Os dados e anexos continuam neste formulário. Verifique sua conexão e tente novamente.');
     } finally {
+      submissionPending.current = false;
       setIsSubmitting(false);
     }
   };
@@ -154,12 +173,12 @@ const RentalFormModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
+    <div role="dialog" aria-modal="true" aria-label="Formulário de locação" aria-busy={isSubmitting || isProcessingFiles} className="fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-8 animate-in fade-in duration-500">
       <div 
         className="absolute inset-0 bg-neutral-950/80 backdrop-blur-md" 
-        onClick={() => { if (!isSubmitting) onClose(); }} 
+        onClick={() => { if (!submissionPending.current && !isProcessingFiles) onClose(); }}
       />
-      <div className="relative bg-white w-full max-w-7xl h-full md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
+      <fieldset disabled={isSubmitting || isProcessingFiles} className="relative bg-white w-full max-w-7xl h-full md:max-h-[95vh] rounded-none md:rounded-[3rem] shadow-2xl flex flex-col overflow-hidden">
         {/* Header / Steps Indicator */}
         <div className="p-6 md:p-12 pb-6 md:pb-8 border-b border-neutral-50 shrink-0 bg-neutral-50/50">
           <div className="flex justify-between items-center mb-6 md:mb-10">
@@ -175,8 +194,9 @@ const RentalFormModal = ({
               </h3>
             </div>
             <button 
-              onClick={onClose} 
-              disabled={isSubmitting} 
+              type="button" aria-label="Fechar formulário de locação"
+              onClick={() => { if (!submissionPending.current && !isProcessingFiles) onClose(); }}
+              disabled={isSubmitting || isProcessingFiles}
               className={`w-10 h-10 md:w-12 md:h-12 bg-white border border-neutral-100 rounded-xl md:rounded-2xl flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:border-neutral-900 transition-all shadow-sm ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
             >
               <X size={20} />
@@ -207,6 +227,8 @@ const RentalFormModal = ({
         
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-6 md:p-12 pt-6 md:pt-10">
+          {submitError && <p ref={errorRef} role="alert" className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-bold text-red-800">{submitError}</p>}
+          {isProcessingFiles && <p role="status" className="mb-5 text-sm font-bold text-neutral-600">Preparando anexos. Aguarde para finalizar a locação…</p>}
           {currentRentalStep === 1 && (
             <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
@@ -937,7 +959,7 @@ const RentalFormModal = ({
           <button 
             type="button"
             onClick={() => setCurrentRentalStep(rentalForm.isReplacement && currentRentalStep === 3 ? 1 : Math.max(1, currentRentalStep - 1))}
-            disabled={currentRentalStep === 1 || isSubmitting}
+            disabled={currentRentalStep === 1 || isSubmitting || isProcessingFiles}
             className={`px-10 py-5 rounded-2xl text-[10px] uppercase tracking-[0.2em] font-black transition-all ${currentRentalStep === 1 ? 'opacity-0 pointer-events-none' : 'bg-white text-neutral-400 hover:text-neutral-900 hover:shadow-lg'} ${isSubmitting ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
           >
             Voltar
@@ -948,7 +970,7 @@ const RentalFormModal = ({
               <button 
                 type="button"
                 onClick={() => setCurrentRentalStep(rentalForm.isReplacement && currentRentalStep === 1 ? 3 : currentRentalStep + 1)}
-                disabled={(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting}
+                disabled={(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting || isProcessingFiles}
                 className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 ${(currentRentalStep === 1 && !rentalForm.plate) || (currentRentalStep === 2 && blockStatus.blocked) || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 Próximo Passo
@@ -957,7 +979,7 @@ const RentalFormModal = ({
               <button 
                 type="button"
                 onClick={handleSubmit}
-                disabled={blockStatus.blocked || isSubmitting}
+                disabled={blockStatus.blocked || isSubmitting || isProcessingFiles}
                 className={`bg-neutral-900 text-[#C5A059] px-16 py-5 rounded-2xl text-[10px] uppercase tracking-[0.3em] font-black hover:bg-[#C5A059] hover:text-white transition-all shadow-xl shadow-[#C5A059]/10 flex items-center justify-center gap-2 ${blockStatus.blocked || isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {isSubmitting ? (
@@ -972,7 +994,7 @@ const RentalFormModal = ({
             )}
           </div>
         </div>
-      </div>
+      </fieldset>
     </div>
   );
 };

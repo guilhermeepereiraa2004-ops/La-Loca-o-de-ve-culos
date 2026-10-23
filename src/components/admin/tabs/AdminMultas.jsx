@@ -1405,7 +1405,7 @@ const AdminMultas = ({
                       Editar Registro
                     </button>
 
-                    <button
+                    {onDeleteFine && <button
                       onClick={() => {
                         if (window.confirm('Tem certeza de que deseja excluir esta multa do sistema?')) {
                           onDeleteFine(fine.id);
@@ -1415,7 +1415,7 @@ const AdminMultas = ({
                     >
                       <Trash2 size={12} />
                       Excluir Registro
-                    </button>
+                    </button>}
 
                   </div>
 

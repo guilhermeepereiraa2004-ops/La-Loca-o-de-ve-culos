@@ -208,9 +208,9 @@ const OficinaFinanceiro = ({ workshopFinancials = [], onAddWorkshopFinancial, on
                         <button onClick={() => handleEdit(item)} className="p-2 text-neutral-400 hover:text-[#f97316] hover:bg-orange-50 rounded-lg transition-colors" title="Editar">
                           <Edit3 size={16} />
                         </button>
-                        <button onClick={() => { if(window.confirm('Excluir lançamento?')) onDeleteWorkshopFinancial(item.id); }} className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
+                        {onDeleteWorkshopFinancial && <button onClick={() => { if(window.confirm('Excluir lançamento?')) onDeleteWorkshopFinancial(item.id); }} className="p-2 text-neutral-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Excluir">
                           <Trash2 size={16} />
-                        </button>
+                        </button>}
                       </div>
                     </td>
                   </tr>

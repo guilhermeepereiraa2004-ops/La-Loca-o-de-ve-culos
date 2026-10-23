@@ -1,11 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { MAX_UPLOAD_BYTES, validateUploadBytes } from '../_shared/fileValidation.js';
 import { requireVerifiedMfa } from '../_shared/requireMfa.js';
-
-const folderModules: Record<string, string[]> = {
-  condutores: ['clientes', 'locacao'], veiculos: ['frota', 'investidores'],
-  vistorias: ['vistoria'], manutencoes: ['manutencaoAdmin', 'oficina'], contratos: ['locacao', 'faturamento'],
-};
+import { canUploadToFolder } from '../_shared/canOperate.js';
 const origins = new Set([
   'https://www.lalocacao.com.br', 'https://lalocacao.com.br', 'https://oficina.lalocacao.com.br',
   'https://la-loca-o-de-ve-culos.vercel.app', 'http://localhost:5173', 'http://127.0.0.1:5173',
@@ -38,9 +34,9 @@ Deno.serve(async (req: Request) => {
   if (folder.length > 200 || !/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/.test(folder)) return reply(400, 'Pasta inválida.');
   const isPublic = req.headers.get('x-upload-public') === 'true';
   if (isPublic && folder !== 'veiculos') return reply(400, 'Pasta de fotos públicas inválida.');
-  const allowedModules = isPublic ? ['frota'] : folderModules[folder.split('/')[0]];
-  // The staff UI promises read-only access; enforce this before privileged Storage writes.
-  if (!allowedModules || profile.role !== 'administrador') return reply(403, 'Acesso não autorizado.');
+  // The verified database profile must own this operation's module. Related
+  // read permissions never authorize privileged Storage writes.
+  if (!canUploadToFolder(profile, folder, isPublic)) return reply(403, 'Acesso não autorizado.');
   // An atomic database counter is shared by every function instance.
   const { data: allowed, error: rateError } = await admin.rpc('consume_security_rate_limit', { p_key: `upload:${user.id}`, p_limit: 150, p_window_seconds: 300 });
   if (rateError) return reply(503, 'Upload temporariamente indisponível.');

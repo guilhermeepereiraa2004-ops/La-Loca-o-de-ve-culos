@@ -278,7 +278,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                 {form.role === 'funcionario' && (
                   <div className="space-y-4 bg-neutral-50 p-6 rounded-2xl border border-neutral-100">
                     <div className="flex justify-between items-center">
-                      <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black">Módulos com Acesso (somente leitura)</label>
+                      <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black">Módulos liberados para cadastro e edição</label>
                       <div className="flex gap-2">
                         <button type="button" onClick={() => setForm(prev => ({ ...prev, modules: ALL_MODULES.map(m => m.id) }))} className="text-[8px] font-black uppercase text-[#C5A059] hover:underline">Todos</button>
                         <span className="text-neutral-300">|</span>
@@ -305,7 +305,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                         );
                       })}
                     </div>
-                    <p className="text-[8px] text-neutral-400 font-bold uppercase italic">Funcionários têm acesso de visualização apenas — sem edição ou exclusão.</p>
+                    <p className="text-[8px] text-neutral-400 font-bold uppercase italic">Funcionários podem cadastrar e editar nos módulos liberados. Exclusões e gestão de usuários são exclusivas da administração.</p>
                   </div>
                 )}
               </form>

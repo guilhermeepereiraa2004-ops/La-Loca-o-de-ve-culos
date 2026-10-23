@@ -3,6 +3,7 @@ import { getPublicUrl } from '../../../utils/supabaseStorage';
 import { parseCurrency } from '../../../utils/currencyUtils';
 
 const AdminFrota = ({
+  canDelete = false,
   vehicles,
   inspections = [],
   vehicleSearch,
@@ -273,7 +274,7 @@ const AdminFrota = ({
                       >
                         {car.status === 'Indisponível' ? <Power size={14} /> : <PowerOff size={14} />}
                       </button>
-                      <button
+                      {canDelete && <button
                         onClick={() => {
                           setItemToDelete(car);
                           setDeleteType('vehicle');
@@ -283,7 +284,7 @@ const AdminFrota = ({
                         title="Excluir"
                       >
                         <Trash2 size={14} />
-                      </button>
+                      </button>}
                     </div>
                   </div>
                 </div>

@@ -1,22 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Wrench, Calendar, Car, DollarSign, User, Info, 
   Plus, Search, Pencil, Trash2, AlertTriangle, CheckCircle2,
   Clock, MapPin, ClipboardList, ChevronDown, Tag, Upload
 } from 'lucide-react';
+import { getPublicUrl } from '../../../utils/supabaseStorage';
 
 const AdminManutencao = ({
   vehicles = [],
   maintenances = [],
-  onAddMaintenance = () => {},
-  onUpdateMaintenance = () => {},
-  onDeleteMaintenance = () => {},
+  onAddMaintenance,
+  onUpdateMaintenance,
+  onDeleteMaintenance,
+  isReadOnly = true,
   setShowAdminSuccess = () => {},
   setItemToDelete,
   setDeleteType,
   setShowDeleteAuthModal
 }) => {
   const [showForm, setShowForm] = useState(false);
+  const savePending = useRef(false);
+  const operationId = useRef(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const errorRef = useRef(null);
+  useEffect(() => { if (!showForm) operationId.current = null; }, [showForm]);
+  useEffect(() => {
+    if (!saveError) return;
+    const frame = requestAnimationFrame(() => errorRef.current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, [saveError]);
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [plateSearch, setPlateSearch] = useState('');
@@ -128,9 +141,10 @@ const AdminManutencao = ({
           <h3 className="text-3xl font-black uppercase tracking-tighter text-neutral-900">Gestão de Manutenção</h3>
           <p className="text-neutral-400 text-sm font-light mt-1">Controle total preventivo e corretivo da frota.</p>
         </div>
-        {!showForm && (
+        {!showForm && !isReadOnly && onAddMaintenance && (
           <button
             onClick={() => {
+              setSaveError(''); operationId.current = null;
               setMaintenanceForm({
                 vehiclePlate: '',
                 vehicleModel: '',
@@ -184,14 +198,17 @@ const AdminManutencao = ({
               {isEditing ? 'Editar Registro' : 'Lançar Manutenção'}
             </h4>
             <button 
-              onClick={() => setShowForm(false)}
+              disabled={isSaving}
+              onClick={() => { if (!savePending.current) setShowForm(false); }}
               className="text-[10px] uppercase tracking-widest font-bold text-neutral-400 hover:text-neutral-900 transition-colors"
             >
               Cancelar
             </button>
           </div>
 
-          <form className="space-y-10">
+          <form className="space-y-10" onSubmit={event => event.preventDefault()}>
+            <fieldset disabled={isSaving} className="contents">
+            {saveError && <p ref={errorRef} role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800">{saveError}</p>}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="space-y-3">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold ml-1">Veículo (Placa)</label>
@@ -398,7 +415,7 @@ const AdminManutencao = ({
                   </div>
                   <div className="flex flex-col gap-1">
                     {maintenanceForm.receiptUrl.split(',').map((url, idx) => (
-                      <a key={idx} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
+                      <a key={idx} href={getPublicUrl(url) || undefined} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:underline">
                         Anexo {idx + 1}
                       </a>
                     ))}
@@ -415,37 +432,42 @@ const AdminManutencao = ({
             <div className="flex justify-end gap-6 pt-6">
               <button
                 type="button"
-                onClick={() => setShowForm(false)}
+                onClick={() => { if (!savePending.current) setShowForm(false); }}
                 className="px-8 py-4 text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-400 hover:text-neutral-900 transition-colors"
               >
                 Descartar
               </button>
               <button
                 type="button"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.preventDefault();
-                  if (isEditing) {
-                    onUpdateMaintenance(maintenanceForm);
+                  if (savePending.current || isReadOnly) return;
+                  savePending.current = true; setIsSaving(true); setSaveError('');
+                  try {
+                    const data = { ...maintenanceForm, requestId: operationId.current || (operationId.current = crypto.randomUUID()) };
+                    const result = isEditing ? await onUpdateMaintenance?.(data) : await onAddMaintenance?.(data);
+                    if (result?.success !== true) {
+                      setSaveError('Não foi possível salvar a manutenção. Os dados e anexos continuam no formulário. Verifique seu acesso e tente novamente.');
+                      return;
+                    }
                     setShowAdminSuccess({
                       show: true,
-                      title: 'Registro Atualizado',
-                      message: 'Os dados da manutenção foram atualizados com sucesso.'
+                      title: isEditing ? 'Registro Atualizado' : 'Manutenção Registrada',
+                      message: isEditing ? 'Os dados da manutenção foram atualizados com sucesso.' : 'O novo serviço foi lançado com sucesso no histórico do veículo.'
                     });
-                  } else {
-                    onAddMaintenance(maintenanceForm);
-                    setShowAdminSuccess({
-                      show: true,
-                      title: 'Manutenção Registrada',
-                      message: 'O novo serviço foi lançado com sucesso no histórico do veículo.'
-                    });
+                    setShowForm(false);
+                  } catch {
+                    setSaveError('Não foi possível salvar a manutenção. Os dados e anexos continuam no formulário. Tente novamente.');
+                  } finally {
+                    savePending.current = false; setIsSaving(false);
                   }
-                  setShowForm(false);
                 }}
                 className="px-12 py-5 bg-neutral-950 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-[2rem] hover:bg-[#C5A059] transition-all shadow-xl"
               >
-                {isEditing ? 'Salvar Alterações' : 'Lançar Registro'}
+                {isSaving ? 'Salvando…' : isEditing ? 'Salvar Alterações' : 'Lançar Registro'}
               </button>
             </div>
+            </fieldset>
           </form>
         </div>
       ) : (
@@ -515,8 +537,9 @@ const AdminManutencao = ({
 
                 <div className="flex flex-col md:items-end justify-between gap-6 border-t md:border-t-0 md:border-l border-neutral-50 pt-6 md:pt-0 md:pl-8">
                   <div className="flex gap-2">
-                    <button
+                    {!isReadOnly && onUpdateMaintenance && <button
                       onClick={() => {
+                        setSaveError(''); operationId.current = null;
                         setMaintenanceForm(m);
                         setIsEditing(true);
                         setShowForm(true);
@@ -525,8 +548,8 @@ const AdminManutencao = ({
                       title="Editar"
                     >
                       <Pencil size={14} />
-                    </button>
-                    <button
+                    </button>}
+                    {onDeleteMaintenance && <button
                       onClick={() => {
                         if (setItemToDelete && setDeleteType && setShowDeleteAuthModal) {
                           setItemToDelete(m);
@@ -540,7 +563,7 @@ const AdminManutencao = ({
                       title="Excluir"
                     >
                       <Trash2 size={14} />
-                    </button>
+                    </button>}
                   </div>
                   <div className="text-right">
                     <p className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold mb-1">Oficina</p>

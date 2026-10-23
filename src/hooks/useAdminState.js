@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { canOperateModule } from '../lib/modulePermissions.js';
 
 export const useAdminState = (currentUser) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -94,7 +95,8 @@ export const useAdminState = (currentUser) => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const isAdmin = !currentUser || currentUser.role === 'administrador';
+  const isAdmin = currentUser?.role === 'administrador';
+  const canOperate = module => canOperateModule(currentUser, module);
   const canAccess = (moduleId) => {
     if (isAdmin) return true;
     return (currentUser?.modules || []).includes(moduleId);
@@ -131,6 +133,6 @@ export const useAdminState = (currentUser) => {
     vehicleStatusFilter, setVehicleStatusFilter, rentalFilter, setRentalFilter,
     financeFilter, setFinanceFilter, investorForm, setInvestorForm,
     vehicleForm, setVehicleForm, financeForm, setFinanceForm,
-    rentalForm, setRentalForm, isAdmin, canAccess
+    rentalForm, setRentalForm, isAdmin, canAccess, canOperate
   };
 };

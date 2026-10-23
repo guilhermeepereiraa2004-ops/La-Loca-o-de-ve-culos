@@ -4,7 +4,8 @@ import ClientDetailModal from '../modals/ClientDetailModal';
 import AddClientModal from '../modals/AddClientModal';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 
-const AdminClientes = ({ 
+const AdminClientes = ({
+  canDelete = false,
   clients = [], 
   rentals = [],
   onUpdateClient, 
@@ -260,7 +261,7 @@ const AdminClientes = ({
                   >
                     <Eye size={13} /> Abrir Ficha do Cliente
                   </button>
-                  <button
+                  {canDelete && <button
                     onClick={() => {
                       setItemToDelete(client);
                       setDeleteType('client');
@@ -270,7 +271,7 @@ const AdminClientes = ({
                     title="Excluir Cliente"
                   >
                     <Trash2 size={13} />
-                  </button>
+                  </button>}
                 </div>
               </div>
             );

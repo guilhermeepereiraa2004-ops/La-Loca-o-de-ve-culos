@@ -2,8 +2,12 @@ import { loadDataResources, applyHydratedRows, canLoadDataset, enrichRentalRefer
 import { useState, useEffect, useRef } from 'react';
 import { supabase, signOutMainSession } from '../lib/supabase';
 import { createSessionRestorer } from '../lib/browserSession.js';
+import { createRentalPersistence } from '../lib/rentalPersistence.js';
+import { createMaintenancePersistence } from '../lib/maintenancePersistence.js';
+import { canOperateModule } from '../lib/modulePermissions.js';
+import { assertClosurePermissions } from '../lib/closurePermissions.js';
 import { parseDbError } from '../utils/errorHelper';
-import { uploadFile, uploadPublicVehicleImage, hydrateStorageReferences, clearStorageUrlCache } from '../utils/supabaseStorage';
+import { uploadFile, uploadPublicVehicleImage, hydrateStorageReferences, clearStorageUrlCache, getPublicUrl } from '../utils/supabaseStorage';
 import { parseCurrency } from '../utils/currencyUtils';
 import { getVerifiedProfile, clearLegacySession, manageAccount, SYSTEM_PROFILE_FIELDS, INVESTOR_PROFILE_FIELDS } from '../lib/auth';
 
@@ -271,6 +275,17 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const activeOwnerId = useRef(null);
+  activeOwnerId.current = currentUser?.authUserId || null;
+  const rentalStore = useRef(null);
+  if (!rentalStore.current) rentalStore.current = createRentalPersistence({ client: supabase, uploadFile, projectUrl: import.meta.env.VITE_SUPABASE_URL });
+  const maintenanceStore = useRef(null);
+  if (!maintenanceStore.current) maintenanceStore.current = createMaintenancePersistence({ client: supabase, uploadFile, projectUrl: import.meta.env.VITE_SUPABASE_URL });
+  useEffect(() => {
+    rentalStore.current.clear();
+    maintenanceStore.current.clear();
+    return () => { rentalStore.current.clear(); maintenanceStore.current.clear(); };
+  }, [currentUser?.authUserId]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataLoadErrors, setDataLoadErrors] = useState({});
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
@@ -299,6 +314,8 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   }, []);
   const logout = async () => {
     sessionRestorer.current?.beginLogout();
+    activeOwnerId.current = null;
+    rentalStore.current.clear(); maintenanceStore.current.clear();
     setCurrentUser(null); setSelectedImage(null); setView('home');
     clearLegacySession();
     clearStorageUrlCache();
@@ -624,339 +641,33 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   };
 
 
-  const handleAddRental = async (rental) => {
+  const saveRentalOperation = async (rental, operation) => {
     try {
-      // Map keys to Portuguese database schema
-      const payload = mapToSnake(rental, 'rentals');
-      
-      // Remove payment_day from root since it's saved inside documentos JSON
-      if ('payment_day' in payload) {
-        delete payload['payment_day'];
+      if (!canOperateModule(currentUser, 'locacao')) throw Object.assign(new Error('Seu acesso não permite cadastrar ou editar locações.'), { code: '42501' });
+      const saved = await rentalStore.current.save(rental, { operation, ownerId: currentUser.authUserId });
+      if (activeOwnerId.current !== currentUser.authUserId) throw new Error('O acesso mudou durante o salvamento. Entre novamente.');
+      const row = mapToCamel([saved.rental], 'rentals')[0];
+      const vehicle = mapToCamel([saved.vehicle], 'vehicles')[0];
+      const enriched = { ...row, vehicle: vehicle.model, plate: vehicle.plate, image: vehicle.image, cpf: saved.client?.cpf || rental.cpf || '', address: saved.client?.address || rental.address || '' };
+      setRentals(previous => [enriched, ...previous.filter(item => item.id !== enriched.id)]);
+      setVehicles(previous => previous.map(item => item.id === vehicle.id ? { ...item, ...vehicle } : saved.previous_vehicle?.id === item.id ? { ...item, ...mapToCamel([saved.previous_vehicle], 'vehicles')[0] } : item));
+      if (saved.client) {
+        const person = mapToCamel([saved.client], 'clients')[0];
+        setClients(previous => [person, ...previous.filter(item => item.id !== person.id)]);
       }
-      
-      // Limpeza de campos que são apenas para o frontend ou calculados
-      delete payload.id;
-      delete payload.image;
-      delete payload.vehicle;
-      delete payload.plate;
-      delete payload.date;
-      delete payload.period;
-      delete payload.cpf;
-      delete payload.address;
-      delete payload.rg;
-      delete payload.nacionalidade;
-      delete payload.estado_civil;
-      delete payload.cep;
-      delete payload.cidade_uf;
-      delete payload.vehicle_year;
-      delete payload.vehicle_renavam;
-      delete payload.is_replacement;
-      delete payload.main_vehicle_plate;
-
-      // --- NOVO: Upload de Documentos ---
-      const uploadedDocs = { ...(rental.docs || {}) };
-      const userName = rental.user || 'usuario';
-      
-      // Upload CNH
-      if (rental.docs?.cnh instanceof File) {
-        const url = await uploadFile(rental.docs.cnh, `condutores/${userName}`);
-        if (url) uploadedDocs.cnh = url;
+      if (saved.transactions.length) {
+        const rows = mapToCamel(saved.transactions, 'transactions');
+        const ids = new Set(rows.map(item => item.id));
+        setTransactions(previous => [...rows, ...previous.filter(item => !ids.has(item.id))]);
       }
-      
-      // Upload Comprovante de Residência
-      if (rental.docs?.residence instanceof File) {
-        const url = await uploadFile(rental.docs.residence, `condutores/${userName}`);
-        if (url) uploadedDocs.residence = url;
-      }
-      
-      // Upload Prints do App
-      if (rental.docs?.appPrints && Array.isArray(rental.docs.appPrints)) {
-        const printUrls = await Promise.all(rental.docs.appPrints.map(async (print) => {
-          if (print instanceof File) {
-            return await uploadFile(print, `condutores/${userName}/prints`);
-          }
-          return print;
-        }));
-        uploadedDocs.appPrints = printUrls.filter(u => u);
-      }
-
-      // Upload Contrato Assinado (caso já venha no form de nova locação)
-      if (rental.docs?.signedContract instanceof File) {
-        const url = await uploadFile(rental.docs.signedContract, `condutores/${userName}/contratos`);
-        if (url) uploadedDocs.signedContract = url;
-      }
-
-      // Limpeza de segurança: Garante que nenhum objeto File permaneça no JSON
-      Object.keys(uploadedDocs).forEach(key => {
-        if (uploadedDocs[key] instanceof File) delete uploadedDocs[key];
-      });
-
-
-      // Atualiza o payload com os caminhos/URLs dos documentos
-      payload['documentos'] = {
-        ...uploadedDocs,
-        rg: rental.rg || null,
-        nacionalidade: rental.nacionalidade || null,
-        estadoCivil: rental.estadoCivil || null,
-        cep: rental.cep || null,
-        cidadeUf: rental.cidadeUf || null,
-        address: rental.address || null,
-        isReplacement: rental.isReplacement || false,
-        mainVehiclePlate: rental.mainVehiclePlate || null,
-        payment_day: rental.paymentDay !== undefined && rental.paymentDay !== -1 ? rental.paymentDay : null
-      };
-
-      if (uploadedDocs.signedContract) {
-        payload['contrato_assinado'] = uploadedDocs.signedContract;
-      }
-
-      const parseBRL = (val) => {
-        if (typeof val === 'number') return val;
-        if (!val) return 0;
-        return parseCurrency(val) || 0;
-      };
-
-      // Ensure specific fields are correctly formatted via mapping or direct assignment
-      // The mapToSnake already handles most, but we ensure BRL parsing here
-      payload['value'] = parseBRL(rental.value);
-      payload['imposto_de_pneus'] = parseBRL(rental.tireTax);
-      payload['total do dep\u00f3sito'] = parseBRL(rental.depositTotal);
-      payload['cau\u00e7\u00e3o_paga'] = parseBRL(rental.depositPaid);
-      payload['multa_tardia'] = parseFloat(rental.lateFine) || 0;
-      payload['juros_di\u00e1rios'] = parseFloat(rental.dailyInterest) || 0;
-      
-      // Sanitização de campos inteiros: string vazia causa "invalid input syntax for type integer"
-      payload['deposit_installments'] = parseInt(payload['deposit_installments']) || null;
-      payload['semanas'] = payload['semanas'] && String(payload['semanas']).trim() !== '' ? String(parseInt(payload['semanas']) || 4) : '4';
-      if (payload['id_veiculo'] === '' || payload['id_veiculo'] === undefined) payload['id_veiculo'] = null;
-      if (payload['id_cliente'] === '' || payload['id_cliente'] === undefined) payload['id_cliente'] = null;
-
-      payload['status'] = 'Ativo';
-      payload['start_date'] = rental.startDate || null;
-      if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
-      if (payload['data_de_nascimento'] === '') payload['data_de_nascimento'] = null;
-      if (payload['end_date'] === '') payload['end_date'] = null;
-
-      const { data, error } = await supabase.from('rentals').insert([payload]).select();
-      if (error) throw error;
-      
-      // Automação: Criar ou atualizar registro na tabela de Clientes
-      try {
-        const cleanDate = (d) => (d && String(d).trim() !== '') ? d : null;
-        
-        const clientPayload = {
-          nome: rental.user,
-          telefone: rental.clientPhone || rental.phone || null,
-          'e-mail': rental.email || null,
-          cpf: rental.cpf || null,
-          cnh_number: rental.cnhNumber || rental.cnh || null,
-          cnh_validity: cleanDate(rental.cnhValidity),
-          registro_cnh: rental.cnhRegisterNumber || null,
-          data_de_nascimento: cleanDate(rental.birthDate),
-          address: rental.address || null,
-          documentos: { 
-            ...uploadedDocs,
-            rg: rental.rg || null,
-            nacionalidade: rental.nacionalidade || null,
-            estadoCivil: rental.estadoCivil || null,
-            cep: rental.cep || null,
-            cidadeUf: rental.cidadeUf || null,
-            address: rental.address || null
-          },
-          status: 'Ativo'
-        };
-
-        const queryField = clientPayload.cpf ? 'cpf' : (clientPayload.cnh_number ? 'cnh_number' : null);
-        const queryVal = clientPayload.cpf || clientPayload.cnh_number;
-
-        if (queryVal) {
-          const { data: existingClient } = await supabase
-            .from('clients')
-            .select('id')
-            .eq(queryField, queryVal)
-            .maybeSingle();
-
-          if (existingClient) {
-            const { error: updateError } = await supabase.from('clients').update(clientPayload).eq('id', existingClient.id);
-            if (updateError) throw updateError;
-            // Vincula o ID do cliente ao payload da locação (localmente)
-            payload['id_cliente'] = existingClient.id;
-          } else {
-            const { data: newClient, error: insertError } = await supabase.from('clients').insert([clientPayload]).select();
-            if (insertError) throw insertError;
-            if (newClient && newClient[0]) {
-              payload['id_cliente'] = newClient[0].id;
-            }
-          }
-          
-          // Se o ID do cliente foi obtido, atualiza a locação no banco
-          if (payload['id_cliente'] && data && data[0]) {
-            await supabase.from('rentals').update({ id_cliente: payload['id_cliente'] }).eq('id', data[0].id);
-          }
-          
-          // Refresh clients list immediately
-          const updatedClientObj = {
-            id: payload['id_cliente'],
-            name: clientPayload.nome,
-            phone: clientPayload.telefone,
-            email: clientPayload['e-mail'],
-            cpf: clientPayload.cpf,
-            cnhNumber: clientPayload.cnh_number,
-            cnhValidity: clientPayload.cnh_validity,
-            cnhRegisterNumber: clientPayload.registro_cnh,
-            birthDate: clientPayload.data_de_nascimento,
-            docs: clientPayload.documentos,
-            status: 'Ativo'
-          };
-
-          setClients(prev => {
-            const exists = prev.find(c => 
-              (updatedClientObj.cpf && c.cpf === updatedClientObj.cpf) || 
-              (updatedClientObj.cnhNumber && c.cnhNumber === updatedClientObj.cnhNumber)
-            );
-            if (exists) {
-              return prev.map(c => 
-                ((updatedClientObj.cpf && c.cpf === updatedClientObj.cpf) || 
-                 (updatedClientObj.cnhNumber && c.cnhNumber === updatedClientObj.cnhNumber)) 
-                  ? { ...c, ...updatedClientObj } 
-                  : c
-              );
-            }
-            return [updatedClientObj, ...prev];
-          });
-          const { data: updatedClients, error: selectError } = await supabase.from('clients').select('*');
-          if (selectError) throw selectError;
-          if (updatedClients) setClients(mapToCamel(updatedClients, 'clients'));
-        }
-      } catch (clientErr) {
-        console.error("Erro na sincronização de cliente:", clientErr);
-        const errorMsg = clientErr.details || clientErr.message || 'Erro desconhecido';
-        alert(`Atenção: A locação foi salva, mas houve um erro ao cadastrar o cliente na Base de Clientes.\n\nDetalhes: ${errorMsg}`);
-      }
-
-      if (data) {
-        const newRental = mapToCamel(data, 'rentals')[0];
-        const vehicle = vehicles.find(v => v.id === rental.vehicleId);
-        const rentalDocs = newRental.docs || {};
-        const enrichedRental = {
-          ...newRental,
-          image: vehicle?.image || rental.image,
-          vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle,
-          plate: vehicle?.plate || rental.vehiclePlate || rental.plate,
-          cpf: rental.cpf || '',
-          address: rental.address || rentalDocs.address || '',
-          rg: rentalDocs.rg || rental.rg || '',
-          nacionalidade: rentalDocs.nacionalidade || rental.nacionalidade || 'brasileiro(a)',
-          estadoCivil: rentalDocs.estadoCivil || rental.estadoCivil || 'solteiro(a)',
-          cep: rentalDocs.cep || rental.cep || '',
-          cidadeUf: rentalDocs.cidadeUf || rental.cidadeUf || 'Aracaju/SE',
-          cnh: rental.cnh || rental.cnhNumber
-        };
-        setRentals(prev => [enrichedRental, ...prev]);
-        logActivity('Criar', 'Locação', newRental.id, `Criou locação para ${rental.userName || rental.user} - Veículo: ${rental.plate || rental.vehiclePlate || enrichedRental.plate}`);
-
-        // --- Geração Automática das Transações de Primeiro Pagamento ---
-        try {
-          let weeklyRate = parseFloat(newRental.value) || 0;
-          let tireTax = parseFloat(newRental.tireTax) || 0;
-          
-          let proRataDays = 7;
-          let isProRata = false;
-          if (rental.startDate && rental.paymentDay !== undefined && rental.paymentDay !== -1) {
-            const startDay = new Date(rental.startDate + 'T12:00:00').getDay();
-            if (startDay !== rental.paymentDay) {
-              isProRata = true;
-              proRataDays = rental.paymentDay - startDay;
-              if (proRataDays <= 0) proRataDays += 7;
-              weeklyRate = (weeklyRate / 7) * proRataDays;
-              // Taxa de pneus é fixa por ciclo (R$25), NÃO deve ser proporcionalizada
-              // tireTax permanece inalterada independentemente dos dias proporcionais
-            }
-          }
-
-          const vehiclePlate = enrichedRental.plate || '';
-          
-          const adminTaxPercent = parseFloat(vehicle?.adminTax || 20) / 100;
-          const adminPart = weeklyRate * adminTaxPercent;
-          
-          const transDate = newRental.startDate || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' });
-          const autoTransactions = [];
-          
-          if (newRental.rentalType !== 'daily') {
-            // 1. Aluguel Bruto (Entrada - base para divisão do investidor)
-            if (weeklyRate > 0) {
-              autoTransactions.push({
-                date: transDate,
-                type: 'in',
-                val: weeklyRate,
-                desc: `Primeiro Aluguel ${isProRata ? `(Proporcional ${proRataDays}d)` : '(Automático)'} - ${newRental.userName || newRental.user}`,
-                cat: 'Aluguel',
-                vehiclePlate: vehiclePlate,
-                status: 'Concluído',
-                responsible: ''
-              });
-            }
-            
-            // 2. Taxa Adm (Entrada - 100% da Administradora)
-            if (adminPart > 0) {
-              autoTransactions.push({
-                date: transDate,
-                type: 'in',
-                val: adminPart,
-                desc: `Taxa Adm Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
-                cat: 'Taxa Adm',
-                vehiclePlate: vehiclePlate,
-                status: 'Concluído',
-                responsible: 'Administradora'
-              });
-            }
-            
-            // 3. Taxa de Pneus (Entrada - 100% da Administradora)
-            if (tireTax > 0) {
-              autoTransactions.push({
-                date: transDate,
-                type: 'in',
-                val: tireTax,
-                desc: `Taxa de Pneus Primeiro Aluguel ${isProRata ? `(${proRataDays}d)` : ''} - ${newRental.userName || newRental.user}`,
-                cat: 'taxa de pneus',
-                vehiclePlate: vehiclePlate,
-                status: 'Concluído',
-                responsible: 'Administradora'
-              });
-            }
-          }
-          
-          if (autoTransactions.length > 0) {
-            const { data: transData, error: transError } = await supabase
-              .from('transactions')
-              .insert(autoTransactions.map(t => mapToSnake(t, 'transactions')))
-              .select();
-              
-            if (!transError && transData) {
-              setTransactions(prev => [...mapToCamel(transData, 'transactions'), ...prev]);
-            } else if (transError) {
-              console.error("Erro ao inserir transações automáticas de primeiro pagamento:", transError);
-            }
-          }
-        } catch (transErr) {
-          console.error("Erro no processo de geração de transações automáticas de primeiro pagamento:", transErr);
-        }
-      }
-      
-      await handleUpdateVehicle({ id: rental.vehicleId, status: 'Alugado' });
-      return { success: true };
+      logActivity(operation === 'create' ? 'Criar' : 'Atualizar', 'Locação', row.id, `Salvou locação de ${row.userName || row.user || rental.user || ''}`);
+      return { success: true, data: enriched };
     } catch (error) {
-      console.error("Erro detalhado ao criar locação:", error);
-      const errorMsg = error.details || error.message || 'Erro desconhecido';
-      if (errorMsg.includes('invalid input syntax for type date') || errorMsg.includes('type date: ""')) {
-        alert("Atenção: A locação não pôde ser criada porque a Data de Nascimento ou a Validade da CNH estão vazias ou incorretas no formulário. Por favor, verifique-as nos dados do condutor.");
-      } else {
-        const hint = error.hint ? `\n\nDica: ${error.hint}` : '';
-        alert(`ERRO NO BANCO DE DADOS:\n${errorMsg}${hint}\n\nVerifique se as colunas na tabela do Supabase batem com os nomes no código.`);
-      }
-      return { success: false, error };
+      const message = error?.name === 'AbortError' ? 'O salvamento não foi confirmado a tempo. Tente novamente sem fechar este formulário.' : parseDbError(error);
+      return { success: false, error: Object.assign(new Error(message), { code: error?.code }) };
     }
   };
+  const handleAddRental = rental => saveRentalOperation(rental, 'create');
 
   const handleDeleteRental = async (id) => {
     try {
@@ -1051,176 +762,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
     }
   };
 
-  const handleUpdateRental = async (updatedRental) => {
-    try {
-      let finalRental = { ...updatedRental };
-      const userName = finalRental.user || finalRental.userName || 'usuario';
-
-      // Sincroniza upload de todos os possíveis documentos na edição
-      const uploadedDocs = { ...(finalRental.docs || {}) };
-      
-      if (uploadedDocs.cnh instanceof File) {
-        const url = await uploadFile(uploadedDocs.cnh, `condutores/${userName}`);
-        if (url) uploadedDocs.cnh = url;
-      }
-      if (uploadedDocs.residence instanceof File) {
-        const url = await uploadFile(uploadedDocs.residence, `condutores/${userName}`);
-        if (url) uploadedDocs.residence = url;
-      }
-      if (uploadedDocs.signedContract instanceof File) {
-        const url = await uploadFile(uploadedDocs.signedContract, `condutores/${userName}/contratos`);
-        if (url) uploadedDocs.signedContract = url;
-      }
-      if (uploadedDocs.appPrints && Array.isArray(uploadedDocs.appPrints)) {
-        const printUrls = await Promise.all(uploadedDocs.appPrints.map(async (print) => {
-          if (print instanceof File) return await uploadFile(print, `condutores/${userName}/prints`);
-          return print;
-        }));
-        uploadedDocs.appPrints = printUrls.filter(u => u);
-      }
-
-      // Limpeza de segurança
-      Object.keys(uploadedDocs).forEach(key => {
-        if (uploadedDocs[key] instanceof File) delete uploadedDocs[key];
-      });
-
-      const finalDocs = {
-        ...uploadedDocs,
-        rg: finalRental.rg || null,
-        nacionalidade: finalRental.nacionalidade || null,
-        estadoCivil: finalRental.estadoCivil || null,
-        cep: finalRental.cep || null,
-        cidadeUf: finalRental.cidadeUf || null,
-        address: finalRental.address || null
-      };
-
-      finalRental.docs = finalDocs;
-
-      // Sincroniza a propriedade da raiz com o valor dentro dos documentos para atualizar contrato_assinado no banco
-      if (finalDocs.signedContract) {
-        finalRental.signedContract = finalDocs.signedContract;
-      }
-
-      // Map to database schema
-      const payload = mapToSnake(finalRental, 'rentals');
-      
-      if ('payment_day' in payload) {
-        delete payload['payment_day'];
-      }
-      
-      // Clean up for update (Supabase update doesn't like some fields if they are missing or different type)
-      delete payload.id;
-      delete payload.image;
-      delete payload.vehicle;
-      delete payload.plate;
-      delete payload.date;
-      delete payload.period;
-      delete payload.cpf;
-      delete payload.address;
-      delete payload.rg;
-      delete payload.nacionalidade;
-      delete payload.estado_civil;
-      delete payload.cep;
-      delete payload.cidade_uf;
-      delete payload.vehicle_year;
-      delete payload.vehicle_renavam;
-      delete payload.is_replacement;
-      delete payload.main_vehicle_plate;
-      
-      if (payload.value) payload.value = parseCurrency(payload.value);
-      if (payload['cnh_validity'] === '') payload['cnh_validity'] = null;
-      if (payload['data_de_nascimento'] === '') payload['data_de_nascimento'] = null;
-      if (payload['start_date'] === '') payload['start_date'] = null;
-      if (payload['end_date'] === '') payload['end_date'] = null;
-
-      const { error } = await supabase.from('rentals').update(payload).eq('id', finalRental.id);
-      if (error) throw error;
-
-      // Sincroniza com a tabela de clientes
-      const oldRental = rentals.find(r => r.id === finalRental.id);
-      if (finalRental.user || finalRental.userName) {
-        const cnh = finalRental.cnhNumber || finalRental.cnh;
-        const oldCnh = oldRental?.cnhNumber || oldRental?.cnh;
-        const clientId = finalRental.clientId || oldRental?.clientId;
-
-        const clientPayload = {
-          nome: finalRental.userName || finalRental.user,
-          telefone: finalRental.clientPhone || finalRental.phone,
-          'e-mail': finalRental.email,
-          cpf: finalRental.cpf || null,
-          cnh_number: cnh,
-          cnh_validity: finalRental.cnhValidity,
-          registro_cnh: finalRental.cnhRegisterNumber,
-          data_de_nascimento: finalRental.birthDate,
-          documentos: finalDocs,
-          address: finalRental.address || null,
-          status: 'Ativo'
-        };
-
-        // Remove campos undefined
-        Object.keys(clientPayload).forEach(key => clientPayload[key] === undefined && delete clientPayload[key]);
-        
-        let clientUpdated = false;
-        // 1. Tenta por ID
-        if (clientId) {
-          const { error } = await supabase.from('clients').update(clientPayload).eq('id', clientId);
-          if (!error) clientUpdated = true;
-        } 
-        
-        // 2. Se não deu certo por ID, tenta pelo CPF (novo ou antigo)
-        const cpf = finalRental.cpf;
-        const oldCpf = oldRental?.cpf;
-        if (!clientUpdated && (cpf || oldCpf)) {
-          const { error } = await supabase.from('clients').update(clientPayload).in('cpf', [cpf, oldCpf].filter(Boolean));
-          if (!error) clientUpdated = true;
-        }
-
-        // 3. Se não deu certo por CPF/ID, tenta pela CNH (nova ou antiga) como fallback
-        if (!clientUpdated && (cnh || oldCnh)) {
-          const { error } = await supabase.from('clients').update(clientPayload).in('cnh_number', [cnh, oldCnh].filter(Boolean));
-          if (!error) clientUpdated = true;
-        }
-        
-        // Atualiza estado local de clientes para refletir a mudança imediatamente
-        setClients(prev => prev.map(c => {
-          const isMatch = (clientId && c.id === clientId) || 
-                          (cpf && c.cpf === cpf) || 
-                          (oldCpf && c.cpf === oldCpf) ||
-                          (cnh && c.cnhNumber === cnh) || 
-                          (oldCnh && c.cnhNumber === oldCnh);
-          if (isMatch) {
-            return { 
-              ...c, 
-              ...clientPayload, 
-              name: clientPayload.nome, 
-              nome: clientPayload.nome, 
-              phone: clientPayload.telefone, 
-              email: clientPayload['e-mail'],
-              docs: clientPayload.documentos, // Garante que docs seja atualizado
-              cnhNumber: clientPayload.cnh_number,
-              cnhValidity: clientPayload.cnh_validity,
-              cnhRegisterNumber: clientPayload.registro_cnh,
-              birthDate: clientPayload.data_de_nascimento,
-              cpf: clientPayload.cpf
-            };
-          }
-          return c;
-        }));
-      }
-      setRentals(prev => prev.map(r => r.id === finalRental.id ? { ...finalRental } : r));
-      logActivity('Atualizar', 'Locação', finalRental.id, `Atualizou a locação de ${finalRental.userName || finalRental.user}`);
-      return { success: true, data: finalRental };
-    } catch (error) {
-      console.error("Erro ao atualizar loca\u00e7\u00e3o:", error);
-      const errorMsg = error.message || 'Erro desconhecido';
-      if (errorMsg.includes('invalid input syntax for type date') || errorMsg.includes('type date: ""')) {
-        alert("Atenção: A locação não pôde ser salva porque a Data de Nascimento ou a Validade da CNH estão vazias ou incorretas no formulário. Por favor, verifique-as nos dados do condutor.");
-      } else {
-        alert(`Erro ao salvar: ${errorMsg}`);
-      }
-      return { success: false, error };
-    }
-  };
+  const handleUpdateRental = rental => saveRentalOperation(rental, 'update');
 
   const handleRenewRental = async (rentalId, additionalWeeks) => {
     try {
@@ -1233,7 +775,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       const { error } = await supabase
         .from('rentals')
         .update({ semanas: String(newWeeks) })
-        .eq('id', rentalId);
+        .eq('id', rentalId).select('id').single();
 
       if (error) throw error;
 
@@ -1326,13 +868,16 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   const handleUpdateVehicle = async (vehicle, imageFile) => {
     // Se for uma atualização simples de status (ex: vindo de locação)
     if (Object.keys(vehicle).length <= 2 && vehicle.id && vehicle.status) {
-      const { error } = await supabase.from('vehicles').update({ status: vehicle.status }).eq('id', vehicle.id);
-      if (!error) {
-        setVehicles(prev => prev.map(v => v.id === vehicle.id ? { ...v, status: vehicle.status } : v));
-        const v = vehicles.find(x => x.id === vehicle.id);
-        logActivity('Atualizar', 'Veículo', vehicle.id, `Atualizou status do veículo ${v?.model || 'ID: ' + vehicle.id} (${v?.plate || ''}) para: ${vehicle.status}`);
+      const { data, error } = await supabase.rpc('set_operational_vehicle_status', { p_vehicle_id: vehicle.id, p_status: vehicle.status });
+      if (error || data?.vehicle?.id !== vehicle.id) {
+        const failure = error || new Error('A alteração do veículo não foi confirmada.');
+        setGlobalAlert({ isOpen: true, title: 'Erro!', message: parseDbError(failure), type: 'error' });
+        throw failure;
       }
-      return;
+      const saved = mapToCamel([data.vehicle], 'vehicles')[0];
+      setVehicles(prev => prev.map(v => v.id === saved.id ? { ...v, ...saved } : v));
+      logActivity('Atualizar', 'Veículo', saved.id, `Atualizou status do veículo ${saved.model || saved.id} (${saved.plate || ''}) para: ${saved.status}`);
+      return { success: true, data: saved };
     }
 
     let imageUrl = vehicle.image;
@@ -1473,186 +1018,25 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
     }
   };
 
-  const handleAddMaintenance = async (maintenance) => {
-    let receiptUrl = null;
-    let urls = [];
-    
-    if (maintenance.receiptFiles && maintenance.receiptFiles.length > 0) {
-      try {
-        for (const file of maintenance.receiptFiles) {
-          const url = await uploadFile(file, 'manutencoes');
-          if (url) urls.push(url);
-        }
-        if (urls.length > 0) receiptUrl = urls.join(',');
-      } catch (err) {
-        console.error("Erro ao fazer upload dos comprovantes:", err);
-        alert("Erro ao fazer upload dos comprovantes.");
-        return;
-      }
-    } else if (maintenance.receiptFile) {
-      try {
-        receiptUrl = await uploadFile(maintenance.receiptFile, 'manutencoes');
-      } catch (err) {
-        console.error("Erro ao fazer upload do comprovante:", err);
-        alert("Erro ao fazer upload do comprovante.");
-        return;
-      }
-    }
-
-    const cleanMaintenance = { 
-      ...maintenance, 
-      value: parseCurrency(maintenance.value) || 0,
-      currentKm: maintenance.currentKm ? parseInt(maintenance.currentKm.toString().replace(/\D/g, ''), 10) : null
-    };
-    delete cleanMaintenance.receiptFile;
-    delete cleanMaintenance.receiptFiles;
-    delete cleanMaintenance.clearReceipts;
-    delete cleanMaintenance.vehicleDescription;
-    delete cleanMaintenance.receiptUrl; // prevent inserting receipt_url because column doesn't exist
-
-    const { data, error } = await supabase.from('maintenances').insert([mapToSnake(cleanMaintenance)]).select();
-    if (error) {
-      console.error("Erro ao lançar manutenção:", error);
-      alert(`Erro ao lançar manutenção: ${error.message || JSON.stringify(error)}`);
-      return;
-    }
-    if (data && data.length > 0) {
-      const inserted = mapToCamel(data)[0];
-      setMaintenances(prev => [inserted, ...prev]);
-      logActivity('Criar', 'Manutenção', inserted.id, `Lançou manutenção para o veículo ${maintenance.vehiclePlate} - Tipo: ${maintenance.serviceType} - R$ ${maintenance.value}`);
-
-      // Sincronizar com o financeiro (lançamento automático)
-      try {
-        const vehicle = vehicles.find(v => v.plate === maintenance.vehiclePlate);
-        const investorName = vehicle?.investor;
-        let responsibleStr = 'Administradora';
-        if (maintenance.responsible === 'Investidor') {
-          responsibleStr = investorName ? `Investidor: ${investorName}` : 'Investidor';
-        } else if (maintenance.responsible && maintenance.responsible !== 'Administradora') {
-          responsibleStr = maintenance.responsible.startsWith('Investidor') 
-            ? maintenance.responsible 
-            : `Investidor: ${maintenance.responsible}`;
-        }
-        const rawVal = parseCurrency(maintenance.value) || 0;
-
-        const newTrans = {
-          type: 'out',
-          val: -Math.abs(rawVal),
-          cat: 'Manutenção',
-          desc: `[Manutenção #${inserted.id}] ${maintenance.serviceType}`,
-          date: maintenance.date || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
-          vehiclePlate: maintenance.vehiclePlate,
-          responsible: responsibleStr,
-          status: 'Concluído'
-        };
-
-        const { data: tData, error: tError } = await supabase.from('transactions').insert([mapToSnake(newTrans, 'transactions')]).select();
-        if (!tError && tData) {
-          setTransactions(prev => [mapToCamel(tData, 'transactions')[0], ...prev]);
-        }
-      } catch (txErr) {
-        console.error("Erro ao sincronizar transação de manutenção:", txErr);
-      }
+  const saveMaintenanceOperation = async (maintenance, operation) => {
+    try {
+      if (!canOperateModule(currentUser, 'manutencaoAdmin') && !canOperateModule(currentUser, 'oficina')) throw Object.assign(new Error('Seu acesso não permite cadastrar ou editar manutenções.'), { code: '42501' });
+      const saved = await maintenanceStore.current.save(maintenance, { operation, ownerId: currentUser.authUserId });
+      const row = mapToCamel([saved.maintenance])[0];
+      if (activeOwnerId.current !== currentUser.authUserId) throw new Error('O acesso mudou durante o salvamento. Entre novamente.');
+      if (row.receiptUrl) row.receiptUrl = row.receiptUrl.split(',').map(value => getPublicUrl(value) || value).join(',');
+      const transaction = mapToCamel([saved.transaction], 'transactions')[0];
+      setMaintenances(previous => [row, ...previous.filter(item => item.id !== row.id)]);
+      setTransactions(previous => [transaction, ...previous.filter(item => item.id !== transaction.id)]);
+      logActivity(operation === 'create' ? 'Criar' : 'Atualizar', 'Manutenção', row.id, `Salvou manutenção do veículo ${row.vehiclePlate} - Tipo: ${row.serviceType}`);
+      return { success: true, data: row };
+    } catch (error) {
+      return { success: false, error: parseDbError(error), code: error.code };
     }
   };
 
-  const handleUpdateMaintenance = async (updatedMaintenance) => {
-    let receiptUrl = updatedMaintenance.receiptUrl || null;
-    
-    if (updatedMaintenance.clearReceipts) {
-      receiptUrl = null;
-    }
-
-    let newUrls = [];
-    if (updatedMaintenance.receiptFiles && updatedMaintenance.receiptFiles.length > 0) {
-      try {
-        for (const file of updatedMaintenance.receiptFiles) {
-          const url = await uploadFile(file, 'manutencoes');
-          if (url) newUrls.push(url);
-        }
-        if (newUrls.length > 0) {
-          receiptUrl = receiptUrl ? `${receiptUrl},${newUrls.join(',')}` : newUrls.join(',');
-        }
-      } catch (err) {
-        console.error("Erro ao fazer upload dos comprovantes:", err);
-        alert("Erro ao fazer upload dos comprovantes.");
-        return;
-      }
-    } else if (updatedMaintenance.receiptFile) {
-      try {
-        const url = await uploadFile(updatedMaintenance.receiptFile, 'manutencoes');
-        if (url) receiptUrl = receiptUrl ? `${receiptUrl},${url}` : url;
-      } catch (err) {
-        console.error("Erro ao fazer upload do comprovante:", err);
-        alert("Erro ao fazer upload do comprovante.");
-        return;
-      }
-    }
-
-    const cleanMaintenance = { 
-      ...updatedMaintenance, 
-      value: parseCurrency(updatedMaintenance.value) || 0,
-      currentKm: updatedMaintenance.currentKm ? parseInt(updatedMaintenance.currentKm.toString().replace(/\D/g, ''), 10) : null
-    };
-    delete cleanMaintenance.receiptFile;
-    delete cleanMaintenance.receiptFiles;
-    delete cleanMaintenance.clearReceipts;
-    delete cleanMaintenance.vehicleDescription;
-    delete cleanMaintenance.receiptUrl; // prevent updating receipt_url because column doesn't exist
-    const { error } = await supabase.from('maintenances').update(mapToSnake(cleanMaintenance)).eq('id', updatedMaintenance.id);
-    if (error) {
-      console.error("Erro ao atualizar manutenção:", error);
-      alert(`Erro ao atualizar manutenção: ${error.message || JSON.stringify(error)}`);
-      return;
-    }
-    if (!error) {
-      setMaintenances(prev => prev.map(m => m.id === updatedMaintenance.id ? { ...updatedMaintenance, value: cleanMaintenance.value, currentKm: cleanMaintenance.currentKm, receiptUrl: cleanMaintenance.receiptUrl } : m));
-      logActivity('Atualizar', 'Manutenção', updatedMaintenance.id, `Atualizou dados de manutenção do veículo ${updatedMaintenance.vehiclePlate} - Tipo: ${updatedMaintenance.serviceType}`);
-
-      // Sincronizar transação existente ou criar uma nova se não existir
-      try {
-        const descSearch = `[Manutenção #${updatedMaintenance.id}]`;
-        const existingTx = transactions.find(t => t.desc && t.desc.startsWith(descSearch));
-
-        const vehicle = vehicles.find(v => v.plate === updatedMaintenance.vehiclePlate);
-        const investorName = vehicle?.investor;
-        let responsibleStr = 'Administradora';
-        if (updatedMaintenance.responsible === 'Investidor') {
-          responsibleStr = investorName ? `Investidor: ${investorName}` : 'Investidor';
-        } else if (updatedMaintenance.responsible && updatedMaintenance.responsible !== 'Administradora') {
-          responsibleStr = updatedMaintenance.responsible.startsWith('Investidor') 
-            ? updatedMaintenance.responsible 
-            : `Investidor: ${updatedMaintenance.responsible}`;
-        }
-        const rawVal = parseCurrency(updatedMaintenance.value) || 0;
-
-        const txData = {
-          type: 'out',
-          val: -Math.abs(rawVal),
-          cat: 'Manutenção',
-          desc: `${descSearch} ${updatedMaintenance.serviceType}`,
-          date: updatedMaintenance.date || new Date().toLocaleDateString('sv-SE', { timeZone: 'America/Sao_Paulo' }),
-          vehiclePlate: updatedMaintenance.vehiclePlate,
-          responsible: responsibleStr,
-          status: 'Concluído'
-        };
-
-        if (existingTx) {
-          const { error: tError } = await supabase.from('transactions').update(mapToSnake(txData, 'transactions')).eq('id', existingTx.id);
-          if (!tError) {
-            setTransactions(prev => prev.map(t => t.id === existingTx.id ? { ...t, ...txData } : t));
-          }
-        } else {
-          const { data: tData, error: tError } = await supabase.from('transactions').insert([mapToSnake(txData, 'transactions')]).select();
-          if (!tError && tData) {
-            setTransactions(prev => [mapToCamel(tData, 'transactions')[0], ...prev]);
-          }
-        }
-      } catch (txErr) {
-        console.error("Erro ao atualizar transação de manutenção:", txErr);
-      }
-    }
-  };
+  const handleAddMaintenance = maintenance => saveMaintenanceOperation(maintenance, 'create');
+  const handleUpdateMaintenance = maintenance => saveMaintenanceOperation(maintenance, 'update');
 
   const handleDeleteMaintenance = async (id) => {
     const { error } = await supabase.from('maintenances').delete().eq('id', id);
@@ -1681,6 +1065,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
     if (!rental) return { success: false, error: 'Rental not found' };
 
     try {
+      assertClosurePermissions(currentUser, closureData, { hasActiveReplacement: replacementContracts.some(rc => (rc.mainVehiclePlate === rental.plate || rc.mainVehiclePlate === rental.vehiclePlate) && rc.status === 'Ativo') });
       let terminationTermUrl = null;
       if (attachedFile) {
         terminationTermUrl = await uploadFile(attachedFile, 'contratos');
@@ -1701,7 +1086,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
         status: 'Encerrado', 
         end_date: endDateStr,
         documentos: updatedDocs
-      }).eq('id', rentalId);
+      }).eq('id', rentalId).select('id').single();
       
       if (updateError) throw updateError;
 
@@ -1958,14 +1343,15 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
         if (!txError && insertedTxs) {
           setTransactions(prev => [...mapToCamel(insertedTxs, 'transactions'), ...prev]);
         } else {
-          console.error("Erro ao inserir transações de abatimento:", txError);
+          throw new Error('O encerramento foi gravado, mas os abatimentos não foram confirmados. Solicite a conferência do administrador antes de repetir.');
         }
       }
       
       // Atualiza multas integralmente pagas
       if (updatedFines.length > 0) {
         for (const uf of updatedFines) {
-           await supabase.from('fines').update({ status: 'Pago' }).eq('id', uf.id);
+           const { error: fineError } = await supabase.from('fines').update({ status: 'Pago' }).eq('id', uf.id).select('id').single();
+           if (fineError) throw new Error('O encerramento foi gravado, mas a baixa de multa não foi confirmada. Solicite a conferência do administrador antes de repetir.');
         }
         setFines(prev => prev.map(f => {
           const isUpdated = updatedFines.find(uf => uf.id === f.id);
@@ -2000,57 +1386,20 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
 
   const handlePayCaucaoInstallment = async (rentalId, installmentNumber, value) => {
     try {
-      const rental = rentals.find(r => r.id === rentalId);
-      if (!rental) return;
-
-      const paidInstallments = [...(rental.paidInstallments || []), installmentNumber];
-      const currentReceived = parseCurrency(rental.depositReceived || rental.depositPaid || 0) || 0;
-      const newReceived = currentReceived + value;
-
-      // Usando nomes de colunas do mapeamento para garantir compatibilidade
-      const updatePayload = {
-        'paid_installments': paidInstallments,
-        'cau\u00e7\u00e3o_paga': newReceived
-      };
-
-      const { error } = await supabase.from('rentals').update(updatePayload).eq('id', rentalId);
-      
-      if (error) {
-        console.error("Erro ao atualizar caução:", error);
-        // Tenta um fallback se a coluna paid_installments não existir (pode estar dentro de documentos)
-        if (error.code === 'PGRST204' || error.code === '42703' || (error.message && error.message.includes('paid_installments'))) {
-          const updatedDocs = { ...(rental.docs || {}), paidInstallments };
-          const { error: fallbackError } = await supabase.from('rentals').update({ 
-            'documentos': updatedDocs,
-            'cau\u00e7\u00e3o_paga': newReceived 
-          }).eq('id', rentalId);
-          if (fallbackError) throw fallbackError;
-        } else {
-          throw error;
-        }
-      }
-
-      setRentals(prev => prev.map(r => r.id === rentalId ? { 
-        ...r, 
-        paidInstallments, 
-        depositReceived: newReceived,
-        depositPaid: newReceived 
-      } : r));
-      
-      setGlobalAlert({
-        isOpen: true,
-        title: 'Sucesso!',
-        message: `Parcela ${installmentNumber} marcada como paga com sucesso!`,
-        type: 'success'
+      const { data, error } = await supabase.rpc('pay_rental_deposit', {
+        p_request_id: crypto.randomUUID(), p_rental_id: rentalId,
+        p_installment: installmentNumber, p_value: parseCurrency(value),
       });
-    } catch (err) {
-      console.error("Erro ao processar pagamento:", err);
-      setGlobalAlert({
-        isOpen: true,
-        title: 'Erro!',
-        message: `Erro ao processar pagamento: ${parseDbError(err)}`,
-        type: 'error'
-      });
+      if (error) throw error;
+      if (data?.rental?.id !== rentalId) throw new Error('O pagamento não foi confirmado. Confira a locação antes de repetir.');
+      const saved = mapToCamel([data.rental], 'rentals')[0];
+      const confirmed = { ...saved, paidInstallments: saved.docs?.paidInstallments || [], depositReceived: saved.depositPaid };
+      setRentals(previous => previous.map(row => row.id === saved.id ? { ...row, ...confirmed } : row));
+      setGlobalAlert({ isOpen: true, title: 'Sucesso!', message: `Parcela ${installmentNumber} marcada como paga com sucesso!`, type: 'success' });
+      return { success: true };
+    } catch (error) {
+      setGlobalAlert({ isOpen: true, title: 'Erro!', message: parseDbError(error), type: 'error' });
+      return { success: false, error };
     }
   };
 
@@ -2191,7 +1540,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       const { error } = await supabase
         .from('system_fines')
         .update(payload)
-        .eq('id', updatedFine.id);
+        .eq('id', updatedFine.id).select('id').single();
 
       if (!error) {
         setFines(prev => prev.map(f => f.id === updatedFine.id ? updatedFine : f));
@@ -2800,7 +2149,8 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
         await handleUpdateVehicle({ id: os.vehicleId, status: wasRented ? 'Alugado' : 'Em preparação' });
       }
       const maintenanceDate = customEndDate || os.date;
-      await handleAddMaintenance({ vehiclePlate: os.plate, vehicleModel: os.model, date: maintenanceDate, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
+      const maintenanceResult = await handleAddMaintenance({ requestId: os.id, vehiclePlate: os.plate, vehicleModel: os.model, date: maintenanceDate, serviceType: os.description, value: os.total, provider: os.provider, currentKm: os.km, responsible: os.responsible, observations: `O.S. #${os.id}` });
+      if (!maintenanceResult.success) throw new Error(maintenanceResult.error || 'Não foi possível registrar a manutenção da ordem de serviço.');
       logActivity('Encerrar OS', 'Manutenção', os.id, `Concluiu a ordem de serviço #${os.id} para o veículo ${os.plate} - Valor: R$ ${os.total}`);
     }
   };

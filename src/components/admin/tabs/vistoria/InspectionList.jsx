@@ -238,12 +238,12 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
             </div>
           </div>
         </div>
-        <button
+        {onNewInspection && <button
           onClick={onNewInspection}
           className="w-full sm:w-auto flex items-center justify-center gap-3 bg-neutral-900 text-white px-8 py-4 rounded-xl text-[10px] uppercase tracking-[0.2em] font-black hover:bg-[#C5A059] transition-all shadow-xl shadow-neutral-900/10"
         >
           <Plus size={16} /> Nova Vistoria
-        </button>
+        </button>}
       </div>
 
       {alerts.length > 0 && (

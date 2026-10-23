@@ -96,11 +96,15 @@ const AdminDashboard = ({
     vehicleStatusFilter, setVehicleStatusFilter, rentalFilter, setRentalFilter,
     financeFilter, setFinanceFilter, investorForm, setInvestorForm,
     vehicleForm, setVehicleForm, financeForm, setFinanceForm,
-    rentalForm, setRentalForm, isAdmin, canAccess
+    rentalForm, setRentalForm, isAdmin, canAccess, canOperate
   } = useAdminState(currentUser);
 
   const [showRenewalModal, setShowRenewalModal] = React.useState(false);
   const [rentalToRenew, setRentalToRenew] = React.useState(null);
+  const rentalOperationIdRef = React.useRef(null);
+  React.useEffect(() => {
+    if (!showAddForm || activeTab !== 'locacao') rentalOperationIdRef.current = null;
+  }, [showAddForm, activeTab]);
 
   const handleTriggerRenewal = (rental) => {
     setRentalToRenew(rental);
@@ -267,18 +271,11 @@ const AdminDashboard = ({
   const handleSaveRental = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!rentalForm.plate || !rentalForm.user) {
-      alert('Por favor, preencha os dados obrigatórios do veículo e condutor.');
-      return;
+      return { success: false, error: { message: 'Preencha os dados obrigatórios do veículo e condutor.' } };
     }
 
     if (!rentalForm.birthDate || !rentalForm.cnhValidity) {
-      setShowAdminSuccess({
-        show: true,
-        type: 'warning',
-        title: 'Dados Obrigatórios',
-        message: 'A Data de Nascimento e a Validade da CNH são obrigatórias para criar o contrato da locação. Por favor, preencha-as na aba "Dados do Condutor".'
-      });
-      return;
+      return { success: false, error: { message: 'Preencha a Data de Nascimento e a Validade da CNH nos Dados do Condutor.' } };
     }
 
     const cleanNumeric = (val) => {
@@ -292,6 +289,7 @@ const AdminDashboard = ({
     const selectedVehicle = vehicles.find(v => normalizePlate(v.plate) === normalizePlate(rentalForm.plate));
     const rentalData = {
       ...rentalForm,
+      requestId: rentalOperationIdRef.current || (rentalOperationIdRef.current = crypto.randomUUID()),
       value: cleanNumeric(rentalForm.value),
       depositTotal: cleanNumeric(rentalForm.depositTotal),
       depositPaid: cleanNumeric(rentalForm.depositPaid),
@@ -307,11 +305,11 @@ const AdminDashboard = ({
 
     const wasEditing = isEditingRental;
 
-    if (wasEditing) {
-      await onUpdateRental({ ...rentalData, id: selectedRental.id });
-    } else {
-      await onAddRental({ ...rentalData, id: Date.now() });
-    }
+    const result = wasEditing
+      ? await onUpdateRental({ ...rentalData, id: selectedRental.id })
+      : await onAddRental({ ...rentalData, id: Date.now() });
+    // Never close or erase the form/Files unless persistence explicitly succeeded.
+    if (result?.success !== true) return result || { success: false };
 
     setShowAddForm(false);
     setIsEditingRental(false);
@@ -334,9 +332,11 @@ const AdminDashboard = ({
       lateFine: '10', dailyInterest: '1', observations: '',
       docs: { cnh: null, residence: null, appPrints: [], signedContract: null }
     });
+    return result;
   };
 
   const handleConfirmDelete = async (password) => {
+    if (!isAdmin) return;
     if (await verifyCurrentPassword(password)) {
       let success = false;
       if (deleteType === 'rental') success = await onDeleteRental(itemToDelete.id);
@@ -411,7 +411,7 @@ const AdminDashboard = ({
           <Suspense fallback={<TabLoader />}>
           {activeTab === 'bi' && canAccess('bi') && <AdminBI stats={biData.mainStats} chartData={biData.chartData} alerts={alerts} operationalData={biData.operationalSummary} setActiveTab={setActiveTab} />}
           {activeTab === 'leads' && canAccess('leads') && (
-            <AdminLeads 
+            <AdminLeads canDelete={isAdmin}
               leads={leads} leadSearch={leadSearch} setLeadSearch={setLeadSearch}
               leadStatusFilter={leadStatusFilter} setLeadStatusFilter={setLeadStatusFilter}
               onUpdateStatus={onUpdateStatus} currentUser={currentUser}
@@ -421,7 +421,7 @@ const AdminDashboard = ({
             />
           )}
           {activeTab === 'frota' && canAccess('frota') && (
-            <AdminFrota 
+            <AdminFrota canDelete={isAdmin}
               vehicles={vehicles} inspections={inspections} vehicleSearch={vehicleSearch} 
               setVehicleSearch={setVehicleSearch} vehicleStatusFilter={vehicleStatusFilter}
               setVehicleStatusFilter={setVehicleStatusFilter} setShowAddForm={setShowAddForm}
@@ -435,10 +435,11 @@ const AdminDashboard = ({
             />
           )}
           {activeTab === 'locacao' && canAccess('locacao') && (
-            <AdminLocacoes 
+            <AdminLocacoes canDelete={isAdmin}
               rentals={rentals} inspections={inspections} rentalFilter={rentalFilter}
               setRentalFilter={setRentalFilter} setShowAddForm={setShowAddForm}
               resetRentalForm={() => {
+                rentalOperationIdRef.current = null;
                 setCurrentRentalStep(1);
                 setIsEditingRental(false);
                 setSelectedRental(null);
@@ -460,7 +461,7 @@ const AdminDashboard = ({
             />
           )}
           {activeTab === 'clientes' && canAccess('clientes') && (
-            <AdminClientes 
+            <AdminClientes canDelete={isAdmin}
               clients={clients} 
               rentals={rentals}
               onAddClient={onAddClient}
@@ -485,6 +486,7 @@ const AdminDashboard = ({
           )}
           {activeTab === 'investidores' && canAccess('investidores') && (
             <AdminInvestidores 
+              canManageAccess={isAdmin} canEdit={canOperate('investidores')}
               investors={investors} investorForm={investorForm} setInvestorForm={setInvestorForm}
               isEditing={isEditing} setIsEditing={setIsEditing} onAddInvestor={onAddInvestor}
               onUpdateInvestor={onUpdateInvestor}
@@ -494,12 +496,12 @@ const AdminDashboard = ({
               setShowAdminSuccess={setShowAdminSuccess}
               vehicles={vehicles}
               transactions={transactions}
-              onAddTransaction={onAddTransaction}
+              onAddTransaction={canOperate('financeiro') ? onAddTransaction : undefined}
               rentals={rentals}
             />
           )}
           {activeTab === 'financeiro' && canAccess('financeiro') && (
-            <AdminFinanceiro 
+            <AdminFinanceiro canDelete={isAdmin}
               transactions={transactions} financeFilter={financeFilter} setFinanceFilter={setFinanceFilter}
               showFinanceForm={showFinanceForm} setShowFinanceForm={setShowFinanceForm}
               financeForm={financeForm} setFinanceForm={setFinanceForm}
@@ -512,14 +514,14 @@ const AdminDashboard = ({
               setShowDeleteAuthModal={setShowDeleteAuthModal}
             />
           )}
-          {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} onDeleteCaucao={onDeleteCaucao} />}
+          {activeTab === 'caucao' && canAccess('caucao') && <AdminCaucao rentals={rentals} payCaucaoInstallment={onPayCaucaoInstallment} onDeleteCaucao={isAdmin ? onDeleteCaucao : undefined} />}
           {activeTab === 'manutencaoAdmin' && canAccess('manutencaoAdmin') && (
             <AdminManutencao 
               vehicles={vehicles} maintenances={maintenances}
-              onAddMaintenance={isAdmin ? onAddMaintenance : undefined}
-              onUpdateMaintenance={isAdmin ? onUpdateMaintenance : undefined}
+              onAddMaintenance={canOperate('manutencaoAdmin') ? onAddMaintenance : undefined}
+              onUpdateMaintenance={canOperate('manutencaoAdmin') ? onUpdateMaintenance : undefined}
               onDeleteMaintenance={isAdmin ? onDeleteMaintenance : undefined}
-              setShowAdminSuccess={setShowAdminSuccess} isReadOnly={!isAdmin}
+              setShowAdminSuccess={setShowAdminSuccess} isReadOnly={!canOperate('manutencaoAdmin')}
               setItemToDelete={setItemToDelete}
               setDeleteType={setDeleteType}
               setShowDeleteAuthModal={setShowDeleteAuthModal}
@@ -529,20 +531,20 @@ const AdminDashboard = ({
             <AdminVistoria 
               draftOwnerId={currentUser?.authUserId}
               inspections={inspections} vehicles={vehicles} rentals={rentals} 
-              onAddInspection={async (ins) => {
+              onAddInspection={canOperate('vistoria') ? async (ins) => {
                 const result = await onAddInspection(ins);
-                if (result && result.success === false) return result;
+                if (result?.success !== true) return result || { success: false };
                 setShowAdminSuccess({
                   show: true,
                   title: 'Vistoria Registrada',
                   message: `O dossiê de ${ins.type} do veículo ${ins.vehiclePlate} foi salvo com sucesso no banco de dados.`
                 });
                 return result;
-              }}
+              } : undefined}
               onDeleteInspection={isAdmin ? onDeleteInspection : undefined}
               onViewDetail={(ins) => { setSelectedInspection(ins); setShowInspectionDetailModal(true); }}
               pendingInspection={pendingInspection} onClearPendingInspection={() => setPendingInspection(null)}
-              isReadOnly={!isAdmin}
+              isReadOnly={!canOperate('vistoria')}
             />
           )}
           {activeTab === 'usuarios' && isAdmin && (
@@ -560,7 +562,7 @@ const AdminDashboard = ({
               isDbConnected={isFinesDbConnected}
               onAddFine={onAddFine}
               onUpdateFine={onUpdateFine}
-              onDeleteFine={onDeleteFine}
+              onDeleteFine={isAdmin ? onDeleteFine : undefined}
               rentals={rentals}
               vehicles={vehicles}
               clients={clients}
@@ -572,7 +574,7 @@ const AdminDashboard = ({
               serviceOrders={serviceOrders} replacementContracts={replacementContracts}
               onAddMaintenance={onAddMaintenance} onCloseServiceOrder={onCloseServiceOrder}
               onUpdateServiceOrder={onUpdateServiceOrder}
-              onDeleteServiceOrder={onDeleteServiceOrder}
+              onDeleteServiceOrder={isAdmin ? onDeleteServiceOrder : undefined}
               onCloseReplacementContract={onCloseReplacementContract}
               onOpenCarroReserva={(os) => {
                 setActiveTab('locacao');
@@ -631,6 +633,7 @@ const AdminDashboard = ({
 
       <RentalFormModal 
         isOpen={showAddForm && activeTab === 'locacao'} onClose={() => {
+          rentalOperationIdRef.current = null;
           setShowAddForm(false);
           setIsEditingRental(false);
           setSelectedRental(null);
@@ -663,7 +666,7 @@ const AdminDashboard = ({
           onClose={() => setShowRentalDetailModal(false)} 
           onUpdate={async (data) => {
             const result = await onUpdateRental(data);
-            if (result?.success) {
+            if (result?.success === true) {
               if (result.data) {
                 setSelectedRental(result.data);
               }
@@ -673,6 +676,7 @@ const AdminDashboard = ({
                 message: 'O contrato assinado foi enviado e vinculado \u00e0 loca\u00e7\u00e3o com sucesso.'
               });
             }
+            return result || { success: false };
           }} 
           onPayCaucao={onPayCaucaoInstallment} 
           setSelectedImage={setSelectedImage}
@@ -690,7 +694,7 @@ const AdminDashboard = ({
           inspection={selectedInspection} 
           isOpen={showInspectionDetailModal} 
           onClose={() => setShowInspectionDetailModal(false)}
-          onCloseContract={(ins) => {
+          onCloseContract={canOperate('locacao') ? (ins) => {
             setPendingInspection(ins);
             const rental = rentals.find(r => (r.vehiclePlate || r.plate) === ins.vehiclePlate && r.status === 'Ativo');
             if (rental) {
@@ -700,7 +704,7 @@ const AdminDashboard = ({
             } else {
               alert('Não foi possível encontrar um contrato ativo para este veículo.');
             }
-          }}
+          } : undefined}
           rentals={rentals}
         />
       )}

@@ -13,14 +13,14 @@ const clone=value=>structuredClone(value);
 
 // Stateful Supabase transport: predicates and projections are honored; writes
 // persist across real handler calls. Nothing connects to the network/production.
-function fixture({linked=true,actorRole='administrador',reauthAs=ACTOR_AUTH,aal='aal1',factors=[]}={}){
+function fixture({linked=true,actorRole='administrador',actorModules=[],reauthAs=ACTOR_AUTH,aal='aal1',factors=[],throttled=false,rateFailure=false}={}){
   const store={
     tables:{system_users:[
-      {id:ACTOR_PROFILE,auth_user_id:ACTOR_AUTH,name:'Synthetic admin',email:'admin@example.invalid',role:actorRole,modules:[]},
+      {id:ACTOR_PROFILE,auth_user_id:ACTOR_AUTH,name:'Synthetic admin',email:'admin@example.invalid',role:actorRole,modules:clone(actorModules)},
       {id:TARGET_PROFILE,auth_user_id:linked?TARGET_AUTH:null,name:'Synthetic target',email:'target@example.invalid',role:'funcionario',modules:['frota']},
     ],investors:[]},
     auth:new Map([[ACTOR_AUTH,{id:ACTOR_AUTH,email:'admin@example.invalid',password:CURRENT_PASSWORD,factors:clone(factors),email_confirmed_at:'2026-10-23'}]]),
-    calls:[],emails:0,failNextProfileSave:false,failGenerateLink:false,onCreateAuth:null,failAuthUpdate:false,onAuthUpdate:null,
+    calls:[],emails:0,failNextProfileSave:false,failGenerateLink:false,onCreateAuth:null,failAuthUpdate:false,onAuthUpdate:null,beforeNextProfileSave:null,
   };
   if(linked)store.auth.set(TARGET_AUTH,{id:TARGET_AUTH,email:'target@example.invalid',password:'synthetic-previous-target-password',factors:[],email_confirmed_at:'2026-10-23'});
   const select=(row,fields)=>!row?null:fields==='*'?clone(row):Object.fromEntries(fields.split(',').filter(field=>Object.hasOwn(row,field)).map(field=>[field,clone(row[field])]));
@@ -29,6 +29,7 @@ function fixture({linked=true,actorRole='administrador',reauthAs=ACTOR_AUTH,aal=
     const predicates=[];
     const execute=()=>{
       if(executed)return executed;
+      if(['insert','update'].includes(operation)&&store.beforeNextProfileSave){const before=store.beforeNextProfileSave;store.beforeNextProfileSave=null;before(table,payload);}
       const selected=store.tables[table].filter(row=>predicates.every(predicate=>predicate(row)));
       store.calls.push({table,operation,matched:selected.length});
       if(['insert','update'].includes(operation)&&store.failNextProfileSave){store.failNextProfileSave=false;return executed={data:null,error:{code:'23505'}};}
@@ -75,7 +76,7 @@ function fixture({linked=true,actorRole='administrador',reauthAs=ACTOR_AUTH,aal=
     signOut:async()=>({error:null}),
   };
   const privileged={
-    from:tableQuery,rpc:async()=>({data:true,error:null}),
+    from:tableQuery,rpc:async()=>{store.calls.push({operation:'rate-limit'});return {data:!throttled,error:rateFailure?{code:'synthetic_rate_failure'}:null};},
     auth:{admin:{
       createUser:async attributes=>{
         if([...store.auth.values()].some(user=>user.email.toLowerCase()===attributes.email.toLowerCase()))return {data:{user:null},error:{code:'email_exists'}};
@@ -259,4 +260,124 @@ test('conflicting target staff/investor identity is rejected before updating eit
   const response=await f.request(action('system','update',staff({id:TARGET_PROFILE,role:'administrador'})));
   assert.equal(response.statusCode,409);assert.deepEqual(f.store.tables,before);
   assert.equal(f.store.calls.some(call=>call.operation==='update-auth'),false);
+});
+
+const investorBusiness=(overrides={})=>({name:'Synthetic investor',email:'investor@example.invalid',phone:'00000000000',cpf:'synthetic-cpf',address:'Synthetic address',status:'Ativo',bank:'Synthetic bank',pix:'synthetic-pix',...overrides});
+const businessFixture=options=>fixture({actorRole:'funcionario',actorModules:['investidores'],...options});
+const authSnapshot=f=>clone([...f.store.auth]);
+const noAuthMutation=f=>assert.equal(f.store.calls.some(call=>['create-auth','update-auth','delete-auth','generate-link'].includes(call.operation)),false);
+function seedInvestor(f, linked=false) {
+  const row={id:randomUUID(),auth_user_id:linked?OTHER_AUTH:null,...investorBusiness()};
+  f.store.tables.investors.push(row);
+  if(linked)f.store.auth.set(OTHER_AUTH,{id:OTHER_AUTH,email:row.email,password:'synthetic-investor-password',factors:[],email_confirmed_at:'2026-10-23'});
+  return row;
+}
+
+test('assigned staff and manager create/edit unlinked investor business data without creating Auth',async()=>{
+  for(const actorRole of ['funcionario','gerente']){
+    const f=businessFixture({actorRole}),beforeAuth=authSnapshot(f);
+    const created=await f.request(action('investor','create',investorBusiness()));
+    assert.equal(created.statusCode,200);assert.equal(created.body.profile.auth_user_id,null);
+    const row=f.store.tables.investors[0];assert.equal(Object.hasOwn(row,'password'),false);
+    const edited=await f.request(action('investor','update',investorBusiness({id:row.id,name:'Updated business name',email:'changed-investor@example.invalid',status:'Inativo',bank:'Updated bank',pix:'updated-pix'})));
+    assert.equal(edited.statusCode,200);assert.equal(row.name,'Updated business name');assert.equal(row.email,'changed-investor@example.invalid');assert.equal(row.status,'Inativo');assert.equal(row.auth_user_id,null);
+    assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+    assert.equal(f.store.calls.filter(call=>call.operation==='reauth').length,2);
+    assert.equal(f.store.calls.filter(call=>call.operation==='rate-limit').length,2);
+  }
+});
+
+test('linked investor business edit preserves identity, credential, email and access status',async()=>{
+  const f=businessFixture(),row=seedInvestor(f,true),beforeAuth=authSnapshot(f);
+  row.email='Investor@Example.Invalid';
+  const response=await f.request(action('investor','update',investorBusiness({id:row.id,name:'Updated name',phone:'11111111111',cpf:'updated-cpf',address:'Updated address',bank:'Updated bank',pix:'updated-pix',password:''})));
+  assert.equal(response.statusCode,200);assert.equal(row.name,'Updated name');assert.equal(row.bank,'Updated bank');assert.equal(row.pix,'updated-pix');
+  assert.equal(row.auth_user_id,OTHER_AUTH);assert.equal(row.email,'Investor@Example.Invalid');assert.equal(row.status,'Ativo');
+  assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+  assert.equal(Object.hasOwn(response.body.profile,'password'),false);
+});
+
+test('staff linked email/status changes return actionable conflicts without changing business or Auth',async()=>{
+  for(const update of [{email:'changed@example.invalid'},{status:'Inativo'}]){
+    const f=businessFixture(),row=seedInvestor(f,true),before=clone(row),beforeAuth=authSnapshot(f);
+    const response=await f.request(action('investor','update',investorBusiness({id:row.id,...update})));
+    assert.equal(response.statusCode,409);assert.match(response.body.error,/administrador/);
+    assert.deepEqual(row,before);assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+  }
+});
+
+test('business privilege cannot set passwords, manage staff, activate, delete or inject server flags',async()=>{
+  const attempts=[
+    action('system','create',staff()),
+    action('system','update',staff({id:TARGET_PROFILE})),
+    action('investor','activation-link',{id:TARGET_PROFILE}),
+    action('investor','delete',{id:TARGET_PROFILE}),
+    action('investor','create',investorBusiness({password:'synthetic-forbidden-password'})),
+    action('investor','create',investorBusiness({password:0})),
+    action('investor','create',investorBusiness({auth_user_id:OTHER_AUTH})),
+    action('investor','create',investorBusiness({role:'administrador'})),
+    action('investor','create',investorBusiness({modules:['investidores']})),
+    {...action('investor','create',investorBusiness()),investorBusinessOnly:true},
+  ];
+  for(const input of attempts){
+    const f=businessFixture(),before=clone(f.store.tables),beforeAuth=authSnapshot(f);
+    const response=await f.request(input);assert.ok([400,403].includes(response.statusCode));
+    assert.deepEqual(f.store.tables,before);assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+    assert.equal(f.store.calls.some(call=>call.operation==='reauth'),false);
+  }
+});
+
+test('business permission is read from the actor DB profile and revoked immediately',async()=>{
+  for(const options of [{actorModules:['frota']},{actorModules:[]},{actorRole:'investidor'},{actorRole:'admin'}]){
+    const f=businessFixture(options),before=clone(f.store.tables);
+    const response=await f.request(action('investor','create',investorBusiness()));
+    assert.equal(response.statusCode,403);assert.deepEqual(f.store.tables,before);noAuthMutation(f);
+  }
+  const f=businessFixture();assert.equal((await f.request(action('investor','create',investorBusiness()))).statusCode,200);
+  f.store.tables.system_users[0].modules=[];
+  const before=clone(f.store.tables),row=f.store.tables.investors[0];
+  const response=await f.request(action('investor','update',investorBusiness({id:row.id,name:'Forbidden after revocation'})));
+  assert.equal(response.statusCode,403);assert.deepEqual(f.store.tables,before);noAuthMutation(f);
+});
+
+test('business edits still require original bearer MFA, own password and distributed rate check',async()=>{
+  for(const [options,password,status] of [
+    [{factors:[{status:'verified'}]},CURRENT_PASSWORD,403],
+    [{},'incorrect-synthetic-password',403],
+    [{reauthAs:OTHER_AUTH},CURRENT_PASSWORD,403],
+    [{throttled:true},CURRENT_PASSWORD,429],
+    [{rateFailure:true},CURRENT_PASSWORD,503],
+  ]){
+    const f=businessFixture(options),before=clone(f.store.tables),beforeAuth=authSnapshot(f);
+    const response=await f.request({...action('investor','create',investorBusiness()),currentPassword:password});
+    assert.equal(response.statusCode,status);assert.deepEqual(f.store.tables,before);assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+  }
+  const f=businessFixture({factors:[{status:'verified'}],aal:'aal2'});
+  assert.equal((await f.request(action('investor','create',investorBusiness()))).statusCode,200);noAuthMutation(f);
+});
+
+test('concurrent access binding/email/status change cannot be overwritten by business edit',async()=>{
+  for(const change of ['binding','email','status']){
+    const f=businessFixture(),row=seedInvestor(f,change!=='binding'),beforeName=row.name,beforeAuth=authSnapshot(f);
+    f.store.beforeNextProfileSave=()=>{
+      if(change==='binding')row.auth_user_id=OTHER_AUTH;
+      if(change==='email')row.email='concurrent-admin@example.invalid';
+      if(change==='status')row.status='Inativo';
+    };
+    const response=await f.request(action('investor','update',investorBusiness({id:row.id,name:'Stale staff edit'})));
+    assert.equal(response.statusCode,409);assert.equal(row.name,beforeName);
+    if(change==='binding')assert.equal(row.auth_user_id,OTHER_AUTH);
+    if(change==='email')assert.equal(row.email,'concurrent-admin@example.invalid');
+    if(change==='status')assert.equal(row.status,'Inativo');
+    assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+  }
+});
+
+test('failed investor business insert/update never creates Auth or destroys a previous record',async()=>{
+  for(const operation of ['create','update']){
+    const f=businessFixture(),row=operation==='update'?seedInvestor(f,true):null,before=clone(f.store.tables),beforeAuth=authSnapshot(f);
+    f.store.failNextProfileSave=true;
+    const response=await f.request(action('investor',operation,investorBusiness(row?{id:row.id,name:'Unsaved change'}:{})));
+    assert.equal(response.statusCode,409);assert.deepEqual(f.store.tables,before);assert.deepEqual(authSnapshot(f),beforeAuth);noAuthMutation(f);
+  }
 });
