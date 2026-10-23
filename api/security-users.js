@@ -5,7 +5,7 @@ import { safeFetch } from '../lib/server/safeFetch.js';
 
 let runtimeReported = false;
 
-const MODULES = new Set(['bi','faturamento','frota','leads','locacao','clientes','investidores','financeiro','caucao','manutencaoAdmin','vistoria','multas','oficina','logs']);
+const MODULES = new Set(['bi','faturamento','frota','leads','locacao','clientes','investidores','financeiro','caucao','manutencaoAdmin','vistoria','multas','oficina','logs','avisos']);
 const SYSTEM_FIELDS = 'id,auth_user_id,name,email,role,modules,created_at';
 const INVESTOR_FIELDS = 'id,auth_user_id,name,email,phone,cpf,address,status,bank,pix,created_at';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

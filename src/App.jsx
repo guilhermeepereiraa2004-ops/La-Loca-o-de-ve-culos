@@ -51,7 +51,7 @@ const Application = ({ isOficinaDomain = false }) => {
     handleAddInventoryItem, handleUpdateInventoryItem, handleDeleteInventoryItem, handleDeleteAllInventoryItems,
     handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial,
     oilChanges, handleAddOilChange, handleUpdateOilChange, handleDeleteOilChange,
-    notices, handleAddNotice, handleDeleteNotice, handleMarkNoticeRead
+    notices, noticeRecipients, handleAddNotice, handleUpdateNotice, handleDeleteNotice, handleMarkNoticeRead
   } = useAppState({ includeWorkshopFinancials: isOficinaDomain });
 
 
@@ -198,7 +198,9 @@ const Application = ({ isOficinaDomain = false }) => {
         selectedImage={selectedImage}
         setSelectedImage={setSelectedImage}
         notices={notices}
+        noticeRecipients={noticeRecipients}
         onAddNotice={handleAddNotice}
+        onUpdateNotice={handleUpdateNotice}
         onDeleteNotice={handleDeleteNotice}
       />
       </>

@@ -16,6 +16,7 @@ const ALL_MODULES = [
   { id: 'vistoria',      label: 'Vistoria',         icon: '📷' },
   { id: 'multas',        label: 'Multas',           icon: '🚨' },
   { id: 'oficina',       label: 'Oficina',          icon: '🛠️' },
+  { id: 'avisos',        label: 'Avisos',           icon: '🔔' },
   { id: 'logs',          label: 'Logs do Sistema',  icon: '📜' },
 ];
 
@@ -292,6 +293,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                           <button
                             key={mod.id}
                             type="button"
+                            aria-pressed={isActive}
                             onClick={() => toggleModule(mod.id)}
                             className={`flex items-center gap-3 p-4 rounded-xl border text-left transition-all ${
                               isActive ? 'bg-white border-emerald-200 shadow-sm' : 'bg-neutral-100 border-transparent opacity-50'

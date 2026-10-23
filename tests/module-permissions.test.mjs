@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { canOperateModule } from '../src/lib/modulePermissions.js';
 
 test('only administrator or assigned staff/manager can operate a known business module',()=>{
-  const modules=['frota','leads','locacao','clientes','investidores','financeiro','faturamento','caucao','manutencaoAdmin','vistoria','multas','oficina'];
+  const modules=['frota','leads','locacao','clientes','investidores','financeiro','faturamento','caucao','manutencaoAdmin','vistoria','multas','oficina','avisos'];
   for(const module of modules){
     assert.equal(canOperateModule({role:'administrador',modules:[]},module),true);
     for(const role of ['funcionario','gerente']){
@@ -12,6 +12,13 @@ test('only administrator or assigned staff/manager can operate a known business 
       assert.equal(canOperateModule({role,modules:['unknown']},module),false);
     }
   }
+});
+
+test('Avisos assignment grants notice operation without investor or account privileges',()=>{
+  const profile={role:'funcionario',modules:['avisos']};
+  assert.equal(canOperateModule(profile,'avisos'),true);
+  for(const module of ['investidores','financeiro','usuarios','system_users']) assert.equal(canOperateModule(profile,module),false);
+  assert.equal(canOperateModule({role:'funcionario',modules:['investidores']},'avisos'),false);
 });
 
 test('anonymous, investor, forged/unknown roles and read-only/unknown modules cannot gain write controls',()=>{

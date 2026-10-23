@@ -83,7 +83,7 @@ const STAFF_DATASET_MODULES = {
   maintenances: ['manutencaoAdmin','oficina'], inspections: ['vistoria'], service_orders: ['oficina','manutencaoAdmin'],
   replacement_contracts: ['oficina','locacao'], system_fines: ['multas','faturamento'], oil_changes: ['oficina','manutencaoAdmin'],
   workshop_appointments: ['oficina'], workshop_quotes: ['oficina'], workshop_inventory: ['oficina'], workshop_financials: ['oficina','financeiro'],
-  investor_notices: ['investidores'], investors: ['investidores','frota'], system_logs: ['logs'],
+  investor_notices: ['investidores','avisos'], notice_recipients: ['avisos'], investors: ['investidores','frota'], system_logs: ['logs'],
 };
 const INVESTOR_DATASETS = new Set(['investor_notices','service_orders','vehicles','rentals','investors','transactions','maintenances','replacement_contracts','oil_changes']);
 export function canLoadDataset(profile, table, { includeWorkshopFinancials = false } = {}) {

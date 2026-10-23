@@ -118,6 +118,19 @@ function fixture({linked=true,actorRole='administrador',actorModules=[],reauthAs
 const action=(kind,operation,profile)=>({kind,action:operation,currentPassword:CURRENT_PASSWORD,profile});
 const staff=(overrides={})=>({name:'Synthetic new member',email:'new@example.invalid',password:'synthetic-new-password',role:'funcionario',modules:['frota'],...overrides});
 
+test('admin assigns Avisos while an Avisos-only actor cannot alter accounts or investor profiles',async()=>{
+  const admin=fixture();
+  const assigned=await admin.request(action('system','update',staff({id:TARGET_PROFILE,email:'target@example.invalid',password:undefined,modules:['avisos']})));
+  assert.equal(assigned.statusCode,200);assert.deepEqual(admin.target().modules,['avisos']);
+  const actor=fixture({actorRole:'funcionario',actorModules:['avisos']});
+  const before=clone(actor.store.tables),authBefore=clone([...actor.store.auth]);
+  for(const kind of ['system','investor']){
+    const response=await actor.request(action(kind,'create',kind==='system'?staff({role:'administrador',modules:['avisos']}):{name:'Blocked',email:'blocked@example.invalid',status:'Ativo',password:'synthetic-target-password'}));
+    assert.equal(response.statusCode,403);
+  }
+  assert.deepEqual(actor.store.tables,before);assert.deepEqual([...actor.store.auth],authBefore);
+});
+
 test('stateful admin create/update persists one identity, stable profile ID and allowlisted response',async()=>{
   const f=fixture();const created=await f.request(action('system','create',staff()));
   assert.equal(created.statusCode,200);

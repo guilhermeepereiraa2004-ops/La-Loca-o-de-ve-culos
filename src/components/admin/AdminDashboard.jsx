@@ -76,7 +76,9 @@ const AdminDashboard = ({
   onDeleteFine,
   onRenewRental,
   notices = [],
+  noticeRecipients = [],
   onAddNotice,
+  onUpdateNotice,
   onDeleteNotice
 }) => {
   const {
@@ -611,10 +613,12 @@ const AdminDashboard = ({
           )}
           {activeTab === 'avisos' && canAccess('avisos') && (
             <AdminAvisos
-              investors={investors}
+              noticeRecipients={noticeRecipients}
               notices={notices}
+              canEdit={canOperate('avisos')}
               onAddNotice={onAddNotice}
-              onDeleteNotice={onDeleteNotice}
+              onUpdateNotice={onUpdateNotice}
+              onDeleteNotice={isAdmin ? onDeleteNotice : undefined}
             />
           )}
           </Suspense>

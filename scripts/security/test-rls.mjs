@@ -33,7 +33,9 @@ async function denied(sql) {
 async function as(role, uid, test) {
   await db.exec(`set role ${role}`);
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [uid || '']);
-  try { await test(); } finally { await db.exec('reset role'); }
+  let primaryError;
+  try { await test(); } catch(error) { primaryError=error;throw error; }
+  finally { try { await db.exec('reset role'); } catch(error) { if(!primaryError)throw error; } }
 }
 async function equal(sql, expected) {
   assert.deepEqual((await db.query(sql)).rows, expected, sql);
@@ -857,7 +859,230 @@ try {
     await as('authenticated',ids.employee,()=>rejectsAtomic(()=>callMaintenance('60000000-0000-4000-8000-000000000021',created.maintenance.id,{value:999,receipt_url:null}),['23514']));
     assert.deepEqual(await rentalSnapshot(),before);pass();
   });
-  console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; historical containment/read-only + final owning-module writes, atomic rental/create/update/deposit/maintenance and constrained fine/status writes; anonymous, investor A/B, inactive, unlinked, staff/admin, service_role.`);
+  // A new module controls notice writing without changing existing recipient
+  // policies, acknowledgement function, profile grants or stored business rows.
+  const noticeBusinessSnapshot=async()=>{
+    const result={};
+    for(const table of ['asaas_payments','clients','inspections','investor_notices','investor_payouts','investors','leads',
+      'maintenances','oil_changes','rentals','replacement_contracts','service_orders','system_fines','system_logs','system_users',
+      'transactions','vehicles','workshop_appointments','workshop_inventory','workshop_quotes']){
+      result[table]=(await db.query(`select to_jsonb(t) as value from public.${table} t order by to_jsonb(t)::text`)).rows;
+    }
+    return result;
+  };
+  const noticeDataBefore=await noticeBusinessSnapshot();
+  const noticePoliciesSql=`select tablename,policyname,cmd,qual,with_check from pg_policies where schemaname='public'
+    and not (tablename='investor_notices' and policyname in ('staff_select','staff_insert','staff_update')) order by tablename,policyname`;
+  const noticePoliciesBefore=(await db.query(noticePoliciesSql)).rows;
+  const ackSql=`select pg_get_functiondef('public.mark_investor_notice_read(uuid)'::regprocedure) as definition`;
+  const ackBefore=(await db.query(ackSql)).rows;
+  const noticeMigration=await readFile('supabase/migrations/20261023210707_notices_module_create_edit.sql','utf8');
+  await db.exec(noticeMigration);
+  await db.exec(noticeMigration);
+  assert.deepEqual(await noticeBusinessSnapshot(),noticeDataBefore);pass();
+  await equal(noticePoliciesSql,noticePoliciesBefore);
+  await equal(ackSql,ackBefore);
+  await equal(profileGrantsSql,profileGrantsBefore);
+  const callNotice=async(id,payload,request)=>(await db.query('select public.save_notice($1,$2::jsonb,$3) as result',
+    [id,JSON.stringify(payload),request])).rows[0].result;
+  const noticeSnapshot=async()=>({business:await noticeBusinessSnapshot(),journal:(await db.query('select * from private_security.notice_requests order by actor_id,request_id')).rows});
+  const noticeRequest='70000000-0000-4000-8000-000000000001';
+  const noticePayload={title:'Synthetic notice',message:'Synthetic message',target_type:'selected',target_ids:[ids.investorA],
+    video_url:'https://youtu.be/dQw4w9WgXcQ?si=synthetic&t=20'};
+  for(const role of ['funcionario','gerente'])await isolated(async()=>{
+    await db.exec(`update public.system_users set role='${role}',modules='{avisos}' where id='${ids.employee}'`);
+    let created;
+    await as('authenticated',ids.employee,async()=>{
+      await count('select id,name from public.investors',0);
+      const directory=(await db.query('select * from public.get_notice_recipients()')).rows;
+      assert.equal(directory.length,3);pass();
+      assert.deepEqual(Object.keys(directory[0]).sort(),['id','name']);pass();
+      await deniedInTransaction('select password from public.investors');
+      await deniedInTransaction(`update public.system_users set modules='{investidores}' where id='${ids.employee}'`);
+      await count('select * from public.investor_notices',3);
+      await deniedInTransaction(`insert into public.investor_notices(title,message) values('Direct','Bypass')`);
+      await equal(`update public.investor_notices set title='Direct bypass' returning id`,[]);
+      await equal('delete from public.investor_notices returning id',[]);
+      created=(await callNotice(null,noticePayload,noticeRequest)).notice;
+      assert.ok(created.id);pass();
+      assert.equal(created.created_by,'Employee');pass();
+      assert.equal(typeof created.created_at,'string');pass();
+      assert.deepEqual(created.read_by,[]);pass();
+      assert.deepEqual(created.target_ids,[ids.investorA]);pass();
+      assert.equal(created.video_url,'https://www.youtube.com/watch?v=dQw4w9WgXcQ');pass();
+      assert.equal((await callNotice(null,noticePayload,noticeRequest)).notice.id,created.id);pass();
+      await rejectsAtomic(()=>callNotice(null,{...noticePayload,title:'Collision'},noticeRequest),['22023']);
+      await deniedInTransaction('select * from private_security.notice_requests');
+    });
+    await as('authenticated',ids.investorB,async()=>{
+      await count(`select * from public.investor_notices where id='${created.id}'`,0);
+      await db.query('select public.mark_investor_notice_read($1)',[created.id]);
+      await rejectsAtomic(()=>callNotice(created.id,{title:'Forbidden edit'},noticeRequest),['42501']);
+    });
+    await as('authenticated',ids.investorA,async()=>{
+      await count(`select * from public.investor_notices where id='${created.id}'`,1);
+      await db.query('select public.mark_investor_notice_read($1)',[created.id]);
+      await db.query('select public.mark_investor_notice_read($1)',[created.id]);
+      await equal(`select read_by from public.investor_notices where id='${created.id}'`,[{read_by:[ids.investorA]}]);
+      await equal(`update public.investor_notices set title='Recipient forged' where id='${created.id}' returning id`,[]);
+    });
+    await as('authenticated',ids.employee,async()=>{
+      const edited=(await callNotice(created.id,{title:'Edited title'},'70000000-0000-4000-8000-000000000002')).notice;
+      assert.equal(edited.title,'Edited title');pass();
+      assert.equal(edited.message,created.message);pass();
+      assert.equal(edited.video_url,created.video_url);pass();
+      assert.deepEqual(edited.target_ids,created.target_ids);pass();
+      assert.deepEqual(edited.read_by,[ids.investorA]);pass();
+      assert.equal(edited.created_by,created.created_by);pass();
+      assert.equal(edited.created_at,created.created_at);pass();
+      const replay=(await callNotice(created.id,{title:'Edited title'},'70000000-0000-4000-8000-000000000002')).notice;
+      assert.equal(replay.id,created.id);pass();
+      assert.deepEqual(replay.read_by,[ids.investorA]);pass();
+    });
+    await equal('select count(*)::integer as count from private_security.notice_requests',[{count:2}]);
+  });
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{avisos}' where id='${ids.employee}'`);
+    let sequence=10;
+    const nextNoticeRequest=()=>`70000000-0000-4000-8000-${String(sequence++).padStart(12,'0')}`;
+    await as('authenticated',ids.employee,async()=>{
+      for(const invalid of [
+        {title:'',message:'Message'}, {title:' ',message:'Message'}, {title:'x'.repeat(201),message:'Message'},
+        {title:'Title',message:''},{title:'Title',message:'x'.repeat(10001)},
+        {...noticePayload,read_by:[]},{...noticePayload,created_by:'Forged'},{...noticePayload,created_at:'2000-01-01'},
+        {...noticePayload,id:ids.investorA},{...noticePayload,target_ids:[]},{...noticePayload,target_ids:[ids.investorA,ids.investorA]},
+        {...noticePayload,target_ids:['invalid']},{...noticePayload,target_ids:[ids.unknown]},
+        {...noticePayload,target_ids:[1]},{...noticePayload,target_ids:Array(501).fill(ids.investorA)},
+        {...noticePayload,target_type:'all',target_ids:[ids.investorA]}, {...noticePayload,target_type:'specific'},
+        {...noticePayload,title:null},{...noticePayload,message:{}},{...noticePayload,target_ids:null},
+      ])await rejectsAtomic(()=>callNotice(null,invalid,nextNoticeRequest()),['22023']);
+      for(const video of ['http://youtu.be/dQw4w9WgXcQ','https://youtube.com.attacker.invalid/watch?v=dQw4w9WgXcQ',
+        'https://attacker.invalid/watch?v=dQw4w9WgXcQ','javascript:alert(1)','https://www.youtube.com/watch?v=short',
+        'https://www.youtube.com/watch?v=dQw4w9WgXcQ&v=aaaaaaaaaaa','https://youtu.be/dQw4w9WgXcQ?redirect=bad',
+        'https://user@www.youtube.com/watch?v=dQw4w9WgXcQ','https://www.youtube.com:444/watch?v=dQw4w9WgXcQ',
+        'https://youtu.be/dQw4w9WgXcQ#t=20','https://youtu.be/dQw4w9WgXcQ?si=%61',
+      ])await rejectsAtomic(()=>callNotice(null,{title:'Video',message:'Message',video_url:video},nextNoticeRequest()),['22023']);
+      for(const video of ['https://youtube.com/watch?feature=shared&v=dQw4w9WgXcQ&t=1m20s',
+        'https://www.youtube.com/shorts/dQw4w9WgXcQ?si=synthetic','https://m.youtube.com/embed/dQw4w9WgXcQ?start=2',
+        'https://www.youtube.com/live/dQw4w9WgXcQ?feature=share',
+      ]){
+        const notice=(await callNotice(null,{title:'Video',message:'Message',video_url:video},nextNoticeRequest())).notice;
+        assert.equal(notice.video_url,'https://www.youtube.com/watch?v=dQw4w9WgXcQ');pass();
+        assert.equal(notice.target_type,'all');pass();
+        assert.equal(notice.target_ids,null);pass();
+      }
+      await rejectsAtomic(()=>callNotice(ids.unknown,{title:'Missing'},nextNoticeRequest()),['22023']);
+      await rejectsAtomic(()=>callNotice(null,noticePayload,null),['22023']);
+      await rejectsAtomic(()=>callNotice(null,[],nextNoticeRequest()),['22023']);
+    });
+  });
+  // Omitted legacy fields are preserved verbatim, including old video options
+  // and targeting conventions; explicit video edits are canonicalized.
+  await isolated(async()=>{
+    const legacyId='30000000-0000-4000-8000-000000000002';
+    const legacyVideo='https://www.youtube.com/watch?v=dQw4w9WgXcQ&feature=shared';
+    await db.exec(`update public.system_users set modules='{avisos}' where id='${ids.employee}';
+      update public.investor_notices set video_url='${legacyVideo}',read_by=array['${ids.investorA}']::uuid[],created_by='Legacy author' where id='${legacyId}'`);
+    await as('authenticated',ids.employee,async()=>{
+      const changed=(await callNotice(legacyId,{message:'Updated legacy body'},noticeRequest)).notice;
+      assert.equal(changed.video_url,legacyVideo);pass();
+      assert.equal(changed.target_type,'specific');pass();
+      assert.deepEqual(changed.read_by,[ids.investorA]);pass();
+      assert.equal(changed.created_by,'Legacy author');pass();
+      const explicit=(await callNotice(legacyId,{video_url:legacyVideo},'70000000-0000-4000-8000-000000000003')).notice;
+      assert.equal(explicit.video_url,'https://www.youtube.com/watch?v=dQw4w9WgXcQ');pass();
+    });
+  });
+  await isolated(async()=>{
+    const legacyId='30000000-0000-4000-8000-000000000002';
+    // This UUID no longer has a recipient profile. The full form still sends
+    // its existing selection; editing content must not erase that history.
+    await db.exec(`update public.system_users set modules='{avisos}' where id='${ids.employee}';
+      update public.investor_notices set target_type='selected',target_ids=array['${ids.investorA}','${ids.unknown}']::uuid[],
+        read_by=array['${ids.investorA}']::uuid[] where id='${legacyId}'`);
+    await as('authenticated',ids.employee,async()=>{
+      const edited=(await callNotice(legacyId,{title:'Preserved historical targets',message:'New body',target_type:'selected',
+        target_ids:[ids.investorA,ids.unknown]},noticeRequest)).notice;
+      assert.deepEqual(edited.target_ids,[ids.investorA,ids.unknown]);pass();
+      assert.deepEqual(edited.read_by,[ids.investorA]);pass();
+      await rejectsAtomic(()=>callNotice(legacyId,{target_type:'selected',target_ids:[ids.investorA,ids.unknown,newVehicle]},
+        '70000000-0000-4000-8000-000000000004'),['22023']);
+      const selected=(await callNotice(legacyId,{target_ids:[ids.investorA,ids.unknown,ids.investorB]},
+        '70000000-0000-4000-8000-000000000005')).notice;
+      assert.deepEqual(selected.target_ids,[ids.investorA,ids.unknown,ids.investorB]);pass();
+    });
+    await as('authenticated',ids.investorB,async()=>{
+      await db.query('select public.mark_investor_notice_read($1)',[legacyId]);
+      await equal(`select read_by from public.investor_notices where id='${legacyId}'`,[{read_by:[ids.investorA,ids.investorB]}]);
+    });
+  });
+  // No investor module, role metadata or previous valid request grants write.
+  await isolated(async()=>{
+    const legacyId='30000000-0000-4000-8000-000000000002';
+    await db.exec(`update public.system_users set modules='{avisos}' where id='${ids.employee}';
+      update public.investor_notices set target_type='selected',target_ids=array[null,'${ids.investorA}']::uuid[] where id='${legacyId}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await rejectsAtomic(()=>callNotice(legacyId,{target_ids:[ids.unknown]},noticeRequest),['22023']);
+      const preserved=(await callNotice(legacyId,{target_ids:[ids.investorA]},'70000000-0000-4000-8000-000000000006')).notice;
+      assert.deepEqual(preserved.target_ids,[ids.investorA]);pass();
+    });
+  });
+  // No investor module, role metadata or previous valid request grants write.
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{investidores}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await count('select * from public.investor_notices',3);
+      await rejectsAtomic(()=>callNotice(null,noticePayload,noticeRequest),['42501']);
+      await deniedInTransaction('select * from public.get_notice_recipients()');
+      await deniedInTransaction("insert into public.investor_notices(title,message) values('Old module','Denied')");
+    });
+    await db.exec(`update public.system_users set modules='{avisos}' where id='${ids.employee}';
+      update public.system_users set modules='{avisos}' where id='${ids.logsOnly}'`);
+    let first;
+    await as('authenticated',ids.employee,async()=>{first=(await callNotice(null,noticePayload,noticeRequest)).notice;});
+    await as('authenticated',ids.logsOnly,async()=>{
+      const second=(await callNotice(null,noticePayload,noticeRequest)).notice;
+      assert.notEqual(second.id,first.id);pass();
+      assert.equal(second.created_by,'Logs only');pass();
+    });
+    await db.exec(`update public.system_users set modules='{}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:ids.employee,user_metadata:{role:'administrador',modules:['avisos']}})]);
+      await rejectsAtomic(()=>callNotice(null,noticePayload,noticeRequest),['42501']);
+    });
+    for(const uid of [ids.investorA,ids.investorB,ids.inactive,ids.unknown])await as('authenticated',uid,async()=>{
+      await rejectsAtomic(()=>callNotice(null,noticePayload,noticeRequest),['42501']);
+      await deniedInTransaction('select * from public.get_notice_recipients()');
+    });
+  });
+  // Failed insert/update rolls back its journal entry and all existing rows.
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{avisos}' where id='${ids.employee}';
+      create function private_security.test_notice_failure() returns trigger language plpgsql as $$begin
+      raise exception using errcode='23514',message='Synthetic notice write failure';end$$;
+      create trigger synthetic_notice_failure before insert or update on public.investor_notices for each row execute function private_security.test_notice_failure();`);
+    const before=await noticeSnapshot();
+    await as('authenticated',ids.employee,async()=>{
+      await rejectsAtomic(()=>callNotice(null,noticePayload,noticeRequest),['23514']);
+      await rejectsAtomic(()=>callNotice('30000000-0000-4000-8000-000000000001',{title:'Failed edit'},noticeRequest),['23514']);
+    });
+    assert.deepEqual(await noticeSnapshot(),before);pass();
+  });
+  await isolated(async()=>{
+    await as('authenticated',ids.admin,async()=>{
+      assert.equal((await callNotice(null,{title:'Admin notice',message:'Body'},noticeRequest)).notice.created_by,'Admin');pass();
+      await equal(`insert into public.investor_notices(id,title,message,target_type) values('${newVehicle}','Admin direct','Body','all') returning id`,[{id:newVehicle}]);
+      await equal(`update public.investor_notices set title='Admin edit' where id='${newVehicle}' returning title`,[{title:'Admin edit'}]);
+      await equal(`delete from public.investor_notices where id='${newVehicle}' returning id`,[{id:newVehicle}]);
+    });
+  });
+  for(const role of ['anon','service_role'])await as(role,null,async()=>{
+    await denied(`select public.save_notice(null,'{}','${noticeRequest}')`);
+    await denied('select * from public.get_notice_recipients()');
+    await denied('select * from private_security.notice_requests');
+    await denied("select private_security.canonical_notice_video('https://youtu.be/dQw4w9WgXcQ')");
+  });
+  console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; historical containment/read-only + final owning-module writes, atomic rentals/maintenance, constrained fine/status, separate Avisos create/edit/recipient directory with preserved receipts; anonymous, investor A/B, inactive, unlinked, staff/admin, service_role.`);
 } catch(error) {
   console.error('FAIL:',error.code || error.name,error.message);
   process.exitCode=1;

@@ -94,6 +94,18 @@ test('optional workshop finance loads only in its dedicated portal',()=>{
   for(const table of ['inspections','service_orders','investor_notices','system_logs']) assert.equal(canLoadDataset(admin,table),true);
 });
 
+test('Avisos can load notices while investor profiles, finances and unrelated business datasets stay unavailable',()=>{
+  for(const role of ['funcionario','gerente']){
+    const profile={role,modules:['avisos']};
+    assert.equal(canLoadDataset(profile,'investor_notices'),true);
+    assert.equal(canLoadDataset(profile,'notice_recipients'),true);
+    for(const table of ['investors','vehicles','clients','rentals','transactions','system_users','system_logs','inspections']) assert.equal(canLoadDataset(profile,table),false);
+  }
+  assert.equal(canLoadDataset({role:'funcionario',modules:['investidores']},'investor_notices'),true);
+  assert.equal(canLoadDataset({role:'funcionario',modules:['investidores']},'notice_recipients'),false);
+  assert.equal(canLoadDataset({role:'investidor',modules:['avisos']},'system_users'),false);
+});
+
 test('rental enrichment waits for separately arriving vehicle and client dependencies',()=>{
   const snapshots={rentals:[{id:'r',vehicleId:'v',clientId:'c',name:'original'}]};
   let current=snapshots.rentals;

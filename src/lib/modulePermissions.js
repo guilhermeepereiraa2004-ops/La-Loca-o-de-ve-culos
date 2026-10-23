@@ -1,6 +1,6 @@
 const OPERATIONAL_MODULES = new Set([
   'frota', 'leads', 'locacao', 'clientes', 'investidores', 'financeiro',
-  'faturamento', 'caucao', 'manutencaoAdmin', 'vistoria', 'multas', 'oficina',
+  'faturamento', 'caucao', 'manutencaoAdmin', 'vistoria', 'multas', 'oficina', 'avisos',
 ]);
 
 // UI guidance only: PostgreSQL and server endpoints always enforce authorization.

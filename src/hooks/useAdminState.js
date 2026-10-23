@@ -107,7 +107,7 @@ export const useAdminState = (currentUser) => {
       const allowedTabs = [
         'bi', 'faturamento', 'frota', 'leads', 'locacao', 'clientes', 
         'investidores', 'financeiro', 'caucao', 'manutencaoAdmin', 
-        'vistoria', 'multas', 'oficina', 'logs', 'usuarios'
+        'vistoria', 'multas', 'oficina', 'avisos', 'logs', 'usuarios'
       ];
       const firstAllowed = allowedTabs.find(tabId => canAccess(tabId));
       if (firstAllowed) {

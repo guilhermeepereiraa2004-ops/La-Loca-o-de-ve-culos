@@ -4,6 +4,7 @@ import { supabase, signOutMainSession } from '../lib/supabase';
 import { createSessionRestorer } from '../lib/browserSession.js';
 import { createRentalPersistence } from '../lib/rentalPersistence.js';
 import { createMaintenancePersistence } from '../lib/maintenancePersistence.js';
+import { createNoticePersistence } from '../lib/noticePersistence.js';
 import { canOperateModule } from '../lib/modulePermissions.js';
 import { assertClosurePermissions } from '../lib/closurePermissions.js';
 import { parseDbError } from '../utils/errorHelper';
@@ -257,6 +258,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   const [leads, setLeads] = useState([]);
   const [oilChanges, setOilChanges] = useState([]);
   const [notices, setNotices] = useState([]);
+  const [noticeRecipients, setNoticeRecipients] = useState([]);
   const [rentals, setRentals] = useState([]);
   const [investors, setInvestors] = useState([]);
   const [vehicles, setVehicles] = useState([]);
@@ -281,10 +283,13 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   if (!rentalStore.current) rentalStore.current = createRentalPersistence({ client: supabase, uploadFile, projectUrl: import.meta.env.VITE_SUPABASE_URL });
   const maintenanceStore = useRef(null);
   if (!maintenanceStore.current) maintenanceStore.current = createMaintenancePersistence({ client: supabase, uploadFile, projectUrl: import.meta.env.VITE_SUPABASE_URL });
+  const noticeStore = useRef(null);
+  if (!noticeStore.current) noticeStore.current = createNoticePersistence({ client: supabase });
   useEffect(() => {
     rentalStore.current.clear();
     maintenanceStore.current.clear();
-    return () => { rentalStore.current.clear(); maintenanceStore.current.clear(); };
+    noticeStore.current.clear();
+    return () => { rentalStore.current.clear(); maintenanceStore.current.clear(); noticeStore.current.clear(); };
   }, [currentUser?.authUserId]);
   const [dataLoading, setDataLoading] = useState(false);
   const [dataLoadErrors, setDataLoadErrors] = useState({});
@@ -315,7 +320,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   const logout = async () => {
     sessionRestorer.current?.beginLogout();
     activeOwnerId.current = null;
-    rentalStore.current.clear(); maintenanceStore.current.clear();
+    rentalStore.current.clear(); maintenanceStore.current.clear(); noticeStore.current.clear();
     setCurrentUser(null); setSelectedImage(null); setView('home');
     clearLegacySession();
     clearStorageUrlCache();
@@ -413,6 +418,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       service_orders: setServiceOrders, workshop_appointments: setAppointments, workshop_quotes: setQuotes,
       workshop_inventory: setInventory, workshop_financials: setWorkshopFinancials, clients: setClients,
       replacement_contracts: setReplacementContracts, oil_changes: setOilChanges, investor_notices: setNotices,
+      notice_recipients: setNoticeRecipients,
       system_logs: setLogs, system_fines: setFines,
     };
     if (lastDataSessionKey.current !== dataSessionKey) {
@@ -446,9 +452,11 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       let rows = [];
       const pageSize = table === 'system_logs' ? 500 : 1000;
       for (let offset = 0; ; offset += pageSize) {
-        let query = supabase.from(table).select(table === 'investors' ? INVESTOR_PROFILE_FIELDS : table === 'vehicles' ? '*, investors(name)' : '*')
-          .order('created_at', { ascending: false }).order('id', { ascending: false })
-          .range(offset, offset + pageSize - 1).abortSignal(controller.signal);
+        const query = table === 'notice_recipients'
+          ? supabase.rpc('get_notice_recipients').order('name', { ascending: true }).order('id', { ascending: true }).range(offset, offset + pageSize - 1).abortSignal(controller.signal)
+          : supabase.from(table).select(table === 'investors' ? INVESTOR_PROFILE_FIELDS : table === 'vehicles' ? '*, investors(name)' : '*')
+            .order('created_at', { ascending: false }).order('id', { ascending: false })
+            .range(offset, offset + pageSize - 1).abortSignal(controller.signal);
         const { data, error } = await query;
         if (error) throw error;
         if (cancelled) return [];
@@ -499,13 +507,13 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       else setSystemUsersLoading(false);
       const snapshots = {};
       // Do not place logs/notices/O.S. behind tens of thousands of attachment signatures.
-      const tables = ['system_logs','investor_notices','service_orders','inspections','vehicles','clients','rentals','leads','investors','transactions','maintenances','workshop_appointments','workshop_quotes','workshop_inventory','workshop_financials','replacement_contracts','oil_changes','system_fines']
+      const tables = ['system_logs','investor_notices','notice_recipients','service_orders','inspections','vehicles','clients','rentals','leads','investors','transactions','maintenances','workshop_appointments','workshop_quotes','workshop_inventory','workshop_financials','replacement_contracts','oil_changes','system_fines']
         .filter(table => canLoadDataset(currentUser, table, { includeWorkshopFinancials }));
       const updateRentalReferences = table => {
         if (!investor && ['vehicles','clients','rentals'].includes(table)) setRentals(previous => enrichRentalReferencesWhenReady(previous, snapshots, enrichRentals));
       };
       try {
-        const result = await loadDataResources(tables.map(table => ({ key: table, load: () => fetchRows(table), project: rows => projectRows(table, rows), hydrate: !['system_logs','system_fines','investor_notices','inspections'].includes(table) })), {
+        const result = await loadDataResources(tables.map(table => ({ key: table, load: () => fetchRows(table), project: rows => projectRows(table, rows), hydrate: !['system_logs','system_fines','investor_notices','notice_recipients','inspections'].includes(table) })), {
           isActive: isCurrentLoad, hydrate: hydrateStorageReferences,
           onData: (table, rows) => {
             snapshots[table] = rows;
@@ -2528,34 +2536,26 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
     }
   };
 
-  const handleAddNotice = async (noticeData) => {
+  const saveNoticeOperation = async (noticeData, operation) => {
     try {
-      const payload = {
-        title: noticeData.title,
-        message: noticeData.message,
-        video_url: noticeData.videoUrl || null,
-        target_type: noticeData.targetType || 'all',
-        target_ids: noticeData.targetIds || null,
-        read_by: [],
-        created_by: currentUser?.name || currentUser?.nome || 'Admin'
-      };
-      const { data, error } = await supabase.from('investor_notices').insert([payload]).select();
-      if (error) throw error;
-      if (data && data[0]) {
-        const newNotice = mapToCamel(data, 'investor_notices')[0];
-        setNotices(prev => [newNotice, ...prev]);
-        logActivity('Criar', 'Aviso', data[0].id, `Enviou aviso "${noticeData.title}" para ${noticeData.targetType === 'all' ? 'todos investidores' : 'investidores selecionados'}`);
-      }
-      return { success: true };
-    } catch (err) {
-      console.error('Erro ao enviar aviso:', err);
-      return { success: false, error: err };
+      if (!canOperateModule(currentUser, 'avisos')) throw Object.assign(new Error('Seu acesso não permite cadastrar ou editar avisos.'), { code: '42501' });
+      const saved = await noticeStore.current.save(noticeData, { ownerId: currentUser.authUserId, operation });
+      if (activeOwnerId.current !== currentUser.authUserId) throw Object.assign(new Error('O acesso mudou durante o salvamento. Entre novamente.'), { code: 'SESSION_CHANGED' });
+      const row = mapToCamel([saved.notice], 'investor_notices')[0];
+      setNotices(previous => [row, ...previous.filter(item => item.id !== row.id)]);
+      logActivity(operation === 'create' ? 'Criar' : 'Atualizar', 'Aviso', row.id, `Salvou aviso "${row.title}"`);
+      return { success: true, data: row };
+    } catch (error) {
+      return { success: false, error: Object.assign(new Error(parseDbError(error)), { code: error.code }) };
     }
   };
+  const handleAddNotice = noticeData => saveNoticeOperation(noticeData, 'create');
+  const handleUpdateNotice = noticeData => saveNoticeOperation(noticeData, 'update');
 
   const handleDeleteNotice = async (id) => {
     try {
-      const { error } = await supabase.from('investor_notices').delete().eq('id', id);
+      if (currentUser?.role !== 'administrador') throw Object.assign(new Error('Somente o administrador pode excluir avisos.'), { code: '42501' });
+      const { error } = await supabase.from('investor_notices').delete().eq('id', id).select('id').single();
       if (error) throw error;
       setNotices(prev => prev.filter(n => n.id !== id));
       logActivity('Excluir', 'Aviso', id, 'Excluiu um aviso');
@@ -2585,7 +2585,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
 
   return {
     view, setView, leads, rentals, investors, vehicles, transactions, maintenances,
-    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices,
+    inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices, noticeRecipients,
     systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     fines, isFinesDbConnected,
     currentUser, setCurrentUser, authLoading, logout, dataLoading, dataLoadErrors, retryDataLoad, selectedImage, setSelectedImage, logs, isLogsDbConnected,
@@ -2612,7 +2612,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
     handleAddInventoryItem, handleUpdateInventoryItem, handleDeleteInventoryItem, handleDeleteAllInventoryItems,
     handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial,
     handleAddFine, handleUpdateFine, handleDeleteFine,
-    handleAddNotice, handleDeleteNotice, handleMarkNoticeRead,
+    handleAddNotice, handleUpdateNotice, handleDeleteNotice, handleMarkNoticeRead,
     seedData: () => console.log('Seed data is no longer available.')
   };
 };

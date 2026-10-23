@@ -70,6 +70,13 @@ test('password-free investor creation is accepted only under a verified server b
   assert.throws(()=>validateAccountInput({...input,investorBusinessOnly:true}),/Dados inválidos/);
   assert.throws(()=>validateAccountInput({...input,profile:{...input.profile,password:'synthetic-forbidden-password'}},{investorBusinessOnly:true}),/administradores/);
 });
+test('administrator may assign Avisos without admitting unknown modules or access-table fields',()=>{
+  const input=createInput();input.profile.modules=['avisos'];
+  assert.deepEqual(validateAccountInput(input).profile.modules,['avisos']);
+  for(const value of ['aviso','usuarios','system_users','avisos,administrador','__proto__']){
+    assert.throws(()=>validateAccountInput({...input,profile:{...input.profile,modules:[value]}}));
+  }
+});
 test('denies anonymous request before privileged profile lookup', async () => {
   const f = fixture({ unauthenticated: true }); const res = f.response();
   await f.handler(f.request(), res);
