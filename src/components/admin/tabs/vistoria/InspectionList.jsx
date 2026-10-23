@@ -1,5 +1,6 @@
 import { verifyCurrentPassword } from '../../../../lib/auth';
 import React, { useState, useMemo } from 'react';
+import StorageImage from '../../../ui/StorageImage';
 import { Plus, Search, Trash2, Eye, Calendar, Car, AlertTriangle, X, ShieldCheck, Camera, Activity, UserCheck, Download, FileText } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 12;
@@ -407,12 +408,12 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
                 .filter(([key]) => key !== 'additional')
                 .map(([key, photo], i) => (
                   <div key={i} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0">
-                    <img src={photo.preview} loading="lazy" className="w-full h-full object-cover" />
+                    <StorageImage src={photo?.preview} className="w-full h-full object-cover" />
                   </div>
                 ))}
               {ins.photos?.additional && ins.photos.additional.map((photo, i) => (
                 <div key={`add-${i}`} className="w-10 h-10 rounded-lg overflow-hidden border border-neutral-100 bg-neutral-100 shrink-0 relative">
-                  <img src={photo.preview} loading="lazy" className="w-full h-full object-cover" />
+                  <StorageImage src={photo?.preview} className="w-full h-full object-cover" />
                   <span className="absolute bottom-0 right-0 bg-[#C5A059] text-[6px] font-black text-neutral-900 px-0.5 rounded-tl">+</span>
                 </div>
               ))}

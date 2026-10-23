@@ -1,13 +1,15 @@
 import React from 'react';
 import { X, Download } from 'lucide-react';
 import { getPublicUrl } from '../../utils/supabaseStorage';
+import { useStorageValue } from '../../hooks/useStorageValue';
 
 const ImageViewer = ({ image, onClose }) => {
+  const { value: resolvedImage, loading } = useStorageValue(image);
   if (!image) return null;
 
   // Extract URL if image is an object
-  const imageUrl = getPublicUrl(image);
-  if (!imageUrl) return null;
+  const imageUrl = getPublicUrl(resolvedImage);
+  if (!imageUrl) return <div className="fixed inset-0 z-[999] bg-black/95 grid place-items-center p-6 text-white" role="dialog" aria-modal="true" aria-label="Visualização de arquivo"><div className="space-y-5 text-center"><p role="status">{loading ? 'Carregando arquivo…' : 'Não foi possível carregar este arquivo. Feche e tente novamente.'}</p><button onClick={onClose} className="px-6 py-3 rounded-xl bg-white/10">Fechar</button></div></div>;
 
   const isPDF = typeof imageUrl === 'string' && (imageUrl.toLowerCase().includes('.pdf') || (imageUrl.startsWith('blob:') && imageUrl.includes('pdf')));
   const isDoc = typeof imageUrl === 'string' && (imageUrl.toLowerCase().includes('.doc') || imageUrl.toLowerCase().includes('.docx'));

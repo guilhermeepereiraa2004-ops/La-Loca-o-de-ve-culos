@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
 import { X, ClipboardCheck, Calendar, Car, Gauge, Fuel, Camera, Play, Eye, Download, AlertTriangle, FileText, Ban } from 'lucide-react';
+import { useStorageValue } from '../../../hooks/useStorageValue';
+import { getPublicUrl } from '../../../utils/supabaseStorage';
 
-const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals = [] }) => {
+const InspectionDetailModal = ({ inspection: sourceInspection, onClose, onCloseContract, rentals = [] }) => {
   const [selectedMedia, setSelectedMedia] = useState(null);
+  const { value: inspection, loading: mediaLoading } = useStorageValue(sourceInspection);
+  React.useEffect(() => { setSelectedMedia(null); }, [sourceInspection]);
 
   if (!inspection) return null;
+  const unavailablePhotos = !mediaLoading && Object.values(inspection.photos || {})
+    .flatMap(photo => Array.isArray(photo) ? photo : [photo])
+    .some(photo => photo?.preview && !getPublicUrl(photo.preview));
 
   const hasActiveRental = rentals.some(r => {
     if (r.status !== 'Ativo') return false;
@@ -46,9 +53,9 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
           <div className="absolute inset-0 bg-black/90 backdrop-blur-xl" onClick={() => setSelectedMedia(null)} />
           <div className="relative z-10 max-w-full max-h-full">
             {selectedMedia.type === 'video' ? (
-              <video src={selectedMedia.url} controls className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" autoPlay />
+              <video src={getPublicUrl(selectedMedia.url) || undefined} controls className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" autoPlay />
             ) : (
-              <img src={selectedMedia.url} className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" alt="Preview" />
+              <img src={getPublicUrl(selectedMedia.url) || undefined} className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl border border-white/10" alt="Preview" />
             )}
             <button onClick={() => setSelectedMedia(null)} className="absolute -top-12 right-0 text-white flex items-center gap-2 font-black uppercase text-[10px] tracking-widest hover:text-[#C5A059] transition-colors">
               <X size={20} /> Fechar Preview
@@ -89,6 +96,8 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-8 md:p-12 space-y-12">
+          {mediaLoading && <p role="status" className="text-sm text-neutral-500">Carregando os arquivos desta vistoria…</p>}
+          {unavailablePhotos && <p role="status" className="text-sm text-amber-700">Alguns arquivos não puderam ser carregados. Feche e abra a vistoria para tentar novamente.</p>}
           {/* Section 1: Overview */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="bg-neutral-900 p-6 rounded-3xl border border-[#C5A059]/20 flex flex-col justify-between">
@@ -199,14 +208,14 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                 { id: 'interior2', label: 'Interior 2' },
                 { id: 'tools', label: 'Triang/Mac/Chave' },
               ].map((slot) => {
-                const photo = inspection.photos[slot.id];
+                const photo = inspection.photos?.[slot.id];
                 return (
                   <div key={slot.id} className="space-y-3">
                     <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">{slot.label}</p>
                     <div className="aspect-square bg-neutral-100 rounded-3xl overflow-hidden relative group border border-neutral-200 shadow-inner">
                       {photo ? (
                         <>
-                          <img src={photo.preview} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={slot.label} />
+                          <img src={getPublicUrl(photo.preview) || undefined} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={slot.label} />
                           <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
                             <button 
                               onClick={() => setSelectedMedia({ type: 'image', url: photo.preview })}
@@ -214,7 +223,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                             >
                               <Eye size={18} />
                             </button>
-                            <a href={photo.preview} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform">
+                            <a href={getPublicUrl(photo.preview) || undefined} aria-disabled={!getPublicUrl(photo.preview)} onClick={event => { if (!getPublicUrl(photo.preview)) event.preventDefault(); }} download rel="noreferrer" className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform">
                               <Download size={18} />
                             </a>
                           </div>
@@ -272,7 +281,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                   <div key={index} className="space-y-3">
                     <p className="text-[9px] font-black text-neutral-400 uppercase tracking-widest text-center">Adicional {index + 1}</p>
                     <div className="aspect-square bg-neutral-100 rounded-3xl overflow-hidden relative group border border-neutral-200 shadow-inner">
-                      <img src={photo.preview} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Foto Adicional ${index + 1}`} />
+                      <img src={getPublicUrl(photo.preview) || undefined} loading="lazy" className="w-full h-full object-cover transition-transform group-hover:scale-110" alt={`Foto Adicional ${index + 1}`} />
                       <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
                         <button 
                           onClick={() => setSelectedMedia({ type: 'image', url: photo.preview })}
@@ -280,7 +289,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                         >
                           <Eye size={18} />
                         </button>
-                        <a href={photo.preview} download className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform">
+                        <a href={getPublicUrl(photo.preview) || undefined} aria-disabled={!getPublicUrl(photo.preview)} onClick={event => { if (!getPublicUrl(photo.preview)) event.preventDefault(); }} download rel="noreferrer" className="w-10 h-10 bg-[#C5A059] rounded-xl flex items-center justify-center text-neutral-950 shadow-xl hover:scale-110 transition-transform">
                           <Download size={18} />
                         </a>
                       </div>
@@ -303,7 +312,7 @@ const InspectionDetailModal = ({ inspection, onClose, onCloseContract, rentals =
                        <div className="aspect-video bg-neutral-100 rounded-2xl overflow-hidden relative group">
                           {dmg.photo ? (
                             <>
-                              <img src={dmg.photo.preview} loading="lazy" className="w-full h-full object-cover" alt={`Avaria ${idx + 1}`} />
+                              <img src={getPublicUrl(dmg.photo.preview) || undefined} loading="lazy" className="w-full h-full object-cover" alt={`Avaria ${idx + 1}`} />
                               <button 
                                 onClick={() => setSelectedMedia({ type: 'image', url: dmg.photo.preview })}
                                 className="absolute inset-0 bg-neutral-950/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center text-white"
