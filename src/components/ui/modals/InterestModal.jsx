@@ -1,3 +1,4 @@
+import TurnstileChallenge from '../../auth/TurnstileChallenge';
 import React, { useState, useEffect } from 'react';
 import { X, Clock } from 'lucide-react';
 import { EditorialLabel } from '../EditorialLabel';
@@ -7,6 +8,7 @@ const ACTION = 'interest_form';
 
 const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInterestForm, onSubmit }) => {
   const [isBlocked, setIsBlocked] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [retryAfterSeconds, setRetryAfterSeconds] = useState(0);
 
   // Verifica bloqueio ao abrir o modal
@@ -44,8 +46,9 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    if (submitting) return;
 
     // ── Rate Limit: verificar antes de enviar ─────────────────────────────────
     const limitCheck = rateLimiter.check(ACTION);
@@ -57,7 +60,8 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
 
     // ── Registra a tentativa e delega ao handler pai ──────────────────────────
     rateLimiter.record(ACTION);
-    onSubmit(e);
+    setSubmitting(true);
+    try { await onSubmit(e); } finally { setSubmitting(false); }
   };
 
   if (!isOpen) return null;
@@ -101,11 +105,12 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
             </p>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
+              <div aria-hidden="true" style={{ display: 'none' }}><label>Website<input name="website" tabIndex={-1} autoComplete="off" value={interestForm.website || ''} onChange={event => setInterestForm({ ...interestForm, website: event.target.value })} /></label></div>
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Seu Nome</label>
                 <input
                   type="text"
-                  required
+                  required maxLength={160}
                   value={interestForm.name}
                   onChange={e => setInterestForm({...interestForm, name: e.target.value})}
                   className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
@@ -117,7 +122,7 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Seu Telefone / WhatsApp</label>
                 <input
                   type="text"
-                  required
+                  required maxLength={32}
                   value={interestForm.phone}
                   onChange={e => setInterestForm({...interestForm, phone: e.target.value})}
                   className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
@@ -129,7 +134,7 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Seu E-mail</label>
                 <input
                   type="email"
-                  required
+                  required maxLength={254}
                   value={interestForm.email}
                   onChange={e => setInterestForm({...interestForm, email: e.target.value})}
                   className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
@@ -140,6 +145,7 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black ml-1">Observação (Opcional)</label>
                 <textarea
+                  maxLength={1000}
                   value={interestForm.observation}
                   onChange={e => setInterestForm({...interestForm, observation: e.target.value})}
                   className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-light text-sm resize-none"
@@ -148,11 +154,13 @@ const InterestModal = ({ isOpen, onClose, selectedVehicle, interestForm, setInte
                 />
               </div>
 
+              <TurnstileChallenge resetKey={interestForm.captchaAttempt} onToken={token => setInterestForm(previous => ({ ...previous, captchaToken: token }))} />
               <button
+                disabled={submitting || (Boolean(import.meta.env.VITE_TURNSTILE_SITE_KEY) && !interestForm.captchaToken)}
                 type="submit"
                 className="w-full py-5 bg-neutral-900 text-white text-[10px] uppercase tracking-[0.3em] font-black rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl mt-4"
               >
-                Enviar Interesse
+                {submitting ? 'Enviando…' : 'Enviar Interesse'}
               </button>
             </form>
           </>
