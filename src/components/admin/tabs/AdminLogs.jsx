@@ -75,7 +75,7 @@ const AdminLogs = ({ logs = [], isDbConnected = false }) => {
               <span className="relative flex h-2 w-2">
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
               </span>
-              Modo Local
+              {isDbConnected === null ? 'Carregando registros' : 'Conexão indisponível'}
             </div>
           )}
         </div>

@@ -1,3 +1,4 @@
+import { loadDataResources, applyHydratedRows, canLoadDataset, enrichRentalReferencesWhenReady } from '../lib/loadDataResources';
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { parseDbError } from '../utils/errorHelper';
@@ -246,7 +247,7 @@ const mapToSnake = (obj, tableName) => {
   return newObj;
 };
 
-export const useAppState = () => {
+export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   const [view, setView] = useState('home');
   const [leads, setLeads] = useState([]);
   const [oilChanges, setOilChanges] = useState([]);
@@ -269,6 +270,10 @@ export const useAppState = () => {
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [dataLoading, setDataLoading] = useState(false);
+  const [dataLoadErrors, setDataLoadErrors] = useState({});
+  const [dataRefreshKey, setDataRefreshKey] = useState(0);
+  const retryDataLoad = () => setDataRefreshKey(previous => previous + 1);
   const [authLoading, setAuthLoading] = useState(true);
   const authRevision = useRef(0);
   useEffect(() => {
@@ -310,18 +315,10 @@ export const useAppState = () => {
   const [interestForm, setInterestForm] = useState({ name: '', phone: '', email: '', observation: '' });
 
   const [logs, setLogs] = useState([]);
-  const [isLogsDbConnected, setIsLogsDbConnected] = useState(false);
+  const [isLogsDbConnected, setIsLogsDbConnected] = useState(null);
 
-  const loadLogs = async (isActive = () => true) => {
-    const { data, error } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(500);
-    if (isActive()) { setLogs(error ? [] : mapToCamel(data || [], 'system_logs')); setIsLogsDbConnected(!error); }
-  };
   const [fines, setFines] = useState([]);
   const [isFinesDbConnected, setIsFinesDbConnected] = useState(false);
-  const loadFines = async (isActive = () => true) => {
-    const { data, error } = await supabase.from('system_fines').select('*').order('created_at', { ascending: false });
-    if (isActive()) { setFines(error ? [] : mapToCamel(data || [], 'fines')); setIsFinesDbConnected(!error); }
-  };
 
   // Carrega os usuários de acesso de forma independente e prioritária.
   // O login não deve depender do carregamento sequencial das demais tabelas.
@@ -343,8 +340,9 @@ export const useAppState = () => {
       return { success: true };
     } catch (err) {
       if (!isActive()) return;
-      console.error('Erro ao carregar usuários de acesso:', err);
-      setSystemUsers([]);
+      const code = String(err?.code || err?.status || 'NETWORK').slice(0, 30);
+      if (['42501', '401', '403', 'PGRST301', 'PGRST302'].includes(code)) setSystemUsers([]);
+      setDataLoadErrors(previous => ({ ...previous, system_users: { code } }));
       setSystemUsersError('Não foi possível carregar os usuários de acesso. Verifique sua conexão e tente novamente.');
       return { success: false, error: err };
     } finally {
@@ -387,184 +385,140 @@ export const useAppState = () => {
 
   };
 
-  // Load Data from Supabase
+  // Session changes clear private state. Refresh failures retain the last authorized snapshot.
+  const dataSessionKey = [currentUser?.authUserId, currentUser?.role, currentUser?.status, currentUser?.modules?.join(',')].join('|');
+  const lastDataSessionKey = useRef(null);
   useEffect(() => {
     let cancelled = false;
+    let refreshing = false;
+    let loadRevision = 0;
+    const controller = new AbortController();
     const isActive = () => !cancelled;
-    const privateSetters = [setLeads, setRentals, setInvestors, setTransactions, setMaintenances, setInspections, setServiceOrders, setAppointments, setQuotes, setInventory, setWorkshopFinancials, setSystemUsers, setClients, setReplacementContracts, setOilChanges, setNotices, setLogs, setFines];
-    privateSetters.forEach(setter => setter([]));
-    setVehicles([]);
+    const setters = {
+      vehicles: setVehicles, leads: setLeads, rentals: setRentals, investors: setInvestors,
+      transactions: setTransactions, maintenances: setMaintenances, inspections: setInspections,
+      service_orders: setServiceOrders, workshop_appointments: setAppointments, workshop_quotes: setQuotes,
+      workshop_inventory: setInventory, workshop_financials: setWorkshopFinancials, clients: setClients,
+      replacement_contracts: setReplacementContracts, oil_changes: setOilChanges, investor_notices: setNotices,
+      system_logs: setLogs, system_fines: setFines,
+    };
+    if (lastDataSessionKey.current !== dataSessionKey) {
+      Object.values(setters).forEach(setter => setter([]));
+      setSystemUsers([]); setIsLogsDbConnected(null); setIsFinesDbConnected(false);
+      lastDataSessionKey.current = dataSessionKey;
+    }
+    setDataLoadErrors({});
     if (!currentUser) {
-      setSystemUsersLoading(false);
-      supabase.rpc('get_public_fleet').then(async ({ data, error }) => {
-        data = await hydrateStorageReferences(data);
+      setDataLoading(false); setSystemUsersLoading(false);
+      supabase.rpc('get_public_fleet').then(({ data, error }) => {
         if (!cancelled && !error) setVehicles(mapToCamel(data || [], 'vehicles'));
       });
-      return () => { cancelled = true; };
+      return () => { cancelled = true; controller.abort(); };
     }
-    if (currentUser.role !== 'investidor') loadSystemUsers(isActive);
-
-    const loadData = async () => {
-      try {
-        // Primeiro carregamos os veículos para estarem disponíveis para enriquecer as locações
-        const { data: vData, error: vError } = await supabase.from('vehicles').select('*, investors(name)');
-        let allVehicles = [];
-        if (cancelled) return;
-        if (!vError && vData) {
-          allVehicles = mapToCamel(await hydrateStorageReferences(vData), 'vehicles');
-          if (cancelled) return;
-          setVehicles(allVehicles);
-        } else if (!cancelled) setVehicles([]);
-
-        const tables = [
-          { table: 'leads', setter: setLeads },
-          { table: 'rentals', setter: setRentals },
-          { table: 'investors', setter: setInvestors },
-          { table: 'transactions', setter: setTransactions },
-          { table: 'maintenances', setter: setMaintenances },
-          { table: 'inspections', setter: setInspections },
-          { table: 'service_orders', setter: setServiceOrders },
-          { table: 'workshop_appointments', setter: setAppointments },
-          { table: 'workshop_quotes', setter: setQuotes },
-          { table: 'workshop_inventory', setter: setInventory },
-          { table: 'workshop_financials', setter: setWorkshopFinancials },
-          { table: 'clients', setter: setClients },
-          { table: 'replacement_contracts', setter: setReplacementContracts },
-          { table: 'oil_changes', setter: setOilChanges },
-          { table: 'investor_notices', setter: setNotices }
-        ];
-
-        let loadedTransactions = [];
-
-        for (const item of tables) {
-          if (currentUser.role === 'investidor' && ['leads','clients','inspections','workshop_appointments','workshop_quotes','workshop_inventory','workshop_financials'].includes(item.table)) continue;
-          if (currentUser.role === 'investidor' && item.table === 'rentals') {
-            const { data, error } = await supabase.rpc('get_investor_rentals');
-            if (!cancelled && !error) setRentals(mapToCamel(data || [], 'rentals'));
-            continue;
-          }
-          // Pulamos veículos pois já carregamos acima
-          if (item.table === 'vehicles') continue;
-
-          // Paginação para contornar o limite padrão de 1000 linhas do Supabase
-          let allData = [];
-          let from = 0;
-          const pageSize = 1000;
-          while (true) {
-            let query = supabase.from(item.table).select(item.table === 'investors' ? INVESTOR_PROFILE_FIELDS : '*').range(from, from + pageSize - 1);
-            query = query
-              .order('created_at', { ascending: false })
-              .order('id', { ascending: false });
-            
-            const { data, error: fetchError } = await query;
-            if (cancelled) return;
-            if (fetchError || !data || data.length === 0) break;
-            allData = allData.concat(data);
-            if (data.length < pageSize) break;
-            from += pageSize;
-          }
-          
-          if (allData.length > 0) {
-            let mappedData = mapToCamel(await hydrateStorageReferences(allData), item.table);
-            if (cancelled) return;
-            
-            if (item.table === 'transactions') {
-              loadedTransactions = mappedData;
-            }
-            
-            if (item.table === 'rentals') {
-              const { data: cData } = await supabase.from('clients').select('*');
-              const currentClients = cData ? mapToCamel(await hydrateStorageReferences(cData), 'clients') : [];
-              if (cancelled) return;
-              if (!cancelled && cData) setClients(currentClients);
-
-              mappedData = mappedData.map(rental => {
-                const vehicle = allVehicles.find(v => v.id === rental.vehicleId);
-                let client = currentClients.find(c => 
-                   (rental.clientId && c.id === rental.clientId) || 
-                   (rental.idCliente && c.id === rental.idCliente)
-                 );
-                 if (!client && rental.cpf) {
-                   client = currentClients.find(c => c.cpf && rental.cpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, ''));
-                 }
-                 if (!client) {
-                   client = currentClients.find(c => (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase());
-                 }
-
-                const rentalDocs = rental.docs || {};
-                const clientDocs = client?.docs || {};
-
-                return {
-                  ...rental,
-                  image: vehicle?.image || rental.image,
-                  vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle || rental.modelo,
-                  plate: vehicle?.plate || rental.vehiclePlate || rental.plate || rental.placa,
-                  vehicleYear: vehicle?.year || rental.vehicleYear || '',
-                  vehicleRenavam: vehicle?.renavam || rental.vehicleRenavam || '',
-                  cpf: client?.cpf || rental.cpf,
-                  address: client?.address || rental.address || rentalDocs.address || clientDocs.address || '',
-                  rg: rentalDocs.rg || clientDocs.rg || rental.rg || '',
-                  nacionalidade: rentalDocs.nacionalidade || clientDocs.nacionalidade || rental.nacionalidade || 'brasileiro(a)',
-                  estadoCivil: rentalDocs.estadoCivil || clientDocs.estadoCivil || rental.estadoCivil || 'solteiro(a)',
-                  cep: rentalDocs.cep || clientDocs.cep || rental.cep || '',
-                  cidadeUf: rentalDocs.cidadeUf || clientDocs.cidadeUf || rental.cidadeUf || 'Aracaju/SE',
-                  cnh: client?.cnh || rental.cnh || rental.cnhNumber,
-                  paidInstallments: rental.paidInstallments || rentalDocs.paidInstallments || []
-                };
-              });
-              
-            }
-            
-            if (item.table === 'inspections') {
-              mappedData = mappedData.map(ins => {
-                let itemsObj = ins.items || {};
-                if (typeof itemsObj === 'string') {
-                  try { itemsObj = JSON.parse(itemsObj); } catch (e) { itemsObj = {}; }
-                }
-                return {
-                  ...ins,
-                  externalCleanliness: itemsObj.externalCleanliness || ins.externalCleanliness,
-                  internalCleanliness: itemsObj.internalCleanliness || ins.internalCleanliness,
-                  lastOilChangeDate: itemsObj.lastOilChangeDate || ins.lastOilChangeDate,
-                  lastOilChangeKm: itemsObj.lastOilChangeKm || ins.lastOilChangeKm,
-                  nextOilChangeKm: itemsObj.nextOilChangeKm || ins.nextOilChangeKm,
-                  inspectorName: itemsObj.inspectorName || itemsObj.inspector_name || ins.inspectorName || ins.inspector_name || 'Sistema',
-                };
-              });
-            }
-            
-            if (item.table === 'service_orders') {
-              mappedData = mappedData.map(os => {
-                let discountValue = os.discountValue;
-                if (!discountValue && os.items && typeof os.items === 'object') {
-                  discountValue = os.items.discountValue;
-                }
-                return {
-                  ...os,
-                  discountValue
-                };
-              });
-            }
-            
-            if (!cancelled) item.setter(mappedData);
-          } else if (!cancelled) item.setter([]);
-        }
-
-      } catch (err) {
-        console.error("Erro ao carregar dados:", err);
-      }
-      
-      // Carregar os logs do sistema
-      if (!cancelled && currentUser.role !== 'investidor') await loadLogs(isActive);
-      
-      // Carregar as multas do sistema
-      if (!cancelled && currentUser.role !== 'investidor') await loadFines(isActive);
+    const investor = currentUser.role === 'investidor';
+    const reportError = (table, error, attachment = false) => {
+      if (cancelled) return;
+      const code = String(error?.code || error?.status || 'NETWORK').slice(0, 30);
+      setDataLoadErrors(previous => ({ ...previous, [attachment ? table + ':attachments' : table]: { code, attachment } }));
+      if (!attachment && ['42501', '401', '403', 'PGRST301', 'PGRST302'].includes(code)) setters[table]?.([]);
+      if (table === 'system_logs') setIsLogsDbConnected(false);
+      if (table === 'system_fines') setIsFinesDbConnected(false);
     };
-
+    const fetchRows = async table => {
+      if (investor && table === 'rentals') {
+        const { data, error } = await supabase.rpc('get_investor_rentals').abortSignal(controller.signal);
+        if (error) throw error;
+        return data || [];
+      }
+      let rows = [];
+      const pageSize = table === 'system_logs' ? 500 : 1000;
+      for (let offset = 0; ; offset += pageSize) {
+        let query = supabase.from(table).select(table === 'investors' ? INVESTOR_PROFILE_FIELDS : table === 'vehicles' ? '*, investors(name)' : '*')
+          .order('created_at', { ascending: false }).order('id', { ascending: false })
+          .range(offset, offset + pageSize - 1).abortSignal(controller.signal);
+        const { data, error } = await query;
+        if (error) throw error;
+        if (cancelled) return [];
+        rows = rows.concat(data || []);
+        if (!data || data.length < pageSize || table === 'system_logs') return rows;
+      }
+    };
+    const projectRows = (table, rows) => {
+      let projected = mapToCamel(rows, table);
+      if (table === 'inspections') projected = projected.map(inspection => {
+        let items = inspection.items || {};
+        if (typeof items === 'string') { try { items = JSON.parse(items); } catch { items = {}; } }
+        return { ...inspection,
+          externalCleanliness: items.externalCleanliness || inspection.externalCleanliness,
+          internalCleanliness: items.internalCleanliness || inspection.internalCleanliness,
+          lastOilChangeDate: items.lastOilChangeDate || inspection.lastOilChangeDate,
+          lastOilChangeKm: items.lastOilChangeKm || inspection.lastOilChangeKm,
+          nextOilChangeKm: items.nextOilChangeKm || inspection.nextOilChangeKm,
+          inspectorName: items.inspectorName || items.inspector_name || inspection.inspectorName || inspection.inspector_name || 'Sistema',
+        };
+      });
+      if (table === 'service_orders') projected = projected.map(order => ({ ...order, discountValue: order.discountValue || order.items?.discountValue }));
+      return projected;
+    };
+    const enrichRentals = (rows, vehicleRows, clientRows) => rows.map(rental => {
+      const vehicle = vehicleRows.find(item => item.id === rental.vehicleId);
+      const client = clientRows.find(item => item.id === rental.clientId || item.id === rental.idCliente) ||
+        clientRows.find(item => rental.cpf && item.cpf && String(rental.cpf).replace(/\D/g, '') === String(item.cpf).replace(/\D/g, '')) ||
+        clientRows.find(item => (item.nome || item.name || '').toLowerCase() === (rental.user || '').toLowerCase());
+      const docs = rental.docs || {}, clientDocs = client?.docs || {};
+      return { ...rental, image: vehicle?.image || rental.image, vehicle: vehicle?.model || rental.vehicleModel || rental.vehicle || rental.modelo,
+        plate: vehicle?.plate || rental.vehiclePlate || rental.plate || rental.placa, vehicleYear: vehicle?.year || rental.vehicleYear || '',
+        vehicleRenavam: vehicle?.renavam || rental.vehicleRenavam || '', cpf: client?.cpf || rental.cpf,
+        address: client?.address || rental.address || docs.address || clientDocs.address || '',
+        rg: docs.rg || clientDocs.rg || rental.rg || '', nacionalidade: docs.nacionalidade || clientDocs.nacionalidade || rental.nacionalidade || 'brasileiro(a)',
+        estadoCivil: docs.estadoCivil || clientDocs.estadoCivil || rental.estadoCivil || 'solteiro(a)', cep: docs.cep || clientDocs.cep || rental.cep || '',
+        cidadeUf: docs.cidadeUf || clientDocs.cidadeUf || rental.cidadeUf || 'Aracaju/SE', cnh: client?.cnh || rental.cnh || rental.cnhNumber,
+        paidInstallments: rental.paidInstallments || docs.paidInstallments || [],
+      };
+    });
+    const loadData = async () => {
+      if (refreshing || cancelled) return;
+      refreshing = true;
+      const revision = ++loadRevision;
+      const isCurrentLoad = () => !cancelled && revision === loadRevision;
+      setDataLoading(true); setDataLoadErrors({});
+      if (currentUser.role === 'administrador') loadSystemUsers(isCurrentLoad);
+      else setSystemUsersLoading(false);
+      const snapshots = {};
+      // Do not place logs/notices/O.S. behind tens of thousands of attachment signatures.
+      const tables = ['system_logs','investor_notices','service_orders','inspections','vehicles','clients','rentals','leads','investors','transactions','maintenances','workshop_appointments','workshop_quotes','workshop_inventory','workshop_financials','replacement_contracts','oil_changes','system_fines']
+        .filter(table => canLoadDataset(currentUser, table, { includeWorkshopFinancials }));
+      const updateRentalReferences = table => {
+        if (!investor && ['vehicles','clients','rentals'].includes(table)) setRentals(previous => enrichRentalReferencesWhenReady(previous, snapshots, enrichRentals));
+      };
+      try {
+        const result = await loadDataResources(tables.map(table => ({ key: table, load: () => fetchRows(table), project: rows => projectRows(table, rows), hydrate: !['system_logs','system_fines','investor_notices','inspections'].includes(table) })), {
+          isActive: isCurrentLoad, hydrate: hydrateStorageReferences,
+          onData: (table, rows) => {
+            snapshots[table] = rows;
+            setters[table](rows);
+            if (table === 'system_logs') setIsLogsDbConnected(true);
+            if (table === 'system_fines') setIsFinesDbConnected(true);
+            updateRentalReferences(table);
+          },
+          onHydrated: (table, original, hydrated) => {
+            snapshots[table] = hydrated;
+            setters[table](previous => applyHydratedRows(previous, original, hydrated));
+          },
+          onError: reportError,
+          onAttachmentError: (table, error) => reportError(table, error, true),
+        });
+        // Signing continues independently. Its failure cannot erase metadata or block other tables.
+        result.hydration.catch(error => { if (isCurrentLoad()) reportError('attachments', error, true); });
+      } finally {
+        refreshing = false;
+        if (isCurrentLoad()) setDataLoading(false);
+      }
+    };
     loadData();
     const refreshTimer = setInterval(loadData, 10 * 60 * 1000);
-    return () => { cancelled = true; clearInterval(refreshTimer); };
-  }, [currentUser?.authUserId, currentUser?.role, currentUser?.status, currentUser?.modules?.join(',')]);
+    return () => { cancelled = true; controller.abort(); clearInterval(refreshTimer); };
+  }, [dataSessionKey, dataRefreshKey, includeWorkshopFinancials]);
 
   const accountAction = async (kind, action, profile, password) => {
     try {
@@ -3285,7 +3239,7 @@ export const useAppState = () => {
     inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices,
     systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     fines, isFinesDbConnected,
-    currentUser, setCurrentUser, authLoading, logout, selectedImage, setSelectedImage, logs, isLogsDbConnected,
+    currentUser, setCurrentUser, authLoading, logout, dataLoading, dataLoadErrors, retryDataLoad, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     globalAlert, setGlobalAlert,
     selectedVehicleForInterest, setSelectedVehicleForInterest,

@@ -1,3 +1,4 @@
+import DataLoadStatus from './components/ui/DataLoadStatus';
 import React from 'react';
 import { changeOwnPassword } from './lib/auth';
 
@@ -28,7 +29,7 @@ const Application = ({ isOficinaDomain = false }) => {
     leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     quotes, appointments, inventory, workshopFinancials,
-    currentUser, setCurrentUser, authLoading, logout, selectedImage, setSelectedImage, logs, isLogsDbConnected,
+    currentUser, setCurrentUser, authLoading, logout, dataLoading, dataLoadErrors, retryDataLoad, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     fines, isFinesDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     globalAlert, setGlobalAlert,
@@ -51,13 +52,14 @@ const Application = ({ isOficinaDomain = false }) => {
     handleAddWorkshopFinancial, handleUpdateWorkshopFinancial, handleDeleteWorkshopFinancial,
     oilChanges, handleAddOilChange, handleUpdateOilChange, handleDeleteOilChange,
     notices, handleAddNotice, handleDeleteNotice, handleMarkNoticeRead
-  } = useAppState();
+  } = useAppState({ includeWorkshopFinancials: isOficinaDomain });
 
 
 
 
 
   if (authLoading) return <div role="status" className="min-h-screen grid place-items-center">Validando sessão…</div>;
+  const dataLoadNotice = currentUser && <DataLoadStatus loading={dataLoading} errors={dataLoadErrors} onRetry={retryDataLoad} />;
   const isOficinaAuthenticated = currentUser && (currentUser.role === 'administrador' || currentUser.modules?.includes('oficina'));
 
   // Oficina View (Domain Based)
@@ -76,6 +78,7 @@ const Application = ({ isOficinaDomain = false }) => {
     
     return (
       <>
+        {dataLoadNotice}
         <GlobalAlertModal 
           isOpen={globalAlert.isOpen}
           title={globalAlert.title}
@@ -125,6 +128,7 @@ const Application = ({ isOficinaDomain = false }) => {
   if (view === 'admin' && currentUser && ['administrador', 'gerente', 'funcionario'].includes(currentUser.role)) {
     return (
       <>
+        {dataLoadNotice}
         <GlobalAlertModal 
           isOpen={globalAlert.isOpen}
           title={globalAlert.title}
@@ -205,6 +209,7 @@ const Application = ({ isOficinaDomain = false }) => {
   if (view === 'investor' && currentUser?.role === 'investidor') {
     return (
       <>
+        {dataLoadNotice}
         <GlobalAlertModal 
           isOpen={globalAlert.isOpen}
           title={globalAlert.title}
@@ -257,6 +262,7 @@ const Application = ({ isOficinaDomain = false }) => {
 
   return (
     <div className="min-h-screen bg-white font-sans overflow-x-hidden">
+      {dataLoadNotice}
       <GlobalAlertModal 
         isOpen={globalAlert.isOpen}
         title={globalAlert.title}
