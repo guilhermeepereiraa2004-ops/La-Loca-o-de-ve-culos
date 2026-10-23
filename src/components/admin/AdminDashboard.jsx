@@ -527,6 +527,7 @@ const AdminDashboard = ({
           )}
           {activeTab === 'vistoria' && canAccess('vistoria') && (
             <AdminVistoria 
+              draftOwnerId={currentUser?.authUserId}
               inspections={inspections} vehicles={vehicles} rentals={rentals} 
               onAddInspection={async (ins) => {
                 const result = await onAddInspection(ins);

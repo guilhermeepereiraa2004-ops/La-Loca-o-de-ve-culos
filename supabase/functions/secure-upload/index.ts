@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { MAX_UPLOAD_BYTES, validateUploadBytes } from '../_shared/fileValidation.js';
+import { requireVerifiedMfa } from '../_shared/requireMfa.js';
 
 const folderModules: Record<string, string[]> = {
   condutores: ['clientes', 'locacao'], veiculos: ['frota', 'investidores'],
@@ -23,9 +24,15 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get('SUPABASE_URL'), key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!url || !key) return reply(503, 'Upload temporariamente indisponível.');
   const admin = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-  const { data: auth, error: authError } = await admin.auth.getUser(authorization.slice(7));
-  if (authError || !auth.user) return reply(401, 'Sessão inválida.');
-  const { data: profile, error: profileError } = await admin.from('system_users').select('role, modules').eq('auth_user_id', auth.user.id).maybeSingle();
+  let user;
+  try { ({ user } = await requireVerifiedMfa(admin, authorization.slice(7))); }
+  catch (error) {
+    if (error instanceof Error && 'code' in error && error.code === 'MFA_REQUIRED') {
+      return new Response(JSON.stringify({ error: 'Confirme o autenticador para continuar.', code: 'MFA_REQUIRED' }), { status: 403, headers });
+    }
+    return reply(401, 'Sessão inválida.');
+  }
+  const { data: profile, error: profileError } = await admin.from('system_users').select('role, modules').eq('auth_user_id', user.id).maybeSingle();
   if (profileError || !profile) return reply(403, 'Acesso não autorizado.');
   const folder = req.headers.get('x-upload-folder') || '';
   if (folder.length > 200 || !/^[a-zA-Z0-9_-]+(?:\/[a-zA-Z0-9_-]+)*$/.test(folder)) return reply(400, 'Pasta inválida.');
@@ -34,7 +41,7 @@ Deno.serve(async (req: Request) => {
   const allowedModules = isPublic ? ['frota'] : folderModules[folder.split('/')[0]];
   if (!allowedModules || !(profile.role === 'administrador' || (['funcionario', 'gerente'].includes(profile.role) && Array.isArray(profile.modules) && allowedModules.some(m => profile.modules.includes(m))))) return reply(403, 'Acesso não autorizado.');
   // An atomic database counter is shared by every function instance.
-  const { data: allowed, error: rateError } = await admin.rpc('consume_security_rate_limit', { p_key: `upload:${auth.user.id}`, p_limit: 150, p_window_seconds: 300 });
+  const { data: allowed, error: rateError } = await admin.rpc('consume_security_rate_limit', { p_key: `upload:${user.id}`, p_limit: 150, p_window_seconds: 300 });
   if (rateError) return reply(503, 'Upload temporariamente indisponível.');
   if (!allowed) return new Response(JSON.stringify({ error: 'Limite de uploads atingido.' }), { status: 429, headers: { ...headers, 'Retry-After': '300' } });
   const maximumBytes = isPublic ? 5 * 1024 * 1024 : MAX_UPLOAD_BYTES;

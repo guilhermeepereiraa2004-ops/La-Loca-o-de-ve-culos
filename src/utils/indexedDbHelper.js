@@ -1,137 +1,69 @@
 const DB_NAME = 'InspectionDraftsDB';
 const DB_VERSION = 1;
 const STORE_NAME = 'drafts';
-const DRAFT_KEY = 'current_inspection_draft';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const keyFor = ownerId => typeof ownerId === 'string' && UUID.test(ownerId) ? 'inspection:v2:' + ownerId : null;
+const text = (value, max = 1000) => typeof value === 'string' ? value.slice(0, max) : typeof value === 'number' && Number.isFinite(value) ? value : '';
 
-export const openDb = () => {
+export function normalizeDraftReference(value, projectUrl = import.meta.env?.VITE_SUPABASE_URL) {
+  if (typeof value !== 'string') return null;
+  if (/^storage:\/\/(?:La-locacao|vehicle-public-images)\/[^?#]+$/.test(value)) return value;
+  try {
+    const url = new URL(value);
+    if (!projectUrl || url.origin !== new URL(projectUrl).origin) return null;
+    const match = url.pathname.match(/^\/storage\/v1\/object\/(?:sign|public|authenticated)\/(La-locacao|vehicle-public-images)\/(.+)$/);
+    return match ? 'storage://' + match[1] + '/' + decodeURIComponent(match[2]) : null;
+  } catch { return null; }
+}
+
+export function sanitizeInspectionDraft(draft, projectUrl) {
+  const value = draft && typeof draft === 'object' ? draft : {};
+  const photo = candidate => { const preview = normalizeDraftReference(candidate?.preview, projectUrl); return preview ? { preview } : null; };
+  const output = {};
+  for (const field of ['type','vehiclePlate','date','time','km','fuelLevel','tireCondition','externalCleanliness','internalCleanliness','lastOilChangeDate','lastOilChangeKm','nextOilChangeKm']) output[field] = text(value[field]);
+  output.observations = text(value.observations, 10000);
+  output.hasDamages = value.hasDamages === true;
+  output.photos = Object.fromEntries(Object.entries(value.photos || {}).slice(0, 200).map(([slot, item]) => [slot, photo(item)]).filter(([, item]) => item));
+  output.additionalPhotos = (Array.isArray(value.additionalPhotos) ? value.additionalPhotos : []).slice(0, 200).filter(item => !item?.uploading).map(item => ({ id: text(item?.id), ...photo(item) })).filter(item => item.preview);
+  output.damages = (Array.isArray(value.damages) ? value.damages : []).slice(0, 100).map(item => ({ id: text(item?.id), description: text(item?.description, 4000), photo: photo(item?.photo) }));
+  output.deductions = (Array.isArray(value.deductions) ? value.deductions : []).slice(0, 100).map(item => ({ category: text(item?.category), description: text(item?.description, 4000), value: text(item?.value), isProportional: item?.isProportional === true }));
+  output.video = photo(value.video);
+  return output;
+}
+
+export const openDb = () => new Promise((resolve, reject) => {
+  const request = indexedDB.open(DB_NAME, DB_VERSION);
+  request.onupgradeneeded = event => { const db = event.target.result; if (!db.objectStoreNames.contains(STORE_NAME)) db.createObjectStore(STORE_NAME); };
+  request.onsuccess = event => { const db = event.target.result; db.onversionchange = () => db.close(); resolve(db); };
+  request.onerror = request.onblocked = () => reject(new Error('Não foi possível acessar o rascunho neste navegador.'));
+});
+
+async function transaction(mode, operation) {
+  const db = await openDb();
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-    request.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORE_NAME)) {
-        db.createObjectStore(STORE_NAME);
-      }
-    };
-    request.onsuccess = (e) => {
-      const db = e.target.result;
-      db.onversionchange = () => db.close();
-      resolve(db);
-    };
-    request.onerror = (e) => reject(e.target.error);
+    let result;
+    const tx = db.transaction(STORE_NAME, mode);
+    tx.oncomplete = () => { db.close(); resolve(result); };
+    tx.onabort = tx.onerror = () => { db.close(); reject(new Error('Não foi possível concluir a gravação do rascunho.')); };
+    try { const request = operation(tx.objectStore(STORE_NAME)); request.onsuccess = () => { result = request.result; }; }
+    catch { tx.abort(); }
   });
-};
+}
 
-export const saveDraft = async (draftData) => {
-  try {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.oncomplete = tx.onabort = tx.onerror = () => db.close();
-      const store = tx.objectStore(STORE_NAME);
-
-      // Save text metadata + photo URLs (never binary File/Blob objects).
-      // Photos are now Supabase URLs (strings) thanks to progressive upload,
-      // so we can safely persist them without any memory cost.
-      const textOnlyDraft = {
-        type: draftData.type,
-        vehiclePlate: draftData.vehiclePlate,
-        date: draftData.date,
-        time: draftData.time,
-        km: draftData.km,
-        fuelLevel: draftData.fuelLevel,
-        tireCondition: draftData.tireCondition,
-        externalCleanliness: draftData.externalCleanliness,
-        internalCleanliness: draftData.internalCleanliness,
-        lastOilChangeDate: draftData.lastOilChangeDate,
-        lastOilChangeKm: draftData.lastOilChangeKm,
-        nextOilChangeKm: draftData.nextOilChangeKm,
-        observations: draftData.observations,
-        hasDamages: draftData.hasDamages,
-        // Damages: save description and URL (no binaries)
-        damages: (draftData.damages || []).map(d => ({
-          id: d.id,
-          description: d.description,
-          // Only persist photo if it's a URL (not a blob:// or binary)
-          photo: d.photo?.preview && !d.photo.preview.startsWith('blob:')
-            ? { preview: d.photo.preview }
-            : null
-        })),
-        // Deductions: text/numbers only — safe to store as-is
-        deductions: draftData.deductions || [],
-        // Photos: only save URLs (slots uploaded to Supabase), ignore blob: URLs
-        photos: Object.fromEntries(
-          Object.entries(draftData.photos || {})
-            .filter(([, v]) => v?.preview && !v.preview.startsWith('blob:'))
-            .map(([k, v]) => [k, { preview: v.preview }])
-        ),
-        // Additional photos: only save confirmed Supabase URLs
-        additionalPhotos: (draftData.additionalPhotos || [])
-          .filter(p => p.preview && !p.preview.startsWith('blob:') && !p.uploading)
-          .map(p => ({ id: p.id, preview: p.preview })),
-        video: null,
-      };
-
-      const request = store.put(textOnlyDraft, DRAFT_KEY);
-      request.onsuccess = () => resolve(true);
-      request.onerror = (e) => reject(e.target.error);
-    });
-  } catch (err) {
-    console.error("IndexedDB Save Draft Error:", err);
-  }
-};
-
-
-
-export const getDraft = async () => {
-  try {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readonly');
-      tx.oncomplete = tx.onabort = tx.onerror = () => db.close();
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.get(DRAFT_KEY);
-      request.onsuccess = (e) => {
-        const draft = e.target.result;
-        if (!draft) {
-          resolve(null);
-          return;
-        }
-        // Photos are stored as Supabase URLs — return them as-is.
-        // Ensure defaults for fields that might be missing in older drafts.
-        if (!draft.photos) draft.photos = {};
-        if (!draft.additionalPhotos) draft.additionalPhotos = [];
-        if (!draft.video) draft.video = null;
-        // Damages: ensure photo objects have no leftover binary files
-        if (draft.damages) {
-          draft.damages = draft.damages.map(d => ({
-            ...d,
-            // Keep photo URL if present, otherwise null
-            photo: d.photo?.preview ? { preview: d.photo.preview } : null
-          }));
-        }
-        resolve(draft);
-      };
-      request.onerror = (e) => reject(e.target.error);
-    });
-  } catch (err) {
-    console.error("IndexedDB Get Draft Error:", err);
-    return null;
-  }
-};
-
-
-export const clearDraft = async () => {
-  try {
-    const db = await openDb();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.oncomplete = tx.onabort = tx.onerror = () => db.close();
-      const store = tx.objectStore(STORE_NAME);
-      const request = store.delete(DRAFT_KEY);
-      request.onsuccess = () => resolve(true);
-      request.onerror = (e) => reject(e.target.error);
-    });
-  } catch (err) {
-    console.error("IndexedDB Clear Draft Error:", err);
-  }
-};
+// The authenticated UI passes the verified Auth user ID. Never read or delete
+// legacy unowned keys or another owner's draft; those remain untouched on disk.
+export async function saveDraft(draft, ownerId) {
+  const key = keyFor(ownerId); if (!key) return false;
+  await transaction('readwrite', store => store.put({ schema: 2, ownerId, updatedAt: Date.now(), data: sanitizeInspectionDraft(draft) }, key));
+  return true;
+}
+export async function getDraft(ownerId) {
+  const key = keyFor(ownerId); if (!key) return null;
+  const saved = await transaction('readonly', store => store.get(key));
+  return saved?.schema === 2 && saved.ownerId === ownerId ? sanitizeInspectionDraft(saved.data) : null;
+}
+export async function clearDraft(ownerId) {
+  const key = keyFor(ownerId); if (!key) return false;
+  await transaction('readwrite', store => store.delete(key));
+  return true;
+}

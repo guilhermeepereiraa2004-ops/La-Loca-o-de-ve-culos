@@ -4,7 +4,10 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  build: { sourcemap: false },
+  build: {
+    sourcemap: false,
+    rolldownOptions: { output: { minify: { compress: { dropConsole: true, dropDebugger: true } } } },
+  },
   server: {
     host: '127.0.0.1',
     fs: {

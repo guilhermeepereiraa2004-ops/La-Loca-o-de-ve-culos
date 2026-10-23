@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Camera, Plus, ClipboardCheck, Trash2, Fuel, Gauge, Check, AlertTriangle, X, Loader2, ShieldCheck } from 'lucide-react';
 import { compressImage } from '../../../../utils/imageCompression';
-import { uploadFile } from '../../../../utils/supabaseStorage';
+import { uploadFile, hydrateStorageReferences } from '../../../../utils/supabaseStorage';
 import { saveDraft, getDraft, clearDraft } from '../../../../utils/indexedDbHelper';
 
 const INITIAL_FORM = {
@@ -26,13 +26,16 @@ const INITIAL_FORM = {
   deductions: []
 };
 
-const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose, pendingInspection, onClearPendingInspection }) => {
+const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose, pendingInspection, onClearPendingInspection, draftOwnerId }) => {
   const [isCompressing, setIsCompressing] = useState(false);
   const [uploadingSlots, setUploadingSlots] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
 
   const [savedDraft, setSavedDraft] = useState(null);
+  const [draftError, setDraftError] = useState('');
+  const [restoringDraft, setRestoringDraft] = useState(false);
+  const [draftChecked, setDraftChecked] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
 
   const [inspectionForm, setInspectionForm] = useState({ ...INITIAL_FORM });
@@ -82,48 +85,59 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
 
   // Check for saved draft on mount
   useEffect(() => {
+    let active = true;
+    setDraftChecked(false);
+    setSavedDraft(null);
+    setShowDraftPrompt(false);
     const checkDraft = async () => {
       try {
-        const draft = await getDraft();
-        if (draft) {
+        const draft = await getDraft(draftOwnerId);
+        if (active && draft) {
           setSavedDraft(draft);
           setShowDraftPrompt(true);
         }
       } catch (err) {
-        console.error("Erro ao verificar rascunho:", err);
+        if (active) setDraftError('O rascunho não pôde ser recuperado neste navegador.');
       }
+      finally { if (active) setDraftChecked(true); }
     };
     checkDraft();
-  }, []);
+    return () => { active = false; };
+  }, [draftOwnerId]);
 
   // Autosave draft on form changes — 3s debounce via ref (no re-renders)
   useEffect(() => {
-    if (!showDraftPrompt) {
+    if (draftChecked && !showDraftPrompt) {
       if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
       autosaveTimer.current = setTimeout(async () => {
         try {
-          await saveDraft(inspectionForm);
+          await saveDraft(inspectionForm, draftOwnerId);
+          setDraftError('');
         } catch (err) {
-          console.error("Erro ao salvar rascunho:", err);
+          setDraftError('O rascunho não foi salvo. Mantenha esta tela aberta e conclua a vistoria antes de sair.');
         }
       }, 3000);
       return () => {
         if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
       };
     }
-  }, [inspectionForm, showDraftPrompt]);
+  }, [inspectionForm, showDraftPrompt, draftOwnerId, draftChecked]);
 
-  const handleRestoreDraft = () => {
-    if (savedDraft) {
-      setInspectionForm(savedDraft);
+  const handleRestoreDraft = async () => {
+    if (!savedDraft || restoringDraft) return;
+    setRestoringDraft(true);
+    try {
+      const restored = await hydrateStorageReferences(savedDraft);
+      setInspectionForm(restored);
       setShowDraftPrompt(false);
       setSavedDraft(null);
-    }
+    } catch { setDraftError('Não foi possível restaurar agora. O rascunho foi preservado.'); }
+    finally { setRestoringDraft(false); }
   };
 
   const handleDiscardDraft = async () => {
     try {
-      await clearDraft();
+      await clearDraft(draftOwnerId);
     } catch (err) {
       console.error("Erro ao limpar rascunho:", err);
     }
@@ -162,7 +176,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
       }
       
       try {
-        await clearDraft();
+        await clearDraft(draftOwnerId);
       } catch (clearErr) {
         console.error("Erro ao limpar rascunho após envio:", clearErr);
       }
@@ -275,6 +289,7 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
 
   return (
     <>
+      {draftError && <p role="alert" className="p-4 text-sm text-red-700 bg-red-50">{draftError}</p>}
       <div className="bg-white rounded-[1.5rem] md:rounded-[3rem] p-4 sm:p-6 md:p-12 border border-neutral-100 shadow-xl max-w-5xl mx-auto">
         <div className="flex justify-between items-center mb-6 md:mb-12">
           <div className="flex items-center gap-3 md:gap-4">
@@ -1050,9 +1065,10 @@ const InspectionForm = ({ vehicles = [], rentals = [], onAddInspection, onClose,
             <div className="space-y-3">
               <button 
                 onClick={handleRestoreDraft}
+                disabled={restoringDraft}
                 className="w-full py-4 bg-neutral-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-[#C5A059] transition-all shadow-lg flex items-center justify-center gap-2 font-bold"
               >
-                Restaurar Rascunho
+                {restoringDraft ? 'Restaurando…' : 'Restaurar Rascunho'}
               </button>
               <button 
                 onClick={handleDiscardDraft}

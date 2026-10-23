@@ -7,6 +7,7 @@ import { webcrypto } from 'node:crypto';
 import { deflateRawSync } from 'node:zlib';
 import { Document, Packer, Paragraph } from 'docx';
 import { MAX_UPLOAD_BYTES, validateUploadBytes } from '../supabase/functions/_shared/fileValidation.js';
+import { requireVerifiedMfa } from '../supabase/functions/_shared/requireMfa.js';
 
 const DOCX = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 const PNG = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wl6K6kAAAAASUVORK5CYII=', 'base64'));
@@ -146,15 +147,18 @@ test('rejeita macro com relação compactada e entidade numérica, DTD e XML exc
 });
 
 function edgeHarness(overrides = {}) {
-  const writes = [], rateCalls = [];
+  const writes = [], rateCalls = [], profileCalls = [], authCalls = [];
   const state = {
     user: { id: 'user-123' }, profile: { role: 'funcionario', modules: ['frota'] },
-    authError: null, profileError: null, rateError: null, allowed: true,
+    authError: null, claimsError: null, claims: { sub: 'user-123', aal: 'aal1' }, profileError: null, rateError: null, allowed: true,
     ...overrides,
   };
   const client = {
-    auth: { getUser: async () => ({ data: { user: state.user }, error: state.authError }) },
-    from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.profile, error: state.profileError }) }) }) }),
+    auth: {
+      getUser: async token => { authCalls.push(['getUser', token]); return { data: { user: state.user }, error: state.authError }; },
+      getClaims: async token => { authCalls.push(['getClaims', token]); return { data: { claims: state.claims }, error: state.claimsError }; },
+    },
+    from: name => { profileCalls.push(name); return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: state.profile, error: state.profileError }) }) }) }; },
     rpc: async (_name, args) => { rateCalls.push(args); return { data: state.allowed, error: state.rateError }; },
     storage: { from: bucket => ({ upload: async (path, bytes, options) => { writes.push({ bucket, path, bytes, options }); return { error: null }; } }) },
   };
@@ -162,16 +166,42 @@ function edgeHarness(overrides = {}) {
   const source = fs.readFileSync(new URL('../supabase/functions/secure-upload/index.ts', import.meta.url), 'utf8').replace(/^import[^;]+;\s*/gm, '');
   vm.runInNewContext(stripTypeScriptTypes(source), {
     Deno: { serve(callback) { handler = callback; }, env: { get(name) { return name === 'SUPABASE_URL' ? 'https://test-project.invalid' : 'server-test-key'; } } },
-    createClient: () => client, MAX_UPLOAD_BYTES, validateUploadBytes,
-    Request, Response, Headers, Uint8Array, crypto: webcrypto,
+    createClient: () => client, MAX_UPLOAD_BYTES, validateUploadBytes, requireVerifiedMfa,
+    Request, Response, Headers, Uint8Array, Error, crypto: webcrypto,
   });
   const request = (headers = {}, body = PNG, method = 'POST') => handler(new Request('https://test-project.invalid/secure-upload', {
     method,
     headers: { authorization: 'Bearer test-access-token', 'content-type': 'image/png', 'x-upload-folder': 'veiculos', 'x-upload-name': 'foto.png', ...headers },
     ...(body === null || ['GET', 'HEAD', 'OPTIONS'].includes(method) ? {} : { body }),
   }));
-  return { request, writes, rateCalls };
+  return { request, writes, rateCalls, profileCalls, authCalls };
 }
+
+test('Edge: MFA confirmado exige AAL2 assinado antes de perfil, contador e armazenamento', async () => {
+  const verifiedUser = { id: 'user-123', factors: [{ id: 'factor-test', status: 'verified' }] };
+  for (const [overrides, expectedStatus] of [
+    [{ user: verifiedUser }, 403],
+    [{ user: verifiedUser, claims: { sub: 'another-user', aal: 'aal2' } }, 401],
+    [{ user: verifiedUser, claimsError: new Error('invalid signature') }, 401],
+    [{ user: { id: 'user-123', is_anonymous: true } }, 401],
+  ]) {
+    const harness = edgeHarness(overrides);
+    const response = await harness.request({ 'x-mfa-aal': 'aal2' });
+    assert.equal(response.status, expectedStatus);
+    assert.equal(harness.profileCalls.length, 0);
+    assert.equal(harness.rateCalls.length, 0);
+    assert.equal(harness.writes.length, 0);
+  }
+  for (const overrides of [
+    { user: verifiedUser, claims: { sub: 'user-123', aal: 'aal2' } },
+    { user: { id: 'user-123', factors: [{ status: 'unverified' }] } },
+  ]) {
+    const harness = edgeHarness(overrides);
+    assert.equal((await harness.request()).status, 201);
+    assert.equal(harness.writes.length, 1);
+    assert.deepEqual(harness.authCalls, [['getUser', 'test-access-token'], ['getClaims', 'test-access-token']]);
+  }
+});
 
 test('Edge: nega visitante, sessão inválida e usuário sem módulo', async () => {
   for (const [overrides, headers, status] of [

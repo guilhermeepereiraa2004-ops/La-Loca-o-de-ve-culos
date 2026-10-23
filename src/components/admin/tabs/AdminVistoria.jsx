@@ -7,7 +7,7 @@ import { getDraft } from '../../../utils/indexedDbHelper';
 // Lazy-load the heavy form component — only downloaded when user clicks "Nova Vistoria"
 const InspectionForm = React.lazy(() => import('./vistoria/InspectionForm'));
 
-const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection }) => {
+const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddInspection, onDeleteInspection, onViewDetail, pendingInspection, onClearPendingInspection, draftOwnerId }) => {
   const [showForm, setShowForm] = useState(false);
 
   // Auto-open form if there's a pending inspection
@@ -20,13 +20,13 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
   // Auto-open form if there's a draft pending (e.g. after camera OS reload)
   React.useEffect(() => {
     if (!pendingInspection) {
-      getDraft().then(draft => {
+      getDraft(draftOwnerId).then(draft => {
         if (draft) {
           setShowForm(true);
         }
       }).catch(() => {});
     }
-  }, []);
+  }, [draftOwnerId]);
 
   // Scroll to top when returning to the list view
   React.useEffect(() => {
@@ -54,6 +54,7 @@ const AdminVistoria = ({ inspections = [], vehicles = [], rentals = [], onAddIns
           </div>
         }>
           <InspectionForm
+            draftOwnerId={draftOwnerId}
             vehicles={vehicles}
             rentals={rentals}
             onAddInspection={onAddInspection}

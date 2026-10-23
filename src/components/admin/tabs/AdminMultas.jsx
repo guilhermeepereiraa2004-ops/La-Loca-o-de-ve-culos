@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   ShieldAlert, 
   Search, 
@@ -28,7 +28,7 @@ import {
 import { createPortal } from 'react-dom';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { parseCurrency } from '../../../utils/currencyUtils';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+import { extractDocumentText } from '../../../utils/documentOcr';
 
 const AdminMultas = ({
   fines = [],
@@ -40,6 +40,9 @@ const AdminMultas = ({
   vehicles = [],
   clients = []
 }) => {
+  const ocrAbortRef = useRef(null);
+  useEffect(() => () => ocrAbortRef.current?.abort(), []);
+
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -182,26 +185,6 @@ const AdminMultas = ({
       return matchesSearch && matchesStatus && matchesDriver && matchesVehicle;
     });
   }, [fines, debouncedSearch, statusFilter, driverFilter, vehicleFilter]);
-
-  const loadPdfJs = async () => {
-    const pdfjs = await import('pdfjs-dist');
-    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
-    return pdfjs;
-  };
-
-  const loadTesseract = () => {
-    return new Promise((resolve, reject) => {
-      if (window.Tesseract) {
-        resolve(window.Tesseract);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://unpkg.com/tesseract.js@v5.0.5/dist/tesseract.min.js';
-      script.onload = () => resolve(window.Tesseract);
-      script.onerror = (err) => reject(err);
-      document.body.appendChild(script);
-    });
-  };
 
   const parseOcrText = (text) => {
     const result = {
@@ -755,146 +738,24 @@ const AdminMultas = ({
   };
 
   const handleOcrFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+    const input = e.target;
+    const file = input.files?.[0];
+    if (!file || ocrLoading) return;
+    const controller = new AbortController();
+    ocrAbortRef.current = controller;
     setOcrLoading(true);
     setOcrStatus('Carregando arquivo...');
-
     try {
-      let text = '';
-      const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-
-      if (isPdf) {
-        setOcrStatus('Carregando leitor de PDF...');
-        const pdfjsLib = await loadPdfJs();
-        
-        setOcrStatus('Lendo arquivo PDF...');
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
-        
-        let extractedText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          
-          let lastY = null;
-          let pageText = '';
-          for (const item of textContent.items) {
-            if (lastY !== null && Math.abs(item.transform[5] - lastY) > 5) {
-              pageText += '\n';
-            } else if (item.hasEOL) {
-              pageText += '\n';
-            } else if (pageText && !pageText.endsWith('\n') && !pageText.endsWith(' ')) {
-              pageText += ' ';
-            }
-            pageText += item.str;
-            lastY = item.transform[5];
-          }
-          extractedText += pageText + '\n';
-        }
-
-        // Se o PDF tiver texto nativo relevante
-        if (extractedText.trim().length > 20) {
-          text = extractedText;
-        } else {
-          // É um PDF escaneado (imagem). Renderiza a primeira página para canvas para fazer OCR
-          setOcrStatus('PDF digitalizado detectado. Renderizando página...');
-          const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 2.0 }); // 2x scale for better OCR accuracy
-          const canvas = document.createElement('canvas');
-          const context = canvas.getContext('2d');
-          canvas.height = viewport.height;
-          canvas.width = viewport.width;
-          
-          await page.render({ canvasContext: context, viewport }).promise;
-          
-          setOcrStatus('Carregando biblioteca de OCR...');
-          const Tesseract = await loadTesseract();
-          setOcrStatus('Analisando imagem do PDF...');
-          
-          const worker = await Tesseract.createWorker('por', 1, {
-            logger: m => {
-              if (m.status === 'recognizing text') {
-                const pct = Math.round(m.progress * 100);
-                setOcrStatus(`Lendo imagem do PDF: ${pct}%`);
-              } else {
-                setOcrStatus('Processando imagem do PDF...');
-              }
-            }
-          });
-          
-          const { data: { text: ocrText } } = await worker.recognize(canvas);
-          await worker.terminate();
-          text = ocrText;
-        }
-      } else {
-        // É uma imagem normal
-        setOcrStatus('Carregando biblioteca de OCR...');
-        const Tesseract = await loadTesseract();
-        setOcrStatus('Iniciando processamento...');
-        
-        const worker = await Tesseract.createWorker('por', 1, {
-          logger: m => {
-            if (m.status === 'recognizing text') {
-              const pct = Math.round(m.progress * 100);
-              setOcrStatus(`Lendo imagem: ${pct}%`);
-            } else {
-              setOcrStatus('Processando imagem...');
-            }
-          }
-        });
-        
-        const { data: { text: ocrText } } = await worker.recognize(file);
-        await worker.terminate();
-        text = ocrText;
-      }
-
-      setOcrStatus('Analisando informações...');
-      console.log('=== TEXTO EXTRAÍDO DO DOCUMENTO ===');
-      console.log(text);
-      console.log('=== FIM DO TEXTO ===');
+      const text = await extractDocumentText(file, { onStatus: setOcrStatus, signal: controller.signal });
+      if (controller.signal.aborted) return;
       const parsed = parseOcrText(text);
-      console.log('=== RESULTADO DO PARSING ===', parsed);
-
-      setFineForm(prev => ({
-        ...prev,
-        ...parsed
-      }));
-
-      alert('Documento lido com sucesso! Os campos identificados foram preenchidos.');
-    } catch (err) {
-      console.error('OCR/PDF Error:', err);
-      setOcrStatus('Erro. Usando dados simulados...');
-      
-      setTimeout(() => {
-        const activeRental = rentals.find(r => r.status === 'Ativo');
-        const plate = activeRental ? (activeRental.plate || activeRental.vehiclePlate) : 'QNE-8A90';
-        let targetDate = new Date();
-        if (activeRental && activeRental.startDate) {
-          const rentalStart = new Date(activeRental.startDate);
-          rentalStart.setDate(rentalStart.getDate() + 1);
-          targetDate = rentalStart;
-        } else {
-          targetDate.setDate(targetDate.getDate() - 3);
-        }
-        const dateStr = targetDate.toISOString().split('T')[0];
-
-        setFineForm({
-          vehiclePlate: plate,
-          infraction: 'Transitar em velocidade superior à máxima permitida em até 20% (Simulado - falha na leitura do arquivo)',
-          date: dateStr,
-          time: '14:45',
-          value: '130,16',
-          location: 'Av. das Nações Unidas, Km 22.5 - São Paulo/SP (Simulado)',
-          code: '745-50'
-        });
-        alert('Não foi possível ler este arquivo. Preenchemos com dados simulados para teste.');
-      }, 1000);
+      setFineForm(prev => ({ ...prev, ...parsed }));
+      alert('Documento lido. Confira os dados identificados antes de salvar a multa.');
+    } catch {
+      if (!controller.signal.aborted) alert('Não foi possível ler este arquivo com segurança. Seus dados foram mantidos; confira o formato e preencha a multa manualmente.');
     } finally {
-      setOcrLoading(false);
-      setOcrStatus('');
-      e.target.value = '';
+      ocrAbortRef.current = null;
+      setOcrLoading(false); setOcrStatus(''); input.value = '';
     }
   };
 
