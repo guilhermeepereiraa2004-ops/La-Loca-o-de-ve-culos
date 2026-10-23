@@ -5,6 +5,7 @@ import {
   AlertTriangle, Calendar, ShieldCheck, Camera, Edit2, Save, Home
 } from 'lucide-react';
 import { formatCPF } from '../../../utils/cpfFormatter';
+import { openSafeUrl } from '../../../utils/supabaseStorage';
 
 
 const ClientDetailModal = ({ client, onClose, onUpdate }) => {
@@ -345,7 +346,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                         )}
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                           {isPdfFile(client.docs.cnh) ? (
-                            <button onClick={() => window.open(getFileUrl(client.docs.cnh), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                            <button onClick={() => openSafeUrl(getFileUrl(client.docs.cnh), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
                           ) : (
                             <button onClick={() => setSelectedImage(getFileUrl(client.docs.cnh))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                           )}
@@ -376,7 +377,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                         )}
                         <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                           {isPdfFile(client.docs.residence) ? (
-                            <button onClick={() => window.open(getFileUrl(client.docs.residence), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                            <button onClick={() => openSafeUrl(getFileUrl(client.docs.residence), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
                           ) : (
                             <button onClick={() => setSelectedImage(getFileUrl(client.docs.residence))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                           )}
@@ -406,7 +407,7 @@ const ClientDetailModal = ({ client, onClose, onUpdate }) => {
                       )}
                       <div className="absolute inset-0 bg-neutral-950/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
                         {isPdfFile(print) ? (
-                          <button onClick={() => window.open(getFileUrl(print), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
+                          <button onClick={() => openSafeUrl(getFileUrl(print), '_blank')} className="px-4 py-2 bg-white rounded-xl flex items-center gap-2 text-neutral-900 shadow-xl hover:scale-110 transition-transform text-[9px] font-black uppercase tracking-wider"><FileText size={16} /> Abrir PDF</button>
                         ) : (
                           <button onClick={() => setSelectedImage(getFileUrl(print))} className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 shadow-xl hover:scale-110 transition-transform"><ImageIcon size={20} /></button>
                         )}

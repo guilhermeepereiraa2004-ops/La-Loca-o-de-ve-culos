@@ -9,7 +9,7 @@ import {
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { generateRentalContract } from '../../../utils/contractGenerator';
 import ImageViewer from '../../ui/ImageViewer';
-import { getPublicUrl } from '../../../utils/supabaseStorage';
+import { getPublicUrl, openSafeUrl } from '../../../utils/supabaseStorage';
 import { parseCurrency } from '../../../utils/currencyUtils';
 
 const RentalDetailModal = ({ 
@@ -50,7 +50,7 @@ const RentalDetailModal = ({
     const isDoc = lowerUrl.includes('.doc') || lowerUrl.includes('.docx');
     const isPdf = lowerUrl.includes('.pdf');
     if (isDoc || isPdf) {
-      window.open(url, '_blank');
+      openSafeUrl(url, '_blank');
     } else {
       setSelectedImage(url);
     }
