@@ -149,7 +149,7 @@ test('rejeita macro com relação compactada e entidade numérica, DTD e XML exc
 function edgeHarness(overrides = {}) {
   const writes = [], rateCalls = [], profileCalls = [], authCalls = [];
   const state = {
-    user: { id: 'user-123' }, profile: { role: 'funcionario', modules: ['frota'] },
+    user: { id: 'user-123' }, profile: { role: 'administrador', modules: [] },
     authError: null, claimsError: null, claims: { sub: 'user-123', aal: 'aal1' }, profileError: null, rateError: null, allowed: true,
     ...overrides,
   };
@@ -212,6 +212,15 @@ test('Edge: nega visitante, sessão inválida e usuário sem módulo', async () 
   ]) {
     const harness = edgeHarness(overrides);
     assert.equal((await harness.request(headers)).status, status);
+    assert.equal(harness.writes.length, 0);
+  }
+});
+
+test('Edge: funcionário e gerente de leitura não gravam arquivos mesmo com todos os módulos', async () => {
+  for (const role of ['funcionario', 'gerente']) {
+    const harness = edgeHarness({ profile: { role, modules: ['frota','clientes','locacao','investidores','vistoria','oficina','faturamento'] } });
+    assert.equal((await harness.request()).status, 403);
+    assert.equal(harness.rateCalls.length, 0);
     assert.equal(harness.writes.length, 0);
   }
 });

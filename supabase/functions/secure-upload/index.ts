@@ -39,7 +39,8 @@ Deno.serve(async (req: Request) => {
   const isPublic = req.headers.get('x-upload-public') === 'true';
   if (isPublic && folder !== 'veiculos') return reply(400, 'Pasta de fotos públicas inválida.');
   const allowedModules = isPublic ? ['frota'] : folderModules[folder.split('/')[0]];
-  if (!allowedModules || !(profile.role === 'administrador' || (['funcionario', 'gerente'].includes(profile.role) && Array.isArray(profile.modules) && allowedModules.some(m => profile.modules.includes(m))))) return reply(403, 'Acesso não autorizado.');
+  // The staff UI promises read-only access; enforce this before privileged Storage writes.
+  if (!allowedModules || profile.role !== 'administrador') return reply(403, 'Acesso não autorizado.');
   // An atomic database counter is shared by every function instance.
   const { data: allowed, error: rateError } = await admin.rpc('consume_security_rate_limit', { p_key: `upload:${user.id}`, p_limit: 150, p_window_seconds: 300 });
   if (rateError) return reply(503, 'Upload temporariamente indisponível.');

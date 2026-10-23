@@ -122,6 +122,21 @@ try {
   });
   await db.exec(await readFile('supabase/migrations/20261023162033_security_auth_rls_containment.sql','utf8'));
   await db.exec(await readFile('supabase/migrations/20261023181455_conditional_mfa_enforcement.sql','utf8'));
+  const unchangedPoliciesSql=`select schemaname,tablename,policyname,permissive,roles,cmd,qual,with_check from pg_policies
+    where policyname not in ('staff_insert','staff_update','staff_delete') order by schemaname,tablename,policyname`;
+  const policiesBefore=(await db.query(unchangedPoliciesSql)).rows;
+  const profileGrantsSql=`select table_name,column_name,privilege_type,grantee from information_schema.column_privileges
+    where table_schema='public' and table_name in ('system_users','investors') order by table_name,column_name,privilege_type,grantee`;
+  const profileGrantsBefore=(await db.query(profileGrantsSql)).rows;
+  const readonlyMigration=await readFile('supabase/migrations/20261023184650_staff_readonly_business_writes.sql','utf8');
+  await db.exec(readonlyMigration);
+  // Applying again must also be safe, without changing investor/SELECT policies.
+  await db.exec(readonlyMigration);
+  await equal(unchangedPoliciesSql,policiesBefore);
+  await equal(profileGrantsSql,profileGrantsBefore);
+  await equal(`select count(*)::integer as unsafe from pg_policies where schemaname='public'
+    and policyname in ('staff_insert','staff_update','staff_delete')
+    and (coalesce(qual,'')||coalesce(with_check,'')) not like '%allow_admin_write%'`,[{unsafe:0}]);
   await db.exec(`
     insert into auth.users values ${Object.values(ids).slice(0,7).map(id => `('${id}')`).join(',')};
     insert into public.system_users(id,name,email,role,password,modules,auth_user_id) values
@@ -231,19 +246,42 @@ try {
   // Behavioral integration checks below persist/re-read mutations in real
   // PostgreSQL and roll them back; no application implementation is mocked.
   const addedVehicle='40000000-0000-4000-8000-000000000001';
-  await as('authenticated',ids.employee,()=>isolated(async()=>{
+  await as('authenticated',ids.admin,()=>isolated(async()=>{
     await equal(`insert into public.vehicles(id,model,plate,image,investor_id) values('${addedVehicle}','Synthetic CRUD','CRUD001','storage://La-locacao/veiculos/roundtrip.png','${ids.investorA}') returning id`,[{id:addedVehicle}]);
     await equal(`select image,model from public.vehicles where id='${addedVehicle}'`,[{image:'storage://La-locacao/veiculos/roundtrip.png',model:'Synthetic CRUD'}]);
     await equal(`update public.vehicles set km=12345,model='Synthetic updated' where id='${addedVehicle}' returning id`,[{id:addedVehicle}]);
     await equal(`select km,model,image from public.vehicles where id='${addedVehicle}'`,[{km:'12345',model:'Synthetic updated',image:'storage://La-locacao/veiculos/roundtrip.png'}]);
     await equal(`delete from public.vehicles where id='${addedVehicle}' returning id`,[{id:addedVehicle}]);
     await count(`select * from public.vehicles where id='${addedVehicle}'`,0);
-    await deniedInTransaction("insert into public.clients(nome) values('Unauthorized module')");
-    await deniedInTransaction("insert into public.transactions(type,val,date) values('in',1,'2026-10-23')");
-    await equal("update public.transactions set val=999 returning id",[]);
-    await equal("delete from public.transactions returning id",[]);
   }));
   await count(`select * from public.vehicles where id='${addedVehicle}'`,0);
+  await equal('select count(*)::integer as count,sum(val)::numeric as total from public.transactions',[{count:3,total:'350'}]);
+
+  // UI promises staff read-only. Even with every relevant module, both roles
+  // must be denied direct business mutations while retaining authorized reads.
+  for(const role of ['funcionario','gerente'])await isolated(async()=>{
+    await db.exec(`update public.system_users set role='${role}',modules='{frota,clientes,locacao,financeiro}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await equal('select private_security.allow_admin_write() as allowed',[{allowed:false}]);
+      for(const [table,expected,insert,update] of [
+        ['vehicles',2,"insert into public.vehicles(model,plate) values('Readonly bypass','READ001')","update public.vehicles set km=999 returning id"],
+        ['clients',1,"insert into public.clients(nome) values('Readonly bypass')","update public.clients set nome='Readonly bypass' returning id"],
+        ['rentals',2,`insert into public.rentals(id_veiculo,start_date,value) values('${ids.vehicleA}','2026-10-23',1)`,"update public.rentals set value=999 returning id"],
+        ['transactions',3,"insert into public.transactions(type,val,date) values('in',1,'2026-10-23')","update public.transactions set val=999 returning id"],
+      ]){
+        await count(`select * from public.${table}`,expected);
+        await deniedInTransaction(insert);
+        await equal(update,[]);
+        await equal(`delete from public.${table} returning id`,[]);
+      }
+      // User-controlled claims never replace the protected database role.
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({role:'authenticated',aal:'aal2',user_metadata:{role:'administrador'}})]);
+      await deniedInTransaction("insert into public.vehicles(model,plate) values('Forged admin','READ002')");
+    });
+  });
+  await count('select * from public.vehicles',2);
+  await count('select * from public.clients',1);
+  await count('select * from public.rentals',2);
   await equal('select count(*)::integer as count,sum(val)::numeric as total from public.transactions',[{count:3,total:'350'}]);
 
   // A/B may read their own records, but neither may mutate even their own rows.
@@ -283,11 +321,10 @@ try {
   });
   await as('authenticated',ids.employee,()=>count('select * from public.vehicles',2));
 
-  // Module-scoped rental write, re-read and rollback preserve stored documents.
+  // Administrator rental write, re-read and rollback preserve stored documents.
   const addedRental='40000000-0000-4000-8000-000000000002';
   await isolated(async()=>{
-    await db.exec(`update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
-    await as('authenticated',ids.employee,async()=>{
+    await as('authenticated',ids.admin,async()=>{
       await equal(`insert into public.rentals(id,id_veiculo,start_date,value,documentos) values('${addedRental}','${ids.vehicleA}','2026-10-23',400,'{"cnh":"storage://La-locacao/condutores/fixture/cnh.pdf","signedContract":"storage://La-locacao/contratos/fixture.pdf"}'::jsonb) returning id`,[{id:addedRental}]);
       await db.exec(`update public.rentals set value=450 where id='${addedRental}'`);
       await equal(`select value,documentos from public.rentals where id='${addedRental}'`,[{value:'450',documentos:{cnh:'storage://La-locacao/condutores/fixture/cnh.pdf',signedContract:'storage://La-locacao/contratos/fixture.pdf'}}]);
@@ -381,8 +418,10 @@ try {
     await equal("select coalesce(read_by,'{}'::uuid[]) as read_by from public.investor_notices where id='30000000-0000-4000-8000-000000000003'",[{read_by:[]}]);
   });
 
-  // Staff audit append verifies identity; even administrators cannot rewrite logs.
-  await isolated(async()=>{
+  // Read-only staff can append their own audit event; this is deliberately
+  // distinct from a business write. Even administrators cannot rewrite logs.
+  for(const role of ['funcionario','gerente'])await isolated(async()=>{
+    await db.exec(`update public.system_users set role='${role}' where id='${ids.employee}'`);
     await as('authenticated',ids.employee,async()=>{
       await db.exec("insert into public.system_logs(id,user_name,user_email,action,description) values(9001,'Synthetic employee','employee@example.invalid','Create','Synthetic audit')");
       pass();
@@ -405,7 +444,7 @@ try {
   await count("select * from storage.objects where bucket_id='La-locacao'",3);
   await equal("select public from storage.buckets where id='La-locacao'",[{public:false}]);
 
-  // The pending MFA migration is exercised locally, without enrolling any real
+  // The MFA migration is exercised locally, without enrolling any real
   // user's factor or changing production. Unverified enrollment cannot lock out.
   await isolated(async()=>{
     const aal=async(uid,level,test)=>as('authenticated',uid,async()=>{
@@ -437,6 +476,8 @@ try {
       await count('select id from public.system_users',3);
       await count("select * from storage.objects where bucket_id='La-locacao'",3);
       await deniedInTransaction('select password from public.system_users');
+      await equal(`update public.vehicles set km=555 where id='${ids.vehicleA}' returning id`,[{id:ids.vehicleA}]);
+      await equal(`select km from public.vehicles where id='${ids.vehicleA}'`,[{km:'555'}]);
     });
     await db.exec(`insert into auth.mfa_factors(user_id,status) values('${ids.employee}','verified')`);
     await aal(ids.employee,'aal1',async()=>{
@@ -445,13 +486,14 @@ try {
     });
     await aal(ids.employee,'aal2',async()=>{
       await count('select * from public.vehicles',2);
-      await equal(`update public.vehicles set km=555 where id='${ids.vehicleA}' returning id`,[{id:ids.vehicleA}]);
+      await equal(`update public.vehicles set km=999 where id='${ids.vehicleA}' returning id`,[]);
       await equal(`select km from public.vehicles where id='${ids.vehicleA}'`,[{km:'555'}]);
+      await deniedInTransaction("insert into public.vehicles(model,plate) values('Readonly MFA bypass','READ003')");
       await count('select * from public.clients',0);
     });
   });
   await equal(`select km from public.vehicles where id='${ids.vehicleA}'`,[{km:null}]);
-  console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; containment + full migration; anonymous, investor A/B, inactive, unlinked, employee, admin, service_role.`);
+  console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; containment + full/MFA/read-only migrations; anonymous, investor A/B, inactive, unlinked, employee/manager read-only, admin CRUD, service_role.`);
 } catch(error) {
   console.error('FAIL:',error.code || error.name,error.message);
   process.exitCode=1;
