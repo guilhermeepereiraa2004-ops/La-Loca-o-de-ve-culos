@@ -16,7 +16,9 @@ function fixture(options = {}) {
   const admin = {
     rpc: async () => { calls.push('rate-limit'); return options.rateFailure ? { data: null, error: {} } : { data: !options.throttled }; },
     auth: { admin: {
-      createUser: async () => { calls.push('create-auth'); return { data: { user: { id: identityId } } }; },
+      createUser: async attributes => { calls.push('create-auth'); if (options.activation) { assert.equal(attributes.email_confirm, false); assert.ok(attributes.password.length >= 48); } return { data: { user: { id: identityId, email: 'target@example.invalid' } } }; },
+      getUserById: async () => { calls.push('get-auth-user'); return { data: { user: { id: identityId, email: options.wrongEmail ? 'other@example.invalid' : 'target@example.invalid', email_confirmed_at: options.confirmed ? '2026-10-23' : null } } }; },
+      generateLink: async attributes => { calls.push('generate-link:' + attributes.type); return { data: { user: { id: identityId }, properties: { hashed_token: 'private-test-token', action_link: 'https://auth.example.invalid/verify?token=private-test-link&type=' + attributes.type } } }; },
       updateUserById: async () => { calls.push('update-auth'); return {}; },
       deleteUser: async () => { calls.push('delete-auth'); return {}; },
     } },
@@ -27,6 +29,7 @@ function fixture(options = {}) {
       const chain = {
         select() { return chain; },
         eq(column, value) { by = [column, value]; return chain; },
+        is() { return chain; },
         insert(value) { operation = 'insert'; payload = value; return chain; },
         update(value) { operation = 'update'; payload = value; return chain; },
         delete() { operation = 'delete'; return chain; },
@@ -34,7 +37,7 @@ function fixture(options = {}) {
           if (by?.[0] === 'auth_user_id' && (table === 'investors' || by[1] !== actorId)) { calls.push('identity-conflict-check'); return { data: options.duplicateIdentity || (options.duplicateTarget && by[1] === identityId) ? { id: targetId } : null }; }
           if (by?.[0] === 'auth_user_id') { calls.push('actor-role'); return { data: { id: actorId, auth_user_id: actorId, role: options.nonAdmin ? 'funcionario' : 'administrador' } }; }
           calls.push('target');
-          return { data: { id: targetId, auth_user_id: options.self ? actorId : identityId, name: 'Target', email: 'target@example.invalid', role: 'funcionario', modules: ['frota'] } };
+          return { data: { id: targetId, auth_user_id: options.self ? actorId : options.unlinked ? null : identityId, name: 'Target', email: 'target@example.invalid', role: 'funcionario', modules: ['frota'] } };
         },
         single: async () => {
           calls.push('save-profile');
@@ -46,7 +49,7 @@ function fixture(options = {}) {
       return chain;
     },
   };
-  const handler = createSecurityUsersHandler({ environment: { SUPABASE_URL: 'https://test.invalid', SUPABASE_ANON_KEY: 'public-test', SUPABASE_SERVICE_ROLE_KEY: 'server-test' }, clientFactory: (_url, key) => key === 'server-test' ? admin : { auth } });
+  const handler = createSecurityUsersHandler({ environment: { SUPABASE_URL: 'https://test.invalid', SUPABASE_ANON_KEY: 'public-test', SUPABASE_SERVICE_ROLE_KEY: 'server-test', AUTH_REDIRECT_URL: 'https://app.example.invalid/auth/callback' }, clientFactory: (_url, key) => key === 'server-test' ? admin : { auth } });
   const request = (body = createInput(), overrides = {}) => ({ method: 'POST', headers: { host: 'test.invalid', origin: 'https://test.invalid', 'content-type': 'application/json', authorization: 'Bearer test-token' }, body, ...overrides });
   const response = () => ({ code: 200, headers: {}, setHeader(key,value) { this.headers[key] = value; }, status(code) { this.code = code; return this; }, json(body) { this.body = body; return this; } });
   return { handler, request, response, calls };
@@ -125,4 +128,26 @@ test('refuses changes to target linked in both account tables before Auth mutati
   const input=createInput(); input.action='update'; input.profile.id=targetId;
   await f.handler(f.request(input),res);
   assert.equal(res.code,409); assert.equal(f.calls.includes('update-auth'),false); assert.equal(f.calls.includes('save-profile'),false);
+});
+
+test('administrator activates legacy profile without email or exposing random password', async () => {
+  const f=fixture({activation:true,unlinked:true}); const res=f.response();
+  await f.handler(f.request({kind:'system',action:'activation-link',currentPassword:'current-test-password',profile:{id:targetId}}),res);
+  assert.equal(res.code,200);assert.ok(res.body.activationLink);
+  assert.ok(f.calls.indexOf('save-profile') < f.calls.indexOf('generate-link:recovery'));
+  assert.equal(res.body.profile.password,undefined);assert.equal(f.calls.includes('delete-auth'),false);
+});
+test('linked confirmed and unconfirmed accounts get recovery links without email', async () => {
+  for(const confirmed of [false,true]) {
+    const f=fixture({confirmed}); const res=f.response();
+    await f.handler(f.request({kind:'system',action:'activation-link',currentPassword:'current-test-password',profile:{id:targetId}}),res);
+    assert.equal(res.code,200);assert.ok(f.calls.includes('generate-link:recovery'));
+    assert.equal(f.calls.includes('create-auth'),false);
+  }
+});
+test('activation derives role/email from stored profile and rejects identity mismatch', async () => {
+  const invalid={kind:'system',action:'activation-link',currentPassword:'current-test-password',profile:{id:targetId,role:'administrador'}};
+  assert.throws(()=>validateAccountInput(invalid));
+  const f=fixture({wrongEmail:true}); const res=f.response();delete invalid.profile.role;
+  await f.handler(f.request(invalid),res);assert.equal(res.code,409);assert.equal(f.calls.some(call=>call.startsWith('generate-link:')),false);
 });

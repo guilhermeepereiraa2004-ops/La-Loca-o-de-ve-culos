@@ -1,3 +1,4 @@
+import AccountActivationLink from '../../auth/AccountActivationLink';
 import React, { useState, useEffect, useCallback } from 'react';
 import { User, Mail, Phone, MapPin, Key, Landmark, Search, Pencil, Trash2, Plus, Users, Calendar, SendHorizonal, History, ChevronDown, ChevronUp, X, Coins, Wallet, AlertCircle, Filter, ArrowUpRight, ArrowDownRight, Car, CheckCircle2 } from 'lucide-react';
 import { formatCPF, formatCpfCnpj } from '../../../utils/cpfFormatter';
@@ -1673,6 +1674,7 @@ const AdminInvestidores = ({
                   </h5>
                   
                   <div className="space-y-4">
+                    {investorForm.id && <AccountActivationLink kind="investor" profileId={investorForm.id} />}
                     <div className="space-y-2 relative">
                       <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Nova senha do portal</label>
                       <input type="password" autoComplete="new-password" minLength={12} maxLength={128}

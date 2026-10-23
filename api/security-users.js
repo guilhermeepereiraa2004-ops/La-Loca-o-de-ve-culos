@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 const MODULES = new Set(['bi','faturamento','frota','leads','locacao','clientes','investidores','financeiro','caucao','manutencaoAdmin','vistoria','multas','oficina','logs']);
@@ -14,12 +15,12 @@ function text(value, max, required = false) {
 export function validateAccountInput(body) {
   if (!plainObject(body) || Object.keys(body).some(key => !['kind','action','profile','currentPassword'].includes(key))) reject(400, 'Dados inválidos.');
   const { kind, action, profile, currentPassword } = body;
-  if (!['system','investor'].includes(kind) || !['create','update','delete'].includes(action) || !plainObject(profile)) reject(400, 'Dados inválidos.');
+  if (!['system','investor'].includes(kind) || !['create','update','delete','activation-link'].includes(action) || !plainObject(profile)) reject(400, 'Dados inválidos.');
   if (typeof currentPassword !== 'string' || !currentPassword || currentPassword.length > 128) reject(400, 'Confirme sua senha atual.');
   const allowed = kind === 'system' ? ['id','name','email','password','role','modules'] : ['id','name','email','password','phone','cpf','address','status','bank','pix'];
   if (Object.keys(profile).some(key => !allowed.includes(key))) reject(400, 'Campo não permitido.');
   if (action !== 'create' && !(typeof profile.id === 'string' && UUID.test(profile.id)) && !Number.isSafeInteger(profile.id)) reject(400, 'Identificador inválido.');
-  if (action === 'delete') {
+  if (action === 'delete' || action === 'activation-link') {
     if (Object.keys(profile).some(key => key !== 'id')) reject(400, 'Campo não permitido.');
     return { kind, action, profile: { id: profile.id }, currentPassword };
   }
@@ -96,6 +97,35 @@ export function createSecurityUsersHandler({ clientFactory = createClient, envir
           const { data: conflictingProfile, error: identityError } = await admin.from(otherTable).select('id').eq('auth_user_id', existing.auth_user_id).maybeSingle();
           if (identityError || conflictingProfile) reject(409, 'Identidade com vínculos conflitantes. Revise os perfis.');
         }
+      }
+      if (input.action === 'activation-link') {
+        let redirect;
+        try { redirect = new URL(environment.AUTH_REDIRECT_URL); } catch { reject(503, 'Ativação indisponível. Configure o endereço de retorno.'); }
+        if (redirect.protocol !== 'https:' || redirect.pathname !== '/auth/callback' || redirect.search || redirect.hash) reject(503, 'Endereço de retorno inválido.');
+        let targetAuthId = existing.auth_user_id;
+        let savedProfile = existing;
+        if (!targetAuthId) {
+          const { data, error } = await admin.auth.admin.createUser({ email: existing.email, password: randomBytes(48).toString('base64url'), email_confirm: false });
+          if (error || !data?.user) reject(409, 'Não foi possível ativar a conta. Revise possíveis identidades já existentes.');
+          targetAuthId = data.user.id;
+          const { data: linked, error: linkError } = await admin.from(table).update({ auth_user_id: targetAuthId }).eq('id', id).is('auth_user_id', null).select(fields).single();
+          // Never delete existing profiles or overwrite a concurrent identity binding.
+          if (linkError || !linked) reject(409, 'Identidade criada sem conclusão do vínculo. Revise a conta antes de repetir.');
+          savedProfile = linked;
+        } else {
+          const { data, error } = await admin.auth.admin.getUserById(targetAuthId);
+          if (error || !data?.user || data.user.id !== targetAuthId || data.user.email?.trim().toLowerCase() !== existing.email?.trim().toLowerCase()) reject(409, 'Identidade divergente. Revise a conta antes de gerar o link.');
+        }
+        // Recovery is exempt from the provider's current-password requirement, including legacy accounts with an unknown random password.
+        const type = 'recovery';
+        const { data: generated, error: linkError } = await admin.auth.admin.generateLink({ type, email: existing.email, options: { redirectTo: redirect.href } });
+        if (linkError || generated?.user?.id !== targetAuthId || typeof generated?.properties?.hashed_token !== 'string' || !generated.properties.hashed_token) reject(503, 'Não foi possível gerar o link. O perfil foi preservado.');
+        const activationUrl = new URL(redirect.href);
+        activationUrl.searchParams.set('token_hash', generated.properties.hashed_token);
+        activationUrl.searchParams.set('type', 'recovery');
+        // This credential is intentionally returned only to a reauthenticated administrator.
+        // It is never written to a profile, logs, analytics, localStorage or email by this endpoint.
+        return res.status(200).json({ success: true, profile: savedProfile, activationLink: activationUrl.href });
       }
       if (input.action === 'delete') {
         // Remove the authorization profile first: existing JWTs immediately lose RLS access.

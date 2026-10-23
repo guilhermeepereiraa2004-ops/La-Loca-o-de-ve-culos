@@ -23,7 +23,7 @@ export default function PasswordConfirmation() {
   };
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[300] bg-black/70 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-labelledby="confirm-password-title" onKeyDown={event => { if (event.key === 'Escape') finish(null); }}>
+    <div className="fixed inset-0 z-[1000] bg-black/70 flex items-center justify-center p-6" role="dialog" aria-modal="true" aria-labelledby="confirm-password-title" onKeyDown={event => { if (event.key === 'Escape') finish(null); }}>
       <form className="bg-white text-neutral-900 w-full max-w-md rounded-2xl p-8 space-y-6" onSubmit={event => { event.preventDefault(); finish(password); }}>
         <h2 id="confirm-password-title" className="text-lg font-black">Confirme sua identidade</h2>
         <p className="text-sm text-neutral-600">Informe sua senha atual de administrador para autorizar esta alteração.</p>

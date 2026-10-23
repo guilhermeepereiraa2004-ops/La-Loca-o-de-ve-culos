@@ -12,7 +12,7 @@ function loadTurnstile() {
   });
   return loader;
 }
-export default function TurnstileChallenge({ onToken, resetKey }) {
+export default function TurnstileChallenge({ onToken, resetKey, action = 'public_interest' }) {
   const container = useRef(null);
   const callback = useRef(onToken);
   callback.current = onToken;
@@ -24,10 +24,10 @@ export default function TurnstileChallenge({ onToken, resetKey }) {
     let id;
     loadTurnstile().then(() => window.turnstile.ready(() => {
       if (!active || !container.current) return;
-      id = window.turnstile.render(container.current, { sitekey, action: 'public_interest', callback: token => callback.current(token), 'expired-callback': () => callback.current(''), 'error-callback': () => { callback.current(''); setError(true); } });
+      id = window.turnstile.render(container.current, { sitekey, action, callback: token => callback.current(token), 'expired-callback': () => callback.current(''), 'error-callback': () => { callback.current(''); setError(true); } });
     })).catch(() => { if (active) setError(true); });
     return () => { active = false; if (id !== undefined) window.turnstile?.remove(id); };
-  }, [sitekey, resetKey]);
+  }, [sitekey, resetKey, action]);
   if (!sitekey) return null;
   return <div><div ref={container} />{error && <p role="alert" className="text-xs text-red-600">A verificação não carregou. Reabra o formulário para tentar novamente.</p>}</div>;
 }

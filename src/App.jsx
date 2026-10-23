@@ -4,6 +4,7 @@ import { changeOwnPassword } from './lib/auth';
 // Components
 import AdminLogin from './components/auth/AdminLogin';
 import PasswordConfirmation from './components/auth/PasswordConfirmation';
+import PasswordRecovery from './components/auth/PasswordRecovery';
 import InvestorLogin from './components/auth/InvestorLogin';
 import InvestorDashboard from './components/investor/InvestorDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -323,6 +324,8 @@ const Application = ({ isOficinaDomain = false }) => {
   );
 };
 
-const App = props => <><Application {...props} /><PasswordConfirmation /></>;
+const App = props => window.location.pathname === '/auth/callback'
+  ? <PasswordRecovery />
+  : <><Application {...props} /><PasswordConfirmation /></>;
 
 export default App;

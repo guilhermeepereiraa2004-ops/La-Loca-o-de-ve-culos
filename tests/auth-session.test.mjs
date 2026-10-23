@@ -78,3 +78,40 @@ test('password update sends current password to Auth for provider-side enforceme
   assert.equal(result.success,true);
   assert.deepEqual(changes,{ password:'new-test-password-unique',current_password:'current-test-password' });
 });
+
+test('client activation-link request reaches real handler without injecting modules', async () => {
+  const { createSecurityUsersHandler } = await import('../api/security-users.js');
+  const actorId='11111111-1111-4111-8111-111111111111';
+  const targetId='22222222-2222-4222-8222-222222222222';
+  const identityId='33333333-3333-4333-8333-333333333333';
+  sdk.auth.getUser=async()=>({data:{user:{id:actorId,email:'admin@example.invalid'}}});
+  sdk.auth.getSession=async()=>({data:{session:{access_token:'test-token'}}});
+  const serverAuth={getUser:sdk.auth.getUser,signInWithPassword:async()=>({data:{user:{id:actorId}}}),signOut:async()=>({})};
+  const admin={
+    rpc:async()=>({data:true}),
+    auth:{admin:{
+      getUserById:async()=>({data:{user:{id:identityId,email:'target@example.invalid',email_confirmed_at:'2026-10-23'}}}),
+      generateLink:async()=>({data:{user:{id:identityId},properties:{hashed_token:'private-test-token',action_link:'https://auth.example.invalid/verify?token=private-test-token&type=recovery'}}}),
+    }},
+    from(table){
+      let field,value;
+      const chain={select(){return chain;},eq(f,v){field=f;value=v;return chain;},async maybeSingle(){
+        if(field==='auth_user_id')return {data:table==='system_users'&&value===actorId?{id:actorId,auth_user_id:actorId,role:'administrador'}:null};
+        return {data:{id:targetId,auth_user_id:identityId,email:'target@example.invalid',role:'funcionario',modules:['frota']}};
+      }};return chain;
+    },
+  };
+  const handler=createSecurityUsersHandler({environment:{SUPABASE_URL:'https://test.invalid',SUPABASE_ANON_KEY:'anon',SUPABASE_SERVICE_ROLE_KEY:'server',AUTH_REDIRECT_URL:'https://app.example.invalid/auth/callback'},clientFactory:(_url,key)=>key==='server'?admin:{auth:serverAuth}});
+  const previousFetch=globalThis.fetch;
+  globalThis.fetch=async(_url,options)=>{
+    const body=JSON.parse(options.body);
+    assert.deepEqual(body.profile,{id:targetId});
+    const response={code:200,setHeader(){},status(code){this.code=code;return this;},json(value){this.body=value;return this;}};
+    await handler({method:'POST',headers:{host:'app.example.invalid',origin:'https://app.example.invalid','content-type':'application/json',authorization:options.headers.Authorization},body},response);
+    return {ok:response.code===200,json:async()=>response.body};
+  };
+  try{
+    const result=await auth.manageAccount('system','activation-link',{id:targetId},'current-test-password');
+    assert.match(result.activationLink,/private-test-token/);
+  }finally{globalThis.fetch=previousFetch;}
+});

@@ -1,3 +1,4 @@
+import AccountActivationLink from '../../auth/AccountActivationLink';
 import React, { useState } from 'react';
 import { Plus, User, Shield, Trash2, Edit, Check, X, Eye, EyeOff, Users, Key, Lock, ShieldCheck } from 'lucide-react';
 
@@ -130,6 +131,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
               </div>
             </div>
 
+            <div className="mb-5"><AccountActivationLink kind="system" profileId={user.id} /></div>
             {user.role === 'funcionario' && (
               <div className="space-y-3">
                 <p className="text-[8px] font-black uppercase tracking-[0.2em] text-neutral-400">Módulos com Acesso ({user.modules?.length || 0}/{ALL_MODULES.length})</p>

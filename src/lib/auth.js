@@ -70,12 +70,12 @@ export async function manageAccount(kind, action, profile, currentPassword) {
   if (!session?.access_token) throw new Error('Sessão expirada. Entre novamente.');
   const allowed = kind === 'system' ? ['id','name','email','password','role','modules'] : ['id','name','email','password','phone','cpf','address','status','bank','pix'];
   const safeProfile = Object.fromEntries(allowed.filter(key => profile[key] !== undefined).map(key => [key, profile[key]]));
-  if (kind === 'system' && action !== 'delete') safeProfile.modules ??= [];
+  if (kind === 'system' && ['create', 'update'].includes(action)) safeProfile.modules ??= [];
   const response = await fetch('/api/security-users', {
     method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
     body: JSON.stringify({ kind, action, profile: safeProfile, currentPassword: password }),
   });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || 'Não foi possível concluir a operação.');
-  return result.profile;
+  return action === 'activation-link' ? { profile: result.profile, activationLink: result.activationLink } : result.profile;
 }
