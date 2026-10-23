@@ -7,6 +7,7 @@ import { createMaintenancePersistence } from '../lib/maintenancePersistence.js';
 import { createNoticePersistence } from '../lib/noticePersistence.js';
 import { canOperateModule } from '../lib/modulePermissions.js';
 import { assertClosurePermissions } from '../lib/closurePermissions.js';
+import { recordActivity } from '../lib/auditActivity.js';
 import { parseDbError } from '../utils/errorHelper';
 import { uploadFile, uploadPublicVehicleImage, hydrateStorageReferences, clearStorageUrlCache, getPublicUrl } from '../utils/supabaseStorage';
 import { parseCurrency } from '../utils/currencyUtils';
@@ -369,39 +370,39 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   };
 
   const logActivity = async (action, targetType, targetId, description, details = null) => {
-    const today = new Date().toISOString();
-    const uName = currentUser?.name || currentUser?.nome || (currentUser?.role === 'administrador' ? 'Admin Master' : 'Sistema');
-    const uEmail = currentUser?.email || (currentUser?.role === 'administrador' ? 'Laveiculos@gmail.com' : 'system@la.com');
-
-    const logEntry = {
-      createdAt: today,
-      userName: uName,
-      userEmail: uEmail,
-      action,
-      targetType,
-      targetId: String(targetId || ''),
-      description,
-      details
-    };
-
+    const ownerId = currentUser?.authUserId;
     try {
-      const snakePayload = mapToSnake(logEntry, 'system_logs');
-      snakePayload['created_at'] = today;
-      const { data, error } = await supabase.from('system_logs').insert([snakePayload]).select();
-      if (!error && data) {
-        const camelData = mapToCamel(data, 'system_logs')[0];
-        setLogs(prev => [camelData, ...prev]);
+      const row = await recordActivity(supabase, { action, targetType, targetId, description, details });
+      if (activeOwnerId.current !== ownerId) return;
+      if (canLoadDataset(currentUser, 'system_logs')) {
+        const log = mapToCamel([row], 'system_logs')[0];
+        setLogs(previous => [log, ...previous.filter(item => item.id !== log.id)].slice(0,500));
         setIsLogsDbConnected(true);
-        return;
       }
-      if (error) {
-        console.warn("Não foi possível registrar a atividade:", error);
-      }
-    } catch (e) {
-      console.warn("Could not log to Supabase system_logs:", e);
+      setDataLoadErrors(previous => { const next = { ...previous }; delete next.audit; return next; });
+    } catch (error) {
+      if (activeOwnerId.current === ownerId) setDataLoadErrors(previous => ({ ...previous, audit: { code: String(error.code || 'AUDIT_WRITE') } }));
     }
-
   };
+
+  useEffect(() => {
+    const failed = () => setDataLoadErrors(previous => ({ ...previous, audit: { code: 'AUDIT_WRITE' } }));
+    window.addEventListener('la:audit-failed', failed);
+    return () => window.removeEventListener('la:audit-failed', failed);
+  }, []);
+  useEffect(() => {
+    if (!canLoadDataset(currentUser, 'system_logs')) return;
+    let cancelled = false;
+    const refresh = async () => {
+      const { data, error } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).order('id', { ascending: false }).limit(500);
+      if (cancelled) return;
+      if (error) { setIsLogsDbConnected(false); return; }
+      setLogs(mapToCamel(data || [], 'system_logs')); setIsLogsDbConnected(true);
+    };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { cancelled = true; clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, [currentUser?.authUserId, currentUser?.role, currentUser?.modules?.join(',')]);
 
   // Session changes clear private state. Refresh failures retain the last authorized snapshot.
   const dataSessionKey = [currentUser?.authUserId, currentUser?.role, currentUser?.status, currentUser?.modules?.join(',')].join('|');
@@ -547,6 +548,7 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       const setter = kind === 'system' ? setSystemUsers : setInvestors;
       if (action === 'delete') setter(prev => prev.filter(item => item.id !== profile.id));
       else setter(prev => action === 'create' ? [mapToCamel([result])[0], ...prev] : prev.map(item => item.id === result.id ? mapToCamel([result])[0] : item));
+        void logActivity(action === 'create' ? 'Criar' : action === 'delete' ? 'Excluir' : 'Atualizar', kind === 'system' ? 'Usuário' : 'Investidor', result?.id || profile.id, 'Alterou cadastro ou acesso de uma conta.');
       return { success: true, data: result };
     } catch (error) {
       if (kind !== 'system' || !['create', 'update'].includes(action)) alert(error.message);

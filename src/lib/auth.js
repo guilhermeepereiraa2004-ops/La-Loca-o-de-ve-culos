@@ -1,4 +1,5 @@
 import { verifyPasswordWithoutReplacingSession } from './passwordVerifier.js';
+import { recordActivity } from './auditActivity.js';
 import { supabase, createPasswordVerifier, prepareMainSignIn, completeMainSignIn, signOutMainSession } from './supabase';
 
 export const SYSTEM_PROFILE_FIELDS = 'id,auth_user_id,name,email,role,modules,created_at';
@@ -43,6 +44,9 @@ export async function signIn(email, password, portal) {
       ['administrador', 'gerente', 'funcionario'].includes(profile.role));
     if (!permitted) throw new Error('Credenciais inválidas ou acesso indisponível.');
     completeMainSignIn();
+    try {
+      await recordActivity(supabase, { action: 'Login', targetType: 'Auth', targetId: profile.id, description: `Login realizado com sucesso no portal ${portal === 'investor' ? 'do investidor' : portal === 'workshop' ? 'da oficina' : 'administrativo'}` });
+    } catch { globalThis.window?.dispatchEvent?.(new CustomEvent('la:audit-failed')); }
     return profile;
   } catch {
     await signOutMainSession();

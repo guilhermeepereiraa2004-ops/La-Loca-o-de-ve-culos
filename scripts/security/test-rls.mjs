@@ -1082,6 +1082,28 @@ try {
     await denied('select * from private_security.notice_requests');
     await denied("select private_security.canonical_notice_video('https://youtu.be/dQw4w9WgXcQ')");
   });
+  await db.exec(await readFile('supabase/migrations/20261023233901_audit_activity_recording.sql','utf8'));
+  // Mirror the live identity column; catalog fixtures otherwise omit defaults.
+  await db.exec("alter table public.system_logs alter column id set default nextval('public.system_logs_id_seq')");
+  await isolated(async()=>{
+    await as('authenticated',ids.employee,async()=>{
+      await deniedInTransaction("insert into public.system_logs(user_name,user_email,action,description) values('Employee','employee@example.invalid','Create','Returning blocked') returning *");
+      const saved=(await db.query("select public.record_system_activity('Criar','Locação','synthetic-target','Synthetic saved event',null) as receipt")).rows[0].receipt.log;
+      assert.equal(saved.user_email,'employee@example.invalid');assert.equal(saved.user_name,'Employee');pass();
+      await count('select * from public.system_logs',0);
+    });
+    await as('authenticated',ids.logsOnly,()=>count("select * from public.system_logs where description='Synthetic saved event'",1));
+    await as('authenticated',ids.investorA,async()=>{
+      const saved=(await db.query(`select public.record_system_activity('Login','Auth','${ids.investorA}','Not trusted',null) as receipt`)).rows[0].receipt.log;
+      assert.equal(saved.user_email,'a@example.invalid');assert.match(saved.description,/portal do investidor/);pass();
+      await deniedInTransaction("select public.record_system_activity('Criar','Locação','x','Forged',null)");
+      await deniedInTransaction(`select public.record_system_activity('Login','Auth','${ids.investorB}','Forged',null)`);
+      await count('select * from public.system_logs',0);
+    });
+    await as('authenticated',ids.unknown,()=>deniedInTransaction("select public.record_system_activity('Login','Auth','x','Unknown',null)"));
+    await as('authenticated',ids.inactive,()=>deniedInTransaction("select public.record_system_activity('Login','Auth','x','Inactive',null)"));
+  });
+  for(const role of ['anon','service_role'])await as(role,null,()=>denied("select public.record_system_activity('Login','Auth','x','Anonymous',null)"));
   console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; historical containment/read-only + final owning-module writes, atomic rentals/maintenance, constrained fine/status, separate Avisos create/edit/recipient directory with preserved receipts; anonymous, investor A/B, inactive, unlinked, staff/admin, service_role.`);
 } catch(error) {
   console.error('FAIL:',error.code || error.name,error.message);

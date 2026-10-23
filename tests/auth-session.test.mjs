@@ -79,6 +79,8 @@ test('an investor identity cannot enter the administrative portal', async () => 
 });
 test('authorized staff enters with email and password without authenticator enrollment or challenge', async () => {
   const calls=[];
+  let audit;
+  sdk.rpc=async(name,body)=>{audit={name,body};return {data:{log:{id:10,created_at:'2026-10-23T23:00:00Z',action:body.p_action,target_id:body.p_target_id}}};};
   sdk.auth.signInWithPassword=async credentials=>{calls.push(credentials);return {error:null};};
   sdk.auth.getUser=async()=>({data:{user:{id:'auth-test-user'}}});
   sdk.auth.getClaims=()=>{throw new Error('Login must not require an authenticator');};
@@ -89,6 +91,10 @@ test('authorized staff enters with email and password without authenticator enro
   assert.equal(profile.role,'administrador');
   assert.equal('mfaRequired' in profile,false);
   assert.deepEqual(calls,[{email:'test@example.invalid',password:'test-password-unused'}]);
+  assert.equal(audit.name,'record_system_activity');
+  assert.equal(audit.body.p_action,'Login');
+  assert.equal(audit.body.p_target_id,profile.id);
+  assert.ok(!JSON.stringify(audit).includes('test-password-unused'));
 });
 test('password change cannot reach Auth update when current password is invalid', async () => {
   let updates=0;
