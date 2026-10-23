@@ -1311,7 +1311,7 @@ const AdminInvestidores = ({
                       <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => {
-                            setInvestorForm(investor);
+                            setInvestorForm({ ...investor, password: '' });
                             setIsEditing(true);
                             setShowForm(true);
                           }}
@@ -1674,27 +1674,13 @@ const AdminInvestidores = ({
                   
                   <div className="space-y-4">
                     <div className="space-y-2 relative">
-                      <div className="flex items-center justify-between ml-1">
-                        <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Senha do Portal</label>
-                        {investorForm.passwordChangedAt && (
-                          <span className="text-[9px] uppercase tracking-widest font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            <CheckCircle2 size={10} /> Alterada pelo Investidor
-                          </span>
-                        )}
-                      </div>
-                      <input 
-                        type="text" 
-                        value={investorForm.password || ''} 
-                        onChange={e => setInvestorForm({ ...investorForm, password: e.target.value })} 
-                        className={`w-full bg-white border py-4 px-6 rounded-2xl text-xs font-bold outline-none focus:ring-4 transition-all shadow-inner font-mono tracking-widest ${investorForm.passwordChangedAt ? 'border-emerald-200 focus:ring-emerald-500/10 focus:border-emerald-500' : 'border-neutral-100 focus:ring-[#C5A059]/10 focus:border-[#C5A059]'}`} 
-                        placeholder="Senha segura de acesso" 
-                      />
-                      {investorForm.passwordChangedAt && (
-                        <p className="text-[10px] text-emerald-600 font-medium ml-1 mt-2">
-                          A nova senha escolhida é: <strong className="font-mono">{investorForm.password}</strong><br />
-                          <span className="text-[9px] text-neutral-400 font-normal">Alterada em: {new Date(investorForm.passwordChangedAt).toLocaleString('pt-BR')}</span>
-                        </p>
-                      )}
+                      <label className="text-[10px] uppercase tracking-widest text-neutral-400 font-black">Nova senha do portal</label>
+                      <input type="password" autoComplete="new-password" minLength={12} maxLength={128}
+                        value={investorForm.password || ''}
+                        onChange={e => setInvestorForm({ ...investorForm, password: e.target.value })}
+                        className="w-full bg-white border py-4 px-6 rounded-2xl text-xs font-bold outline-none"
+                        placeholder={investorForm.id ? 'Deixe em branco para manter' : 'Pelo menos 12 caracteres'} />
+                      <p className="text-xs text-neutral-500">A senha atual não pode ser consultada. Preencha somente para redefinir.</p>
                     </div>
 
                     <div className="space-y-2">

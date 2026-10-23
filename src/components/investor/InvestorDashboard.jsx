@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { openSafeUrl } from '../../utils/supabaseStorage';
 import { 
   X, Menu, TrendingUp, TrendingDown, Car, Wrench, Wallet, Calendar, Clock, Gauge, KeyRound, Lock, Eye as EyeIcon, EyeOff,
   Search, FileText, ShieldCheck, CheckCircle2, Printer, Eye, PieChart, Activity,
@@ -1469,7 +1470,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                                 {m.receiptUrl.split(',').map((url, idx) => (
                                   <button 
                                     key={idx}
-                                    onClick={() => window.open(url, '_blank')}
+                                    onClick={() => openSafeUrl(url, '_blank')}
                                     className="text-[10px] uppercase tracking-widest font-black text-[#D4AF37] hover:text-white transition-colors underline whitespace-nowrap"
                                   >
                                     {m.receiptUrl.split(',').length > 1 ? `Anexo ${idx + 1}` : 'Ver Comprovante'}
@@ -1538,7 +1539,7 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                             {m.receiptUrl.split(',').map((url, idx) => (
                               <button 
                                 key={idx}
-                                onClick={() => window.open(url, '_blank')}
+                                onClick={() => openSafeUrl(url, '_blank')}
                                 className="text-[10px] uppercase tracking-widest font-black text-[#D4AF37] hover:text-white transition-colors underline whitespace-nowrap"
                               >
                                 {m.receiptUrl.split(',').length > 1 ? `Anexo ${idx + 1}` : 'Ver Comprovante'}
@@ -2047,12 +2048,10 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
                     onClick={async () => {
                       setPwError('');
                       if (!pwForm.current) return setPwError('Informe a senha atual.');
-                      if (!pwForm.newPw || pwForm.newPw.length < 4) return setPwError('A nova senha deve ter ao menos 4 caracteres.');
+                      if (!pwForm.newPw || pwForm.newPw.length < 12) return setPwError('A nova senha deve ter ao menos 12 caracteres.');
                       if (pwForm.newPw !== pwForm.confirm) return setPwError('Nova senha e confirmação não coincidem.');
-                      // Verificar senha atual
-                      if (pwForm.current !== (investor?.password || '')) return setPwError('Senha atual incorreta.');
                       setPwLoading(true);
-                      const result = await onChangePassword?.(pwForm.newPw);
+                      const result = await onChangePassword?.(pwForm.current, pwForm.newPw);
                       setPwLoading(false);
                       if (result?.success) {
                         setPwSuccess(true);

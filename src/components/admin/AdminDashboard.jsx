@@ -1,3 +1,4 @@
+import { verifyCurrentPassword } from '../../lib/auth';
 import React, { Suspense } from 'react';
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from 'docx';
 import { Loader2 } from 'lucide-react';
@@ -336,20 +337,16 @@ const AdminDashboard = ({
   };
 
   const handleConfirmDelete = async (password) => {
-    console.log("ADMIN_DASHBOARD: Confirmação de exclusão acionada. Tipo:", deleteType, "Item:", itemToDelete);
-    if (password === 'Lareferencia') {
-      console.log("ADMIN_DASHBOARD: Senha master correta. Executando exclusão...");
+    if (await verifyCurrentPassword(password)) {
       let success = false;
       if (deleteType === 'rental') success = await onDeleteRental(itemToDelete.id);
       else if (deleteType === 'vehicle') success = await onDeleteVehicle(itemToDelete.id);
-      else if (deleteType === 'investor') success = await onDeleteInvestor(itemToDelete.id);
+      else if (deleteType === 'investor') success = await onDeleteInvestor(itemToDelete.id, password);
       else if (deleteType === 'lead') success = await onDeleteLead(itemToDelete.id);
       else if (deleteType === 'client') success = await onDeleteClient(itemToDelete.id);
       else if (deleteType === 'transaction') success = await onDeleteTransaction(itemToDelete.id);
       else if (deleteType === 'maintenance') success = await onDeleteMaintenance(itemToDelete.id);
       else if (deleteType === 'service_order') success = await onDeleteServiceOrder(itemToDelete.id);
-      
-      console.log("ADMIN_DASHBOARD: Resultado da exclusão:", success);
       if (success) {
         setShowDeleteAuthModal(false);
         setItemToDelete(null);
@@ -362,7 +359,6 @@ const AdminDashboard = ({
         });
       }
     } else {
-      console.log("ADMIN_DASHBOARD: Senha incorreta.");
       alert('Senha incorreta. Ação não autorizada.');
     }
   };

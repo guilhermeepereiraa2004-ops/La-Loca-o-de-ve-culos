@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { parseDbError } from '../utils/errorHelper';
-import { uploadFile } from '../utils/supabaseStorage';
+import { uploadFile, uploadPublicVehicleImage, hydrateStorageReferences, clearStorageUrlCache } from '../utils/supabaseStorage';
 import { parseCurrency } from '../utils/currencyUtils';
+import { getVerifiedProfile, clearLegacySession, manageAccount, SYSTEM_PROFILE_FIELDS, INVESTOR_PROFILE_FIELDS } from '../lib/auth';
 
 // Limpar temporariamente o bloqueio antigo do rate limiter de uploads salvo no localStorage
 try {
@@ -102,8 +103,6 @@ const TABLE_MAPPINGS = {
     phone: 'phone',
     cpf: 'cpf',
     address: 'address',
-    password: 'password',
-    passwordChangedAt: 'password_changed_at',
     status: 'status',
     bank: 'bank',
     pix: 'pix'
@@ -248,27 +247,7 @@ const mapToSnake = (obj, tableName) => {
 };
 
 export const useAppState = () => {
-  const [view, setView] = useState(() => {
-    const savedView = localStorage.getItem('la_current_view');
-    const savedAdmin = localStorage.getItem('la_admin_auth');
-    const savedInvestor = localStorage.getItem('la_investor_auth');
-    
-    if (savedView) {
-      if (savedView === 'admin' && savedAdmin === 'true') return 'admin';
-      if (savedView === 'investor' && savedInvestor) return 'investor';
-      if (savedView !== 'admin' && savedView !== 'investor') return savedView;
-    }
-
-    if (savedAdmin === 'true') return 'admin';
-    if (savedInvestor) return 'investor';
-    return 'home';
-  });
-
-  useEffect(() => {
-    if (view) {
-      localStorage.setItem('la_current_view', view);
-    }
-  }, [view]);
+  const [view, setView] = useState('home');
   const [leads, setLeads] = useState([]);
   const [oilChanges, setOilChanges] = useState([]);
   const [notices, setNotices] = useState([]);
@@ -289,38 +268,41 @@ export const useAppState = () => {
   const [systemUsersError, setSystemUsersError] = useState(null);
   const [clients, setClients] = useState([]);
   const [replacementContracts, setReplacementContracts] = useState([]);
-  const [currentUser, setCurrentUser] = useState(() => {
-    const savedView = localStorage.getItem('la_current_view');
-    const savedAdmin = localStorage.getItem('la_admin_auth');
-    const savedInvestor = localStorage.getItem('la_investor_auth');
-
-    // Differentiate user type based on current view to prevent cross-session contamination
-    const isViewAdmin = savedView === 'admin' || (!savedView && savedAdmin === 'true');
-    const isViewInvestor = savedView === 'investor' || (!savedView && !savedAdmin && savedInvestor);
-
-    if (isViewInvestor) {
-      if (savedInvestor) {
-        try {
-          return JSON.parse(savedInvestor);
-        } catch (e) {
-          return null;
-        }
-      }
-    } else if (isViewAdmin) {
-      if (savedAdmin === 'true') {
-        const savedUser = localStorage.getItem('la_admin_user');
-        if (savedUser) {
-          try {
-            return JSON.parse(savedUser);
-          } catch (e) {
-            // fallback
-          }
-        }
-        return { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
-      }
-    }
-    return null;
-  });
+  const [currentUser, setCurrentUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const authRevision = useRef(0);
+  useEffect(() => {
+    clearLegacySession();
+    clearStorageUrlCache();
+    if (window.indexedDB) window.indexedDB.deleteDatabase('InspectionDraftsDB');
+    let active = true;
+    const validate = async () => {
+      const revision = ++authRevision.current;
+      try {
+        const profile = await getVerifiedProfile();
+        if (active && revision === authRevision.current) setCurrentUser(profile);
+      } catch { if (active && revision === authRevision.current) setCurrentUser(null); }
+      finally { if (active) setAuthLoading(false); }
+    };
+    validate();
+    const identityTimer = setInterval(validate, 5 * 60 * 1000);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') authRevision.current++;
+      if (event === 'SIGNED_OUT') { authRevision.current++; clearStorageUrlCache(); setCurrentUser(null); setView('home'); }
+      // Keep async Supabase calls outside the auth callback lock.
+      else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') setTimeout(validate, 0);
+    });
+    return () => { active = false; clearInterval(identityTimer); subscription.unsubscribe(); };
+  }, []);
+  const logout = async () => {
+    authRevision.current++;
+    setCurrentUser(null);
+    setView('home');
+    clearLegacySession();
+    clearStorageUrlCache();
+    if (window.indexedDB) window.indexedDB.deleteDatabase('InspectionDraftsDB');
+    await supabase.auth.signOut();
+  };
   const [selectedImage, setSelectedImage] = useState(null);
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
@@ -330,99 +312,43 @@ export const useAppState = () => {
   const [logs, setLogs] = useState([]);
   const [isLogsDbConnected, setIsLogsDbConnected] = useState(false);
 
-  const loadLogs = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('system_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        setLogs(mapToCamel(data, 'system_logs'));
-        setIsLogsDbConnected(true);
-        return;
-      }
-      if (error) {
-        console.warn("Supabase system_logs query returned error, falling back to localStorage:", error);
-      }
-    } catch (e) {
-      console.warn("Supabase system_logs table not found, falling back to localStorage", e);
-    }
-    
-    setIsLogsDbConnected(false);
-    try {
-      const localLogs = localStorage.getItem('la_system_logs');
-      if (localLogs) {
-        setLogs(JSON.parse(localLogs));
-      }
-    } catch (e) {
-      console.error("Error loading local logs:", e);
-    }
+  const loadLogs = async (isActive = () => true) => {
+    const { data, error } = await supabase.from('system_logs').select('*').order('created_at', { ascending: false }).limit(500);
+    if (isActive()) { setLogs(error ? [] : mapToCamel(data || [], 'system_logs')); setIsLogsDbConnected(!error); }
   };
-
   const [fines, setFines] = useState([]);
   const [isFinesDbConnected, setIsFinesDbConnected] = useState(false);
-
-  const loadFines = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('system_fines')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (!error && data) {
-        const camelData = mapToCamel(data, 'fines');
-        setFines(camelData);
-        setIsFinesDbConnected(true);
-        try {
-          localStorage.setItem('la_system_fines', JSON.stringify(camelData));
-        } catch (e) {
-          console.warn("Could not sync loaded system_fines to localStorage:", e);
-        }
-        return;
-      }
-      if (error) {
-        console.warn("Supabase system_fines query returned error, falling back to localStorage:", error);
-      }
-    } catch (e) {
-      console.warn("Supabase system_fines table not found, falling back to localStorage", e);
-    }
-    
-    setIsFinesDbConnected(false);
-    try {
-      const localFines = localStorage.getItem('la_system_fines');
-      if (localFines) {
-        setFines(JSON.parse(localFines));
-      }
-    } catch (e) {
-      console.error("Error loading local fines:", e);
-    }
+  const loadFines = async (isActive = () => true) => {
+    const { data, error } = await supabase.from('system_fines').select('*').order('created_at', { ascending: false });
+    if (isActive()) { setFines(error ? [] : mapToCamel(data || [], 'fines')); setIsFinesDbConnected(!error); }
   };
 
   // Carrega os usuários de acesso de forma independente e prioritária.
   // O login não deve depender do carregamento sequencial das demais tabelas.
-  const loadSystemUsers = async () => {
+  const loadSystemUsers = async (isActive = () => true) => {
     setSystemUsersLoading(true);
     setSystemUsersError(null);
 
     try {
       const { data, error } = await supabase
         .from('system_users')
-        .select('*')
+        .select(SYSTEM_PROFILE_FIELDS)
         .order('created_at', { ascending: false })
         .order('id', { ascending: false });
 
+      if (!isActive()) return;
       if (error) throw error;
 
       setSystemUsers(mapToCamel(data || [], 'system_users'));
       return { success: true };
     } catch (err) {
+      if (!isActive()) return;
       console.error('Erro ao carregar usuários de acesso:', err);
       setSystemUsers([]);
       setSystemUsersError('Não foi possível carregar os usuários de acesso. Verifique sua conexão e tente novamente.');
       return { success: false, error: err };
     } finally {
-      setSystemUsersLoading(false);
+      if (isActive()) setSystemUsersLoading(false);
     }
   };
 
@@ -453,59 +379,42 @@ export const useAppState = () => {
         return;
       }
       if (error) {
-        console.warn("Supabase system_logs insert returned error, falling back to localStorage:", error);
+        console.warn("Não foi possível registrar a atividade:", error);
       }
     } catch (e) {
       console.warn("Could not log to Supabase system_logs:", e);
     }
 
-    try {
-      const localLogsStr = localStorage.getItem('la_system_logs') || '[]';
-      const localLogs = JSON.parse(localLogsStr);
-      const localEntry = { ...logEntry, id: Date.now() };
-      const updatedLogs = [localEntry, ...localLogs].slice(0, 1000);
-      localStorage.setItem('la_system_logs', JSON.stringify(updatedLogs));
-      setLogs(updatedLogs);
-    } catch (e) {
-      console.error("Failed to write local log:", e);
-    }
   };
-
-  // Track logins
-  useEffect(() => {
-    if (currentUser) {
-      const hasLoggedKey = `la_logged_${currentUser.email || 'master'}_${new Date().toDateString()}`;
-      if (!sessionStorage.getItem(hasLoggedKey)) {
-        sessionStorage.setItem(hasLoggedKey, 'true');
-        
-        // Differentiate investor login from admin/employee login
-        const isInvestor = localStorage.getItem('la_investor_auth') !== null || (currentUser && !currentUser.role && currentUser.email !== 'Laveiculos@gmail.com');
-        const logMsg = isInvestor
-          ? `Login realizado com sucesso no portal do investidor`
-          : `Login realizado com sucesso no painel administrativo`;
-          
-        logActivity('Login', 'Auth', null, logMsg);
-      }
-    }
-  }, [currentUser]);
-
-
-
 
   // Load Data from Supabase
   useEffect(() => {
-    // Inicia a consulta de autenticação imediatamente, sem aguardar as outras tabelas.
-    loadSystemUsers();
+    let cancelled = false;
+    const isActive = () => !cancelled;
+    const privateSetters = [setLeads, setRentals, setInvestors, setTransactions, setMaintenances, setInspections, setServiceOrders, setAppointments, setQuotes, setInventory, setWorkshopFinancials, setSystemUsers, setClients, setReplacementContracts, setOilChanges, setNotices, setLogs, setFines];
+    privateSetters.forEach(setter => setter([]));
+    setVehicles([]);
+    if (!currentUser) {
+      setSystemUsersLoading(false);
+      supabase.rpc('get_public_fleet').then(async ({ data, error }) => {
+        data = await hydrateStorageReferences(data);
+        if (!cancelled && !error) setVehicles(mapToCamel(data || [], 'vehicles'));
+      });
+      return () => { cancelled = true; };
+    }
+    if (currentUser.role !== 'investidor') loadSystemUsers(isActive);
 
     const loadData = async () => {
       try {
         // Primeiro carregamos os veículos para estarem disponíveis para enriquecer as locações
         const { data: vData, error: vError } = await supabase.from('vehicles').select('*, investors(name)');
         let allVehicles = [];
+        if (cancelled) return;
         if (!vError && vData) {
-          allVehicles = mapToCamel(vData, 'vehicles');
+          allVehicles = mapToCamel(await hydrateStorageReferences(vData), 'vehicles');
+          if (cancelled) return;
           setVehicles(allVehicles);
-        }
+        } else if (!cancelled) setVehicles([]);
 
         const tables = [
           { table: 'leads', setter: setLeads },
@@ -528,6 +437,12 @@ export const useAppState = () => {
         let loadedTransactions = [];
 
         for (const item of tables) {
+          if (currentUser.role === 'investidor' && ['leads','clients','inspections','workshop_appointments','workshop_quotes','workshop_inventory','workshop_financials'].includes(item.table)) continue;
+          if (currentUser.role === 'investidor' && item.table === 'rentals') {
+            const { data, error } = await supabase.rpc('get_investor_rentals');
+            if (!cancelled && !error) setRentals(mapToCamel(data || [], 'rentals'));
+            continue;
+          }
           // Pulamos veículos pois já carregamos acima
           if (item.table === 'vehicles') continue;
 
@@ -536,12 +451,13 @@ export const useAppState = () => {
           let from = 0;
           const pageSize = 1000;
           while (true) {
-            let query = supabase.from(item.table).select('*').range(from, from + pageSize - 1);
+            let query = supabase.from(item.table).select(item.table === 'investors' ? INVESTOR_PROFILE_FIELDS : '*').range(from, from + pageSize - 1);
             query = query
               .order('created_at', { ascending: false })
               .order('id', { ascending: false });
             
             const { data, error: fetchError } = await query;
+            if (cancelled) return;
             if (fetchError || !data || data.length === 0) break;
             allData = allData.concat(data);
             if (data.length < pageSize) break;
@@ -549,7 +465,8 @@ export const useAppState = () => {
           }
           
           if (allData.length > 0) {
-            let mappedData = mapToCamel(allData, item.table);
+            let mappedData = mapToCamel(await hydrateStorageReferences(allData), item.table);
+            if (cancelled) return;
             
             if (item.table === 'transactions') {
               loadedTransactions = mappedData;
@@ -557,8 +474,9 @@ export const useAppState = () => {
             
             if (item.table === 'rentals') {
               const { data: cData } = await supabase.from('clients').select('*');
-              const currentClients = cData ? mapToCamel(cData, 'clients') : [];
-              if (cData) setClients(currentClients);
+              const currentClients = cData ? mapToCamel(await hydrateStorageReferences(cData), 'clients') : [];
+              if (cancelled) return;
+              if (!cancelled && cData) setClients(currentClients);
 
               mappedData = mappedData.map(rental => {
                 const vehicle = allVehicles.find(v => v.id === rental.vehicleId);
@@ -595,27 +513,6 @@ export const useAppState = () => {
                 };
               });
               
-              for (const rental of mappedData) {
-                const clientExists = currentClients.some(c => {
-                  if (rental.cpf && c.cpf && rental.cpf.replace(/\D/g, '') === c.cpf.replace(/\D/g, '')) return true;
-                  return (c.nome || c.name || '').toLowerCase() === (rental.user || '').toLowerCase();
-                });
-                if (!clientExists && rental.user) {
-                  supabase.from('clients').insert([{
-                    nome: rental.user,
-                    telefone: rental.clientPhone || rental.phone,
-                    cnh_number: rental.cnhNumber || rental.cnh,
-                    cnh_validity: rental.cnhValidity,
-                    documentos: rental.docs,
-                    cpf: rental.cpf || null,
-                    status: 'Ativo'
-                  }]).then(() => {
-                     supabase.from('clients').select('*').then(({data: cDataRefresh}) => {
-                       if (cDataRefresh) setClients(mapToCamel(cDataRefresh, 'clients'));
-                     });
-                  });
-                }
-              }
             }
             
             if (item.table === 'inspections') {
@@ -649,8 +546,8 @@ export const useAppState = () => {
               });
             }
             
-            item.setter(mappedData);
-          }
+            if (!cancelled) item.setter(mappedData);
+          } else if (!cancelled) item.setter([]);
         }
 
       } catch (err) {
@@ -658,52 +555,29 @@ export const useAppState = () => {
       }
       
       // Carregar os logs do sistema
-      await loadLogs();
+      if (!cancelled && currentUser.role !== 'investidor') await loadLogs(isActive);
       
       // Carregar as multas do sistema
-      await loadFines();
+      if (!cancelled && currentUser.role !== 'investidor') await loadFines(isActive);
     };
 
     loadData();
-  }, []);
+    const refreshTimer = setInterval(loadData, 10 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(refreshTimer); };
+  }, [currentUser?.authUserId, currentUser?.role, currentUser?.status, currentUser?.modules?.join(',')]);
 
-  const handleAddSystemUser = async (user) => {
-    const { data, error } = await supabase.from('system_users').insert([mapToSnake(user)]).select();
-    if (!error && data) {
-      setSystemUsers(prev => [...prev, mapToCamel(data)[0]]);
-      logActivity('Criar', 'Usuário', data[0].id, `Criou o usuário ${user.name} (${user.email})`);
-    } else if (error) {
-      console.error("Erro ao criar usuário:", error);
-      if (error.message?.includes('modules') || error.code === 'PGRST204') {
-        alert(`ERRO NO BANCO DE DADOS: A coluna 'modules' está faltando na tabela 'system_users'.\n\nPor favor, execute o script abaixo no SQL Editor do Supabase para corrigir:\n\nALTER TABLE public.system_users ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];`);
-      } else {
-        alert(`Erro ao criar usuário: ${parseDbError(error)}`);
-      }
-    }
+  const accountAction = async (kind, action, profile, password) => {
+    try {
+      const result = await manageAccount(kind, action, profile, password);
+      const setter = kind === 'system' ? setSystemUsers : setInvestors;
+      if (action === 'delete') setter(prev => prev.filter(item => item.id !== profile.id));
+      else setter(prev => action === 'create' ? [mapToCamel([result])[0], ...prev] : prev.map(item => item.id === result.id ? mapToCamel([result])[0] : item));
+      return { success: true, data: result };
+    } catch (error) { alert(error.message); return { success: false, error }; }
   };
-
-  const handleUpdateSystemUser = async (updated) => {
-    const { error } = await supabase.from('system_users').update(mapToSnake(updated)).eq('id', updated.id);
-    if (!error) {
-      setSystemUsers(prev => prev.map(u => u.id === updated.id ? updated : u));
-      logActivity('Atualizar', 'Usuário', updated.id, `Atualizou o usuário ${updated.name}`);
-    } else if (error) {
-      console.error("Erro ao atualizar usuário:", error);
-      if (error.message?.includes('modules') || error.code === 'PGRST204') {
-        alert(`ERRO NO BANCO DE DADOS: A coluna 'modules' está faltando na tabela 'system_users'.\n\nPor favor, execute o script abaixo no SQL Editor do Supabase para corrigir:\n\nALTER TABLE public.system_users ADD COLUMN IF NOT EXISTS modules text[] DEFAULT '{}'::text[];`);
-      } else {
-        alert(`Erro ao atualizar usuário: ${parseDbError(error)}`);
-      }
-    }
-  };
-
-  const handleDeleteSystemUser = async (id) => {
-    const { error } = await supabase.from('system_users').delete().eq('id', id);
-    if (!error) {
-      setSystemUsers(prev => prev.filter(u => u.id !== id));
-      logActivity('Apagar', 'Usuário', id, `Excluiu o usuário ID ${id}`);
-    }
-  };
+  const handleAddSystemUser = user => accountAction('system', 'create', user);
+  const handleUpdateSystemUser = user => accountAction('system', 'update', user);
+  const handleDeleteSystemUser = async (id, password) => (await accountAction('system', 'delete', { id }, password)).success;
 
   const handleAddLead = async (lead) => {
     const newLead = { 
@@ -1344,13 +1218,13 @@ export const useAppState = () => {
         const cpf = finalRental.cpf;
         const oldCpf = oldRental?.cpf;
         if (!clientUpdated && (cpf || oldCpf)) {
-          const { error } = await supabase.from('clients').update(clientPayload).or(`cpf.eq.${cpf},cpf.eq.${oldCpf}`);
+          const { error } = await supabase.from('clients').update(clientPayload).in('cpf', [cpf, oldCpf].filter(Boolean));
           if (!error) clientUpdated = true;
         }
 
         // 3. Se não deu certo por CPF/ID, tenta pela CNH (nova ou antiga) como fallback
         if (!clientUpdated && (cnh || oldCnh)) {
-          const { error } = await supabase.from('clients').update(clientPayload).or(`cnh_number.eq.${cnh},cnh_number.eq.${oldCnh}`);
+          const { error } = await supabase.from('clients').update(clientPayload).in('cnh_number', [cnh, oldCnh].filter(Boolean));
           if (!error) clientUpdated = true;
         }
         
@@ -1420,61 +1294,16 @@ export const useAppState = () => {
     }
   };
 
-  const handleAddInvestor = async (investor) => {
-    try {
-      const payload = mapToSnake(investor, 'investors');
-      const { data, error } = await supabase.from('investors').insert([payload]).select();
-      if (error) throw error;
-      if (data && data.length > 0) {
-        const camelData = mapToCamel(data, 'investors')[0];
-        setInvestors(prev => [camelData, ...prev]);
-        logActivity('Criar', 'Investidor', camelData.id, `Cadastrou o investidor ${camelData.name}`);
-        return { success: true, data: camelData };
-      }
-      return { success: false, error: new Error('Nenhum dado retornado do servidor') };
-    } catch (err) {
-      console.error("Erro ao cadastrar investidor:", err);
-      alert(`Erro ao cadastrar investidor: ${parseDbError(err)}`);
-      return { success: false, error: err };
-    }
-  };
-
-  const handleUpdateInvestor = async (updatedInvestor) => {
-    try {
-      const payload = mapToSnake(updatedInvestor, 'investors');
-      const { error } = await supabase.from('investors').update(payload).eq('id', updatedInvestor.id);
-      if (error) throw error;
-      setInvestors(prev => prev.map(i => i.id === updatedInvestor.id ? updatedInvestor : i));
-      logActivity('Atualizar', 'Investidor', updatedInvestor.id, `Atualizou os dados do investidor ${updatedInvestor.name}`);
-      return { success: true };
-    } catch (err) {
-      console.error("Erro ao atualizar investidor:", err);
-      alert(`Erro ao atualizar investidor: ${parseDbError(err)}`);
-      return { success: false, error: err };
-    }
-  };
-
-  const handleDeleteInvestor = async (id) => {
-    try {
-      const investor = investors.find(i => i.id === id);
-      const { error } = await supabase.from('investors').delete().eq('id', id);
-      if (error) throw error;
-      setInvestors(prev => prev.filter(i => i.id !== id));
-      logActivity('Apagar', 'Investidor', id, `Excluiu o investidor ${investor?.name || 'ID: ' + id}`);
-      return true;
-    } catch (err) {
-      console.error("Erro ao apagar investidor:", err);
-      alert(`Erro ao apagar investidor: ${err.message || err.details || 'Erro desconhecido'}`);
-      return false;
-    }
-  };
+  const handleAddInvestor = investor => accountAction('investor', 'create', investor);
+  const handleUpdateInvestor = investor => accountAction('investor', 'update', investor);
+  const handleDeleteInvestor = async (id, password) => (await accountAction('investor', 'delete', { id }, password)).success;
 
   const handleAddVehicle = async (vehicle) => {
     let imageUrl = vehicle.image;
     
     // Se houver um arquivo real, faz o upload
     if (vehicle.imageFile) {
-      imageUrl = await uploadFile(vehicle.imageFile, 'veiculos');
+      imageUrl = await uploadPublicVehicleImage(vehicle.imageFile);
     }
 
     let crlvUrl = vehicle.crlv;
@@ -1555,7 +1384,7 @@ export const useAppState = () => {
 
     let imageUrl = vehicle.image;
     if (vehicle.imageFile) {
-      imageUrl = await uploadFile(vehicle.imageFile, 'veiculos');
+      imageUrl = await uploadPublicVehicleImage(vehicle.imageFile);
     }
 
     let crlvUrl = vehicle.crlv;
@@ -2389,43 +2218,20 @@ export const useAppState = () => {
         const camelData = mapToCamel(data, 'fines')[0];
         setFines(prev => [camelData, ...prev]);
         setIsFinesDbConnected(true);
-        try {
-          const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
-          const localFines = JSON.parse(localFinesStr);
-          localStorage.setItem('la_system_fines', JSON.stringify([camelData, ...localFines]));
-        } catch (e) {
-          console.warn("Could not sync added fine to localStorage:", e);
-        }
         logActivity('Criar', 'Multas', camelData.id, `Registrou multa: ${camelData.infraction} - Placa: ${camelData.vehiclePlate} - Condutor: ${camelData.driverName}`);
         return { success: true, data: camelData };
       }
       if (error) {
-        console.warn("Supabase system_fines insert error, falling back to local storage:", error);
+        console.warn("Não foi possível salvar a multa:", error);
       }
     } catch (e) {
       console.warn("Could not insert to Supabase system_fines:", e);
     }
 
-    const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
-    const localFines = JSON.parse(localFinesStr);
-    const localEntry = { ...newFine, id: Date.now() };
-    const updatedFines = [localEntry, ...localFines];
-    localStorage.setItem('la_system_fines', JSON.stringify(updatedFines));
-    setFines(updatedFines);
-    logActivity('Criar', 'Multas', localEntry.id, `Registrou multa (Local): ${localEntry.infraction} - Placa: ${localEntry.vehiclePlate} - Condutor: ${localEntry.driverName}`);
-    return { success: true, data: localEntry };
+    return { success: false, error: 'Não foi possível salvar a multa no servidor.' };
   };
 
   const handleUpdateFine = async (updatedFine) => {
-    try {
-      const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
-      const localFines = JSON.parse(localFinesStr);
-      const updatedLocal = localFines.map(f => f.id === updatedFine.id ? updatedFine : f);
-      localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
-    } catch (e) {
-      console.warn("Could not sync update to localStorage:", e);
-    }
-
     try {
       const payload = mapToSnake(updatedFine, 'fines');
       delete payload.id;
@@ -2444,21 +2250,10 @@ export const useAppState = () => {
       console.warn("Supabase system_fines update failed:", e);
     }
 
-    setFines(prev => prev.map(f => f.id === updatedFine.id ? updatedFine : f));
-    logActivity('Atualizar', 'Multas', updatedFine.id, `Atualizou status da multa ID ${updatedFine.id} (Local) para: ${updatedFine.status}`);
-    return { success: true };
+    return { success: false, error: 'Não foi possível atualizar a multa no servidor.' };
   };
 
   const handleDeleteFine = async (id) => {
-    try {
-      const localFinesStr = localStorage.getItem('la_system_fines') || '[]';
-      const localFines = JSON.parse(localFinesStr);
-      const updatedLocal = localFines.filter(f => f.id !== id);
-      localStorage.setItem('la_system_fines', JSON.stringify(updatedLocal));
-    } catch (e) {
-      console.warn("Could not sync delete to localStorage:", e);
-    }
-
     try {
       const { error } = await supabase
         .from('system_fines')
@@ -2475,9 +2270,7 @@ export const useAppState = () => {
       console.warn("Supabase system_fines delete failed:", e);
     }
 
-    setFines(prev => prev.filter(f => f.id !== id));
-    logActivity('Apagar', 'Multas', id, `Excluiu multa ID ${id} (Local)`);
-    return { success: true };
+    return { success: false, error: 'Não foi possível excluir a multa no servidor.' };
   };
 
   const handleConfirmPayment = async (rentalId, billingData) => {
@@ -3209,12 +3002,26 @@ export const useAppState = () => {
     }
   };
 
-  const handleInterestSubmit = async (e) => {
-    e.preventDefault();
-    await handleAddLead({ name: interestForm.name, contact: interestForm.phone, email: interestForm.email, type: 'locacao', vehicleModel: selectedVehicleForInterest?.model, vehiclePlate: selectedVehicleForInterest?.plate, message: interestForm.observation });
-    setShowInterestModal(false);
-    setInterestForm({ name: '', phone: '', email: '', observation: '' });
-    setShowSuccessPopup(true);
+  const handleInterestSubmit = async (event) => {
+    event.preventDefault();
+    try {
+      const response = await fetch('/api/public-interest', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: interestForm.name, contact: interestForm.phone, email: interestForm.email,
+          message: interestForm.observation, type: 'locacao', vehicleId: selectedVehicleForInterest?.id ?? null,
+          website: interestForm.website || '', captchaToken: interestForm.captchaToken || '' }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'Não foi possível enviar seu interesse.');
+      setShowInterestModal(false);
+      setInterestForm({ name: '', phone: '', email: '', observation: '', website: '', captchaToken: '' });
+      setShowSuccessPopup(true);
+      return { success: true };
+    } catch (error) {
+      setInterestForm(previous => ({ ...previous, captchaToken: '', captchaAttempt: (previous.captchaAttempt || 0) + 1 }));
+      setGlobalAlert({ isOpen: true, title: 'Não foi possível enviar', message: error.message, type: 'error' });
+      return { success: false };
+    }
   };
 
   const handleAddQuote = async (quoteData) => {
@@ -3456,14 +3263,16 @@ export const useAppState = () => {
     }
   };
 
-  const handleMarkNoticeRead = async (noticeId, investorId) => {
+  const handleMarkNoticeRead = async (noticeId) => {
+    const investorId = currentUser?.id;
+    if (currentUser?.role !== 'investidor') return;
     try {
       const notice = notices.find(n => n.id === noticeId);
       if (!notice) return;
       const currentReadBy = notice.readBy || [];
       if (currentReadBy.includes(investorId)) return; // já lido
       const updatedReadBy = [...currentReadBy, investorId];
-      const { error } = await supabase.from('investor_notices').update({ read_by: updatedReadBy }).eq('id', noticeId);
+      const { error } = await supabase.rpc('mark_investor_notice_read', { p_notice_id: noticeId });
       if (error) throw error;
       setNotices(prev => prev.map(n => n.id === noticeId ? { ...n, readBy: updatedReadBy } : n));
     } catch (err) {
@@ -3476,7 +3285,7 @@ export const useAppState = () => {
     inspections, serviceOrders, appointments, quotes, inventory, workshopFinancials, oilChanges, notices,
     systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     fines, isFinesDbConnected,
-    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
+    currentUser, setCurrentUser, authLoading, logout, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     globalAlert, setGlobalAlert,
     selectedVehicleForInterest, setSelectedVehicleForInterest,

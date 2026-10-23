@@ -23,7 +23,6 @@ export const INITIAL_INVESTORS = [
     address: 'Rua das Palmeiras, 123 - Jardins, Aracaju/SE',
     bank: 'Nubank / 0001 / 12345-6',
     pix: 'ricardo@email.com',
-    password: 'invest123',
     adminTax: '15',
     status: 'Ativo'
   },
@@ -36,7 +35,6 @@ export const INITIAL_INVESTORS = [
     address: 'Av. Beira Mar, 456 - Centro, Aracaju/SE',
     bank: 'Itaú / 0341 / 98765-4',
     pix: '987.654.321-00',
-    password: 'invest456',
     adminTax: '12',
     status: 'Ativo'
   }

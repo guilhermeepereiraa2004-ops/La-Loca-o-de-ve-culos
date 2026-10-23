@@ -23,7 +23,7 @@ const DeleteAuthModal = React.memo(({ onConfirm, onClose }) => {
           <AlertTriangle size={32} />
         </div>
         <h3 className="text-xl font-black uppercase tracking-tight text-neutral-900 mb-2">Ação Restrita</h3>
-        <p className="text-neutral-500 text-xs font-light mb-8">Esta operação requer a Senha Master para confirmar a exclusão permanente.</p>
+        <p className="text-neutral-500 text-xs font-light mb-8">Esta operação requer sua senha atual para confirmar a exclusão permanente.</p>
         <input 
           type="password" 
           autoFocus

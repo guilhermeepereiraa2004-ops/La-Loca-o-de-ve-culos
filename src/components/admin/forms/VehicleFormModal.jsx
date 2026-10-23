@@ -1,3 +1,4 @@
+import { verifyCurrentPassword } from '../../../lib/auth';
 import React from 'react';
 import { X, Car, Users, TrendingUp, Wrench, Camera, Check, FileText } from 'lucide-react';
 import { EditorialLabel } from '../../ui/EditorialLabel';
@@ -20,8 +21,8 @@ const VehicleFormModal = ({
     setShowMasterAuthModal(true);
   };
 
-  const confirmUnlock = () => {
-    if (masterPasswordInput === 'Lareferencia') {
+  const confirmUnlock = async () => {
+    if (await verifyCurrentPassword(masterPasswordInput)) {
       setIsUnlocked(true);
       setShowMasterAuthModal(false);
     } else {
@@ -137,7 +138,7 @@ const VehicleFormModal = ({
                       <div className="flex items-center justify-between">
                         <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Status Atual</label>
                         {isEditing && (vehicleForm.status === 'Alugado' || vehicleForm.status === 'Alugado (Reserva)' || vehicleForm.status === 'Manutenção' || vehicleForm.status === 'Indisponível') && !isUnlocked && (
-                          <button type="button" onClick={handleUnlock} className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1" title="Clique para destravar com a senha mestre">
+                          <button type="button" onClick={handleUnlock} className="text-[8px] text-amber-500 font-bold uppercase tracking-widest bg-amber-50 px-2 py-0.5 rounded-md hover:bg-amber-100 transition-colors cursor-pointer flex items-center gap-1" title="Clique para destravar com a sua senha atual">
                             🔒 Trava de Segurança
                           </button>
                         )}
@@ -846,7 +847,7 @@ const VehicleFormModal = ({
         </div>
       </div>
       
-      {/* Modal de Senha Mestre */}
+      {/* Modal de Senha atual */}
       {showMasterAuthModal && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="absolute inset-0 bg-neutral-950/80 backdrop-blur-sm" onClick={() => setShowMasterAuthModal(false)} />

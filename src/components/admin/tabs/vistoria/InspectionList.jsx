@@ -1,3 +1,4 @@
+import { verifyCurrentPassword } from '../../../../lib/auth';
 import React, { useState, useMemo } from 'react';
 import { Plus, Search, Trash2, Eye, Calendar, Car, AlertTriangle, X, ShieldCheck, Camera, Activity, UserCheck, Download, FileText } from 'lucide-react';
 
@@ -184,9 +185,9 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
   const visibleInspections = sortedInspections.slice(0, visibleCount);
   const hasMore = visibleCount < sortedInspections.length;
 
-  const handleConfirmDelete = () => {
-    if (passwordInput === 'Lareferencia') {
-      onDeleteInspection(targetDeleteId);
+  const handleConfirmDelete = async () => {
+    if (await verifyCurrentPassword(passwordInput)) {
+      await onDeleteInspection(targetDeleteId);
       setShowPasswordModal(false);
       setPasswordInput('');
       setTargetDeleteId(null);
@@ -458,14 +459,14 @@ const InspectionList = ({ inspections = [], vehicles = [], rentals = [], onDelet
               </div>
               <div>
                 <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Segurança Exigida</h3>
-                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira a senha mestre para excluir esta vistoria</p>
+                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira a sua senha atual para excluir esta vistoria</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <input 
                 type="password"
-                placeholder="Senha Mestre"
+                placeholder="Senha atual"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-black text-center tracking-widest"

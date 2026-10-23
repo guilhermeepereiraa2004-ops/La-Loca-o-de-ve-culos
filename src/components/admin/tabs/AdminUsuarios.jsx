@@ -32,15 +32,11 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
   const [passwordInput, setPasswordInput] = useState('');
   const [targetDeleteId, setTargetDeleteId] = useState(null);
 
-  const handleConfirmDelete = () => {
-    if (passwordInput === 'Lareferencia') {
-      onDeleteUser(targetDeleteId);
-      setShowPasswordModal(false);
-      setPasswordInput('');
-      setTargetDeleteId(null);
-    } else {
-      alert('Senha incorreta!');
+  const handleConfirmDelete = async () => {
+    if (await onDeleteUser(targetDeleteId, passwordInput)) {
+      setShowPasswordModal(false); setTargetDeleteId(null);
     }
+    setPasswordInput('');
   };
 
   const handleOpenAdd = () => {
@@ -50,17 +46,19 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
   };
 
   const handleOpenEdit = (user) => {
-    setForm({ ...user });
+    setForm({ ...user, password: '', modules: user.modules || [] });
     setEditingUser(user);
     setShowForm(true);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (editingUser) {
-      onUpdateUser({ ...form, id: editingUser.id });
+      const result = await onUpdateUser({ ...form, id: editingUser.id });
+      if (!result?.success) return;
     } else {
-      onAddUser({ ...form, id: Date.now() });
+      const result = await onAddUser({ ...form });
+      if (!result?.success) return;
     }
     setShowForm(false);
     setEditingUser(null);
@@ -89,26 +87,6 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
         >
           <Plus size={16} /> Novo Usuário
         </button>
-      </div>
-
-      {/* Static Admin account */}
-      <div className="bg-neutral-900 rounded-[2.5rem] p-8 border border-[#C5A059]/20 flex items-center justify-between flex-wrap gap-6">
-        <div className="flex items-center gap-5">
-          <div className="w-14 h-14 bg-[#C5A059] rounded-2xl flex items-center justify-center text-neutral-900 shadow-lg">
-            <Shield size={28} />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="bg-[#C5A059]/20 text-[#C5A059] text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded">Administrador Master</span>
-            </div>
-            <h4 className="text-white font-black text-lg">L.A Locação Admin</h4>
-            <p className="text-neutral-400 text-[10px] font-bold uppercase tracking-widest">Laveiculos@gmail.com</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 text-neutral-500">
-          <Lock size={14} />
-          <span className="text-[9px] font-black uppercase tracking-widest">Acesso Total — Não Editável</span>
-        </div>
       </div>
 
       {/* Employee Users Grid */}
@@ -225,7 +203,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                     <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Senha</label>
                     <div className="relative">
                       <input
-                        type={showPassword ? 'text' : 'password'} required={!editingUser}
+                        type={showPassword ? 'text' : 'password'} required={!editingUser} minLength={12} maxLength={128} autoComplete="new-password"
                         value={form.password || ''}
                         onChange={e => setForm({ ...form, password: e.target.value })}
                         placeholder={editingUser ? '(Deixe em branco para manter)' : 'Senha de acesso'}
@@ -319,14 +297,14 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
               </div>
               <div>
                 <h3 className="text-xl font-black text-neutral-900 uppercase tracking-tight">Segurança Exigida</h3>
-                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira a senha mestre para excluir este usuário</p>
+                <p className="text-xs text-neutral-400 font-bold uppercase mt-1">Insira sua senha atual de administrador para excluir este usuário</p>
               </div>
             </div>
 
             <div className="space-y-4">
               <input 
                 type="password"
-                placeholder="Senha Mestre"
+                placeholder="Sua senha atual"
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 className="w-full bg-neutral-50 border-none p-5 rounded-2xl outline-none focus:ring-2 focus:ring-red-500/20 transition-all font-black text-center tracking-widest"

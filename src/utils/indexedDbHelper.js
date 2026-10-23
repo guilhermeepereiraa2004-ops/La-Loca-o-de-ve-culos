@@ -12,7 +12,11 @@ export const openDb = () => {
         db.createObjectStore(STORE_NAME);
       }
     };
-    request.onsuccess = (e) => resolve(e.target.result);
+    request.onsuccess = (e) => {
+      const db = e.target.result;
+      db.onversionchange = () => db.close();
+      resolve(db);
+    };
     request.onerror = (e) => reject(e.target.error);
   });
 };
@@ -22,6 +26,7 @@ export const saveDraft = async (draftData) => {
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.oncomplete = tx.onabort = tx.onerror = () => db.close();
       const store = tx.objectStore(STORE_NAME);
 
       // Save text metadata + photo URLs (never binary File/Blob objects).
@@ -82,6 +87,7 @@ export const getDraft = async () => {
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readonly');
+      tx.oncomplete = tx.onabort = tx.onerror = () => db.close();
       const store = tx.objectStore(STORE_NAME);
       const request = store.get(DRAFT_KEY);
       request.onsuccess = (e) => {
@@ -119,6 +125,7 @@ export const clearDraft = async () => {
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
+      tx.oncomplete = tx.onabort = tx.onerror = () => db.close();
       const store = tx.objectStore(STORE_NAME);
       const request = store.delete(DRAFT_KEY);
       request.onsuccess = () => resolve(true);

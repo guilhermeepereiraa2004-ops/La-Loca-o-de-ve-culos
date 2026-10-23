@@ -1,8 +1,9 @@
 import React from 'react';
-import { supabase } from './lib/supabase';
+import { changeOwnPassword } from './lib/auth';
 
 // Components
 import AdminLogin from './components/auth/AdminLogin';
+import PasswordConfirmation from './components/auth/PasswordConfirmation';
 import InvestorLogin from './components/auth/InvestorLogin';
 import InvestorDashboard from './components/investor/InvestorDashboard';
 import AdminDashboard from './components/admin/AdminDashboard';
@@ -20,17 +21,13 @@ import OficinaDashboard from './components/oficina/OficinaDashboard';
 // Hooks
 import { useAppState } from './hooks/useAppState';
 
-const App = ({ isOficinaDomain = false }) => {
-  const [isOficinaAuthenticated, setIsOficinaAuthenticated] = React.useState(() => {
-    return localStorage.getItem('la_oficina_auth') === 'true';
-  });
-
+const Application = ({ isOficinaDomain = false }) => {
   const {
     view, setView,
     leads, rentals, investors, vehicles, transactions, maintenances,
     inspections, serviceOrders, systemUsers, systemUsersLoading, systemUsersError, loadSystemUsers, clients, replacementContracts,
     quotes, appointments, inventory, workshopFinancials,
-    currentUser, setCurrentUser, selectedImage, setSelectedImage, logs, isLogsDbConnected,
+    currentUser, setCurrentUser, authLoading, logout, selectedImage, setSelectedImage, logs, isLogsDbConnected,
     fines, isFinesDbConnected,
     showInterestModal, setShowInterestModal, showSuccessPopup, setShowSuccessPopup,
     globalAlert, setGlobalAlert,
@@ -59,15 +56,15 @@ const App = ({ isOficinaDomain = false }) => {
 
 
 
+  if (authLoading) return <div role="status" className="min-h-screen grid place-items-center">Validando sessão…</div>;
+  const isOficinaAuthenticated = currentUser && (currentUser.role === 'administrador' || currentUser.modules?.includes('oficina'));
+
   // Oficina View (Domain Based)
   if (isOficinaDomain) {
     if (!isOficinaAuthenticated) {
       return (
         <OficinaLogin 
-          onLoginSuccess={() => {
-            localStorage.setItem('la_oficina_auth', 'true');
-            setIsOficinaAuthenticated(true);
-          }}
+          onLoginSuccess={setCurrentUser}
           onBack={() => {
             // Se tentar voltar, como está no subdomínio, manda para o domínio principal (ou recarrega se não tiver)
             window.location.href = window.location.protocol + '//' + window.location.hostname.replace('oficina.', '');
@@ -117,17 +114,14 @@ const App = ({ isOficinaDomain = false }) => {
           onAddOilChange={handleAddOilChange}
           onUpdateOilChange={handleUpdateOilChange}
           onDeleteOilChange={handleDeleteOilChange}
-          onLogout={() => {
-            localStorage.removeItem('la_oficina_auth');
-            setIsOficinaAuthenticated(false);
-          }}
+          onLogout={logout}
         />
       </>
     );
   }
 
   // Admin View
-  if (view === 'admin') {
+  if (view === 'admin' && currentUser && ['administrador', 'gerente', 'funcionario'].includes(currentUser.role)) {
     return (
       <>
         <GlobalAlertModal 
@@ -192,14 +186,7 @@ const App = ({ isOficinaDomain = false }) => {
         onAddSystemUser={handleAddSystemUser}
         onUpdateSystemUser={handleUpdateSystemUser}
         onDeleteSystemUser={handleDeleteSystemUser}
-        onLogout={() => {
-          localStorage.removeItem('la_admin_auth');
-          localStorage.removeItem('la_admin_user');
-          localStorage.removeItem('la_current_view');
-          localStorage.removeItem('la_admin_active_tab');
-          setCurrentUser(null);
-          setView('home');
-        }}
+        onLogout={logout}
         onSeed={seedData}
         onGoHome={() => setView('home')}
         onViewVehicleDetail={(v) => setView('vehicle-' + v.id)}
@@ -214,27 +201,7 @@ const App = ({ isOficinaDomain = false }) => {
   }
 
   // Investor View
-  if (view === 'investor') {
-    // Troca de senha do investidor direto no Supabase (sem confirmação por e-mail)
-    const handleChangeInvestorPassword = async (newPassword) => {
-      try {
-        if (!currentUser?.id) throw new Error('Investidor não identificado.');
-        const changedAt = new Date().toISOString();
-        const { error } = await supabase
-          .from('investors')
-          .update({ password: newPassword, password_changed_at: changedAt })
-          .eq('id', currentUser.id);
-        if (error) throw error;
-        // Atualizar o currentUser em cache para refletir a nova senha
-        const updated = { ...currentUser, password: newPassword, passwordChangedAt: changedAt };
-        localStorage.setItem('la_investor_auth', JSON.stringify(updated));
-        setCurrentUser(updated);
-        return { success: true };
-      } catch (err) {
-        console.error('Erro ao trocar senha:', err);
-        return { success: false, error: err.message || 'Erro desconhecido' };
-      }
-    };
+  if (view === 'investor' && currentUser?.role === 'investidor') {
     return (
       <>
         <GlobalAlertModal 
@@ -252,16 +219,10 @@ const App = ({ isOficinaDomain = false }) => {
         rentals={rentals}
         maintenances={maintenances}
         inspections={inspections}
-        onChangePassword={handleChangeInvestorPassword}
+        onChangePassword={changeOwnPassword}
         notices={notices}
         onMarkNoticeRead={handleMarkNoticeRead}
-        onLogout={() => {
-          localStorage.removeItem('la_investor_auth');
-          localStorage.removeItem('la_current_view');
-          localStorage.removeItem('la_investor_active_tab');
-          setCurrentUser(null);
-          setView('home');
-        }}
+        onLogout={logout}
         onGoHome={() => setView('home')}
       />
       </>
@@ -273,15 +234,8 @@ const App = ({ isOficinaDomain = false }) => {
     return (
       <AdminLogin
         onBack={() => setView('home')}
-        systemUsers={systemUsers}
-        systemUsersLoading={systemUsersLoading}
-        systemUsersError={systemUsersError}
-        onRetrySystemUsers={loadSystemUsers}
         onLoginSuccess={(user) => {
-          const adminUser = user || { role: 'administrador', name: 'Admin Master', email: 'Laveiculos@gmail.com', modules: null };
-          localStorage.setItem('la_admin_auth', 'true');
-          localStorage.setItem('la_admin_user', JSON.stringify(adminUser));
-          setCurrentUser(adminUser);
+          setCurrentUser(user);
           setView('admin');
         }}
       />
@@ -292,9 +246,7 @@ const App = ({ isOficinaDomain = false }) => {
     return (
       <InvestorLogin
         onBack={() => setView('home')}
-        investors={investors}
         onLoginSuccess={(investorObj) => {
-          localStorage.setItem('la_investor_auth', JSON.stringify(investorObj));
           setCurrentUser(investorObj);
           setView('investor');
         }}
@@ -370,5 +322,7 @@ const App = ({ isOficinaDomain = false }) => {
     </div>
   );
 };
+
+const App = props => <><Application {...props} /><PasswordConfirmation /></>;
 
 export default App;
