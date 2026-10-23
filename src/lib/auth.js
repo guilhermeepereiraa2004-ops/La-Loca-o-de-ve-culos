@@ -1,28 +1,31 @@
 import { verifyPasswordWithoutReplacingSession } from './passwordVerifier.js';
-import { supabase, createPasswordVerifier } from './supabase';
+import { supabase, createPasswordVerifier, prepareMainSignIn, completeMainSignIn, signOutMainSession } from './supabase';
 
 export const SYSTEM_PROFILE_FIELDS = 'id,auth_user_id,name,email,role,modules,created_at';
 export const INVESTOR_PROFILE_FIELDS = 'id,auth_user_id,name,email,phone,cpf,address,status,bank,pix,created_at';
 
 export function clearLegacySession() {
-  for (const storage of [window.localStorage, window.sessionStorage]) {
-    for (let index = storage.length - 1; index >= 0; index--) {
-      const key = storage.key(index);
-      if (key?.startsWith('la_')) storage.removeItem(key);
-    }
+  for (const kind of ['localStorage', 'sessionStorage']) {
+    try {
+      const storage = window[kind];
+      for (let index = storage.length - 1; index >= 0; index--) {
+        const key = storage.key(index);
+        if (key?.startsWith('la_')) storage.removeItem(key);
+      }
+    } catch { /* Storage can be blocked. Do not fail login or erase the sb- Auth session. */ }
   }
 }
 
 // UI state is derived from a verified identity and an RLS-protected profile.
 // Authorization of data remains enforced by PostgreSQL RLS and server endpoints.
-export async function getVerifiedProfile() {
-  const { data: { user }, error } = await supabase.auth.getUser();
+export async function getVerifiedProfile(client = supabase) {
+  const { data: { user }, error } = await client.auth.getUser();
   if (error || !user || user.is_anonymous) return null;
-  const { data: staff, error: staffError } = await supabase.from('system_users')
+  const { data: staff, error: staffError } = await client.from('system_users')
     .select(SYSTEM_PROFILE_FIELDS).eq('auth_user_id', user.id).maybeSingle();
   if (staffError) throw new Error('Não foi possível validar o acesso.');
   if (staff) return { ...staff, authUserId: user.id };
-  const { data: investor, error: investorError } = await supabase.from('investors')
+  const { data: investor, error: investorError } = await client.from('investors')
     .select(INVESTOR_PROFILE_FIELDS).eq('auth_user_id', user.id).maybeSingle();
   if (investorError) throw new Error('Não foi possível validar o acesso.');
   if (investor?.status === 'Ativo') return { ...investor, role: 'investidor', authUserId: user.id };
@@ -30,17 +33,19 @@ export async function getVerifiedProfile() {
 }
 
 export async function signIn(email, password, portal) {
-  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-  if (error) throw new Error('Credenciais inválidas ou acesso indisponível.');
+  await prepareMainSignIn();
   try {
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    if (error) throw new Error('Credenciais inválidas ou acesso indisponível.');
     const profile = await getVerifiedProfile();
     const permitted = profile && (portal === 'investor' ? profile.role === 'investidor' :
       portal === 'workshop' ? profile.role === 'administrador' || profile.modules?.includes('oficina') :
       ['administrador', 'gerente', 'funcionario'].includes(profile.role));
     if (!permitted) throw new Error('Credenciais inválidas ou acesso indisponível.');
+    completeMainSignIn();
     return profile;
   } catch {
-    await supabase.auth.signOut();
+    await signOutMainSession();
     throw new Error('Credenciais inválidas ou acesso indisponível.');
   }
 }

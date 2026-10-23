@@ -12,7 +12,7 @@ const hooks=registerHooks({
     return next(specifier,context);
   },
   load(url,context,next){
-    if(url==='recovery-test:sdk') return {format:'module',source:'export const supabase=globalThis.__recoveryTestSdk;',shortCircuit:true};
+    if(url==='recovery-test:sdk') return {format:'module',source:'export const recoverySupabase=globalThis.__recoveryTestSdk;',shortCircuit:true};
     if(url==='recovery-test:auth') return {format:'module',source:'export async function getVerifiedProfile(){throw new Error("Use injected fixture");}',shortCircuit:true};
     return next(url,context);
   },

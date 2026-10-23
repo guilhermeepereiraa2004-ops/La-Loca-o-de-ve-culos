@@ -1,6 +1,7 @@
 import { loadDataResources, applyHydratedRows, canLoadDataset, enrichRentalReferencesWhenReady } from '../lib/loadDataResources';
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, signOutMainSession } from '../lib/supabase';
+import { createSessionRestorer } from '../lib/browserSession.js';
 import { parseDbError } from '../utils/errorHelper';
 import { uploadFile, uploadPublicVehicleImage, hydrateStorageReferences, clearStorageUrlCache } from '../utils/supabaseStorage';
 import { parseCurrency } from '../utils/currencyUtils';
@@ -275,36 +276,33 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const retryDataLoad = () => setDataRefreshKey(previous => previous + 1);
   const [authLoading, setAuthLoading] = useState(true);
-  const authRevision = useRef(0);
+  const sessionRestorer = useRef(null);
   useEffect(() => {
     clearLegacySession();
     clearStorageUrlCache();
-    let active = true;
-    const validate = async () => {
-      const revision = ++authRevision.current;
-      try {
-        const profile = await getVerifiedProfile();
-        if (active && revision === authRevision.current) setCurrentUser(profile);
-      } catch { if (active && revision === authRevision.current) setCurrentUser(null); }
-      finally { if (active) setAuthLoading(false); }
-    };
-    validate();
-    const identityTimer = setInterval(validate, 5 * 60 * 1000);
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') authRevision.current++;
-      if (event === 'SIGNED_OUT') { authRevision.current++; clearStorageUrlCache(); setCurrentUser(null); setView('home'); }
-      // Keep async Supabase calls outside the auth callback lock.
-      else if (event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') setTimeout(validate, 0);
+    const restorer = createSessionRestorer({
+      getProfile: getVerifiedProfile,
+      onProfile: setCurrentUser,
+      onReady: () => setAuthLoading(false),
+      onRestore: profile => setView(profile.role === 'investidor' ? 'investor' : 'admin'),
+      onAnonymous: () => { clearStorageUrlCache(); setSelectedImage(null); setView(previous => ['admin','investor'].includes(previous) ? 'home' : previous); },
     });
-    return () => { active = false; clearInterval(identityTimer); subscription.unsubscribe(); };
+    sessionRestorer.current = restorer;
+    void restorer.validate();
+    const identityTimer = setInterval(restorer.validate, 5 * 60 * 1000);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(event => {
+      if (event === 'SIGNED_IN') restorer.allowSignIn();
+      // The event's cached profile is never accepted; async verification runs outside the Auth lock.
+      restorer.event(event);
+    });
+    return () => { restorer.dispose(); clearInterval(identityTimer); subscription.unsubscribe(); };
   }, []);
   const logout = async () => {
-    authRevision.current++;
-    setCurrentUser(null);
-    setView('home');
+    sessionRestorer.current?.beginLogout();
+    setCurrentUser(null); setSelectedImage(null); setView('home');
     clearLegacySession();
     clearStorageUrlCache();
-    await supabase.auth.signOut();
+    await signOutMainSession();
   };
   const [selectedImage, setSelectedImage] = useState(null);
   const [showInterestModal, setShowInterestModal] = useState(false);

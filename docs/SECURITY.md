@@ -5,6 +5,16 @@ veículos, movimentações e seus IDs são preservados na migração. A conta de
 acesso é vinculada pelo campo `auth_user_id`; senhas legadas nunca são usadas
 como alternativa ao Auth. Nenhuma credencial de serviço pode usar prefixo `VITE_`.
 
+Ao atualizar a página na mesma aba, o sistema restaura a sessão do Supabase Auth
+guardada em `sessionStorage` e consulta novamente a identidade e o perfil
+autorizado no servidor antes de abrir o painel. A senha não é armazenada. Use
+**Sair** para encerrar o acesso, especialmente em computadores compartilhados.
+Esse armazenamento não mantém um login permanente entre sessões do navegador;
+se o navegador bloquear o armazenamento, o acesso funciona em memória e exige
+novo login após atualizar. Não existe alternativa por flags de administrador ou
+perfis guardados no navegador. A confirmação da senha atual usa um cliente
+isolado, sem persistência, e não substitui a sessão do painel.
+
 ## Configuração
 
 - Navegador: `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` (pública).

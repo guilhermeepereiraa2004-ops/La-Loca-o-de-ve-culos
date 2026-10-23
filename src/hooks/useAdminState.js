@@ -3,13 +3,14 @@ import { useState, useEffect } from 'react';
 export const useAdminState = (currentUser) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState(() => {
-    const savedTab = localStorage.getItem('la_admin_active_tab');
-    return savedTab || 'bi';
+    try { return localStorage.getItem('la_admin_active_tab') || 'bi'; }
+    catch { return 'bi'; }
   });
 
   useEffect(() => {
     if (activeTab) {
-      localStorage.setItem('la_admin_active_tab', activeTab);
+      try { localStorage.setItem('la_admin_active_tab', activeTab); }
+      catch { /* A blocked preference store must not prevent using the panel. */ }
     }
   }, [activeTab]);
   const [showAddForm, setShowAddForm] = useState(false);

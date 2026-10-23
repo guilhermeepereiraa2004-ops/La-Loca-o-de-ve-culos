@@ -59,8 +59,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
   const [pwSuccess, setPwSuccess] = useState(false);
   const [calcModalVehiclePlate, setCalcModalVehiclePlate] = useState('all');
   const [activeTab, setActiveTab] = useState(() => {
-    const savedTab = localStorage.getItem('la_investor_active_tab');
-    return savedTab || 'dashboard';
+    try { return localStorage.getItem('la_investor_active_tab') || 'dashboard'; }
+    catch { return 'dashboard'; }
   });
   const [maintenanceFilter, setMaintenanceFilter] = useState('todos');
   const [maintenanceStartDate, setMaintenanceStartDate] = useState('');
@@ -100,7 +100,8 @@ const InvestorDashboard = ({ investor, transactions = [], vehicles = [], service
 
   useEffect(() => {
     if (activeTab) {
-      localStorage.setItem('la_investor_active_tab', activeTab);
+      try { localStorage.setItem('la_investor_active_tab', activeTab); }
+      catch { /* A blocked preference store must not prevent using the panel. */ }
     }
   }, [activeTab]);
 

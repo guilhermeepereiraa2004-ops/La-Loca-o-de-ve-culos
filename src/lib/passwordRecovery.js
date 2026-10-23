@@ -1,4 +1,4 @@
-import { supabase } from './supabase';
+import { recoverySupabase as supabase } from './supabase';
 import { getVerifiedProfile } from './auth';
 
 const INVALID_LINK = 'Este link é inválido ou expirou. Solicite um novo link de acesso.';
@@ -103,7 +103,7 @@ export function createPasswordRecoveryController({ client, getProfile, clock = D
     },
   };
 }
-export const passwordRecovery = createPasswordRecoveryController({ client: supabase, getProfile: getVerifiedProfile });
+export const passwordRecovery = createPasswordRecoveryController({ client: supabase, getProfile: () => getVerifiedProfile(supabase) });
 
 export async function requestPasswordRecovery(email, { origin = window.location.origin, captchaToken } = {}) {
   const normalized = String(email || '').trim().toLowerCase();

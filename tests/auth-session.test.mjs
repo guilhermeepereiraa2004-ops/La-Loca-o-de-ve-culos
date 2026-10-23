@@ -11,7 +11,7 @@ const hook = registerHooks({
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
-    if (url === 'security-test:supabase') return { format: 'module', source: 'export const supabase = globalThis.__securityTestAuthSdk; export const createPasswordVerifier=()=>({auth:{signInWithPassword:args=>supabase.auth.signInWithPassword(args),signOut:async()=>({})}});', shortCircuit: true };
+    if (url === 'security-test:supabase') return { format: 'module', source: 'export const supabase = globalThis.__securityTestAuthSdk; export const prepareMainSignIn=async()=>{}; export const completeMainSignIn=()=>{}; export const signOutMainSession=()=>supabase.auth.signOut(); export const createPasswordVerifier=()=>({auth:{signInWithPassword:args=>supabase.auth.signInWithPassword(args),signOut:async()=>({})}});', shortCircuit: true };
     return nextLoad(url, context);
   },
 });
@@ -41,6 +41,13 @@ test('legacy account, log and fine caches are removed from both browser stores',
   assert.equal(window.sessionStorage.length,0);
   assert.equal(window.localStorage.getItem('unrelated'),'keep');
 });
+test('legacy cleanup tolerates blocked getters and preserves SDK Auth transport', () => {
+  const session=storage({ 'sb-test-auth-token':'test-transport',la_admin_auth:'stale' });
+  globalThis.window={get localStorage(){throw new DOMException('Blocked','SecurityError');},sessionStorage:session};
+  assert.doesNotThrow(auth.clearLegacySession);
+  assert.equal(session.getItem('sb-test-auth-token'),'test-transport');
+  assert.equal(session.getItem('la_admin_auth'),null);
+});
 test('a valid Auth identity without authorized profile fails login and signs out', async () => {
   let signedOut = false;
   const reads=[];
@@ -51,6 +58,15 @@ test('a valid Auth identity without authorized profile fails login and signs out
   await assert.rejects(auth.signIn('test@example.invalid','test-password-unused','admin'),/Credenciais inválidas/);
   assert.equal(signedOut,true);
   assert.equal(reads.some(read => read.columns.split(',').some(field => field.includes('password'))),false);
+});
+test('invalid credentials or a network failure clear the active client session', async () => {
+  for (const signIn of [async()=>({error:{}}),async()=>{throw new Error('Transport failed');}]) {
+    let signedOut=false;
+    sdk.auth.signInWithPassword=signIn;
+    sdk.auth.signOut=async()=>{signedOut=true;return {};};
+    await assert.rejects(auth.signIn('test@example.invalid','invalid-password','admin'),/Credenciais inválidas/);
+    assert.equal(signedOut,true);
+  }
 });
 test('an investor identity cannot enter the administrative portal', async () => {
   let signedOut = false;
