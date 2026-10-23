@@ -35,15 +35,31 @@ async function as(role, uid, test) {
   await db.query("select set_config('request.jwt.claim.sub',$1,false)", [uid || '']);
   try { await test(); } finally { await db.exec('reset role'); }
 }
+async function equal(sql, expected) {
+  assert.deepEqual((await db.query(sql)).rows, expected, sql);
+  pass();
+}
+async function isolated(test) {
+  await db.exec('begin');
+  try { await test(); } finally { await db.exec('rollback'); }
+}
+async function deniedInTransaction(sql) {
+  await db.exec('savepoint expected_denial');
+  try { await denied(sql); } finally { await db.exec('rollback to savepoint expected_denial'); }
+}
 try {
   await db.exec(`
     create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth; create schema extensions; create schema storage;
     create table auth.users(id uuid primary key);
+    create table auth.mfa_factors(id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id),status text not null);
     create function auth.uid() returns uuid language sql stable as
       $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+    create function auth.jwt() returns jsonb language sql stable as
+      $$ select coalesce(nullif(current_setting('request.jwt.claims',true),''),'{}')::jsonb $$;
     grant usage on schema auth,public,storage to anon,authenticated,service_role;
     grant execute on function auth.uid() to anon,authenticated,service_role;
+    grant execute on function auth.jwt() to anon,authenticated,service_role;
     create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
     create table storage.objects(id uuid default gen_random_uuid(),bucket_id text,name text);
     alter table storage.objects enable row level security;
@@ -105,6 +121,7 @@ try {
     await count("select * from storage.objects where bucket_id='La-locacao'",0);
   });
   await db.exec(await readFile('supabase/migrations/20261023162033_security_auth_rls_containment.sql','utf8'));
+  await db.exec(await readFile('supabase/migrations/20261023181455_conditional_mfa_enforcement.sql','utf8'));
   await db.exec(`
     insert into auth.users values ${Object.values(ids).slice(0,7).map(id => `('${id}')`).join(',')};
     insert into public.system_users(id,name,email,role,password,modules,auth_user_id) values
@@ -211,6 +228,229 @@ try {
       assert.equal(result.rows[0].allowed,expected); pass();
     }
   });
+  // Behavioral integration checks below persist/re-read mutations in real
+  // PostgreSQL and roll them back; no application implementation is mocked.
+  const addedVehicle='40000000-0000-4000-8000-000000000001';
+  await as('authenticated',ids.employee,()=>isolated(async()=>{
+    await equal(`insert into public.vehicles(id,model,plate,image,investor_id) values('${addedVehicle}','Synthetic CRUD','CRUD001','storage://La-locacao/veiculos/roundtrip.png','${ids.investorA}') returning id`,[{id:addedVehicle}]);
+    await equal(`select image,model from public.vehicles where id='${addedVehicle}'`,[{image:'storage://La-locacao/veiculos/roundtrip.png',model:'Synthetic CRUD'}]);
+    await equal(`update public.vehicles set km=12345,model='Synthetic updated' where id='${addedVehicle}' returning id`,[{id:addedVehicle}]);
+    await equal(`select km,model,image from public.vehicles where id='${addedVehicle}'`,[{km:'12345',model:'Synthetic updated',image:'storage://La-locacao/veiculos/roundtrip.png'}]);
+    await equal(`delete from public.vehicles where id='${addedVehicle}' returning id`,[{id:addedVehicle}]);
+    await count(`select * from public.vehicles where id='${addedVehicle}'`,0);
+    await deniedInTransaction("insert into public.clients(nome) values('Unauthorized module')");
+    await deniedInTransaction("insert into public.transactions(type,val,date) values('in',1,'2026-10-23')");
+    await equal("update public.transactions set val=999 returning id",[]);
+    await equal("delete from public.transactions returning id",[]);
+  }));
+  await count(`select * from public.vehicles where id='${addedVehicle}'`,0);
+  await equal('select count(*)::integer as count,sum(val)::numeric as total from public.transactions',[{count:3,total:'350'}]);
+
+  // A/B may read their own records, but neither may mutate even their own rows.
+  for(const [uid,ownPlate,foreignPlate] of [[ids.investorA,'AAA0001','BBB0002'],[ids.investorB,'BBB0002','AAA0001']]){
+    await as('authenticated',uid,()=>isolated(async()=>{
+      await equal(`select vehicle_plate from public.transactions where vehicle_plate='${foreignPlate}'`,[]);
+      await equal(`select plate from public.vehicles where plate='${foreignPlate}'`,[]);
+      for(const plate of [ownPlate,foreignPlate]){
+        await equal(`update public.transactions set val=9999 where vehicle_plate='${plate}' returning id`,[]);
+        await equal(`delete from public.transactions where vehicle_plate='${plate}' returning id`,[]);
+        await equal(`update public.vehicles set investor_id='${ids.inactive}' where plate='${plate}' returning id`,[]);
+        await equal(`delete from public.vehicles where plate='${plate}' returning id`,[]);
+        await deniedInTransaction(`insert into public.transactions(type,val,date,vehicle_plate) values('in',5,'2026-10-23','${plate}')`);
+      }
+      await deniedInTransaction(`insert into public.vehicles(model,plate,investor_id) values('Forged owner','FORGED1','${uid}')`);
+      await deniedInTransaction(`insert into public.rentals(id_veiculo,start_date,value) values('${ids.vehicleA}','2026-10-23',1)`);
+      await deniedInTransaction(`update public.investors set email='attacker@example.invalid',status='Ativo' where id='${uid}'`);
+    }));
+  }
+  await equal('select count(*)::integer as count,sum(val)::numeric as total from public.transactions',[{count:3,total:'350'}]);
+  await equal(`select investor_id from public.vehicles where id='${ids.vehicleA}'`,[{investor_id:ids.investorA}]);
+
+  // Authenticated JWT role/user_metadata alone grants no company membership.
+  await as('authenticated',null,async()=>{
+    await count('select * from public.vehicles',0);
+    await count('select * from public.transactions',0);
+    await denied("insert into public.vehicles(model,plate) values('No identity','NOAUTH1')");
+  });
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({role:'authenticated',user_metadata:{role:'administrador',modules:['frota','financeiro']}})]);
+      await count('select * from public.vehicles',0);
+      await deniedInTransaction("insert into public.vehicles(model,plate) values('Forged metadata','METAFRG')");
+      await deniedInTransaction(`update public.system_users set role='administrador',modules='{financeiro}' where id='${ids.employee}'`);
+    });
+  });
+  await as('authenticated',ids.employee,()=>count('select * from public.vehicles',2));
+
+  // Module-scoped rental write, re-read and rollback preserve stored documents.
+  const addedRental='40000000-0000-4000-8000-000000000002';
+  await isolated(async()=>{
+    await db.exec(`update public.system_users set modules='{locacao}' where id='${ids.employee}'`);
+    await as('authenticated',ids.employee,async()=>{
+      await equal(`insert into public.rentals(id,id_veiculo,start_date,value,documentos) values('${addedRental}','${ids.vehicleA}','2026-10-23',400,'{"cnh":"storage://La-locacao/condutores/fixture/cnh.pdf","signedContract":"storage://La-locacao/contratos/fixture.pdf"}'::jsonb) returning id`,[{id:addedRental}]);
+      await db.exec(`update public.rentals set value=450 where id='${addedRental}'`);
+      await equal(`select value,documentos from public.rentals where id='${addedRental}'`,[{value:'450',documentos:{cnh:'storage://La-locacao/condutores/fixture/cnh.pdf',signedContract:'storage://La-locacao/contratos/fixture.pdf'}}]);
+      await equal(`delete from public.rentals where id='${addedRental}' returning id`,[{id:addedRental}]);
+    });
+  });
+  await count(`select * from public.rentals where id='${addedRental}'`,0);
+
+  // Ownership predicates differ across UUID, exact plate, and legacy text IDs.
+  // Exercise real linked rows so an empty table cannot make an IDOR test pass.
+  await isolated(async()=>{
+    await db.exec(`
+      insert into public.maintenances(vehicle_plate,service_type) values('AAA0001','Synthetic A'),('BBB0002','Synthetic B');
+      insert into public.oil_changes(vehicle_plate,date) values('AAA0001','2026-10-23'),('BBB0002','2026-10-23');
+      insert into public.service_orders(vehicle_id,date,plate) values('${ids.vehicleA}','2026-10-23','AAA0001'),('${ids.vehicleB}','2026-10-23','BBB0002');
+      insert into public.replacement_contracts(main_vehicle_plate,replacement_vehicle_plate) values('AAA0001','BBB0002'),('BBB0002','AAA0001');
+      insert into public.investor_payouts(investor_id,investor_name,amount,reference_month) values('${ids.investorA}','Synthetic A',10,'2026-10'),('${ids.investorB}','Synthetic B',20,'2026-10');
+      insert into public.inspections(vehicle_plate,driver_name,date) values('AAA0001','Synthetic restricted driver','2026-10-23');
+    `);
+    for(const [uid,ownPlate,otherPlate,ownVehicle] of [[ids.investorA,'AAA0001','BBB0002',ids.vehicleA],[ids.investorB,'BBB0002','AAA0001',ids.vehicleB]]){
+      await as('authenticated',uid,async()=>{
+        await equal('select vehicle_plate from public.maintenances',[{vehicle_plate:ownPlate}]);
+        await equal('select vehicle_plate from public.oil_changes',[{vehicle_plate:ownPlate}]);
+        await equal('select vehicle_id from public.service_orders',[{vehicle_id:ownVehicle}]);
+        await equal('select main_vehicle_plate from public.replacement_contracts',[{main_vehicle_plate:ownPlate}]);
+        await equal('select investor_id from public.investor_payouts',[{investor_id:uid}]);
+        await count('select * from public.inspections',0);
+        await equal(`update public.maintenances set vehicle_plate='${ownPlate}' where vehicle_plate='${otherPlate}' returning id`,[]);
+        await equal('delete from public.investor_payouts returning id',[]);
+      });
+    }
+  });
+
+  await isolated(async()=>{
+    const fallbackRental='40000000-0000-4000-8000-000000000003';
+    const conflictingRental='40000000-0000-4000-8000-000000000004';
+    await db.exec(`insert into public.rentals(id,id_veiculo,"id_do_veículo",vehicle_plate,start_date,value,cnh_number) values
+      ('${fallbackRental}',null,'${ids.vehicleA}','BBB0002','2026-10-23',5,'synthetic-hidden'),
+      ('${conflictingRental}','${ids.vehicleB}','${ids.vehicleA}','AAA0001','2026-10-23',7,'synthetic-hidden')`);
+    await as('authenticated',ids.investorA,async()=>{
+      const result=await db.query('select * from public.get_investor_rentals()');
+      assert.equal(result.rows.length,2);pass();
+      assert.equal(result.rows.some(row=>row.id===fallbackRental),true);pass();
+      assert.equal(result.rows.some(row=>row.id===conflictingRental),false);pass();
+      assert.equal(result.rows.every(row=>row.id_veiculo===ids.vehicleA&&!Object.hasOwn(row,'cnh_number')),true);pass();
+    });
+    await as('authenticated',ids.investorB,async()=>{
+      const result=await db.query('select * from public.get_investor_rentals()');
+      assert.equal(result.rows.length,2);pass();
+      assert.equal(result.rows.some(row=>row.id===conflictingRental),true);pass();
+      assert.equal(result.rows.some(row=>row.id===fallbackRental),false);pass();
+    });
+  });
+
+  // A real server-side ownership transfer immediately changes RLS, independently
+  // of a client's old snapshot or editable JWT metadata.
+  await isolated(async()=>{
+    await as('authenticated',ids.admin,async()=>{
+      await equal(`update public.vehicles set investor_id='${ids.investorB}' where id='${ids.vehicleA}' returning id`,[{id:ids.vehicleA}]);
+    });
+    await as('authenticated',ids.investorA,async()=>{
+      await count('select * from public.vehicles',0);
+      await count('select * from public.transactions',0);
+      await count('select * from public.get_investor_rentals()',0);
+    });
+    await as('authenticated',ids.investorB,async()=>{
+      await count('select * from public.vehicles',2);
+      await count('select * from public.transactions',2);
+      await count('select * from public.get_investor_rentals()',2);
+    });
+  });
+  await equal(`select investor_id from public.vehicles where id='${ids.vehicleA}'`,[{investor_id:ids.investorA}]);
+
+  // Protected profile fields remain server-only even for a legitimate admin.
+  for(const uid of [ids.employee,ids.admin,ids.investorA])await as('authenticated',uid,()=>isolated(async()=>{
+    for(const mutation of [
+      "insert into public.system_users(name,email,role) values('Forged','forged@example.invalid','administrador')",
+      `update public.system_users set auth_user_id='${ids.unknown}' where id='${ids.employee}'`,
+      `update public.system_users set password='synthetic-forged' where id='${ids.admin}'`,
+      `delete from public.investors where id='${ids.investorB}'`,
+    ])await deniedInTransaction(mutation);
+  }));
+
+  // Notice acknowledgement is idempotent and cannot acknowledge another target.
+  await isolated(async()=>{
+    await as('authenticated',ids.investorA,async()=>{
+      for(let times=0;times<2;times++)await db.query("select public.mark_investor_notice_read('30000000-0000-4000-8000-000000000002')");
+      await db.query("select public.mark_investor_notice_read('30000000-0000-4000-8000-000000000003')");
+    });
+    await equal("select read_by from public.investor_notices where id='30000000-0000-4000-8000-000000000002'",[{read_by:[ids.investorA]}]);
+    await equal("select coalesce(read_by,'{}'::uuid[]) as read_by from public.investor_notices where id='30000000-0000-4000-8000-000000000003'",[{read_by:[]}]);
+  });
+
+  // Staff audit append verifies identity; even administrators cannot rewrite logs.
+  await isolated(async()=>{
+    await as('authenticated',ids.employee,async()=>{
+      await db.exec("insert into public.system_logs(id,user_name,user_email,action,description) values(9001,'Synthetic employee','employee@example.invalid','Create','Synthetic audit')");
+      pass();
+      await deniedInTransaction("insert into public.system_logs(id,user_name,user_email,action,description) values(9002,'Forged actor','admin@example.invalid','Create','Forged audit')");
+      await count('select * from public.system_logs',0);
+    });
+    await as('authenticated',ids.logsOnly,()=>equal('select user_email from public.system_logs where id=9001',[{user_email:'employee@example.invalid'}]));
+    await as('authenticated',ids.admin,async()=>{
+      await deniedInTransaction("update public.system_logs set description='rewrite' where id=9001");
+      await deniedInTransaction('delete from public.system_logs where id=9001');
+    });
+  });
+  await count('select * from public.system_logs where id=9001',0);
+
+  for(const uid of [ids.admin,ids.employee,ids.investorA])await as('authenticated',uid,()=>isolated(async()=>{
+    await equal("update storage.objects set name='overwritten' where bucket_id='La-locacao' returning name",[]);
+    await equal("delete from storage.objects where bucket_id='La-locacao' returning name",[]);
+    await deniedInTransaction("update storage.buckets set public=true where id='La-locacao'");
+  }));
+  await count("select * from storage.objects where bucket_id='La-locacao'",3);
+  await equal("select public from storage.buckets where id='La-locacao'",[{public:false}]);
+
+  // The pending MFA migration is exercised locally, without enrolling any real
+  // user's factor or changing production. Unverified enrollment cannot lock out.
+  await isolated(async()=>{
+    const aal=async(uid,level,test)=>as('authenticated',uid,async()=>{
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:uid,role:'authenticated',aal:level})]);
+      await test();
+    });
+    await aal(ids.admin,'aal1',()=>count('select * from public.vehicles',2));
+    await db.exec(`insert into auth.mfa_factors(user_id,status) values('${ids.admin}','unverified')`);
+    await aal(ids.admin,'aal1',async()=>{
+      await equal('select private_security.mfa_satisfied() as allowed',[{allowed:true}]);
+      await count('select * from public.vehicles',2);
+    });
+    await db.exec(`update auth.mfa_factors set status='verified' where user_id='${ids.admin}'`);
+    await aal(ids.admin,'aal1',async()=>{
+      await equal('select private_security.is_admin() as allowed',[{allowed:false}]);
+      await count('select * from public.vehicles',0);
+      await count('select id from public.investors',0);
+      await count('select id from public.system_users',1);
+      await count("select * from storage.objects where bucket_id='La-locacao'",0);
+      await equal('update public.vehicles set km=999 returning id',[]);
+      await deniedInTransaction("insert into public.vehicles(model,plate) values('MFA bypass','MFA0001')");
+      // Client-editable metadata cannot manufacture signed MFA assurance.
+      await db.query("select set_config('request.jwt.claims',$1,true)",[JSON.stringify({sub:ids.admin,role:'authenticated',aal:'aal1',user_metadata:{aal:'aal2',role:'administrador'}})]);
+      await count('select * from public.vehicles',0);
+    });
+    await aal(ids.admin,'aal2',async()=>{
+      await equal('select private_security.is_admin() as allowed',[{allowed:true}]);
+      await count('select * from public.vehicles',2);
+      await count('select id from public.system_users',3);
+      await count("select * from storage.objects where bucket_id='La-locacao'",3);
+      await deniedInTransaction('select password from public.system_users');
+    });
+    await db.exec(`insert into auth.mfa_factors(user_id,status) values('${ids.employee}','verified')`);
+    await aal(ids.employee,'aal1',async()=>{
+      await count('select * from public.vehicles',0);
+      await count('select id from public.system_users',1);
+    });
+    await aal(ids.employee,'aal2',async()=>{
+      await count('select * from public.vehicles',2);
+      await equal(`update public.vehicles set km=555 where id='${ids.vehicleA}' returning id`,[{id:ids.vehicleA}]);
+      await equal(`select km from public.vehicles where id='${ids.vehicleA}'`,[{km:'555'}]);
+      await count('select * from public.clients',0);
+    });
+  });
+  await equal(`select km from public.vehicles where id='${ids.vehicleA}'`,[{km:null}]);
   console.log(`PASS: ${checks} PostgreSQL assertions; ${process.env.SECURITY_SCHEMA_METADATA_FILE?'LIVE CATALOG TYPES/CONSTRAINTS':'repository schema'}; containment + full migration; anonymous, investor A/B, inactive, unlinked, employee, admin, service_role.`);
 } catch(error) {
   console.error('FAIL:',error.code || error.name,error.message);

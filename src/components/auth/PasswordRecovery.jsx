@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { passwordRecovery } from '../../lib/passwordRecovery';
+import MfaChallenge from './MfaChallenge';
 
 export default function PasswordRecovery() {
   const [status, setStatus] = useState('validating');
@@ -10,7 +11,7 @@ export default function PasswordRecovery() {
   useEffect(() => {
     let active = true;
     passwordRecovery.begin(window.location.href, () => window.history.replaceState(null, '', '/auth/callback'))
-      .then(() => { if (active) setStatus('ready'); })
+      .then(result => { if (active) setStatus(result.requiresMfa ? 'mfa' : 'ready'); })
       .catch(err => { if (active) { setError(err.message); setStatus('invalid'); } });
     return () => { active = false; };
   }, []);
@@ -21,10 +22,11 @@ export default function PasswordRecovery() {
     try {
       await passwordRecovery.finish(password, confirmation);
       setPassword(''); setConfirmation(''); setStatus('done');
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError(err.message); if (err.code === 'MFA_REQUIRED') setStatus('mfa'); }
     finally { setSaving(false); }
   };
   const leave = async () => { await passwordRecovery.cancel().catch(() => {}); window.location.replace('/'); };
+  if (status === 'mfa') return <main className="min-h-screen bg-neutral-950 flex items-center justify-center p-6"><MfaChallenge onVerified={() => { setError(''); setStatus('ready'); }} onCancel={leave} /></main>;
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-6">
       <section className="w-full max-w-md rounded-3xl border border-neutral-800 bg-neutral-900 p-8 space-y-6">

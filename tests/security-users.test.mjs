@@ -10,6 +10,7 @@ function fixture(options = {}) {
   const calls = [];
   const auth = {
     getUser: async () => { calls.push('getUser'); return options.unauthenticated ? { data: { user: null }, error: {} } : { data: { user: { id: actorId, email: 'admin@example.invalid' } } }; },
+    getClaims: async () => { calls.push('getClaims'); return { data: { claims: { sub: actorId, aal: 'aal1' } } }; },
     signInWithPassword: async () => { calls.push('reauth'); return options.badPassword ? { data: null, error: {} } : { data: { user: { id: actorId } } }; },
     signOut: async () => { calls.push('signOut'); return {}; },
   };

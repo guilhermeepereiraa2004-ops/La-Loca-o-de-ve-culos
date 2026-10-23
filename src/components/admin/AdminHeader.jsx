@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Bell, X, ChevronRight } from 'lucide-react';
 import { getAlertColorClasses } from '../../utils/notifications';
+import MfaSettings from '../auth/MfaSettings';
 
 const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, alerts = [], totalCount = 0, onNavigate }) => {
   const [showPanel, setShowPanel] = useState(false);
@@ -54,6 +55,7 @@ const AdminHeader = ({ activeTab, currentUser, isSidebarOpen, onSeed, hasData, a
       </div>
 
       <div className="flex items-center gap-4 md:gap-6">
+        {currentUser?.role === 'administrador' && <MfaSettings />}
         {/* ── Notification Bell ── */}
         <div className="relative" ref={panelRef}>
           <button

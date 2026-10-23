@@ -1,4 +1,5 @@
-import { supabase } from './supabase';
+import { getMfaStatusForUser, verifyPasswordWithoutReplacingSession, ensureMfa } from './mfa.js';
+import { supabase, createPasswordVerifier } from './supabase';
 
 export const SYSTEM_PROFILE_FIELDS = 'id,auth_user_id,name,email,role,modules,created_at';
 export const INVESTOR_PROFILE_FIELDS = 'id,auth_user_id,name,email,phone,cpf,address,status,bank,pix,created_at';
@@ -17,14 +18,16 @@ export function clearLegacySession() {
 export async function getVerifiedProfile() {
   const { data: { user }, error } = await supabase.auth.getUser();
   if (error || !user || user.is_anonymous) return null;
+  const mfa = await getMfaStatusForUser(supabase, user);
+  const mfaProfile = { mfaRequired: mfa.required, mfaLevel: mfa.currentLevel };
   const { data: staff, error: staffError } = await supabase.from('system_users')
     .select(SYSTEM_PROFILE_FIELDS).eq('auth_user_id', user.id).maybeSingle();
   if (staffError) throw new Error('Não foi possível validar o acesso.');
-  if (staff) return { ...staff, authUserId: user.id };
+  if (staff) return { ...staff, ...mfaProfile, authUserId: user.id };
   const { data: investor, error: investorError } = await supabase.from('investors')
     .select(INVESTOR_PROFILE_FIELDS).eq('auth_user_id', user.id).maybeSingle();
   if (investorError) throw new Error('Não foi possível validar o acesso.');
-  if (investor?.status === 'Ativo') return { ...investor, role: 'investidor', authUserId: user.id };
+  if (investor?.status === 'Ativo') return { ...investor, ...mfaProfile, role: 'investidor', authUserId: user.id };
   return null;
 }
 
@@ -45,10 +48,9 @@ export async function signIn(email, password, portal) {
 }
 
 export async function verifyCurrentPassword(password) {
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user?.email || !password) return false;
-  const { error: signInError } = await supabase.auth.signInWithPassword({ email: user.email, password });
-  return !signInError;
+  const valid = await verifyPasswordWithoutReplacingSession(supabase, createPasswordVerifier, password);
+  if (valid) await ensureMfa();
+  return valid;
 }
 
 export async function changeOwnPassword(currentPassword, password) {
@@ -63,6 +65,7 @@ export async function manageAccount(kind, action, profile, currentPassword) {
     window.dispatchEvent(new CustomEvent('la:confirm-admin-password', { detail: { resolve } }));
   });
   if (!password) throw new Error('Operação cancelada.');
+  await ensureMfa();
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) throw new Error('Sessão expirada. Entre novamente.');
   // getSession only transports the token; the endpoint revalidates it with getUser.

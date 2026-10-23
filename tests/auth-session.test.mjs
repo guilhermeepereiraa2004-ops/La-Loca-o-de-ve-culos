@@ -7,11 +7,11 @@ globalThis.__securityTestAuthSdk = sdk;
 // Load the actual application helper, replacing only the external Supabase transport.
 const hook = registerHooks({
   resolve(specifier, context, nextResolve) {
-    if (specifier === './supabase' && context.parentURL?.endsWith('/src/lib/auth.js')) return { url: 'security-test:supabase', shortCircuit: true };
+    if (specifier === './supabase' && /\/src\/lib\/(auth|mfa)\.js$/.test(context.parentURL || '')) return { url: 'security-test:supabase', shortCircuit: true };
     return nextResolve(specifier, context);
   },
   load(url, context, nextLoad) {
-    if (url === 'security-test:supabase') return { format: 'module', source: 'export const supabase = globalThis.__securityTestAuthSdk;', shortCircuit: true };
+    if (url === 'security-test:supabase') return { format: 'module', source: 'export const supabase = globalThis.__securityTestAuthSdk; export const createPasswordVerifier=()=>({auth:{signInWithPassword:args=>supabase.auth.signInWithPassword(args),signOut:async()=>({})}});', shortCircuit: true };
     return nextLoad(url, context);
   },
 });
@@ -72,7 +72,7 @@ test('password change cannot reach Auth update when current password is invalid'
 test('password update sends current password to Auth for provider-side enforcement', async () => {
   let changes;
   sdk.auth.getUser = async () => ({ data: { user: { id:'test-user',email:'test@example.invalid' } } });
-  sdk.auth.signInWithPassword = async () => ({ error: null });
+  sdk.auth.signInWithPassword = async () => ({ data:{user:{id:'test-user'}},error: null });
   sdk.auth.updateUser = async attributes => { changes=attributes; return {}; };
   const result = await auth.changeOwnPassword('current-test-password','new-test-password-unique');
   assert.equal(result.success,true);
@@ -86,7 +86,7 @@ test('client activation-link request reaches real handler without injecting modu
   const identityId='33333333-3333-4333-8333-333333333333';
   sdk.auth.getUser=async()=>({data:{user:{id:actorId,email:'admin@example.invalid'}}});
   sdk.auth.getSession=async()=>({data:{session:{access_token:'test-token'}}});
-  const serverAuth={getUser:sdk.auth.getUser,signInWithPassword:async()=>({data:{user:{id:actorId}}}),signOut:async()=>({})};
+  const serverAuth={getUser:sdk.auth.getUser,getClaims:async()=>({data:{claims:{sub:actorId,aal:'aal1'}}}),signInWithPassword:async()=>({data:{user:{id:actorId}}}),signOut:async()=>({})};
   const admin={
     rpc:async()=>({data:true}),
     auth:{admin:{

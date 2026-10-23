@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { signIn } from '../../lib/auth';
+import { signIn, getVerifiedProfile } from '../../lib/auth';
+import { supabase } from '../../lib/supabase';
 import { requestPasswordRecovery } from '../../lib/passwordRecovery';
 import TurnstileChallenge from './TurnstileChallenge';
+import MfaChallenge from './MfaChallenge';
 
 export default function SecureLogin({ portal = 'admin', onBack, onLoginSuccess }) {
   const [email, setEmail] = useState('');
@@ -10,6 +12,7 @@ export default function SecureLogin({ portal = 'admin', onBack, onLoginSuccess }
   const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   const [recovering, setRecovering] = useState(false);
+  const [pendingMfa, setPendingMfa] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
   const [captchaAttempt, setCaptchaAttempt] = useState(0);
   const emailRecoveryEnabled = import.meta.env.VITE_AUTH_EMAIL_RECOVERY_ENABLED === 'true';
@@ -26,7 +29,8 @@ export default function SecureLogin({ portal = 'admin', onBack, onLoginSuccess }
       } else {
         const profile = await signIn(email, password, portal);
         setPassword('');
-        onLoginSuccess(profile);
+        if (profile.mfaRequired) setPendingMfa(true);
+        else onLoginSuccess(profile);
       }
     } catch (err) { setPassword(''); setError(err.message); }
     finally {
@@ -34,6 +38,11 @@ export default function SecureLogin({ portal = 'admin', onBack, onLoginSuccess }
     }
   };
   const toggleRecovery = () => { setRecovering(previous => !previous); setError(''); setNotice(''); setPassword(''); setCaptchaToken(''); };
+  if (pendingMfa) return <main className="min-h-screen bg-neutral-950 flex items-center justify-center p-6"><MfaChallenge onVerified={async () => {
+    const profile = await getVerifiedProfile();
+    if (!profile || profile.mfaRequired) throw new Error('Não foi possível validar o acesso. Entre novamente.');
+    onLoginSuccess(profile);
+  }} onCancel={async () => { await supabase.auth.signOut({ scope: 'local' }); setPendingMfa(false); }} /></main>;
   return (
     <main className="min-h-screen bg-neutral-950 text-white flex items-center justify-center p-6">
       <section className="w-full max-w-md rounded-3xl border border-neutral-800 bg-neutral-900 p-8">

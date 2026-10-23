@@ -51,6 +51,24 @@ identidade do destinatário antes de entregar o link privado, temporário e de
 uso único. O destinatário define a própria senha no site. Não reutilize senhas
 legadas e não publique links em logs, tickets ou canais compartilhados.
 
+### Senhas manuais da equipe
+
+Na gestão **Usuários → Editar**, confira o email, papel e módulos do cadastro
+existente e informe uma senha nova com pelo menos 12 caracteres. A identidade
+Auth é vinculada ao mesmo perfil; o histórico não é recadastrado. Entregue a
+senha por um canal privado. O campo vazio mantém a senha Auth atual quando a
+conta já está vinculada. Em perfis antigos ainda sem identidade Auth, a primeira
+ativação exige uma senha nova ou um link individual de definição de senha.
+
+A conta do próprio administrador não pode ser redefinida ou rebaixada por essa
+tela. A senha já configurada pelo titular permanece; a troca pessoal usa o fluxo
+de senha atual. Não reutilizar senhas antigas expostas. As contas e senhas de
+investidores ficam fora da revisão de acessos adiada pelo proprietário.
+
+O controle administrativo por aplicativo autenticador está descrito em
+[MFA.md](MFA.md). A segunda etapa só passa a ser exigida quando o titular
+confirma um fator; começar e cancelar um cadastro não bloqueia a conta.
+
 O callback remove o token da URL antes de consultar o Auth, valida o token de
 recuperação com `verifyOtp` e confere identidade, sessão e perfil. O AMR de
 algumas versões hospedadas é `otp`; isso só é aceito após a validação remota do

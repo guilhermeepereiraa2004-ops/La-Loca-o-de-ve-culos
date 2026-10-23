@@ -1,6 +1,8 @@
 import DataLoadStatus from './components/ui/DataLoadStatus';
 import React from 'react';
-import { changeOwnPassword } from './lib/auth';
+import { changeOwnPassword, getVerifiedProfile } from './lib/auth';
+import MfaChallenge from './components/auth/MfaChallenge';
+import MfaConfirmation from './components/auth/MfaConfirmation';
 
 // Components
 import AdminLogin from './components/auth/AdminLogin';
@@ -59,6 +61,11 @@ const Application = ({ isOficinaDomain = false }) => {
 
 
   if (authLoading) return <div role="status" className="min-h-screen grid place-items-center">Validando sessão…</div>;
+  if (currentUser?.mfaRequired) return <main className="min-h-screen bg-neutral-950 grid place-items-center p-6"><MfaChallenge onVerified={async () => {
+    const profile = await getVerifiedProfile();
+    if (!profile || profile.mfaRequired) throw new Error('Não foi possível validar o acesso. Entre novamente.');
+    setCurrentUser(profile);
+  }} onCancel={logout} /></main>;
   const dataLoadNotice = currentUser && <DataLoadStatus loading={dataLoading} errors={dataLoadErrors} onRetry={retryDataLoad} />;
   const isOficinaAuthenticated = currentUser && (currentUser.role === 'administrador' || currentUser.modules?.includes('oficina'));
 
@@ -330,8 +337,8 @@ const Application = ({ isOficinaDomain = false }) => {
   );
 };
 
-const App = props => window.location.pathname === '/auth/callback'
+const App = props => <>{window.location.pathname === '/auth/callback'
   ? <PasswordRecovery />
-  : <><Application {...props} /><PasswordConfirmation /></>;
+  : <><Application {...props} /><PasswordConfirmation /></>}<MfaConfirmation /></>;
 
 export default App;

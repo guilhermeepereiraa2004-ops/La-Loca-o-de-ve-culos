@@ -1,5 +1,8 @@
 import { randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { requireVerifiedMfa } from '../lib/server/requireMfa.js';
+
+let runtimeReported = false;
 
 const MODULES = new Set(['bi','faturamento','frota','leads','locacao','clientes','investidores','financeiro','caucao','manutencaoAdmin','vistoria','multas','oficina','logs']);
 const SYSTEM_FIELDS = 'id,auth_user_id,name,email,role,modules,created_at';
@@ -8,6 +11,12 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-
 class RequestError extends Error { constructor(status, message) { super(message); this.status = status; } }
 function reject(status, message) { throw new RequestError(status, message); }
 function plainObject(value) { return value && typeof value === 'object' && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype; }
+function matchProfileSnapshot(query, snapshot) {
+  for (const [field, value] of Object.entries(snapshot)) {
+    query = value === null ? query.is(field, null) : query.eq(field, Array.isArray(value) ? `{${value.join(',')}}` : value);
+  }
+  return query;
+}
 function text(value, max, required = false) {
   if (typeof value !== 'string' || value.length > max || (required && !value.trim()) || /[\u0000-\u0008]/.test(value)) reject(400, 'Dados inválidos.');
   return value.trim();
@@ -47,6 +56,10 @@ export function validateAccountInput(body) {
 
 export function createSecurityUsersHandler({ clientFactory = createClient, environment = process.env } = {}) {
   return async function handler(req, res) {
+    if (!runtimeReported && environment.VERCEL === '1') {
+      console.info('[security-runtime]', process.version);
+      runtimeReported = true;
+    }
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     try {
@@ -64,8 +77,14 @@ export function createSecurityUsersHandler({ clientFactory = createClient, envir
       const token = authorization.slice(7);
       const config = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
       const authClient = clientFactory(url, anonKey, config);
-      const { data: { user }, error: authError } = await authClient.auth.getUser(token);
-      if (authError || !user?.email || user.is_anonymous) reject(401, 'Sessão inválida.');
+      let verified;
+      try { verified = await requireVerifiedMfa(authClient, token); }
+      catch (error) {
+        if (error.code === 'MFA_REQUIRED') reject(403, 'Confirme o autenticador para continuar.');
+        reject(401, 'Sessão inválida.');
+      }
+      const { user } = verified;
+      if (!user.email) reject(401, 'Sessão inválida.');
       const admin = clientFactory(url, serviceKey, config);
       const { data: actor, error: actorError } = await admin.from('system_users').select('id,role,auth_user_id').eq('auth_user_id', user.id).maybeSingle();
       if (actorError || actor?.role !== 'administrador') reject(403, 'Acesso não autorizado.');
@@ -145,18 +164,31 @@ export function createSecurityUsersHandler({ clientFactory = createClient, envir
         if (error || !data?.user) reject(409, 'Não foi possível criar a identidade. Verifique se já existe uma conta para este e-mail.');
         authUserId = data.user.id;
         createdAuthUser = true;
-      } else {
-        const authChanges = { email: safeProfile.email, email_confirm: true };
-        if (password) authChanges.password = password;
-        const { error } = await admin.auth.admin.updateUserById(authUserId, authChanges);
-        if (error) reject(409, 'Não foi possível atualizar a identidade.');
       }
       const payload = { ...safeProfile, auth_user_id: authUserId };
-      const query = input.action === 'create' ? admin.from(table).insert(payload) : admin.from(table).update(payload).eq('id', id);
+      let query = input.action === 'create' ? admin.from(table).insert(payload) : admin.from(table).update(payload).eq('id', id);
+      if (input.action !== 'create') query = existing.auth_user_id === null ? query.is('auth_user_id', null) : query.eq('auth_user_id', existing.auth_user_id);
       const { data: saved, error: saveError } = await query.select(fields).single();
       if (saveError) {
         if (createdAuthUser) await admin.auth.admin.deleteUser(authUserId);
         reject(409, 'Não foi possível salvar o perfil. Revise a conta antes de tentar novamente.');
+      }
+      // Persist first: a database failure must never silently change an existing
+      // account's email/password. The Auth operation is skipped for profile-only edits.
+      if (!createdAuthUser && (safeProfile.email !== existing.email || password)) {
+        const authChanges = { email: safeProfile.email, email_confirm: true };
+        if (password) authChanges.password = password;
+        const { error: identitySaveError } = await admin.auth.admin.updateUserById(authUserId, authChanges);
+        if (identitySaveError) {
+          const original = Object.fromEntries(fields.split(',').filter(field => !['id', 'auth_user_id', 'created_at'].includes(field)).map(field => [field, existing[field] ?? null]));
+          // Compare every written field before compensation; never overwrite a
+          // newer concurrent edit while restoring the original profile.
+          let restore = admin.from(table).update(original).eq('id', id);
+          restore = matchProfileSnapshot(restore, payload);
+          const { data: restored, error: restoreError } = await restore.select('id').maybeSingle();
+          if (restoreError || !restored) reject(503, 'A atualização da identidade falhou e o perfil precisa de revisão administrativa. Não repita a operação sem conferir a conta.');
+          reject(409, 'Não foi possível atualizar a identidade. O perfil anterior foi restaurado.');
+        }
       }
       return res.status(200).json({ success: true, profile: saved });
     } catch (error) {

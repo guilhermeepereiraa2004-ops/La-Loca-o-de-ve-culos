@@ -12,3 +12,9 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder',
   { auth: { persistSession: false, autoRefreshToken: true, detectSessionInUrl: false } }
 )
+
+// Password step-up uses a separate short-lived session and never downgrades the active AAL2 session.
+export const createPasswordVerifier = () => createClient(
+  supabaseUrl || 'https://placeholder.supabase.co', supabaseAnonKey || 'placeholder',
+  { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+);

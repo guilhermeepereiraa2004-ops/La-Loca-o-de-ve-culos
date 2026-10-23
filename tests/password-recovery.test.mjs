@@ -23,7 +23,7 @@ const origin='https://example.invalid';
 const invite=origin+'/auth/callback?token_hash=test-only-hash&type=invite';
 const implicit=origin+'/auth/callback#access_token=test-only-access&refresh_token=test-only-refresh&type=recovery';
 function fixture(options={}){
-  let now=Date.UTC(2026,9,23,15);const calls=[];let profileActive=true;let sessionId='test-session';
+  let now=Date.UTC(2026,9,23,15);const calls=[];let profileActive=true;let sessionId='test-session';let mfaRequired=Boolean(options.mfaRequired);
   const session={access_token:'test-access'};
   const result=async method=>{calls.push(method);return options.invalidToken?{error:{message:'private-provider-error'}}:{data:{session}};};
   const client={auth:{
@@ -34,8 +34,8 @@ function fixture(options={}){
     updateUser:async attributes=>{calls.push('updateUser');assert.deepEqual(Object.keys(attributes),['password']);return options.updateError?{error:{}}:{};},
     signOut:async({scope})=>{calls.push('signOut:'+scope);return {};},
   }};
-  const controller=createPasswordRecoveryController({client,getProfile:async()=>{calls.push('profile');return profileActive?{authUserId:'test-user',role:'administrador'}:null;},clock:()=>now});
-  return {controller,calls,advance:ms=>{now+=ms;},revokeProfile:()=>{profileActive=false;},switchSession:()=>{sessionId='changed-session';}};
+  const controller=createPasswordRecoveryController({client,getProfile:async()=>{calls.push('profile');return profileActive?{authUserId:'test-user',role:'administrador',mfaRequired}:null;},clock:()=>now});
+  return {controller,calls,advance:ms=>{now+=ms;},revokeProfile:()=>{profileActive=false;},switchSession:()=>{sessionId='changed-session';},confirmMfa:()=>{mfaRequired=false;}};
 }
 test('valid one-time invite is checked remotely and URL is stripped before network requests',async()=>{
   const f=fixture();await f.controller.begin(invite,()=>f.calls.push('clearUrl'));
@@ -90,4 +90,14 @@ test('hosted generic OTP AMR is accepted only after verifyOtp validates recovery
   const a=fixture({method:'otp'});await a.controller.begin(origin+'/auth/callback?token_hash=test-only-hash&type=recovery');
   await a.controller.finish('new-test-password-unique','new-test-password-unique');assert.ok(a.calls.includes('updateUser'));
   const b=fixture({method:'otp'});await assert.rejects(b.controller.begin(implicit));assert.equal(b.calls.includes('updateUser'),false);
+});
+test('a recovery link cannot bypass an enabled authenticator before password mutation',async()=>{
+  const f=fixture({method:'otp',mfaRequired:true});
+  const result=await f.controller.begin(origin+'/auth/callback?token_hash=test-only-hash&type=recovery');
+  assert.equal(result.requiresMfa,true);
+  await assert.rejects(f.controller.finish('new-test-password-unique','new-test-password-unique'),error=>error.code==='MFA_REQUIRED');
+  assert.equal(f.calls.includes('updateUser'),false);
+  f.confirmMfa();
+  await f.controller.finish('new-test-password-unique','new-test-password-unique');
+  assert.equal(f.calls.filter(call=>call==='updateUser').length,1);
 });
