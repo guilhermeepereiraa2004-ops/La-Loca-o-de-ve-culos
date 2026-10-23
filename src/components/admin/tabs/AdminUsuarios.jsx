@@ -1,5 +1,5 @@
 import AccountActivationLink from '../../auth/AccountActivationLink';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Plus, User, Shield, Trash2, Edit, Check, X, Eye, EyeOff, Users, Key, Lock, ShieldCheck } from 'lucide-react';
 
 const ALL_MODULES = [
@@ -32,6 +32,17 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [targetDeleteId, setTargetDeleteId] = useState(null);
+  const submissionPending = useRef(false);
+  const [busy, setBusy] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [formError, setFormError] = useState('');
+  const feedbackRef = useRef(null);
+  const errorRef = useRef(null);
+  useEffect(() => {
+    if (!feedback && !formError) return;
+    const frame = requestAnimationFrame(() => (formError ? errorRef : feedbackRef).current?.scrollIntoView({ block: 'nearest' }));
+    return () => cancelAnimationFrame(frame);
+  }, [feedback, formError]);
 
   const handleConfirmDelete = async () => {
     if (await onDeleteUser(targetDeleteId, passwordInput)) {
@@ -41,12 +52,16 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
   };
 
   const handleOpenAdd = () => {
+    if (submissionPending.current) return;
+    setFeedback(''); setFormError(''); setShowPassword(false);
     setForm(EMPTY_FORM);
     setEditingUser(null);
     setShowForm(true);
   };
 
   const handleOpenEdit = (user) => {
+    if (submissionPending.current) return;
+    setFeedback(''); setFormError(''); setShowPassword(false);
     setForm({ ...user, password: '', modules: user.modules || [] });
     setEditingUser(user);
     setShowForm(true);
@@ -54,16 +69,31 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (editingUser) {
-      const result = await onUpdateUser({ ...form, id: editingUser.id });
-      if (!result?.success) return;
-    } else {
-      const result = await onAddUser({ ...form });
-      if (!result?.success) return;
+    if (submissionPending.current) return;
+    submissionPending.current = true;
+    setBusy(true); setFeedback(''); setFormError('');
+    const changingPassword = Boolean(form.password);
+    try {
+      const result = editingUser
+        ? await onUpdateUser({ ...form, id: editingUser.id })
+        : await onAddUser({ ...form });
+      if (!result?.success) {
+        setFormError(result?.error?.message || (typeof result?.error === 'string' ? result.error : 'Não foi possível salvar. Tente novamente.'));
+        return;
+      }
+      setFeedback(editingUser
+        ? changingPassword ? 'Senha e acesso atualizados com sucesso.' : 'Dados do usuário atualizados com sucesso.'
+        : 'Usuário criado com sucesso.');
+      setShowForm(false); setEditingUser(null); setForm(EMPTY_FORM); setShowPassword(false);
+    } catch {
+      setFormError('Não foi possível salvar. Verifique sua conexão e tente novamente.');
+    } finally {
+      submissionPending.current = false; setBusy(false);
     }
-    setShowForm(false);
-    setEditingUser(null);
-    setForm(EMPTY_FORM);
+  };
+  const closeForm = () => {
+    if (submissionPending.current) return;
+    setShowForm(false); setEditingUser(null); setForm(EMPTY_FORM); setShowPassword(false); setFormError('');
   };
 
   const toggleModule = (moduleId) => {
@@ -76,7 +106,9 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
   };
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12">
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-12" aria-busy={busy}>
+      {feedback && <p ref={feedbackRef} role="status" className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm font-bold text-emerald-800">{feedback}</p>}
+      <fieldset disabled={busy} className="contents">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h3 className="text-4xl font-black uppercase tracking-tighter">Usuários do Sistema</h3>
@@ -109,7 +141,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                 {user.role === 'administrador' ? 'Administrador' : 'Funcionário'}
               </span>
               <div className="flex items-center gap-2">
-                <button onClick={() => handleOpenEdit(user)} className="w-8 h-8 bg-neutral-50 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition-all">
+                <button type="button" title={`Editar ${user.name}`} aria-label={`Editar ${user.name}`} onClick={() => handleOpenEdit(user)} className="w-8 h-8 bg-neutral-50 rounded-lg flex items-center justify-center text-neutral-400 hover:text-neutral-900 hover:bg-neutral-100 transition-all">
                   <Edit size={14} />
                 </button>
                 <button onClick={() => {
@@ -155,8 +187,8 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
 
       {/* Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
-          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+        <div role="dialog" aria-modal="true" aria-labelledby="system-user-form-title" className="fixed inset-0 z-[600] flex items-center justify-center p-4 md:p-8 animate-in fade-in duration-500">
+          <div className="absolute inset-0 bg-neutral-950/90 backdrop-blur-sm" onClick={closeForm} />
           <div className="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl relative z-10 overflow-hidden animate-in zoom-in-95 duration-500 max-h-[90vh] flex flex-col">
             {/* Modal Header */}
             <div className="p-8 border-b border-neutral-100 flex justify-between items-center shrink-0">
@@ -165,11 +197,11 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                   <User size={22} />
                 </div>
                 <div>
-                  <h4 className="text-xl font-black uppercase tracking-tighter">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h4>
+                  <h4 id="system-user-form-title" className="text-xl font-black uppercase tracking-tighter">{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h4>
                   <p className="text-[9px] text-neutral-400 font-bold uppercase tracking-widest mt-0.5">Defina acesso e permissões</p>
                 </div>
               </div>
-              <button onClick={() => setShowForm(false)} className="text-neutral-300 hover:text-neutral-900 transition-colors">
+              <button type="button" aria-label="Fechar formulário de usuário" onClick={closeForm} className="text-neutral-300 hover:text-neutral-900 transition-colors">
                 <X size={24} />
               </button>
             </div>
@@ -177,11 +209,13 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-8">
               <form onSubmit={handleSubmit} id="user-form" className="space-y-8">
+                {formError && <p ref={errorRef} role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800">{formError}</p>}
+                {busy && <p role="status" className="text-sm font-bold text-neutral-600">Aguardando confirmação da sua senha ou salvando alterações…</p>}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nome Completo</label>
+                    <label htmlFor="system-user-name" className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nome Completo</label>
                     <input
-                      type="text" required
+                      id="system-user-name" type="text" required
                       value={form.name || ''}
                       onChange={e => setForm({ ...form, name: e.target.value })}
                       placeholder="Ex: Maria Santos"
@@ -189,9 +223,9 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">E-mail de Acesso</label>
+                    <label htmlFor="system-user-email" className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">E-mail de Acesso</label>
                     <input
-                      type="email" required
+                      id="system-user-email" type="email" required
                       value={form.email || ''}
                       onChange={e => setForm({ ...form, email: e.target.value })}
                       placeholder="funcionario@lalocacao.com"
@@ -202,16 +236,16 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Senha</label>
+                    <label htmlFor="system-user-password" className="text-[9px] uppercase tracking-widest text-neutral-400 font-black ml-1">Nova senha</label>
                     <div className="relative">
                       <input
-                        type={showPassword ? 'text' : 'password'} required={!editingUser} minLength={12} maxLength={128} autoComplete="new-password"
+                        id="system-user-password" type={showPassword ? 'text' : 'password'} required={!editingUser} minLength={12} maxLength={128} autoComplete="new-password"
                         value={form.password || ''}
                         onChange={e => setForm({ ...form, password: e.target.value })}
                         placeholder={editingUser ? '(Deixe em branco para manter)' : 'Senha de acesso'}
                         className="w-full bg-neutral-50 border-none p-4 pr-12 rounded-xl outline-none focus:ring-2 focus:ring-[#C5A059]/20 transition-all font-bold text-sm"
                       />
-                      <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
+                      <button type="button" aria-label={showPassword ? 'Ocultar nova senha' : 'Mostrar nova senha'} onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400">
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
@@ -279,11 +313,11 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
 
             {/* Modal Footer */}
             <div className="p-8 border-t border-neutral-50 bg-neutral-50/30 flex justify-end gap-4 shrink-0">
-              <button type="button" onClick={() => setShowForm(false)} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all">
+              <button type="button" onClick={closeForm} className="px-8 py-4 text-[10px] font-black uppercase tracking-widest text-neutral-400 hover:text-neutral-900 transition-all">
                 Cancelar
               </button>
               <button form="user-form" type="submit" className="px-12 py-4 bg-neutral-900 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-[#C5A059] transition-all shadow-xl">
-                {editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
+                {busy ? 'Salvando…' : editingUser ? 'Salvar Alterações' : 'Criar Usuário'}
               </button>
             </div>
           </div>
@@ -334,6 +368,7 @@ const AdminUsuarios = ({ systemUsers = [], onAddUser, onDeleteUser, onUpdateUser
           </div>
         </div>
       )}
+      </fieldset>
     </div>
   );
 };

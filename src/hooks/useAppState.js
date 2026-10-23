@@ -523,7 +523,10 @@ export const useAppState = ({ includeWorkshopFinancials = false } = {}) => {
       if (action === 'delete') setter(prev => prev.filter(item => item.id !== profile.id));
       else setter(prev => action === 'create' ? [mapToCamel([result])[0], ...prev] : prev.map(item => item.id === result.id ? mapToCamel([result])[0] : item));
       return { success: true, data: result };
-    } catch (error) { alert(error.message); return { success: false, error }; }
+    } catch (error) {
+      if (kind !== 'system' || !['create', 'update'].includes(action)) alert(error.message);
+      return { success: false, error };
+    }
   };
   const handleAddSystemUser = user => accountAction('system', 'create', user);
   const handleUpdateSystemUser = user => accountAction('system', 'update', user);

@@ -70,6 +70,11 @@ senha por um canal privado. O campo vazio mantém a senha Auth atual quando a
 conta já está vinculada. Em perfis antigos ainda sem identidade Auth, a primeira
 ativação exige uma senha nova ou um link individual de definição de senha.
 
+Depois de confirmar a senha do administrador, aguarde o resultado sem reenviar.
+Uma troca concluída exibe **Senha e acesso atualizados com sucesso**; falhas
+aparecem no formulário. Ao reabrir a edição, o campo **Nova senha** fica vazio
+para não revelar a credencial; isso não desfaz uma alteração já confirmada.
+
 A conta do próprio administrador não pode ser redefinida ou rebaixada por essa
 tela. A senha já configurada pelo titular permanece; a troca pessoal usa o fluxo
 de senha atual. Não reutilizar senhas antigas expostas. As contas e senhas de
