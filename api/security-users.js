@@ -1,6 +1,7 @@
 import { randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { requireVerifiedMfa } from '../lib/server/requireMfa.js';
+import { safeFetch } from '../lib/server/safeFetch.js';
 
 let runtimeReported = false;
 
@@ -75,7 +76,7 @@ export function createSecurityUsersHandler({ clientFactory = createClient, envir
       const authorization = req.headers.authorization || '';
       if (!/^Bearer [A-Za-z0-9._-]+$/.test(authorization)) reject(401, 'Autenticação necessária.');
       const token = authorization.slice(7);
-      const config = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } };
+      const config = { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }, global: { fetch: safeFetch } };
       const authClient = clientFactory(url, anonKey, config);
       let verified;
       try { verified = await requireVerifiedMfa(authClient, token); }

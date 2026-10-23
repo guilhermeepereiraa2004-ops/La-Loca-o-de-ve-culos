@@ -5,8 +5,9 @@ const vehicleId = '11111111-1111-4111-8111-111111111111';
 const body = () => ({ name: 'Test Contact', contact: '(79) 99999-9999', email: 'contact@example.invalid', type: 'locacao', vehicleId, message: 'Gostaria de mais informações.', website: '' });
 function fixture(options = {}) {
   const calls = [];
+  const clientKeys = [];
   let saved;
-  const environment = { VERCEL: '1', SUPABASE_URL: 'https://test.invalid', SUPABASE_SERVICE_ROLE_KEY: 'private-test-key', ...options.environment };
+  const environment = { VERCEL: '1', SUPABASE_URL: 'https://test.invalid', SUPABASE_SERVICE_ROLE_KEY: 'private-test-key', SUPABASE_ANON_KEY: 'public-test-key', ...options.environment };
   const database = {
     rpc: async (name, params) => {
       calls.push({ name, params });
@@ -15,10 +16,13 @@ function fixture(options = {}) {
     },
     from: table => ({ insert: async payload => { calls.push({ name: 'insert', table }); saved = payload; return options.insertError ? { error: { message: 'private-database-detail' } } : {}; } }),
   };
-  const handler = createPublicInterestHandler({ environment, clientFactory: () => database, fetchImpl: options.fetchImpl ?? (async () => ({ ok: true, json: async () => ({ success: true, hostname: 'test.invalid', action: 'public_interest' }) })) });
+  const handler = createPublicInterestHandler({ environment, clientFactory: (_url, key) => {
+    clientKeys.push(key);
+    return { ...database, rpc: (name, params) => name === 'get_public_fleet' && key !== 'public-test-key' ? { error: { code: '42501' } } : database.rpc(name, params) };
+  }, fetchImpl: options.fetchImpl ?? (async () => ({ ok: true, json: async () => ({ success: true, hostname: 'test.invalid', action: 'public_interest' }) })) });
   const request = (overrides = {}) => ({ method: 'POST', headers: { host: 'test.invalid', origin: 'https://test.invalid', 'content-type': 'application/json', 'x-vercel-forwarded-for': '192.0.2.1' }, body: body(), socket: { remoteAddress: '127.0.0.1' }, ...overrides });
   const response = () => ({ code: 200, headers: {}, setHeader(key,value) { this.headers[key] = value; }, status(code) { this.code = code; return this; }, json(payload) { this.body = payload; return this; } });
-  return { handler, request, response, calls, get saved() { return saved; } };
+  return { handler, request, response, calls, clientKeys, get saved() { return saved; } };
 }
 test('accepts valid anonymous contact without exposing stored PII, IDs or plate', async () => {
   const f = fixture(); const res = f.response();
@@ -29,6 +33,16 @@ test('accepts valid anonymous contact without exposing stored PII, IDs or plate'
   assert.equal(res.headers['Cache-Control'], 'no-store');
   assert.equal(f.calls[0].params.p_limit, 3); assert.equal(f.calls[0].params.p_window_seconds, 300);
   assert.equal(f.calls[0].params.p_key.includes('192.0.2.1'), false);
+});
+
+test('catalogue lookup uses the public key and fails closed when it is missing', async () => {
+  const f = fixture(), response = f.response();
+  await f.handler(f.request(), response);
+  assert.equal(response.code, 201);
+  assert.deepEqual(f.clientKeys, ['private-test-key', 'public-test-key']);
+  const missing = fixture({ environment: { SUPABASE_ANON_KEY: undefined } }), failure = missing.response();
+  await missing.handler(missing.request(), failure);
+  assert.equal(failure.code, 503); assert.equal(missing.saved, undefined);
 });
 test('rate limiter and database failures fail closed with no fake success', async () => {
   for (const [options, code] of [[{ rateError: true }, 503], [{ throttled: true }, 429], [{ insertError: true }, 503]]) {

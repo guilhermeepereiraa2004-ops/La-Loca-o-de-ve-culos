@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { createHmac } from 'node:crypto';
 import { isIP } from 'node:net';
+import { safeFetch } from '../lib/server/safeFetch.js';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 class PublicError extends Error { constructor(status, message) { super(message); this.status = status; } }
 function deny(status, message) { throw new PublicError(status, message); }
@@ -22,7 +23,7 @@ export function validateInterest(body) {
   const captchaToken = string(body.captchaToken ?? '', 2048);
   return { name, contact, email, message, type: 'locacao', vehicleId: body.vehicleId ?? null, captchaToken };
 }
-export function createPublicInterestHandler({ clientFactory = createClient, environment = process.env, fetchImpl = fetch } = {}) {
+export function createPublicInterestHandler({ clientFactory = createClient, environment = process.env, fetchImpl = safeFetch } = {}) {
   return async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -40,7 +41,7 @@ export function createPublicInterestHandler({ clientFactory = createClient, envi
       const ip = environment.VERCEL === '1' ? req.headers['x-vercel-forwarded-for'] : req.socket?.remoteAddress;
       if (typeof ip !== 'string' || !isIP(ip)) deny(503, 'Não foi possível validar o envio.');
       const key = createHmac('sha256', environment.SUPABASE_SERVICE_ROLE_KEY).update('public-interest:' + ip).digest('hex');
-      const database = clientFactory(environment.SUPABASE_URL, environment.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+      const database = clientFactory(environment.SUPABASE_URL, environment.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: safeFetch } });
       const { data: allowed, error: rateError } = await database.rpc('consume_security_rate_limit', { p_key: 'public-interest:' + key, p_limit: 3, p_window_seconds: 300 });
       if (rateError) deny(503, 'Verificação de segurança indisponível.');
       if (!allowed) deny(429, 'Muitos envios recentes. Aguarde cinco minutos.');
@@ -57,7 +58,11 @@ export function createPublicInterestHandler({ clientFactory = createClient, envi
       }
       let vehicleModel = null;
       if (input.vehicleId) {
-        const { data: fleet, error } = await database.rpc('get_public_fleet');
+        if (!environment.SUPABASE_ANON_KEY) deny(503, 'Não foi possível verificar o veículo.');
+        // The public projection grants EXECUTE only to its public consumers.
+        // Do not broaden service-role grants to read a public catalogue.
+        const publicCatalog = clientFactory(environment.SUPABASE_URL, environment.SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false }, global: { fetch: safeFetch } });
+        const { data: fleet, error } = await publicCatalog.rpc('get_public_fleet');
         if (error) deny(503, 'Não foi possível verificar o veículo.');
         const vehicle = fleet?.find(item => item.id === input.vehicleId);
         if (!vehicle) deny(400, 'Veículo indisponível.');
