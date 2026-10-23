@@ -28,6 +28,7 @@ import {
 import { createPortal } from 'react-dom';
 import { EditorialLabel } from '../../ui/EditorialLabel';
 import { parseCurrency } from '../../../utils/currencyUtils';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
 const AdminMultas = ({
   fines = [],
@@ -182,21 +183,10 @@ const AdminMultas = ({
     });
   }, [fines, debouncedSearch, statusFilter, driverFilter, vehicleFilter]);
 
-  const loadPdfJs = () => {
-    return new Promise((resolve, reject) => {
-      if (window.pdfjsLib) {
-        resolve(window.pdfjsLib);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-      script.onload = () => {
-        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        resolve(window.pdfjsLib);
-      };
-      script.onerror = (err) => reject(err);
-      document.body.appendChild(script);
-    });
+  const loadPdfJs = async () => {
+    const pdfjs = await import('pdfjs-dist');
+    pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+    return pdfjs;
   };
 
   const loadTesseract = () => {
@@ -781,7 +771,7 @@ const AdminMultas = ({
         
         setOcrStatus('Lendo arquivo PDF...');
         const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, isEvalSupported: false }).promise;
         
         let extractedText = '';
         for (let i = 1; i <= pdf.numPages; i++) {
