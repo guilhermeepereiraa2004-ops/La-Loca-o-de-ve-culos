@@ -5,13 +5,21 @@ import { supabase, createPasswordVerifier, prepareMainSignIn, completeMainSignIn
 export const SYSTEM_PROFILE_FIELDS = 'id,auth_user_id,name,email,role,modules,created_at';
 export const INVESTOR_PROFILE_FIELDS = 'id,auth_user_id,name,email,phone,cpf,address,status,bank,pix,created_at';
 
+// Navigation hints contain no identity or private data and never grant access.
+const NAVIGATION_PREFERENCES = new Map([
+  ['la_admin_active_tab', new Set(['bi', 'frota', 'manutencaoAdmin', 'oficina', 'vistoria', 'multas', 'locacao', 'clientes', 'leads', 'avisos', 'faturamento', 'financeiro', 'caucao', 'investidores', 'usuarios', 'logs'])],
+  ['la_investor_active_tab', new Set(['dashboard', 'rendimentos', 'minha-frota', 'manutencao', 'pagamentos', 'avisos'])],
+]);
+
 export function clearLegacySession() {
   for (const kind of ['localStorage', 'sessionStorage']) {
     try {
       const storage = window[kind];
       for (let index = storage.length - 1; index >= 0; index--) {
         const key = storage.key(index);
-        if (key?.startsWith('la_')) storage.removeItem(key);
+        if (!key?.startsWith('la_')) continue;
+        if (kind === 'localStorage' && NAVIGATION_PREFERENCES.get(key)?.has(storage.getItem(key))) continue;
+        storage.removeItem(key);
       }
     } catch { /* Storage can be blocked. Do not fail login or erase the sb- Auth session. */ }
   }

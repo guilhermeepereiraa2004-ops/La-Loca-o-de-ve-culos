@@ -48,6 +48,25 @@ test('legacy cleanup tolerates blocked getters and preserves SDK Auth transport'
   assert.equal(session.getItem('sb-test-auth-token'),'test-transport');
   assert.equal(session.getItem('la_admin_auth'),null);
 });
+
+test('legacy cleanup preserves only valid public navigation hints while removing private caches', () => {
+  globalThis.window={localStorage:storage({la_admin_active_tab:'vistoria',la_investor_active_tab:'minha-frota',la_admin_user:'private-profile',la_system_logs:'private-events',la_admin_active_tab_extra:'private-cache'}),sessionStorage:storage({la_admin_active_tab:'locacao',la_investor_auth:'private-profile'})};
+  auth.clearLegacySession();
+  assert.equal(window.localStorage.getItem('la_admin_active_tab'),'vistoria');
+  assert.equal(window.localStorage.getItem('la_investor_active_tab'),'minha-frota');
+  assert.equal(window.localStorage.length,2);
+  assert.equal(window.sessionStorage.length,0);
+  auth.clearLegacySession();
+  assert.equal(window.localStorage.getItem('la_admin_active_tab'),'vistoria');
+});
+
+test('legacy cleanup discards corrupt or credential-shaped values stored as navigation hints', () => {
+  for(const value of ['unknown-module','{"password":"private-value"}','{"role":"administrador"}','']){
+    globalThis.window={localStorage:storage({la_admin_active_tab:value,la_investor_active_tab:value}),sessionStorage:storage({})};
+    auth.clearLegacySession();
+    assert.equal(window.localStorage.length,0);
+  }
+});
 test('a valid Auth identity without authorized profile fails login and signs out', async () => {
   let signedOut = false;
   const reads=[];
